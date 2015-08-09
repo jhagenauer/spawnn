@@ -1,8 +1,10 @@
 package growingCNG;
 
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -20,8 +22,6 @@ import org.apache.log4j.Logger;
 
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
-import spawnn.ng.sorter.DefaultSorter;
-import spawnn.ng.utils.NGUtils;
 import spawnn.utils.DataUtils;
 import spawnn.utils.SpatialDataFrame;
 
@@ -33,14 +33,11 @@ public class GrowingCNG_Housing_Thread {
 
 	public static void main(String[] args) {
 		final Random r = new Random();
-		final int T_MAX = 20000;
-
-		SpatialDataFrame sdf = DataUtils.readSpatialDataFrameFromCSV(new File("data/marco/dat4/gwr.csv"), new int[] { 6, 7 }, new int[] {}, true);
-
+	
 		final List<double[]> samples = new ArrayList<double[]>();
 		final List<Geometry> geoms = new ArrayList<Geometry>();
-		final List<double[]> desired = new ArrayList<double[]>();
-
+		
+		SpatialDataFrame sdf = DataUtils.readSpatialDataFrameFromCSV(new File("data/marco/dat4/gwr.csv"), new int[] { 6, 7 }, new int[] {}, true);
 		List<String> vars = new ArrayList<String>();
 		vars.add("xco");
 		vars.add("yco");
@@ -69,18 +66,51 @@ public class GrowingCNG_Housing_Thread {
 			for (int i = 0; i < nd.length; i++)
 				nd[i] = d[sdf.names.indexOf(vars.get(i))];
 			samples.add(nd);
-			desired.add(new double[] { d[sdf.names.indexOf("lnp")] });
 			geoms.add(sdf.geoms.get(idx));
 		}
-
-		final int[] fa = new int[] { 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17 };
+				
+		/*SpatialDataFrame sdf = DataUtils.readSpatialDataFrameFromShapefile(new File("data/cng/test2c.shp"), true);
+		List<String> vars = new ArrayList<String>();
+		vars.add("X");
+		vars.add("Y");
+		vars.add("VALUE");
+		
+		for (double[] d : sdf.samples) {
+			int idx = sdf.samples.indexOf(d);
+			double[] nd = new double[vars.size()];
+			for (int i = 0; i < nd.length; i++)
+				nd[i] = d[sdf.names.indexOf(vars.get(i))];
+			samples.add(nd);
+			geoms.add(sdf.geoms.get(idx));
+		}*/
+		
+		int[] fa = new int[vars.size() - 2];
+		for (int i = 0; i < fa.length; i++)
+			fa[i] = i + 2;
 		final int[] ga = new int[] { 0, 1 };
 		DataUtils.zScoreColumns(samples, fa);
-
+		
+		// PCA
+		/*int nrComponents = 4;
+		List<double[]> ns = DataUtils.removeColumns(samples, ga);
+		ns = DataUtils.reduceDimensionByPCA(ns, nrComponents, false);
+		for (int k = 0; k < ns.size(); k++) {
+			double[] d = ns.get(k);
+			double[] nd = new double[ga.length + d.length];
+			for (int i = 0; i < ga.length; i++)
+				nd[i] = d[ga[i]];
+			for (int i = 0; i < nrComponents; i++)
+				nd[i + ga.length] = d[i];
+			samples.set(k, nd);
+		}
+		final int[] fFa = new int[nrComponents];
+		for (int i = 0; i < nrComponents; i++)
+			fFa[i] = i + ga.length;*/
+						
 		final Dist<double[]> gDist = new EuclideanDist(ga);
 		final Dist<double[]> fDist = new EuclideanDist(fa);
 		
-		boolean first = true;
+		boolean firstWrite = true;
 
 		/* Was beeinflußt error-calc:
 		 * - lrB und lrN, denn langsame adaptation macht initialisierung wichtiger
@@ -88,18 +118,24 @@ public class GrowingCNG_Housing_Thread {
 		 */
 		
 		// warum kleiner lernerate auf längere sicht nicht besser? Evtl. weil lrN zu viel disrupted?
-		for (final double lrB : new double[] { 0.04 }) // 0.0005 konvergiert nicht/kaum wenn add dabei ist
-			for (final double lrN : new double[] { 0.0, lrB/100 })
+			
+		for( final int T_MAX : new int[]{80000} )
+		for (final double lrB : new double[] { 0.05 }) 
+			for (final double lrN : new double[] { lrB/100 })
 				for (final int lambda : new int[] { 300 })
 					for (final int aMax : new int[] { 100 })
 						for( final double alpha : new double[]{ 0.5 } )
 							for( final double beta : new double[]{ 0.00005 } )
-						for (final int distMode : new int[] { 0 }) {
+								for( double ratio = 0.0; (ratio+=0.01) <= 0.01; )
+								//for( double ratio = 0.0; (ratio+=0.01) <= 1.0; )
+									for( final int distMode : new int[]{ 0 /*, 1, 2, 3, 4, 5*/ } ){
 
-							ExecutorService es = Executors.newFixedThreadPool(1);
+							final double RATIO = ratio;
+							ExecutorService es = Executors.newFixedThreadPool(4);
 							List<Future<double[]>> futures = new ArrayList<Future<double[]>>();
 
-							for (int i = 0; i < 64; i++) {
+							for (int i = 0; i < 4; i++) {
+								final int RUN = i;
 								futures.add(es.submit(new Callable<double[]>() {
 
 									@Override
@@ -111,21 +147,18 @@ public class GrowingCNG_Housing_Thread {
 											neurons.add(Arrays.copyOf(d, d.length));
 										}
 
-										double ratio = 0.0;
-										GrowingCNG ng = new GrowingCNG(neurons, lrB, lrN, gDist, fDist, ratio, aMax, lambda, alpha, beta);
-										ng.distMode = distMode;
+										GrowingCNG ng = new GrowingCNG(neurons, lrB, lrN, gDist, fDist, RATIO, aMax, lambda, alpha, beta );
 										ng.samples = samples;
+										ng.distMode = distMode;
+										ng.run = RUN;
 										
 										int t = 0;
 										List<Double> qes = new ArrayList<Double>();
 										while( t < T_MAX ) { 
 											double[] x = samples.get(r.nextInt(samples.size())); 
 											ng.train(t++, x); 
-											/*if (t % 100 == 0) {
-												Map<double[], Set<double[]>> mapping = NGUtils.getBmuMapping(samples, ng.getNeurons(), new DefaultSorter<double[]>(fDist));
-												double qe = DataUtils.getMeanQuantizationError(mapping, fDist);
-												qes.add(qe);
-											}*/
+											/*if (t % 100 == 0)
+												qes.add(DataUtils.getMeanQuantizationError(ng.getMapping(samples), fDist));*/
 											/*if( t % 100 == 0 )
 												qes.add( ng.bErrorSum );*/
 										}
@@ -139,14 +172,21 @@ public class GrowingCNG_Housing_Thread {
 												qe = DataUtils.getMeanQuantizationError(mapping, fDist);
 											}
 										}*/
-
 										
-										Map<double[], Set<double[]>> mapping = NGUtils.getBmuMapping(samples, ng.getNeurons(), new DefaultSorter<double[]>(fDist)); 
+										Map<double[], Set<double[]>> mapping = ng.getMapping(samples); 
 										int used = 0; 
 										for( Set<double[]> s : mapping.values() ) 
 											if( !s.isEmpty() ) 
 												used++; 
-										double[] r = new double[] { t, ng.getNeurons().size(), used, ng.getConections().size(), DataUtils.getMeanQuantizationError(mapping, fDist), ng.aErrorSum, ng.bErrorSum  };
+										double[] r = new double[] {
+												ng.getNeurons().size(), 
+												used, 
+												ng.getConections().size(), 
+												DataUtils.getMeanQuantizationError(mapping, gDist), 
+												DataUtils.getMeanQuantizationError(mapping, fDist), 
+												/*ng.rndError, 
+												ng.fError*/  
+												};
 										
 										/*double[] r = new double[qes.size()];
 										for (int i = 0; i < qes.size(); i++)
@@ -177,27 +217,23 @@ public class GrowingCNG_Housing_Thread {
 							}
 
 							try {
-								FileWriter fw = new FileWriter("output/result.csv",!first);
-								if( first ) {
-									first = false;
-									fw.write("params");
-									for( int i = 0; i < ds.length; i++ )
-										fw.write(",t_"+i);
-									fw.write("\n");
+								String fn = "output/result.csv";
+								if( firstWrite ) {
+									firstWrite = false;
+									Files.write(Paths.get(fn), "mode,ratio,neurons,used,connections,sqe,fqe\n".getBytes());
+									/*for( int i = 0; i < ds.length; i++ )
+										fw.write(",p_"+i);
+									fw.write("\n");*/
 								}
-								fw.write(lrB + ";" + lrN + ";" + lambda + ";" + aMax + ";" + distMode );
+								String s = "mode_"+distMode+","+ratio;
 								for (int i = 0; i < ds.length; i++)
-									fw.write(","+ds[i].getMean() );
-								fw.write("\n");
-								fw.close();
+									s += ","+ds[i].getMean();
+								s += "\n";
+								Files.write(Paths.get(fn), s.getBytes(), StandardOpenOption.APPEND);
+								System.out.print(s.substring(0, Math.min(s.length(),256)));
 							} catch (IOException e) {
 								e.printStackTrace();
 							}
-							System.out.print(lrB + ";" + lrN + ";" + lambda + ";" + aMax + ";" + alpha + ";" + beta + ";" + distMode + ",");
-							for (int i = 0; i < ds.length && i < 10; i++) {
-								System.out.print(ds[i].getMean() + ",");
-							}
-							System.out.println();
 						}
 	}
 }

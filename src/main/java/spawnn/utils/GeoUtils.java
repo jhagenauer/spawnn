@@ -5,7 +5,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import org.apache.log4j.Logger;
@@ -116,86 +115,7 @@ public class GeoUtils {
 
 	// morans ------------------------------>>>
 
-	// only used for local moran's i, TODO use knn/matrix-methods 
-	private static double[][] getWeightMatrix(List<double[]> samples, Dist<double[]> gDist) {
-		double threshold = 9999; // dists greater than th are cut off
-
-		double max = Double.MIN_VALUE;
-		for (int i = 0; i < samples.size(); i++) {
-			for (int j = 0; j < samples.size(); j++) {
-				double d = gDist.dist(samples.get(i), samples.get(j));
-				if (d > max)
-					max = d;
-			}
-		}
-
-		// build inverse distance matrix
-		double[][] w = new double[samples.size()][samples.size()];
-		for (int i = 0; i < samples.size(); i++) {
-			for (int j = 0; j < samples.size(); j++) {
-				double d = gDist.dist(samples.get(i), samples.get(j));
-				if (i == j || d > threshold)
-					w[i][j] = 0;
-				else {
-					w[i][j] = 1 - 1 / d; // d/max;//max; // 1/d;
-				}
-			}
-		}
-
-		// k nearest neighbors
-		/*
-		 * for( int i = 0; i < w.length; i++ ) { List<Integer> nearest = new
-		 * ArrayList<Integer>();
-		 * 
-		 * for( int k = 0; k < 5; k++ ) {
-		 * 
-		 * double m = Double.MAX_VALUE; int mIdx = -1;
-		 * 
-		 * for( int j = 0; j < w[i].length; j++ ) { if( i == j ||
-		 * nearest.contains(j) ) continue;
-		 * 
-		 * if( w[i][j] < m ) { m = w[i][j]; mIdx = j; } } nearest.add(mIdx); }
-		 * 
-		 * for( int j = 0; j < w[i].length; j++ ) if( !nearest.contains(j) ) {
-		 * w[i][j] = 0; w[j][i] = 0; } }
-		 */
-
-		// check for 0-rows/columns
-		boolean f1 = false, f2 = false;
-		for (int i = 0; i < w.length; i++) {
-			for (int j = 0; j < w[i].length; j++) {
-				if (w[i][j] != 0)
-					f1 = true;
-				if (w[j][i] != 0)
-					f2 = true;
-			}
-		}
-
-		if (!f1 || !f2)
-			log.warn("Empty row/column in weight table! " + f1 + f2);
-
-		/*
-		 * row standardize For polygon features, you will almost always want to
-		 * choose Row for the Standardization parameter. Row Standardization
-		 * mitigates bias when the number of neighbors each feature has is a
-		 * function of the aggregation scheme or sampling process, rather than
-		 * reflecting the actual spatial distribution # of the variable you are
-		 * analyzing.
-		 */
-
-		for (int i = 0; i < w.length; i++) {
-			double sum = 0;
-			for (int j = 0; j < w[i].length; j++)
-				sum += w[i][j];
-			for (int j = 0; j < w[i].length; j++)
-				w[i][j] /= sum;
-		}
-
-		return w;
-	}
-
 	public static double getMoransI(Map<double[], Map<double[], Double>> dMap, int fa) {
-		
 		Set<double[]> samples = new HashSet<double[]>();
 		for (double[] d : dMap.keySet()) {
 			samples.add(d);
@@ -204,7 +124,6 @@ public class GeoUtils {
 		}
 
 		double n = samples.size();
-
 		double mean = 0;
 		for (double[] d : samples)
 			mean += d[fa] / n;
@@ -225,31 +144,34 @@ public class GeoUtils {
 		for (Map<double[], Double> m : dMap.values())
 			for (double d : m.values()) 
 				std += d;
-			
-		
+				
 		return (n / ftd) * (stn / std);
 	}
 
 	// only univariate at the moment
-	public static double getLocalMoransI(int idx, List<double[]> samples, Dist<double[]> gDist, int f) {
-
-		double[][] w = getWeightMatrix(samples, gDist);
-
-		// avergage
-		double avg = 0;
+	public static List<Double> getLocalMoransI(List<double[]> samples, Map<double[], Map<double[], Double>> dMap, int fa) {
+		double mean = 0;
 		for (double[] d : samples)
-			avg += d[f];
-		avg /= samples.size();
-
-		// first term denominator
-		double ftd = 0;
-		for (int i = 0; i < samples.size(); i++)
-			ftd += Math.pow(samples.get(i)[f] - avg, 2);
-
-		double s = 0;
-		for (int i = 0; i < samples.size(); i++)
-			s += w[idx][i] * (samples.get(i)[f] - avg);
-
-		return ((samples.get(idx)[f] - avg) * s) / (ftd / samples.size());
+			mean += d[fa];
+		mean /= samples.size();
+		
+		double m2 = 0;
+		for( double[] d : samples )
+			m2 += Math.pow(d[fa] - mean,2);
+		m2 /= samples.size();
+		
+		List<Double> lisa = new ArrayList<Double>();
+		for( double[] d : samples ) {
+			double ii = 0;
+			
+			Map<double[],Double> nbs = dMap.get(d);
+			for( double[] nb : nbs.keySet() ) 
+				ii += nbs.get(nb) * (nb[fa] - mean);
+			
+			ii *= (d[fa] - mean)/m2;
+			lisa.add(ii);
+						
+		}
+		return lisa;
 	}
 }

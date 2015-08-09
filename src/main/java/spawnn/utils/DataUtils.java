@@ -25,6 +25,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import javastat.multivariate.PCA;
+
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 import org.apache.log4j.Logger;
 import org.geotools.data.DataStore;
@@ -1144,15 +1146,14 @@ public class DataUtils {
 				s[i] = (s[i] - mean[i]) / stdDev;
 	}
 
-	public static void removeColumns(List<double[]> samples, int[] ign) {
-		List<double[]> old = new ArrayList<double[]>(samples);
-		samples.clear();
-
+	public static List<double[]> removeColumns(List<double[]> samples, int[] ign) {
+		List<double[]> ns = new ArrayList<double[]>();
+		
 		Set<Integer> ignore = new HashSet<Integer>();
 		for (int i : ign)
 			ignore.add(i);
 
-		for (double[] x : old) {
+		for (double[] x : samples) {
 			double[] n = new double[x.length - ign.length];
 
 			int mod = 0;
@@ -1162,8 +1163,9 @@ public class DataUtils {
 				else
 					n[i - mod] = x[i];
 			}
-			samples.add(n);
+			ns.add(n);
 		}
+		return ns;
 	}
 
 	public static void retainColumns(List<double[]> samples, int[] r) {
@@ -1188,7 +1190,7 @@ public class DataUtils {
 			a[i] = idx.get(i);
 
 		// remove collums of all-,list
-		removeColumns(samples, a);
+		samples = removeColumns(samples, a);
 	}
 
 	public static <T> Map<T, Map<T, Double>> readDistMatrixSquare(List<T> samples, File fn) {
@@ -1286,5 +1288,32 @@ public class DataUtils {
 			ssq += getWithinClusterSumOfSuqares(s, dist);
 
 		return ssq;
+	}
+	
+	public static List<double[]> reduceDimensionByPCA(List<double[]> samples, int nrComponents, boolean scaled ) {
+		int length = samples.get(0).length;
+		double[][] s = new double[length][samples.size()];
+		for (int i = 0; i < samples.size(); i++)
+			for (int j = 0; j < length; j++)
+				s[j][i] = samples.get(i)[j];
+
+		PCA pca = null;
+		if (scaled) // kohonen talks only of correlation matrix
+			pca = new PCA(0.95, "correlation", s);
+		else
+			pca = new PCA(0.95, "covariance", s);
+		
+		log.debug("Nr of components: "+pca.principalComponents.length);
+
+		List<double[]> nSamples = new ArrayList<double[]>();
+		for( double[] d : samples ) {
+			double[] nd = new double[nrComponents];
+			for( int i = 0; i < nrComponents; i++ ) {
+				for( int k = 0; k < length; k++ )
+				nd[i] += d[k] * pca.principalComponents[i][k];
+			}
+			nSamples.add(nd);
+		}
+		return nSamples;
 	}
 }

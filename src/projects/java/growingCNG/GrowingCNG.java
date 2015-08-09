@@ -2,8 +2,6 @@ package growingCNG;
 
 import java.awt.Color;
 import java.awt.Graphics2D;
-import java.awt.Polygon;
-import java.awt.Rectangle;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.io.FileOutputStream;
@@ -20,35 +18,10 @@ import java.util.Set;
 
 import javax.imageio.ImageIO;
 
-import org.geotools.feature.DefaultFeatureCollection;
-import org.geotools.feature.simple.SimpleFeatureBuilder;
-import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
-import org.geotools.geometry.jts.ReferencedEnvelope;
-import org.geotools.map.FeatureLayer;
-import org.geotools.map.Layer;
-import org.geotools.map.MapContent;
-import org.geotools.renderer.GTRenderer;
-import org.geotools.renderer.lite.StreamingRenderer;
-import org.geotools.styling.Mark;
-import org.geotools.styling.SLD;
-import org.geotools.styling.StyleBuilder;
-import org.opengis.referencing.crs.CoordinateReferenceSystem;
-
 import spawnn.dist.Dist;
 import spawnn.ng.Connection;
 import spawnn.ng.sorter.DefaultSorter;
 import spawnn.ng.sorter.Sorter;
-import spawnn.ng.utils.NGUtils;
-import spawnn.som.grid.GridPos;
-import spawnn.utils.DataUtils;
-
-import com.vividsolutions.jts.geom.Coordinate;
-import com.vividsolutions.jts.geom.Geometry;
-import com.vividsolutions.jts.geom.GeometryCollection;
-import com.vividsolutions.jts.geom.GeometryFactory;
-import com.vividsolutions.jts.geom.LineString;
-import com.vividsolutions.jts.geom.Point;
-import com.vividsolutions.jts.triangulate.VoronoiDiagramBuilder;
 
 public class GrowingCNG {
 	
@@ -60,8 +33,14 @@ public class GrowingCNG {
 	protected int aMax, lambda;
 	protected Random r = new Random();
 	protected Sorter<double[]> sorter;
-		
+	protected int maxNeurons;
+	
 	public GrowingCNG( Collection<double[]> neurons, double lrB, double lrN, Dist<double[]> distA, Dist<double[]> distB, double ratio, int aMax, int lambda, double alpha, double beta ) {
+		this(neurons,lrB,lrN,distA,distB,ratio,aMax,lambda,alpha,beta,Integer.MAX_VALUE);
+	}
+		
+		
+	public GrowingCNG( Collection<double[]> neurons, double lrB, double lrN, Dist<double[]> distA, Dist<double[]> distB, double ratio, int aMax, int lambda, double alpha, double beta, int maxNeurons ) {
 		this.lrB = lrB;
 		this.lrN = lrN;
 		this.distA = distA;
@@ -72,6 +51,7 @@ public class GrowingCNG {
 		this.lambda = lambda;
 		this.alpha = alpha;
 		this.beta = beta;
+		this.maxNeurons = maxNeurons;
 		this.neurons = new ArrayList<double[]>(neurons);
 		
 		this.errors = new HashMap<double[],Double>();
@@ -82,27 +62,37 @@ public class GrowingCNG {
 	}
 	
 	public int distMode = 0;
-	
-	public double aErrorSum = 0, bErrorSum = 0;
+	public double rndError = 0, fError = 0;
 	public List<double[]> samples;
+	public int run = 0;
 		
 	public void train( int t, double[] x ) {
-		DecimalFormat df = new DecimalFormat("00000");
-				
 		int l = (int)Math.ceil(neurons.size()*ratio);
-		sorter.sort(x,neurons);
+		new DefaultSorter<double[]>(distA).sort(x, neurons);
+		new DefaultSorter<double[]>(distB).sort(x, neurons.subList(0, l));
 		
+		double[] f1 = null;
+		for( double[] n : neurons )
+			if( f1 == null || distB.dist(n,x) < distB.dist(f1, x) )
+				f1 = n;
+		int f1Idx = neurons.indexOf(f1);
+				
 		double[] s_1 = neurons.get(0);
 		double[] s_2 = neurons.get(1);
 		
 		cons.put(new Connection(s_1, s_2),0);
-		
-		//errors.put(s_1, errors.get(s_1) + distA.dist(s_1, x) );
-		if( distMode == 0 ) {
+		if( distMode == 0 ) 
 			errors.put(s_1, errors.get(s_1) + Math.pow(distB.dist(s_1, x) ,2) );
-		} else {
-			errors.put(s_1, errors.get(s_1) + r.nextDouble() );
-		}
+		else if( distMode == 1 )
+			errors.put( s_1, errors.get(s_1) + r.nextDouble() );
+		else if( distMode == 2 )
+			errors.put( s_1, errors.get(s_1) + (f1Idx+1) > l ? 1.0 : 0.0 );
+		else if( distMode == 3 )
+			errors.put( s_1, errors.get(s_1) + (double)(f1Idx+1)/neurons.size() );
+		else if( distMode == 4 )
+			errors.put(s_1, errors.get(s_1) + distB.dist(s_1, x) );
+		else if( distMode == 5)
+			errors.put(s_1, errors.get(s_1) + distA.dist(s_1, x) );
 		
 		for( Connection c : cons.keySet() )
 			cons.put(c, cons.get(c)+1 );
@@ -131,11 +121,24 @@ public class GrowingCNG {
 		neurons.retainAll(neuronsToKeep);
 		errors.keySet().retainAll(neuronsToKeep);
 		
-		if( t % lambda == 0 ) {
+		if( t % lambda == 0 & neurons.size() < maxNeurons ) {
+			/*Map<double[],Set<double[]>> map = NGUtils.getBmuMapping(samples, neurons, sorter);
+			double preError = DataUtils.getMeanQuantizationError(map, distB);*/
 			
-			Map<double[],Set<double[]>> map = NGUtils.getBmuMapping(samples, neurons, sorter);
-			double aError = DataUtils.getMeanQuantizationError(map, distA);
-			double bError = DataUtils.getMeanQuantizationError(map, distB);
+			/*{
+				double[] q = neurons.get(r.nextInt(neurons.size()));
+				List<double[]> nbs = new ArrayList<double[]>(Connection.getNeighbors(cons.keySet(), q, 1));
+				double[] f = nbs.get(r.nextInt(nbs.size()));
+										
+				double[] nn = new double[q.length];
+				for( int i = 0; i < nn.length; i++ )
+					nn[i] = (q[i]+f[i])/2;
+				neurons.add(nn);
+				
+				map = NGUtils.getBmuMapping(samples, neurons, sorter);	
+				rndError += DataUtils.getMeanQuantizationError(map, distB) - preError;
+				neurons.remove(nn);
+			}*/
 						
 			double[] q = null;
 			double[] f = null;
@@ -147,40 +150,32 @@ public class GrowingCNG {
 			for( double[] n : Connection.getNeighbors(cons.keySet(), q, 1) )
 				if( f == null || errors.get(f) < errors.get(n) )
 					f = n;
-			
-			/*for( double[] n : neurons )
-				if( q == null || DataUtils.getQuantizationError(q, map.get(q), distB) < DataUtils.getQuantizationError(n, map.get(n), distB ) ) 
-					q = n;			
-			for( double[] n : Connection.getNeighbors(cons.keySet(), q, 1) )
-				if( f == null || DataUtils.getQuantizationError(f, map.get(f), distB) < DataUtils.getQuantizationError(n, map.get(n), distB ) ) 
-					f = n;*/
-												
+								
 			double[] nn = new double[q.length];
 			for( int i = 0; i < nn.length; i++ )
 				nn[i] = (q[i]+f[i])/2;
 			neurons.add(nn);
-						
+			
+			/*map = NGUtils.getBmuMapping(samples, neurons, sorter);	
+			fError += DataUtils.getMeanQuantizationError(map, distB) - preError;*/
+									
 			cons.put( new Connection(q, nn), 0 );
 			cons.put( new Connection(f, nn), 0 );
 			cons.remove( new Connection( q, f ) );
 			
-			errors.put(q, errors.get(q) - alpha*errors.get(q) );
-			errors.put(f, errors.get(f) - alpha*errors.get(f) );
-			//errors.put(nn, (errors.get(q) + errors.get(f))/2);
-			errors.put(nn, errors.get(q) );	
-			
-			// the lower the better
-			map = NGUtils.getBmuMapping(samples, neurons, sorter);			
-			aErrorSum += DataUtils.getMeanQuantizationError(map, distA) - aError;
-			bErrorSum += DataUtils.getMeanQuantizationError(map, distB) - bError;
-						
+			errors.put(q, errors.get(q) - alpha * errors.get(q) );
+			errors.put(f, errors.get(f) - alpha * errors.get(f) );
+			errors.put(nn, (errors.get(q) + errors.get(f))/2);
+			//errors.put(nn, errors.get(q) );	
+									
 			// draw
-			/*Set<double[]> hiliNeurons = new HashSet<double[]>();
+			DecimalFormat df = new DecimalFormat("000000");
+			Set<double[]> hiliNeurons = new HashSet<double[]>();
 			hiliNeurons.add(nn);
 			Set<Connection> hiliCons = new HashSet<Connection>();
 			hiliCons.add(new Connection(q, nn));
 			hiliCons.add(new Connection(f, nn));
-			geoDrawNG2("output/"+df.format(t)+".png", neurons, hiliNeurons, cons, hiliCons, new int[]{0,1} );*/
+			geoDrawNG2("output/"+distMode+"_"+df.format(t)+"_"+run+".png", neurons, hiliNeurons, cons, hiliCons, new int[]{0,1}, samples );
 		}
 			
 		for( double[] n : neurons )
@@ -195,13 +190,28 @@ public class GrowingCNG {
 		return cons;
 	}
 	
-	private static void geoDrawNG2(String fn, List<double[]> neurons, Set<double[]> hiliNeurons, Map<Connection, Integer> conections, Set<Connection> hiliCons, int[] ga ) {
+	public Map<double[],Set<double[]>> getMapping( List<double[]> samples ) {
+		int l = (int)Math.ceil(neurons.size()*ratio);
+		Map<double[],Set<double[]>> r = new HashMap<double[],Set<double[]>>();
+		for( double[] x : samples ) {
+			new DefaultSorter<double[]>(distA).sort(x, neurons);
+			new DefaultSorter<double[]>(distB).sort(x, neurons.subList(0, l));
+			double[] bmu = neurons.get(0);
+			if( !r.containsKey(bmu) )
+				r.put(bmu, new HashSet<double[]>() );
+			r.get(bmu).add(x);
+		}
+		return r;
+	}
+	
+	public static void geoDrawNG2(String fn, List<double[]> neurons, Set<double[]> hiliNeurons, Map<Connection, Integer> conections, Set<Connection> hiliCons, int[] ga, List<double[]> samples ) {
 		int xScale = 1000;
 		int yScale = 800;
 		
-		BufferedImage bufImg = new BufferedImage(xScale, yScale, BufferedImage.TYPE_INT_ARGB);
+		BufferedImage bufImg = new BufferedImage(xScale, yScale, BufferedImage.TYPE_INT_RGB);
 		Graphics2D g2 = bufImg.createGraphics();
 		g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+		g2.fillRect(0, 0, xScale, yScale);
 
 		// for scaling
 		double maxX = Double.MIN_VALUE;
@@ -209,7 +219,7 @@ public class GrowingCNG {
 		double maxY = Double.MIN_VALUE;
 		double minY = Double.MAX_VALUE;
 
-		for (double[] n : neurons ) {
+		for (double[] n : samples ) {
 			double x = n[ga[0]];
 			double y = n[ga[1]];
 
@@ -222,7 +232,15 @@ public class GrowingCNG {
 			if (y < minY)
 				minY = y;
 		}
+		
+		for( double[] n : samples ) {
+			g2.setColor(Color.GRAY);
+			int x1 = (int)(xScale * (n[ga[0]] - minX)/(maxX-minX));
+			int y1 = (int)(yScale * (n[ga[1]] - minY)/(maxY-minY));
+			g2.fillOval( x1 - 3, y1 - 3, 6, 6	);
+		}
 
+		if( conections != null )
 		for( Connection c : conections.keySet() ) {
 			if( hiliCons != null && hiliCons.contains(c) )
 				g2.setColor(Color.RED);
@@ -238,13 +256,14 @@ public class GrowingCNG {
 		}
 		
 		for( double[] n : neurons ) {
-			if( hiliNeurons.contains(n))
+			if( hiliNeurons != null && hiliNeurons.contains(n))
 				g2.setColor(Color.RED);
 			else
 				g2.setColor(Color.BLACK);
 			int x1 = (int)(xScale * (n[ga[0]] - minX)/(maxX-minX));
 			int y1 = (int)(yScale * (n[ga[1]] - minY)/(maxY-minY));
 			g2.fillOval( x1 - 5, y1 - 5, 10, 10	);
+			g2.drawString(""+n.hashCode(),x1,y1);
 		}
 		g2.dispose();
 
