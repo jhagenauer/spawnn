@@ -143,7 +143,7 @@ public class OptimizeHousingLLMCNG {
 		double[][] bestParams = new double[3][];
 		double bestMean[] = new double[bestParams.length];
 		for (final model m : new model[]{ model.LINREG, model.LLMNG } )
-			for (final double a : new double[] { 1,2,3,4,5,6,7,8,9,10,11,12,13,14 })
+			for (final double a : new double[] { 9 })
 				for (double k = 1; k <= a; k++) {
 					final int K = (int) k;
 

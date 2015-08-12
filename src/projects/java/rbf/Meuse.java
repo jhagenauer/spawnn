@@ -322,6 +322,7 @@ public class Meuse {
 		return Math.sqrt( getMSE(response, desired));
 	}
 	
+	// Mean sum of squares
 	public static double getMSE(List<double[]> response, List<double[]> desired) {
 		if (response.size() != desired.size())
 			throw new RuntimeException("response.size() != desired.size()");

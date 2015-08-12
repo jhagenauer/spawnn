@@ -1,4 +1,4 @@
-package growingCNG;
+package growing_cng;
 
 import java.io.File;
 import java.io.IOException;
@@ -7,6 +7,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -18,8 +19,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
+import org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression;
 import org.apache.log4j.Logger;
 
+import rbf.Meuse;
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
 import spawnn.utils.DataUtils;
@@ -35,6 +38,7 @@ public class GrowingCNG_Housing_Thread {
 		final Random r = new Random();
 	
 		final List<double[]> samples = new ArrayList<double[]>();
+		final List<double[]> desired = new ArrayList<double[]>();
 		final List<Geometry> geoms = new ArrayList<Geometry>();
 		
 		SpatialDataFrame sdf = DataUtils.readSpatialDataFrameFromCSV(new File("data/marco/dat4/gwr.csv"), new int[] { 6, 7 }, new int[] {}, true);
@@ -66,6 +70,7 @@ public class GrowingCNG_Housing_Thread {
 			for (int i = 0; i < nd.length; i++)
 				nd[i] = d[sdf.names.indexOf(vars.get(i))];
 			samples.add(nd);
+			desired.add(new double[] { d[sdf.names.indexOf("lnp")] });
 			geoms.add(sdf.geoms.get(idx));
 		}
 				
@@ -91,50 +96,48 @@ public class GrowingCNG_Housing_Thread {
 		DataUtils.zScoreColumns(samples, fa);
 		
 		// PCA
-		/*int nrComponents = 4;
+		int nrComponents = 4;
 		List<double[]> ns = DataUtils.removeColumns(samples, ga);
 		ns = DataUtils.reduceDimensionByPCA(ns, nrComponents, false);
 		for (int k = 0; k < ns.size(); k++) {
-			double[] d = ns.get(k);
-			double[] nd = new double[ga.length + d.length];
+			double[] nd = new double[ga.length + nrComponents];
 			for (int i = 0; i < ga.length; i++)
-				nd[i] = d[ga[i]];
+				nd[i] = samples.get(k)[ga[i]];
 			for (int i = 0; i < nrComponents; i++)
-				nd[i + ga.length] = d[i];
+				nd[i + ga.length] = ns.get(k)[i];
 			samples.set(k, nd);
 		}
-		final int[] fFa = new int[nrComponents];
+		final int[] nFa = new int[nrComponents];
 		for (int i = 0; i < nrComponents; i++)
-			fFa[i] = i + ga.length;*/
+			nFa[i] = i + ga.length;
 						
 		final Dist<double[]> gDist = new EuclideanDist(ga);
-		final Dist<double[]> fDist = new EuclideanDist(fa);
+		final Dist<double[]> fDist = new EuclideanDist(nFa);
 		
 		boolean firstWrite = true;
 
-		/* Was beeinflußt error-calc:
-		 * - lrB und lrN, denn langsame adaptation macht initialisierung wichtiger
-		 * - lambda, denn jede Einfügung geschieht an error-stelle
+		/* Was kann man machen, um Einfluß von fistMode zu maximieren?
+		 * - Kleine Adaptionsrate (verlängert weg von sclhechten neuronen zu guten positionen)
+		 * - Großes aMax (viele Neuronen machen die richtige Wahl für Insert kritischer?!)
 		 */
-		
-		// warum kleiner lernerate auf längere sicht nicht besser? Evtl. weil lrN zu viel disrupted?
 			
-		for( final int T_MAX : new int[]{80000} )
-		for (final double lrB : new double[] { 0.05 }) 
+		for( final int T_MAX : new int[]{ 40000 } )
+		for (final double lrB : new double[] { 0.04 }) 
 			for (final double lrN : new double[] { lrB/100 })
-				for (final int lambda : new int[] { 300 })
-					for (final int aMax : new int[] { 100 })
+				for (final int lambda : new int[] { 600 })
+					for (final int aMax : new int[] { 200 })
 						for( final double alpha : new double[]{ 0.5 } )
 							for( final double beta : new double[]{ 0.00005 } )
-								for( double ratio = 0.0; (ratio+=0.01) <= 0.01; )
+								for( double ratio : new double[]{ 0.01, 1.0 } )
 								//for( double ratio = 0.0; (ratio+=0.01) <= 1.0; )
-									for( final int distMode : new int[]{ 0 /*, 1, 2, 3, 4, 5*/ } ){
+									for( final int distMode : new int[]{ 0, 1, 2, 3, 4 /*, 5, 6*/ } ){
+																				
 
 							final double RATIO = ratio;
 							ExecutorService es = Executors.newFixedThreadPool(4);
 							List<Future<double[]>> futures = new ArrayList<Future<double[]>>();
-
-							for (int i = 0; i < 4; i++) {
+							
+							for (int i = 0; i < 64; i++) {
 								final int RUN = i;
 								futures.add(es.submit(new Callable<double[]>() {
 
@@ -152,46 +155,117 @@ public class GrowingCNG_Housing_Thread {
 										ng.distMode = distMode;
 										ng.run = RUN;
 										
-										int t = 0;
-										List<Double> qes = new ArrayList<Double>();
-										while( t < T_MAX ) { 
+										int rate = 100;
+										List<Double> fQes = new ArrayList<Double>();
+										List<Double> sQes = new ArrayList<Double>();
+										int t = 1;
+										while( true ) { 
 											double[] x = samples.get(r.nextInt(samples.size())); 
-											ng.train(t++, x); 
-											/*if (t % 100 == 0)
-												qes.add(DataUtils.getMeanQuantizationError(ng.getMapping(samples), fDist));*/
-											/*if( t % 100 == 0 )
-												qes.add( ng.bErrorSum );*/
+											ng.train(t++, x);
+																															
+											if (t % rate == 0) {
+												Map<double[],Set<double[]>> mapping = ng.getMapping(samples);
+												fQes.add(DataUtils.getMeanQuantizationError(mapping, fDist));
+												sQes.add(DataUtils.getMeanQuantizationError(mapping, gDist));
+											}
+																						
+											if( t >= T_MAX ) // normal time break
+												break;
+											/*if( ng.getNeurons().size() == 20 ) // last inserted neuron is not trained at all
+												break;*/
 										}
 										
-										/*double qe = Double.MAX_VALUE;
-										while (qe > 3.34) {
-											double[] x = samples.get(r.nextInt(samples.size()));
-											ng.train(t++, x);
-											if (t % 200 == 0) {
-												Map<double[], Set<double[]>> mapping = NGUtils.getBmuMapping(samples, ng.getNeurons(), new KangasSorter<double[]>(gDist, fDist, (int) Math.ceil(ng.getNeurons().size() * ratio)));
-												qe = DataUtils.getMeanQuantizationError(mapping, fDist);
-											}
-										}*/
-										
 										Map<double[], Set<double[]>> mapping = ng.getMapping(samples); 
-										int used = 0; 
-										for( Set<double[]> s : mapping.values() ) 
-											if( !s.isEmpty() ) 
-												used++; 
+										List<double[]> usedNeurons = new ArrayList<double[]>(mapping.keySet());
+										
+										List<double[]> response = new ArrayList<double[]>();
+										List<Integer> toIgnore = new ArrayList<Integer>();
+										for (int i : ga)
+											toIgnore.add(i);
+										double[] y = new double[samples.size()];
+										double[][] x = new double[samples.size()][];
+										int l = 0;
+										for (double[] d : samples) {
+											int idx = samples.indexOf(d);
+											y[l] = desired.get(idx)[0];
+											x[l] = new double[d.length - toIgnore.size() + usedNeurons.size() - 1];
+											int j = 0;
+											for (int i = 0; i < d.length; i++) {
+												if (toIgnore.contains(i))
+													continue;
+												x[l][j++] = d[i];
+											}
+											// add dummy variable
+											for (int k = 1; k < usedNeurons.size(); k++)
+												if (mapping.get(usedNeurons.get(k)).contains(d))
+													x[l][j + k - 1] = 1;											
+											l++;
+										}
+
+										OLSMultipleLinearRegression ols = new OLSMultipleLinearRegression();
+										ols.setNoIntercept(false);
+										ols.newSampleData(y, x);
+										double[] beta = ols.estimateRegressionParameters();
+
+										for (double[] d : samples) {
+											double[] nd = new double[d.length - toIgnore.size() + usedNeurons.size() - 1];
+											int j = 0;
+											for (int i = 0; i < d.length; i++) {
+												if (toIgnore.contains(i))
+													continue;
+												nd[j++] = d[i];
+											}
+											// add dummy variable
+											for (int k = 1; k < usedNeurons.size(); k++)
+												if (mapping.get(usedNeurons.get(k)).contains(d))
+													nd[j + k - 1] = 1;
+
+											double ps = beta[0]; // intercept at beta[0]
+											for (int k = 1; k < beta.length; k++)
+												ps += beta[k] * nd[k - 1];
+
+											response.add(new double[] { ps });
+										}
+										double mse = Meuse.getMSE(response, desired); // variance of residuals
+										double aic = samples.size() * Math.log( mse ) + 2 * (beta.length+1);
+										
+
+										Double minFQe = Collections.min(fQes);
+										DescriptiveStatistics ds10FQe = new DescriptiveStatistics();
+										for( double d : fQes.subList(fQes.size()-10, fQes.size() ) )
+											ds10FQe.addValue(d);
+										
+										Double minSQe = Collections.min(sQes);
+										DescriptiveStatistics ds10SQe = new DescriptiveStatistics();
+										for( double d : sQes.subList(sQes.size()-10, sQes.size() ) )
+											ds10SQe.addValue(d);
+										
 										double[] r = new double[] {
+												t,
 												ng.getNeurons().size(), 
-												used, 
+												usedNeurons.size(), 
 												ng.getConections().size(), 
-												DataUtils.getMeanQuantizationError(mapping, gDist), 
-												DataUtils.getMeanQuantizationError(mapping, fDist), 
-												/*ng.rndError, 
-												ng.fError*/  
+												
+												minSQe,
+												sQes.indexOf(minSQe)*rate,
+												DataUtils.getMeanQuantizationError(mapping, gDist),
+												ds10SQe.getMean(),
+												ds10SQe.getStandardDeviation(),
+												
+												minFQe,
+												fQes.indexOf(minFQe)*rate,
+												DataUtils.getMeanQuantizationError(mapping, fDist), 	
+												ds10FQe.getMean(),
+												ds10FQe.getStandardDeviation(),
+												
+												Math.sqrt(mse),
+												aic
 												};
 										
 										/*double[] r = new double[qes.size()];
 										for (int i = 0; i < qes.size(); i++)
 											r[i] = qes.get(i);*/
-										
+											
 										return r;
 									}
 								}));
@@ -220,12 +294,12 @@ public class GrowingCNG_Housing_Thread {
 								String fn = "output/result.csv";
 								if( firstWrite ) {
 									firstWrite = false;
-									Files.write(Paths.get(fn), "mode,ratio,neurons,used,connections,sqe,fqe\n".getBytes());
+									Files.write(Paths.get(fn), "alpha,mode,ratio,t,neurons,used,connections,minSqe,minSqeTime,finalSqe,mean10Sqe,sd10Sqe,minFqe,minFQeTime,finalFqe,mean10Fqe,sd10Fqe,rmse,aic\n".getBytes());
 									/*for( int i = 0; i < ds.length; i++ )
 										fw.write(",p_"+i);
 									fw.write("\n");*/
 								}
-								String s = "mode_"+distMode+","+ratio;
+								String s = alpha+","+"mode_"+distMode+","+ratio;
 								for (int i = 0; i < ds.length; i++)
 									s += ","+ds[i].getMean();
 								s += "\n";

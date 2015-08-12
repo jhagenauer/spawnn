@@ -1,4 +1,4 @@
-package growingCNG;
+package growing_cng;
 
 import java.awt.Color;
 import java.awt.Graphics2D;

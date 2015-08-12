@@ -32,6 +32,7 @@ import org.geotools.feature.FeatureIterator;
 import org.geotools.geometry.jts.ReferencedEnvelope;
 import org.geotools.map.FeatureLayer;
 import org.geotools.map.MapContent;
+import org.geotools.map.MapViewport;
 import org.geotools.renderer.GTRenderer;
 import org.geotools.renderer.lite.StreamingRenderer;
 import org.geotools.styling.Mark;
@@ -190,6 +191,7 @@ public class MapPanel<T> extends NeuronVisPanel<T> implements MapPaneListener, C
 			mc.addLayer(new FeatureLayer(sub, style));
 		}
 
+		
 		// outline layer
 		Style outlineStyle = null;
 		if (gt.getBinding() == Polygon.class || gt.getBinding() == MultiPolygon.class) {
@@ -201,7 +203,8 @@ public class MapPanel<T> extends NeuronVisPanel<T> implements MapPaneListener, C
 		} else {
 			log.warn("GeomType not supported: " + gt.getBinding());
 		}
-		mc.addLayer(new FeatureLayer(fc, outlineStyle));
+		FeatureLayer fl = new FeatureLayer(fc, outlineStyle);
+		mc.addLayer(fl);
 		
 		List<Color> colors = new ArrayList<Color>();
 		for( Color c : selectedColors.values() )
@@ -242,7 +245,8 @@ public class MapPanel<T> extends NeuronVisPanel<T> implements MapPaneListener, C
 				mc.addLayer(new FeatureLayer(sub, style));
 			}
 		}
-
+		
+		mc.setViewport( new MapViewport(fl.getBounds()));			
 		mp.setBackground(getBackground()); // quick and dirty hack. setOpaque(false) does not work somehow
 		mp.getMapContent().dispose();
 		mp.setMapContent(mc);

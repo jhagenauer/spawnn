@@ -4,7 +4,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>spawnn</groupId>
 	<artifactId>spawnn</artifactId>
-	<version>0.0.7</version>
+	<version>0.1.0</version>
 	<name>spawnn</name>
 	<description>Spatial Analysis with Neural Networks (SPAWNN)</description>
 	<properties>
@@ -23,31 +23,24 @@
 			</plugin>
 			<plugin>
 				<artifactId>maven-assembly-plugin</artifactId>
-				<!-- <configuration> <descriptors> <descriptor>src/main/assembly/dep.xml</descriptor> 
-					</descriptors> </configuration> -->
 				<configuration>
+					<descriptors>
+						<descriptor>src/main/assembly/dep2.xml</descriptor>
+					</descriptors>
+					<!--<descriptorRefs> <descriptorRef>jar-with-dependencies</descriptorRef> 
+						</descriptorRefs> -->
 					<archive>
 						<manifest>
 							<mainClass>spawnn.gui.SpawnnGui</mainClass>
 						</manifest>
 					</archive>
-					<descriptorRefs>
-						<descriptorRef>jar-with-dependencies</descriptorRef>
-					</descriptorRefs>
+
 				</configuration>
+
 			</plugin>
-			<!-- <plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-jar-plugin</artifactId>
-				<version>2.3.2</version>
-				<configuration>
-					<archive>
-						<manifest>
-							<mainClass>spawnn.gui.SpawnnGui</mainClass>
-						</manifest>
-					</archive>
-				</configuration>
-			</plugin> -->
+			<!-- <plugin> <groupId>org.apache.maven.plugins</groupId> <artifactId>maven-jar-plugin</artifactId> 
+				<version>2.3.2</version> <configuration> <archive> <manifest> <mainClass>spawnn.gui.SpawnnGui</mainClass> 
+				</manifest> </archive> </configuration> </plugin> -->
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>build-helper-maven-plugin</artifactId>
