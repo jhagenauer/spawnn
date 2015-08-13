@@ -26,7 +26,6 @@ import javax.swing.JColorChooser;
 import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
 import javax.swing.JPanel;
-import javax.swing.JSeparator;
 import javax.swing.JToggleButton;
 
 import net.miginfocom.swing.MigLayout;
@@ -70,7 +69,7 @@ public class SOMResultPanel extends ResultPanel<GridPos> implements ActionListen
 	private GridPanel pnlGrid;
 	private GraphPanel pnlGraph;
 	private JPanel cards;
-	MapPanel<GridPos> pnlMap;
+	MapPanel<GridPos> mapPanel;
 
 	private JToggleButton selectSingle;
 
@@ -107,7 +106,7 @@ public class SOMResultPanel extends ResultPanel<GridPos> implements ActionListen
 		this.parent = parent;
 
 		setLayout(new MigLayout(""));
-
+		
 		gridComboBox = new JComboBox();
 		gridComboBox.addItem(RANDOM);
 		gridComboBox.addItem(DISTANCE);
@@ -162,7 +161,7 @@ public class SOMResultPanel extends ResultPanel<GridPos> implements ActionListen
 		}
 
 		pnlGrid = new GridPanel(grid, fDist);
-		pnlMap = new MapPanel<GridPos>(fc, pos);
+		mapPanel = new MapPanel<GridPos>(fc, pos);
 		pnlGraph = new GraphPanel(graph, ga);
 
 		if (ga != null && ga.length == 2) {
@@ -188,7 +187,7 @@ public class SOMResultPanel extends ResultPanel<GridPos> implements ActionListen
 
 				Map<GridPos, Color> colorMap = ColorBrewerUtil.valuesToColors(neuronValues, (ColorBrewerUtil.ColorMode) colorComboBox.getSelectedItem());
 				pnlGrid.setGridColors(colorMap, selectedColors, neuronValues);
-				pnlMap.setGridColors(colorMap, selectedColors, neuronValues);
+				mapPanel.setGridColors(colorMap, selectedColors, neuronValues);
 				pnlGraph.setGridColors(toDoubleArrayMap(colorMap), toDoubleArrayMap(selectedColors), toDoubleArrayMap(neuronValues));
 			}
 		}
@@ -201,25 +200,26 @@ public class SOMResultPanel extends ResultPanel<GridPos> implements ActionListen
 		pnlGrid.addMouseListener(pnlGrid);
 		pnlGrid.addNeuronSelectedListener(this);
 
-		pnlMap.setGridColors(colorMap, selectedColors, neuronValues);
-		pnlMap.addNeuronSelectedListener(this);
+		mapPanel.setGridColors(colorMap, selectedColors, neuronValues);
+		mapPanel.addNeuronSelectedListener(this);
 
 		cards = new JPanel(new CardLayout());
 		cards.add(pnlGrid, GRID);
 		cards.add(pnlGraph, GRAPH);
 
-		add(gridComboBox, "split 8");
+		add(gridComboBox, "split 5");
 		add(colorComboBox, "");
 		add(gridModeComboBox, "");
 		add(colorChooser, "");
 		add(btnExpGrid, "");
-		add(new JSeparator(JSeparator.VERTICAL), "growy");
-		add(selectSingle, "");
-		add(btnExpMap, "wrap");
-		add(cards, "split 2, w 50%, push, grow");
-		add(pnlMap, "w 50%, grow");
-
-		colorComboBox.setSelectedIndex(1);
+				
+		add(selectSingle, "split 2");
+		add(btnExpMap, "pushx, wrap");
+		
+		add( cards, "w 50%, pushy, grow");
+		add( mapPanel, "grow");
+		
+		colorComboBox.setSelectedItem(ColorBrewerUtil.ColorMode.Blues);
 	}
 
 	private Color selectedColor = Color.RED;
@@ -393,14 +393,14 @@ public class SOMResultPanel extends ResultPanel<GridPos> implements ActionListen
 
 			Map<GridPos, Color> colorMap = ColorBrewerUtil.valuesToColors(neuronValues, (ColorBrewerUtil.ColorMode) colorComboBox.getSelectedItem());
 			pnlGrid.setGridColors(colorMap, selectedColors, neuronValues);
-			pnlMap.setGridColors(colorMap, selectedColors, neuronValues);
+			mapPanel.setGridColors(colorMap, selectedColors, neuronValues);
 			pnlGraph.setGridColors(toDoubleArrayMap(colorMap), toDoubleArrayMap(selectedColors), toDoubleArrayMap(neuronValues));
 			// selected.clear(); // reset selected if other vis8
 
 		} else if (e.getSource() == colorComboBox) { // color-mode-change
 			Map<GridPos, Color> colorMap = ColorBrewerUtil.valuesToColors(neuronValues, (ColorBrewerUtil.ColorMode) colorComboBox.getSelectedItem());
 			pnlGrid.setGridColors(colorMap, selectedColors, neuronValues);
-			pnlMap.setGridColors(colorMap, selectedColors, neuronValues);
+			mapPanel.setGridColors(colorMap, selectedColors, neuronValues);
 			pnlGraph.setGridColors(toDoubleArrayMap(colorMap), toDoubleArrayMap(selectedColors), toDoubleArrayMap(neuronValues));
 		} else if (e.getSource() == gridModeComboBox) {
 			CardLayout cl = (CardLayout) (cards.getLayout());
@@ -463,9 +463,9 @@ public class SOMResultPanel extends ResultPanel<GridPos> implements ActionListen
 			if (state == JFileChooser.APPROVE_OPTION) {
 				File fn = fChoser.getSelectedFile();
 				if (fChoser.getFileFilter() == FFilter.pngFilter) {
-					pnlMap.saveImage(fn, "PNG");
+					mapPanel.saveImage(fn, "PNG");
 				} else if (fChoser.getFileFilter() == FFilter.epsFilter) {
-					pnlMap.saveImage(fn, "EPS");
+					mapPanel.saveImage(fn, "EPS");
 				} else if (fChoser.getFileFilter() == FFilter.shpFilter) {
 					try {
 						// ugly but works
@@ -493,10 +493,10 @@ public class SOMResultPanel extends ResultPanel<GridPos> implements ActionListen
 
 			}
 		} else if (e.getSource() == selectSingle) {
-			if (!pnlMap.selectSingle)
-				pnlMap.selectSingle = true;
+			if (!mapPanel.selectSingle)
+				mapPanel.selectSingle = true;
 			else
-				pnlMap.selectSingle = false;
+				mapPanel.selectSingle = false;
 		}
 	}
 
@@ -511,7 +511,7 @@ public class SOMResultPanel extends ResultPanel<GridPos> implements ActionListen
 
 		Map<GridPos, Color> colorMap = ColorBrewerUtil.valuesToColors(neuronValues, (ColorBrewerUtil.ColorMode) colorComboBox.getSelectedItem());
 		pnlGrid.setGridColors(colorMap, selectedColors, neuronValues);
-		pnlMap.setGridColors(colorMap, selectedColors, neuronValues);
+		mapPanel.setGridColors(colorMap, selectedColors, neuronValues);
 		pnlGraph.setGridColors(toDoubleArrayMap(colorMap), toDoubleArrayMap(selectedColors), toDoubleArrayMap(neuronValues));
 	}
 

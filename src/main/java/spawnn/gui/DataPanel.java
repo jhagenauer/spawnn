@@ -116,11 +116,11 @@ public class DataPanel extends JPanel implements ActionListener, TableModelListe
 		table.getColumnModel().getColumn(2).setPreferredWidth(10);
 		table.getColumnModel().getColumn(3).setPreferredWidth(10);
 		
+		boxPlotPnl = new BoxPlotPanel();
+		
 		//add( new JScrollPane(table), "push, grow" );	
 		add( new JScrollPane(table), "w 50%, push, grow" );	
-		
-		boxPlotPnl = new BoxPlotPanel();
-		add( boxPlotPnl, "w 50%, grow");
+		add( boxPlotPnl, "grow");
 	}
 
 	@Override

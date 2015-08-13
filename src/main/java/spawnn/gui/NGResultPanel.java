@@ -27,7 +27,7 @@ import javax.swing.JColorChooser;
 import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
-import javax.swing.JSeparator;
+import javax.swing.JToggleButton;
 import javax.xml.stream.XMLOutputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamWriter;
@@ -68,8 +68,9 @@ public class NGResultPanel extends ResultPanel<double[]> implements ActionListen
 
 	private JComboBox vertexComboBox, edgeComboBox, colorComboBox, layoutComboBox;
 	private JButton btnExpGraph, btnExpMap, colorChooser;
+	private JToggleButton selectSingle;
 	private GraphPanel pnlGraph;
-	MapPanel<double[]> pnMap;
+	MapPanel<double[]> mapPanel;
 
 	private Map<double[], Double> neuronValues;
 	private Map<double[], Color> selectedColors = new HashMap<double[], Color>();
@@ -99,7 +100,7 @@ public class NGResultPanel extends ResultPanel<double[]> implements ActionListen
 		this.fc = buildClusterFeatures(orig, samples, bmus, pos);
 		this.names = orig.names;
 
-		setLayout(new MigLayout(""));
+		setLayout(new MigLayout("debug"));
 
 		vertexComboBox = new JComboBox<String>();
 		vertexComboBox.addItem(RANDOM);
@@ -138,12 +139,15 @@ public class NGResultPanel extends ResultPanel<double[]> implements ActionListen
 		colorChooser = new JButton("Color...");
 		colorChooser.setBackground(selectedColor);
 		colorChooser.addActionListener(this);
+		
+		selectSingle = new JToggleButton("Select single");
+		selectSingle.addActionListener(this);
 
 		btnExpMap = new JButton("Export map...");
 		btnExpMap.addActionListener(this);
 
 		pnlGraph = new GraphPanel(g, ga);
-		pnMap = new MapPanel<double[]>(fc, pos);
+		mapPanel = new MapPanel<double[]>(fc, pos);
 
 		actionPerformed(new ActionEvent(vertexComboBox, 0, DISTANCE));
 		Map<double[], Color> colorMap = ColorBrewerUtil.valuesToColors(neuronValues, (ColorBrewerUtil.ColorMode)colorComboBox.getSelectedItem());
@@ -151,21 +155,23 @@ public class NGResultPanel extends ResultPanel<double[]> implements ActionListen
 		pnlGraph.setGridColors(colorMap, selectedColors, neuronValues);
 		pnlGraph.addNeuronSelectedListener(this);
 
-		add(vertexComboBox, "split 8");
+		add(vertexComboBox, "split 6");
 		add(colorComboBox, "");
 		add(edgeComboBox,"");
 		add(layoutComboBox, "");
-		add(colorChooser, "");
+		add(colorChooser, "");		
 		add(btnExpGraph, "");
-		add( new JSeparator(),"growy");
-		add(btnExpMap, "wrap");
-		add(pnlGraph, "split 2, w 50%, push, grow");
-
-		pnMap.setGridColors(colorMap, selectedColors, neuronValues);
-		pnMap.addNeuronSelectedListener(this);
-		add(pnMap, "w 50%, grow");
-
-		colorComboBox.setSelectedIndex(1);
+				
+		add(selectSingle, "split 2");
+		add(btnExpMap, "pushx, wrap");
+		
+		add(pnlGraph, "w 50%, pushy, grow");
+		add(mapPanel, "grow");
+		
+		mapPanel.setGridColors(colorMap, selectedColors, neuronValues);
+		mapPanel.addNeuronSelectedListener(this);
+		
+		colorComboBox.setSelectedItem(ColorBrewerUtil.ColorMode.Blues);
 	}
 
 	@Override
@@ -173,7 +179,7 @@ public class NGResultPanel extends ResultPanel<double[]> implements ActionListen
 		if (e.getSource() == colorComboBox) {
 			Map<double[], Color> colorMap = ColorBrewerUtil.valuesToColors(neuronValues, (ColorBrewerUtil.ColorMode)colorComboBox.getSelectedItem());
 			pnlGraph.setGridColors(colorMap, selectedColors, neuronValues);
-			pnMap.setGridColors(colorMap, selectedColors, neuronValues);
+			mapPanel.setGridColors(colorMap, selectedColors, neuronValues);
 		} else if (e.getSource() == layoutComboBox) {
 			pnlGraph.setGraphLayout((GraphPanel.Layout) layoutComboBox.getSelectedItem());
 		} else if (e.getSource() == btnExpGraph) {
@@ -223,9 +229,9 @@ public class NGResultPanel extends ResultPanel<double[]> implements ActionListen
 			if (state == JFileChooser.APPROVE_OPTION) {
 				File fn = fChoser.getSelectedFile();
 				if (fChoser.getFileFilter() == FFilter.pngFilter) {
-					pnMap.saveImage(fn, "PNG");
+					mapPanel.saveImage(fn, "PNG");
 				} else if(fChoser.getFileFilter() == FFilter.epsFilter) {
-					pnMap.saveImage(fn, "EPS");
+					mapPanel.saveImage(fn, "EPS");
 				} else if (fChoser.getFileFilter() == FFilter.shpFilter) {
 					try {
 						// ugly but works
@@ -519,9 +525,14 @@ public class NGResultPanel extends ResultPanel<double[]> implements ActionListen
 			}
 			Map<double[], Color> colorMap = ColorBrewerUtil.valuesToColors(neuronValues, (ColorBrewerUtil.ColorMode)colorComboBox.getSelectedItem());
 			pnlGraph.setGridColors(colorMap, selectedColors, neuronValues);
-			pnMap.setGridColors(colorMap, selectedColors, neuronValues);
+			mapPanel.setGridColors(colorMap, selectedColors, neuronValues);
 		} else if( e.getSource() == edgeComboBox ) {
 			pnlGraph.setEdgeStyle( (String)edgeComboBox.getSelectedItem());
+		} else if (e.getSource() == selectSingle) {
+			if (!mapPanel.selectSingle)
+				mapPanel.selectSingle = true;
+			else
+				mapPanel.selectSingle = false;
 		}
 	}
 
@@ -536,7 +547,7 @@ public class NGResultPanel extends ResultPanel<double[]> implements ActionListen
 
 		Map<double[], Color> colorMap = ColorBrewerUtil.valuesToColors(neuronValues, (ColorBrewerUtil.ColorMode)colorComboBox.getSelectedItem());
 		pnlGraph.setGridColors(colorMap, selectedColors, neuronValues);
-		pnMap.setGridColors(colorMap, selectedColors, neuronValues);
+		mapPanel.setGridColors(colorMap, selectedColors, neuronValues);
 	}
 
 	public static void writeGraphToGraphML(List<String> names, Graph<double[], double[]> g, Map<double[], Double> neuronValues, Map<double[], Color> selected, File fn) {

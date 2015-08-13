@@ -42,9 +42,7 @@ public class AnnPanel extends JPanel implements ChangeListener, ActionListener {
 		tpANN.addTab("NG", ngPanel );
 		
 		tpANN.addChangeListener( this );
-		
-		add( tpANN, "span 2, grow, wrap" );
-		
+				
 		// None, Weighted, GeoSOM, CNG, MDMNG
 		tpContextModel = new JTabbedPane();
 		tpContextModel.setBorder( BorderFactory.createTitledBorder("Spatial Context Model") );
@@ -66,24 +64,24 @@ public class AnnPanel extends JPanel implements ChangeListener, ActionListener {
 		
 		wmcPanel = new WMCPanel();
 		tpContextModel.addTab("WMC",wmcPanel );
-		add(tpContextModel,"span 2, grow, wrap");
-		
-		add( new JLabel("Training cycles: "), "split 4" );
-		
+						
 		trainingCycles = new JTextField();
 		trainingCycles.setText("100000");
 		trainingCycles.setColumns(10);
-		add( trainingCycles, "" );
-			
-		add( new JLabel("Runs:"));
-		
+				
 		runs = new JTextField();
 		runs.setText("1");
 		runs.setColumns(2);
-		add( runs, "" );
-				
+						
 		btnTrain = new JButton("TRAIN!");
 		btnTrain.addActionListener(this);
+		
+		add( tpANN, "w 50%, span 2, grow, wrap" );
+		add(tpContextModel,"span 2, grow, wrap");
+		add( new JLabel("Training cycles: "), "split 4" );
+		add( trainingCycles, "" );
+		add( new JLabel("Runs:"));
+		add( runs, "" );
 		add( btnTrain, "align right" );	
 	}
 
