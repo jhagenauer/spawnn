@@ -100,7 +100,7 @@ public class NGResultPanel extends ResultPanel<double[]> implements ActionListen
 		this.fc = buildClusterFeatures(orig, samples, bmus, pos);
 		this.names = orig.names;
 
-		setLayout(new MigLayout("debug"));
+		setLayout(new MigLayout(""));
 
 		vertexComboBox = new JComboBox<String>();
 		vertexComboBox.addItem(RANDOM);

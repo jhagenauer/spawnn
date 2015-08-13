@@ -122,22 +122,22 @@ public class GrowingCNG_Housing_Thread {
 		 */
 			
 		for( final int T_MAX : new int[]{ 40000 } )
-		for (final double lrB : new double[] { 0.05 }) 
+		for (final double lrB : new double[] { 0.01, 0.04, 0.05 }) 
 			for (final double lrN : new double[] { lrB/100 })
 				for (final int lambda : new int[] { 300, 600 })
 					for (final int aMax : new int[] { lambda/3 })
 						for( final double alpha : new double[]{ 0.4, 0.45, 0.5, 0.55, 0.6 } )
-							for( final double beta : new double[]{ 0.00005, 0.0000005, 0.0 } )
+							for( final double beta : new double[]{ 0.00005, 0.000005, 0.0000005, 0.0 } )
 								for( double ratio : new double[]{ 0.01 /*1.0*/ } )
 								//for( double ratio = 0.0; (ratio+=0.01) <= 1.0; )
-									for( final int distMode : new int[]{ -1, 0, 1, 2 } ){
+									for( final int distMode : new int[]{ /*-1,*/ 0, 1, 2 } ){
 																														
 
 							final double RATIO = ratio;
 							ExecutorService es = Executors.newFixedThreadPool(4);
 							List<Future<double[]>> futures = new ArrayList<Future<double[]>>();
 							
-							for (int i = 0; i < 16; i++) {
+							for (int i = 0; i < 32; i++) {
 								final int RUN = i;
 								futures.add(es.submit(new Callable<double[]>() {
 

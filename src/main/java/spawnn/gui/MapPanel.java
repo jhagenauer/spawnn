@@ -65,11 +65,7 @@ public class MapPanel<T> extends NeuronVisPanel<T> implements MapPaneListener, C
 	private JMapPane mp;
 	private List<T> pos;
 
-	// this constructor is only for graph-drawing
-	/*
-	 * public MapPanel(FeatureCollection<SimpleFeatureType, SimpleFeature> nodes, FeatureCollection<SimpleFeatureType, SimpleFeature> edges, List<T> pos ) { this(nodes,pos); }
-	 */
-
+	//TODO handle resize events properly
 	public MapPanel(FeatureCollection<SimpleFeatureType, SimpleFeature> fc, List<T> pos) {
 		super();
 
@@ -96,7 +92,6 @@ public class MapPanel<T> extends NeuronVisPanel<T> implements MapPaneListener, C
 
 	@Override
 	public void onDisplayAreaChanged(MapPaneEvent e) {
-
 	}
 
 	@Override
