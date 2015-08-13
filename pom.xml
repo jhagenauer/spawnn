@@ -4,7 +4,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>spawnn</groupId>
 	<artifactId>spawnn</artifactId>
-	<version>0.1.0</version>
+	<version>0.1.1</version>
 	<name>spawnn</name>
 	<description>Spatial Analysis with Neural Networks (SPAWNN)</description>
 	<properties>
@@ -41,7 +41,7 @@
 			<!-- <plugin> <groupId>org.apache.maven.plugins</groupId> <artifactId>maven-jar-plugin</artifactId> 
 				<version>2.3.2</version> <configuration> <archive> <manifest> <mainClass>spawnn.gui.SpawnnGui</mainClass> 
 				</manifest> </archive> </configuration> </plugin> -->
-			<plugin>
+			<!--<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>build-helper-maven-plugin</artifactId>
 				<version>1.7</version>
@@ -59,7 +59,7 @@
 						</configuration>
 					</execution>
 				</executions>
-			</plugin>
+			</plugin>-->
 
 		</plugins>
 
@@ -117,11 +117,11 @@
 			<artifactId>gt-swing</artifactId>
 			<version>${geotools.version}</version>
 		</dependency>
-		<dependency>
+		<!--<dependency>
 			<groupId>colt</groupId>
 			<artifactId>colt</artifactId>
 			<version>1.2.0</version>
-		</dependency>
+		</dependency>-->
 		<dependency>
 			<groupId>com.miglayout</groupId>
 			<artifactId>miglayout-swing</artifactId>
@@ -132,7 +132,6 @@
 			<artifactId>jfreechart</artifactId>
 			<version>1.0.15</version>
 		</dependency>
-
 		<dependency>
 			<groupId>surface_plot</groupId>
 			<artifactId>surface_plot</artifactId>

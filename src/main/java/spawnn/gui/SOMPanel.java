@@ -8,12 +8,12 @@ import javax.swing.JTextField;
 
 import spawnn.som.decay.DecayFunction;
 import spawnn.som.decay.LinearDecay;
+import spawnn.som.decay.PowerDecay;
 import spawnn.som.grid.Grid2D;
 import spawnn.som.grid.Grid2DHex;
 import spawnn.som.kernel.BubbleKernel;
 import spawnn.som.kernel.GaussKernel;
 import spawnn.som.kernel.KernelFunction;
-
 import net.miginfocom.swing.MigLayout;
 
 public class SOMPanel extends JPanel {
@@ -24,12 +24,12 @@ public class SOMPanel extends JPanel {
 	
 	enum kernel { Bubble, Gauss };
 	enum type {Regular, Hexagonal};
-	enum lr {Linar};
+	enum lr {Linar,Power};
 
 	public SOMPanel() {
 		setLayout(new MigLayout());
 		
-		JLabel lblNewLabel = new JLabel("Grid type:");
+		JLabel lblNewLabel = new JLabel("Grid:");
 		add(lblNewLabel, "");
 		
 		comboBox_1 = new JComboBox();
@@ -53,7 +53,7 @@ public class SOMPanel extends JPanel {
 		add(textField_1, "wrap");
 		textField_1.setColumns(10);
 		
-		JLabel lblKernel = new JLabel("Kernelfunction:");
+		JLabel lblKernel = new JLabel("Kernel:");
 		add(lblKernel, "");
 		
 		comboBox = new JComboBox();
@@ -77,7 +77,7 @@ public class SOMPanel extends JPanel {
 		add(textField_3, "wrap");
 		textField_3.setColumns(10);
 		
-		JLabel lblLearningrate = new JLabel("Learning rate:");
+		JLabel lblLearningrate = new JLabel("Learning:");
 		add(lblLearningrate, "");
 		
 		comboBox_2 = new JComboBox();
@@ -105,7 +105,10 @@ public class SOMPanel extends JPanel {
 	public DecayFunction getLearningRate() {
 		double init = Double.parseDouble( textField_4.getText() );
 		double fin = Double.parseDouble( textField_5.getText() );
-		return new LinearDecay(init, fin);
+		if( comboBox_2.getSelectedItem() == lr.Linar )  
+			return new LinearDecay(init, fin);
+		else
+			return new PowerDecay(init, fin);
 	}
 	
 	public KernelFunction getKernelFunction() {

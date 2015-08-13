@@ -13,7 +13,6 @@ import java.util.concurrent.Executors;
 
 import org.apache.log4j.Logger;
 
-import regionalization.RegionUtils;
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
 import spawnn.dist.WeightedDist;
@@ -21,6 +20,7 @@ import spawnn.ng.NG;
 import spawnn.ng.sorter.DefaultSorter;
 import spawnn.ng.utils.NGUtils;
 import spawnn.utils.DataUtils;
+import spawnn.utils.RegionUtils;
 
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.Point;

@@ -14,9 +14,9 @@ import java.util.concurrent.Future;
 
 import org.apache.log4j.Logger;
 
-import regionalization.RegionUtils;
 import regionalization.ga.InequalityCalculator;
 import spawnn.utils.DataUtils;
+import spawnn.utils.RegionUtils;
 
 public class Optimize {
 

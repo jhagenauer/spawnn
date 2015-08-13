@@ -1,4 +1,4 @@
-package regionalization;
+package spawnn.utils;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -22,8 +22,6 @@ import javax.xml.stream.XMLStreamWriter;
 import org.apache.log4j.Logger;
 
 import spawnn.dist.Dist;
-import spawnn.utils.DataUtils;
-import spawnn.utils.SampleBuilder;
 
 import com.vividsolutions.jts.geom.Geometry;
 

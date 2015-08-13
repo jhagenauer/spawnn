@@ -122,22 +122,22 @@ public class GrowingCNG_Housing_Thread {
 		 */
 			
 		for( final int T_MAX : new int[]{ 40000 } )
-		for (final double lrB : new double[] { 0.04 }) 
+		for (final double lrB : new double[] { 0.05 }) 
 			for (final double lrN : new double[] { lrB/100 })
-				for (final int lambda : new int[] { 600 })
-					for (final int aMax : new int[] { 200 })
-						for( final double alpha : new double[]{ 0.5 } )
+				for (final int lambda : new int[] { 300 })
+					for (final int aMax : new int[] { lambda/3 })
+						for( final double alpha : new double[]{ 0.4, 0.45, 0.5, 0.55, 0.6 } )
 							for( final double beta : new double[]{ 0.00005 } )
-								for( double ratio : new double[]{ 0.01, 1.0 } )
+								for( double ratio : new double[]{ 0.01 /*1.0*/ } )
 								//for( double ratio = 0.0; (ratio+=0.01) <= 1.0; )
-									for( final int distMode : new int[]{ 0, 1, 2, 3, 4 /*, 5, 6*/ } ){
-																				
+									for( final int distMode : new int[]{ 0, 1, 2 } ){
+																														
 
 							final double RATIO = ratio;
 							ExecutorService es = Executors.newFixedThreadPool(4);
 							List<Future<double[]>> futures = new ArrayList<Future<double[]>>();
 							
-							for (int i = 0; i < 64; i++) {
+							for (int i = 0; i < 128; i++) {
 								final int RUN = i;
 								futures.add(es.submit(new Callable<double[]>() {
 
@@ -161,8 +161,8 @@ public class GrowingCNG_Housing_Thread {
 										int t = 1;
 										while( true ) { 
 											double[] x = samples.get(r.nextInt(samples.size())); 
-											ng.train(t++, x);
-																															
+											ng.train(t, x);
+																																									
 											if (t % rate == 0) {
 												Map<double[],Set<double[]>> mapping = ng.getMapping(samples);
 												fQes.add(DataUtils.getMeanQuantizationError(mapping, fDist));
@@ -171,8 +171,7 @@ public class GrowingCNG_Housing_Thread {
 																						
 											if( t >= T_MAX ) // normal time break
 												break;
-											/*if( ng.getNeurons().size() == 20 ) // last inserted neuron is not trained at all
-												break;*/
+											t++;
 										}
 										
 										Map<double[], Set<double[]>> mapping = ng.getMapping(samples); 
@@ -259,13 +258,11 @@ public class GrowingCNG_Housing_Thread {
 												ds10FQe.getStandardDeviation(),
 												
 												Math.sqrt(mse),
-												aic
+												aic,
+												ng.aErrorSum,
+												ng.bErrorSum
 												};
-										
-										/*double[] r = new double[qes.size()];
-										for (int i = 0; i < qes.size(); i++)
-											r[i] = qes.get(i);*/
-											
+																					
 										return r;
 									}
 								}));
@@ -294,17 +291,17 @@ public class GrowingCNG_Housing_Thread {
 								String fn = "output/result.csv";
 								if( firstWrite ) {
 									firstWrite = false;
-									Files.write(Paths.get(fn), "alpha,mode,ratio,t,neurons,used,connections,minSqe,minSqeTime,finalSqe,mean10Sqe,sd10Sqe,minFqe,minFQeTime,finalFqe,mean10Fqe,sd10Fqe,rmse,aic\n".getBytes());
+									Files.write(Paths.get(fn), "alpha,beta,lambda,mode,ratio,t,neurons,used,connections,minSqe,minSqeTime,finalSqe,mean10Sqe,sd10Sqe,minFqe,minFQeTime,finalFqe,mean10Fqe,sd10Fqe,rmse,aic,aErrorSum,bErrorSum\n".getBytes());
 									/*for( int i = 0; i < ds.length; i++ )
 										fw.write(",p_"+i);
 									fw.write("\n");*/
 								}
-								String s = alpha+","+"mode_"+distMode+","+ratio;
+								String s = alpha+","+beta+","+lambda+","+"mode_"+distMode+","+ratio;
 								for (int i = 0; i < ds.length; i++)
 									s += ","+ds[i].getMean();
 								s += "\n";
 								Files.write(Paths.get(fn), s.getBytes(), StandardOpenOption.APPEND);
-								System.out.print(s.substring(0, Math.min(s.length(),256)));
+								System.out.println(s.substring(0, Math.min(s.length(),256)));
 							} catch (IOException e) {
 								e.printStackTrace();
 							}

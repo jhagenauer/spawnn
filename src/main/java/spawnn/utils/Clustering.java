@@ -33,7 +33,6 @@ import org.geotools.renderer.lite.StreamingRenderer;
 import org.geotools.styling.SLD;
 import org.geotools.styling.StyleBuilder;
 
-import regionalization.RegionUtils;
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
 

@@ -10,9 +10,9 @@ import java.util.Set;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.log4j.Logger;
 
-import regionalization.RegionUtils;
 import spawnn.dist.EuclideanDist;
 import spawnn.utils.DataUtils;
+import spawnn.utils.RegionUtils;
 
 public class Optimize {
 

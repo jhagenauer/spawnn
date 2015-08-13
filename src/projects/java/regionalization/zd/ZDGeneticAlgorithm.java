@@ -9,13 +9,13 @@ import java.util.Set;
 
 import org.apache.log4j.Logger;
 
-import regionalization.RegionUtils;
 import regionalization.ga.ClusterCostCalculator;
 import regionalization.ga.GAIndividual;
 import regionalization.ga.GeneticAlgorithm;
 import regionalization.ga.InequalityCalculator;
 import regionalization.ga.RegioGAIndividual;
 import spawnn.utils.DataUtils;
+import spawnn.utils.RegionUtils;
 
 public class ZDGeneticAlgorithm {
 	

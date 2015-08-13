@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Set;
 
 import spawnn.dist.Dist;
+import spawnn.utils.RegionUtils;
 
 public class ContDist implements Dist<double[]> {
 	

@@ -13,11 +13,11 @@ import java.util.Set;
 
 import org.apache.log4j.Logger;
 
-import regionalization.RegionUtils;
 import regionalization.ga.WCSSCostCalulator;
 import spawnn.dist.EuclideanDist;
 import spawnn.utils.DataUtils;
 import spawnn.utils.Drawer;
+import spawnn.utils.RegionUtils;
 
 import com.vividsolutions.jts.geom.Geometry;
 

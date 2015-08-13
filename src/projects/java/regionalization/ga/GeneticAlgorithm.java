@@ -22,7 +22,6 @@ import java.util.concurrent.Future;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.log4j.Logger;
 
-import regionalization.RegionUtils;
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
 import spawnn.utils.Clustering;
@@ -30,6 +29,7 @@ import spawnn.utils.Clustering.HierarchicalClusteringType;
 import spawnn.utils.DataUtils;
 import spawnn.utils.Drawer;
 import spawnn.utils.GeoUtils;
+import spawnn.utils.RegionUtils;
 import spawnn.utils.SampleBuilder;
 import spawnn.utils.SpatialDataFrame;
 

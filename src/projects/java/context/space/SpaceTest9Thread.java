@@ -19,7 +19,6 @@ import java.util.concurrent.Future;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.log4j.Logger;
 
-import regionalization.RegionUtils;
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
 import spawnn.dist.WeightedDist;
@@ -37,6 +36,7 @@ import spawnn.som.kernel.GaussKernel;
 import spawnn.som.net.SOM;
 import spawnn.som.utils.SomUtils;
 import spawnn.utils.DataUtils;
+import spawnn.utils.RegionUtils;
 import spawnn.utils.SpatialDataFrame;
 
 import com.vividsolutions.jts.geom.Geometry;

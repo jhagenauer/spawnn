@@ -1,7 +1,5 @@
 package spawnn.som.decay;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
 
 /* From Ritter, Martinetz and Schulten... Mainly used for neural gas
  * 

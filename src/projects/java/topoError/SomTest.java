@@ -36,7 +36,6 @@ import org.geotools.styling.SLD;
 import org.geotools.styling.StyleBuilder;
 import org.geotools.swing.JMapPane;
 
-import regionalization.RegionUtils;
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
 import spawnn.som.bmu.BmuGetter;
@@ -50,6 +49,7 @@ import spawnn.som.utils.SomUtils;
 import spawnn.utils.ColorBrewerUtil;
 import spawnn.utils.ColorBrewerUtil.ColorMode;
 import spawnn.utils.DataUtils;
+import spawnn.utils.RegionUtils;
 import spawnn.utils.SpatialDataFrame;
 
 import com.vividsolutions.jts.geom.Geometry;

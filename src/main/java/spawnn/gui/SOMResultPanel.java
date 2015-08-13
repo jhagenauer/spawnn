@@ -10,7 +10,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -428,7 +427,7 @@ public class SOMResultPanel extends ResultPanel<GridPos> implements ActionListen
 					} else if (fc.getFileFilter() == FFilter.epsFilter) {
 						String s = fn.getAbsolutePath(); //TODO remove this
 						s = s.replaceFirst(".eps", "_legend.eps");
-						saveLegend(ColorBrewerUtil.valuesToColors(neuronValues, (ColorBrewerUtil.ColorMode) colorComboBox.getSelectedItem()), neuronValues, new File(s), "EPS");
+						//saveLegend(ColorBrewerUtil.valuesToColors(neuronValues, (ColorBrewerUtil.ColorMode) colorComboBox.getSelectedItem()), neuronValues, new File(s), "EPS");
 						
 						if (gridModeComboBox.getSelectedItem() == GRID)
 							pnlGrid.saveImage(fn, "EPS");

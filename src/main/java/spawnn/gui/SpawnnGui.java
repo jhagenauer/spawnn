@@ -117,9 +117,7 @@ public class SpawnnGui extends JFrame implements PropertyChangeListener, ActionL
 
 	@Override
 	public void propertyChange(PropertyChangeEvent e) {
-		if (e.getPropertyName().equals(DataPanel.COORD_CHANGED_PROP)) {
-			annPanel.setContextModelsEnabled((Integer) e.getNewValue() > 0);
-		} else if (e.getPropertyName().equals(AnnPanel.TRAIN_PROP) && (Boolean) e.getNewValue()) {
+		if (e.getPropertyName().equals(AnnPanel.TRAIN_PROP) && (Boolean) e.getNewValue()) {
 
 			if (dataPanel.getSpatialData() == null) {
 				JOptionPane.showMessageDialog(this, "No data loaded yet!", "No data!", JOptionPane.ERROR_MESSAGE);
@@ -130,14 +128,14 @@ public class SpawnnGui extends JFrame implements PropertyChangeListener, ActionL
 
 			// get data
 			int[] fa = dataPanel.getFA();
-			int[] ga = dataPanel.getGA();
+			int[] ga = dataPanel.getGA(false);
 
 			log.debug("fa: " + Arrays.toString(fa));
 			log.debug("ga: " + Arrays.toString(ga));
 
 			List<double[]> samples = dataPanel.getNormedSamples();
 			SpatialDataFrame origData = dataPanel.getSpatialData();
-
+			
 			int sampleLength = samples.get(0).length;
 
 			// get network
@@ -255,7 +253,7 @@ public class SpawnnGui extends JFrame implements PropertyChangeListener, ActionL
 							bmuHist.put(d, neurons.get(r.nextInt(neurons.size())));
 
 						s = new SorterWMC(bmuHist, DataUtils.readDistMatrixKeyValue(samples, wp.getDistMapFile()), fDist, wp.getAlpha(), wp.getBeta());
-						ng = new ContextNG(neurons, np.getLambdaInit(), np.getLambdaFinal(), np.getEpsilonInit(), np.getEpsilonFinal(), (SorterWMC) s);
+						ng = new ContextNG(neurons, np.getNeighborhoodRate(), np.getAdaptationRate(), (SorterWMC) s);
 
 					} else {
 						if (annPanel.tpContextModel.getSelectedComponent() == annPanel.cngPanel) {
@@ -274,7 +272,13 @@ public class SpawnnGui extends JFrame implements PropertyChangeListener, ActionL
 						} else
 							s = new DefaultSorter<double[]>(fDist);
 
-						ng = new NG(np.numNeurons(), np.getLambdaInit(), np.getLambdaFinal(), np.getEpsilonInit(), np.getEpsilonFinal(), sampleLength, s);
+						List<double[]> neurons = new ArrayList<double[]>();
+						for (int i = 0; i < np.numNeurons(); i++) {
+							double[] rs = samples.get(r.nextInt(samples.size()));
+							neurons.add(Arrays.copyOf(rs, rs.length));
+						}
+							
+						ng = new NG(neurons, np.getNeighborhoodRate(), np.getAdaptationRate(), s);
 					}
 
 					if (s instanceof SorterWMC)
@@ -334,15 +338,17 @@ public class SpawnnGui extends JFrame implements PropertyChangeListener, ActionL
 			}
 
 			setCursor(Cursor.getDefaultCursor());
-		} else if (e.getPropertyName().equals(DataPanel.DATA_LOADED_PROP) && (Boolean) e.getNewValue()) {
-			tp.setEnabledAt(1, true);
-		}
+		} else if (e.getPropertyName().equals(DataPanel.TRAIN_ALLOWED_PROP) ) {
+			tp.setEnabledAt(1, (Integer) e.getNewValue() > 0 );
+		} else if (e.getPropertyName().equals(DataPanel.COORD_CHANGED_PROP)) {
+			annPanel.setContextModelsEnabled((Integer) e.getNewValue() > 0);
+		}  
 	}
 
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		if (e.getSource() == aboutItem) {
-			JOptionPane.showMessageDialog(this, "Spatial Analysis with (Self-Organinzing) Neural Networks (SPAWNN) ©2013-2014\n\n" + "All rights reserved.\n\n" + "Julian Hagenauer", "About", JOptionPane.INFORMATION_MESSAGE);
+			JOptionPane.showMessageDialog(this, "Spatial Analysis with (Self-Organinzing) Neural Networks (SPAWNN) ©2013-2015\n\n" + "All rights reserved.\n\n" + "Julian Hagenauer", "About", JOptionPane.INFORMATION_MESSAGE);
 		} else if (e.getSource() == quitItem) {
 			System.exit(1);
 		}

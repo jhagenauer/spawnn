@@ -13,12 +13,12 @@ import java.util.Set;
 
 import org.apache.log4j.Logger;
 
-import regionalization.RegionUtils;
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
 import spawnn.ng.Connection;
 import spawnn.utils.DataUtils;
 import spawnn.utils.Drawer;
+import spawnn.utils.RegionUtils;
 import spawnn.utils.SpatialDataFrame;
 
 import com.vividsolutions.jts.geom.Geometry;

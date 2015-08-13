@@ -15,20 +15,18 @@ public class NG {
 	
 	protected List<double[]> neurons = null;
 	protected Sorter<double[]> sorter;
-	protected DecayFunction adaptionRate, stepSizeRate;
+	protected DecayFunction neighborhoodRange, adaptationRate;
 	
 	public NG( Collection<double[]> neurons, double lInit, double lFinal, double eInit, double eFinal, Sorter<double[]> sorter  ) {
+		this( new ArrayList<double[]>(neurons),new PowerDecay(lInit, lFinal), new PowerDecay(eInit, eFinal),sorter);
 		assert eInit >= 0 && eFinal < eInit;
-		
-		this.sorter = sorter;				
-		this.neurons = new ArrayList<double[]>(neurons);
-		this.adaptionRate = new PowerDecay(lInit, lFinal);
-		this.stepSizeRate = new PowerDecay(eInit, eFinal);
 	}
 	
-	public NG( Collection<double[]> neurons, DecayFunction adaptionRate, DecayFunction stepSizeRate, Sorter<double[]> sorter  ) {
+	public NG( Collection<double[]> neurons, DecayFunction neighborhoodRange, DecayFunction adaptationRate, Sorter<double[]> sorter  ) {
 		this.sorter = sorter;				
 		this.neurons = new ArrayList<double[]>(neurons);
+		this.neighborhoodRange = neighborhoodRange;
+		this.adaptationRate = adaptationRate;
 	}
 	
 	@Deprecated
@@ -36,8 +34,8 @@ public class NG {
 		Random r = new Random();
 		
 		this.sorter = bg;
-		this.adaptionRate = new PowerDecay(lInit, lFinal);
-		this.stepSizeRate = new PowerDecay(eInit, eFinal);
+		this.neighborhoodRange = new PowerDecay(lInit, lFinal);
+		this.adaptationRate = new PowerDecay(eInit, eFinal);
 				
 		this.neurons = new ArrayList<double[]>();
 				
@@ -58,8 +56,8 @@ public class NG {
 	public double[] train( double t, double[] x ) {
 		sortNeurons(x);
 		
-		double l = adaptionRate.getValue(t);
-		double e = stepSizeRate.getValue(t);
+		double l = neighborhoodRange.getValue(t);
+		double e = adaptationRate.getValue(t);
 						
 		// adapt
 		for( int k = 0; k < neurons.size(); k++ ) {
