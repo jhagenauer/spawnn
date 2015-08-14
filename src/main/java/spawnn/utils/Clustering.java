@@ -235,18 +235,18 @@ public class Clustering {
 					continue;
 				
 				// children present in tree
-				boolean childenInTree = true;
+				boolean childrenInCutTree = true;
 				for( TreeNode child : e.getValue().children )
 					if( !cutTree.containsKey(child) )
-						childenInTree = false;
-				if( !childenInTree )
-					continue;
-				
-				if( !Double.isNaN(e.getValue().sumOfSquares) && ( bestEntry == null || e.getValue().sumOfSquares < bestEntry.getValue().sumOfSquares ) ) 
-					bestEntry = e;								
+						childrenInCutTree = false;
+								
+				if( childrenInCutTree 
+						&& !Double.isNaN(e.getValue().sumOfSquares) 
+						&& ( bestEntry == null || e.getValue().sumOfSquares < bestEntry.getValue().sumOfSquares ) ) 
+					bestEntry = e;	
 			}
 			
-			if( bestEntry == null ) {
+			if( bestEntry == null ) {				
 				log.warn("Cannot cut tree any further.");
 				break;
 			}
@@ -336,21 +336,21 @@ public class Clustering {
 		
 		// init connected map
 		Map<Set<double[]>, Set<Set<double[]>>> connected = null;
-		if( cm != null ) {
+		if (cm != null) {
 			connected = new HashMap<Set<double[]>, Set<Set<double[]>>>();
-			for( Set<double[]> a : leafLayer ) {
-				connected.put(a, new HashSet<Set<double[]>>());
-				for( Set<double[]> b : leafLayer ) {
-					if( a != b && cm.get(a.iterator().next()).contains(b.iterator().next())) {
+			for (Set<double[]> a : leafLayer) {
+				for (Set<double[]> b : leafLayer) {
+					if (a == b)
+						continue;
+					if (cm.get(a.iterator().next()).contains(b.iterator().next())) {
+						if (!connected.containsKey(a))
+							connected.put(a, new HashSet<Set<double[]>>());
 						connected.get(a).add(b);
-						if( !connected.containsKey(b) )
-							connected.put(b, new HashSet<Set<double[]>>());
-						connected.get(b).add(a);
 					}
 				}
 			}
 		}
-
+		
 		while (leafLayer.size() > 1 ) {
 			Set<double[]> c1 = null, c2 = null;
 			double sMin = Double.MAX_VALUE;
@@ -361,7 +361,8 @@ public class Clustering {
 				for (int j = i + 1; j < leafLayer.size(); j++) {
 					Set<double[]> l2 = leafLayer.get(j);
 					
-					if( connected != null && ( !connected.containsKey(l1) || !connected.get(l1).contains(l2) ) ) // disjoint
+					if( connected != null 
+							&& ( !connected.containsKey(l1) || !connected.get(l1).contains(l2) ) ) // disjoint
 						continue;
 															
 					double s = -1;
@@ -443,7 +444,7 @@ public class Clustering {
 			if( c1 == null && c2 == null ) { // no connected clusters present anymore
 				c1 = leafLayer.get(0);
 				c2 = leafLayer.get(1);
-				nanSS = true;
+				nanSS = true;	
 			}
 			
 			// remove old clusters
@@ -460,8 +461,6 @@ public class Clustering {
 			if( nanSS ) {
 				ss = Double.NaN;
 			} else if( type == HierarchicalClusteringType.ward ) {
-				
-				//get ss
 				for( Set<double[]> s : leafLayer )
 					if( s == union )
 						ss += unionCache.get(c1).get(c2);
@@ -472,28 +471,28 @@ public class Clustering {
 				ssCache.remove(c1);
 				ssCache.remove(c2);
 				ssCache.put( union, unionCache.get(c1).get(c2) );
-				
-				// update connected map
-				// 1. merge values of c1 and c2 and put union
-				if( connected != null ) {
-					Set<Set<double[]>> ns = connected.remove(c1);
-					ns.addAll( connected.remove(c2) );
-					connected.put(union, ns);
-					
-					// 2. replace all values c1,c2 by union
-					for( Set<double[]> a : connected.keySet() ) {
-						Set<Set<double[]>> s = connected.get(a);
-						if( s.contains(c1) || s.contains(c2)) {
-							s.remove(c1);
-							s.remove(c2);
-							s.add(union);
-						}
-					}
-				}
-
+			
 				unionCache.remove(c1);
 			} else
 				ss = DataUtils.getWithinClusterSumOfSuqares(leafLayer, dist); // expensive
+			
+			// update connected map, non-connected cluster are ALSO merged in order to return a single tree. These merges have ss=NAN
+			// 1. merge values of c1 and c2 and put union
+			if( connected != null ) {
+				Set<Set<double[]>> ns = connected.remove(c1);
+				ns.addAll( connected.remove(c2) );
+				connected.put(union, ns);
+				
+				// 2. replace all values c1,c2 by union
+				for( Set<double[]> a : connected.keySet() ) {
+					Set<Set<double[]>> s = connected.get(a);
+					if( s.contains(c1) || s.contains(c2)) {
+						s.remove(c1);
+						s.remove(c2);
+						s.add(union);
+					}
+				}
+			}
 						
 			TreeNode cn = new TreeNode();
 			cn.sumOfSquares = ss;

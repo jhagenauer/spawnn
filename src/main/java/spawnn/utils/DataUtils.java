@@ -1223,7 +1223,7 @@ public class DataUtils {
 		return distMatrix;
 	}
 
-	public static <T> Map<T, Map<T, Double>> readDistMatrixKeyValue(List<T> samples, File fn) {
+	public static <T> Map<T, Map<T, Double>> readDistMatrixKeyValue(List<T> samples, File fn) throws NumberFormatException, IOException, FileNotFoundException {
 		Map<T, Map<T, Double>> distMatrix = new HashMap<T, Map<T, Double>>();
 		BufferedReader br = null;
 		try {
@@ -1241,11 +1241,10 @@ public class DataUtils {
 
 				distMatrix.get(a).put(b, Double.parseDouble(s[2]));
 			}
-		} catch (Exception e) {
-			e.printStackTrace();
 		} finally {
 			try {
-				br.close();
+				if( br != null )
+					br.close();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
@@ -1303,7 +1302,15 @@ public class DataUtils {
 		else
 			pca = new PCA(0.95, "covariance", s);
 		
-		log.debug("Nr of components: "+pca.principalComponents.length);
+		log.debug("Nr of pcs: "+pca.principalComponents.length);
+		/*for( int i = 0; i < pca.principalComponents.length; i++ ) {
+			double[] pc = pca.principalComponents[i];
+			double l = 0;
+			for( double d : pc )
+				l += d*d;
+			l = Math.sqrt(l);
+			log.debug("Length of pc "+i+": "+l);
+		}*/
 
 		List<double[]> nSamples = new ArrayList<double[]>();
 		for( double[] d : samples ) {

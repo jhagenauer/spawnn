@@ -23,7 +23,7 @@ public class WMCPanel extends JPanel implements ActionListener {
 	private JTextField textField_3;
 	private JTextField selFile;
 	
-	private File distMapFile;
+	private File distMapFile = null;
 	
 
 	public WMCPanel() {

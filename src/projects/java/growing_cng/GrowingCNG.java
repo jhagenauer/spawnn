@@ -89,7 +89,7 @@ public class GrowingCNG {
 			errors.put(s_1, errors.get(s_1) + Math.pow(distB.dist(s_1, x) ,2) );
 		else if( distMode == 5 )
 			errors.put( s_1, errors.get(s_1) + (idxF1+1) > l ? 1.0 : 0.0 );
-		else if( distMode == 6 )
+		else if( distMode == 6 ) // 6 is superior to 5, 7, 8
 			errors.put( s_1, errors.get(s_1) + (double)(idxF1+1)/neurons.size() );
 		
 		for( Connection c : cons.keySet() )

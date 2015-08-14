@@ -56,6 +56,7 @@ import spawnn.utils.Clustering;
 import spawnn.utils.ColorBrewerUtil;
 import spawnn.utils.DataUtils;
 import spawnn.utils.SpatialDataFrame;
+import spawnn.utils.Clustering.TreeNode;
 import edu.uci.ics.jung.graph.Graph;
 import edu.uci.ics.jung.graph.UndirectedSparseGraph;
 
@@ -314,11 +315,14 @@ public class SOMResultPanel extends ResultPanel<GridPos> implements ActionListen
 							type = Clustering.HierarchicalClusteringType.single_linkage;
 						else if (cd.getAlgorithm() == ClusterDialogGrid.ClusterAlgorithm.Ward)
 							type = Clustering.HierarchicalClusteringType.ward;
-
-						if (cd.getConnected())
-							clusters = Clustering.cutTree(Clustering.getHierarchicalClusterTree(cm, fDist, type), cd.getNumCluster());
+						
+						log.debug("Algorithm: "+type+","+cd.getConnected() );
+						Map<Set<double[]>,TreeNode> tree;
+						if (cd.getConnected()) 
+							tree = Clustering.getHierarchicalClusterTree(cm, fDist, type);
 						else
-							clusters = Clustering.cutTree(Clustering.getHierarchicalClusterTree(prototypes, fDist, type), cd.getNumCluster());
+							tree = Clustering.getHierarchicalClusterTree(prototypes, fDist, type);
+						clusters = Clustering.cutTree( tree, cd.getNumCluster() );
 					}
 
 					// prototypes to samples

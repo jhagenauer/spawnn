@@ -6,6 +6,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -102,8 +103,8 @@ public class SpawnnGui extends JFrame implements PropertyChangeListener, ActionL
 		add(tp);
 
 		pack();
-		setSize(1250, 700);
-		setMinimumSize(new Dimension(1250, 700)); // ugly, but needed because of ng results minimum size (vv)
+		setSize(1245, 700);
+		setMinimumSize(new Dimension(1245, 700)); // ugly, but needed because of ng results minimum size (vv)
 
 		setVisible(true);
 	}
@@ -118,14 +119,7 @@ public class SpawnnGui extends JFrame implements PropertyChangeListener, ActionL
 	@Override
 	public void propertyChange(PropertyChangeEvent e) {
 		if (e.getPropertyName().equals(AnnPanel.TRAIN_PROP) && (Boolean) e.getNewValue()) {
-
-			if (dataPanel.getSpatialData() == null) {
-				JOptionPane.showMessageDialog(this, "No data loaded yet!", "No data!", JOptionPane.ERROR_MESSAGE);
-				return;
-			}
-
-			setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
-
+			
 			// get data
 			int[] fa = dataPanel.getFA();
 			int[] ga = dataPanel.getGA(false);
@@ -136,16 +130,31 @@ public class SpawnnGui extends JFrame implements PropertyChangeListener, ActionL
 			List<double[]> samples = dataPanel.getNormedSamples();
 			SpatialDataFrame origData = dataPanel.getSpatialData();
 			
+			if (dataPanel.getSpatialData() == null) {
+				JOptionPane.showMessageDialog(this, "No data loaded yet!", "No data!", JOptionPane.ERROR_MESSAGE);
+				return;
+			}
+			
 			int sampleLength = samples.get(0).length;
-
-			// get network
 			Dist<double[]> fDist = new EuclideanDist(fa);
 			Dist<double[]> gDist = null;
 			if (ga.length > 0)
 				gDist = new EuclideanDist(ga);
 
 			int t_max = annPanel.getNumTraining();
-
+			
+			Map<double[],Map<double[],Double>> dm = null;
+			if( annPanel.tpContextModel.getSelectedComponent() == annPanel.wmcPanel ) {
+				try {
+					File dmFile = ((WMCPanel)annPanel.wmcPanel).getDistMapFile();
+					dm = DataUtils.readDistMatrixKeyValue(samples, dmFile);
+				} catch( Exception ex ) {
+					JOptionPane.showMessageDialog(this, "Could read/parse distance matrix file: "+ex.getLocalizedMessage(), "Read/Parse error!", JOptionPane.ERROR_MESSAGE);
+					return;
+				}
+			}
+						
+			setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 			for (int run = 0; run < annPanel.getRuns(); run++) {
 
 				if (annPanel.tpANN.getSelectedComponent() == annPanel.somPanel) { // som
@@ -171,8 +180,8 @@ public class SpawnnGui extends JFrame implements PropertyChangeListener, ActionL
 						Map<double[], double[]> bmuHist = new HashMap<double[], double[]>();
 						for (double[] d : samples)
 							bmuHist.put(d, prototypes.get(r.nextInt(prototypes.size())));
-
-						SorterWMC s = new SorterWMC(bmuHist, DataUtils.readDistMatrixKeyValue(samples, wp.getDistMapFile()), fDist, wp.getAlpha(), wp.getBeta());
+						
+						SorterWMC s = new SorterWMC(bmuHist, dm , fDist, wp.getAlpha(), wp.getBeta());
 						BmuGetter<double[]> bg = new SorterBmuGetterContext(s);
 						ContextSOM som = new ContextSOM(sp.getKernelFunction(), sp.getLearningRate(), grid, (BmuGetterContext) bg, sampleLength);
 
@@ -252,7 +261,7 @@ public class SpawnnGui extends JFrame implements PropertyChangeListener, ActionL
 						for (double[] d : samples)
 							bmuHist.put(d, neurons.get(r.nextInt(neurons.size())));
 
-						s = new SorterWMC(bmuHist, DataUtils.readDistMatrixKeyValue(samples, wp.getDistMapFile()), fDist, wp.getAlpha(), wp.getBeta());
+						s = new SorterWMC(bmuHist, dm, fDist, wp.getAlpha(), wp.getBeta());
 						ng = new ContextNG(neurons, np.getNeighborhoodRate(), np.getAdaptationRate(), (SorterWMC) s);
 
 					} else {
@@ -336,7 +345,6 @@ public class SpawnnGui extends JFrame implements PropertyChangeListener, ActionL
 					tp.setTabComponentAt(tp.indexOfComponent(srp), new ButtonTabComponent(tp));
 				}
 			}
-
 			setCursor(Cursor.getDefaultCursor());
 		} else if (e.getPropertyName().equals(DataPanel.TRAIN_ALLOWED_PROP) ) {
 			tp.setEnabledAt(1, (Integer) e.getNewValue() > 0 );

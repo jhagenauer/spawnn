@@ -85,13 +85,12 @@ public class GridPanel extends NeuronVisPanel<GridPos> implements MouseListener 
 	
 	@Override
 	public void paintComponent(Graphics g) {
+		super.paintComponent(g);
 		updateScaledCells();
 		draw( (Graphics2D)g);
 	}
 	
 	private void draw( Graphics2D g2 ) {
-		g2.setBackground(g2.getBackground()); //somehow this prevents "ghost paints at the border"
-		
 		Stroke origStroke = g2.getStroke();
 		BasicStroke fatStroke = new BasicStroke(SELECTED_WIDTH);
 		

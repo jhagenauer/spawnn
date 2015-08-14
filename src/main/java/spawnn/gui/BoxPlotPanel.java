@@ -64,8 +64,7 @@ public class BoxPlotPanel extends JPanel {
 
 		JFreeChart chart = new JFreeChart("", plot);
 		ChartPanel chartPanel = new ChartPanel(chart);
-		add(chartPanel, "span 2, wrap");
-
+		
 		prev = new JButton("\u22b2Prev");	
 		prev.setEnabled(false);
 		next = new JButton("Next\u22b3");
@@ -97,7 +96,7 @@ public class BoxPlotPanel extends JPanel {
 			}
 		});
 		
-		
+		add(chartPanel, "span 2, wrap");
 		add(prev,"");
 		add(next,"align right");
 	}

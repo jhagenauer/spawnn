@@ -73,19 +73,15 @@ public class DataPanel extends JPanel implements ActionListener, TableModelListe
 		
 		btnLoadShp = new JButton("Load data...");
 		btnLoadShp.addActionListener(this);
-		add(btnLoadShp, "split 3");
 		
 		addCCoords = new JButton("Add centroid coordinates");
 		addCCoords.addActionListener(this);
 		addCCoords.setEnabled(false);
-		
-		add(addCCoords, "");
-		
+				
 		useAll = new JButton("Use all");
 		useAll.addActionListener(this);
 		useAll.setEnabled(false);
-		add(useAll,"wrap");
-				
+						
 		dataTable = new DefaultTableModel( new String[]{"Attribute","Normalize","Coordinate","Use"}, 0 ) {
 			private static final long serialVersionUID = -78686917074445663L;
 
@@ -115,12 +111,15 @@ public class DataPanel extends JPanel implements ActionListener, TableModelListe
 		table.getColumnModel().getColumn(1).setPreferredWidth(20);
 		table.getColumnModel().getColumn(2).setPreferredWidth(10);
 		table.getColumnModel().getColumn(3).setPreferredWidth(10);
-		
+				
 		boxPlotPnl = new BoxPlotPanel();
 		
-		//add( new JScrollPane(table), "push, grow" );	
-		add( new JScrollPane(table), "w 50%, push, grow" );	
-		add( boxPlotPnl, "grow");
+		add(btnLoadShp, "split 3");
+		add(addCCoords, "");
+		add(useAll,"wrap");
+		
+		add( new JScrollPane(table), "w 50%, grow" );
+		add( boxPlotPnl, "w 50%, push, grow");
 	}
 
 	@Override
