@@ -334,13 +334,14 @@ public class OptimizeHousingLLMCNG {
 		for (int i = 0; i < geoms.size(); i++)
 			m.put(geoms.get(i), values.get(i));
 
-		Map<Geometry, Color> colMap = ColorBrewerUtil.valuesToColors(m, ColorMode.Reds);
+		Map<Geometry, Color> colMap = ColorBrewerUtil.valuesToColors(m, ColorMode.Blues);
 		Set<Color> cols = new HashSet<Color>(colMap.values());
 
 		try {
 			StyleBuilder sb = new StyleBuilder();
 			MapContent mc = new MapContent();
 
+			ReferencedEnvelope mapBounds = mc.getMaxBounds();
 			for (Color c : cols) {
 				DefaultFeatureCollection features = new DefaultFeatureCollection();
 				for (Geometry g : colMap.keySet()) {
@@ -350,15 +351,16 @@ public class OptimizeHousingLLMCNG {
 					features.add(featureBuilder.buildFeature("" + features.size()));
 				}
 				Mark mark = sb.createMark(StyleBuilder.MARK_CIRCLE, c);
-				mc.addLayer(new FeatureLayer(features, SLD.wrapSymbolizers(sb.createPointSymbolizer(sb.createGraphic(null, mark, null)))));
+				FeatureLayer fl = new FeatureLayer(features, SLD.wrapSymbolizers(sb.createPointSymbolizer(sb.createGraphic(null, mark, null))));
+				mc.addLayer(fl);
+				mapBounds.expandToInclude(fl.getBounds());
 			}
 
 			GTRenderer renderer = new StreamingRenderer();
 			renderer.setMapContent(mc);
 
 			Rectangle imageBounds = null;
-
-			ReferencedEnvelope mapBounds = mc.getMaxBounds();
+			
 			double heightToWidth = mapBounds.getSpan(1) / mapBounds.getSpan(0);
 			int imageWidth = 2000;
 			imageBounds = new Rectangle(0, 0, imageWidth, (int) Math.round(imageWidth * heightToWidth));

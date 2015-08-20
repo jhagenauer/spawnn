@@ -5,10 +5,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+import spawnn.SupervisedNet;
 import spawnn.ng.NG;
 import spawnn.ng.sorter.Sorter;
 
-public class LLMNG extends NG {
+// TODO It is better to separate NG and LLMNG, either completly or just give the ng as an argument to llm
+// Also make an interface or somethin for supervised learning
+// Question: Is LLMNG a neuralnet itself? What are the mappings?
+public class LLMNG extends NG implements SupervisedNet {
 		
 	public Map<double[],double[]> output = new HashMap<double[],double[]>(); // intercept
 	public Map<double[],double[][]> matrix = new HashMap<double[],double[][]>(); // slope, jacobian matrix (m(output-dim) x n(input-dim) ), m rows, n columns
@@ -91,7 +95,7 @@ public class LLMNG extends NG {
 	}
 	
 	public double[] present( double[] x ) {
-		sortNeurons(x);
+		sorter.sort(x, neurons);
 		return getResponse(x, getNeurons().get(0) );
 	}
 	

@@ -52,7 +52,7 @@ public class GraphClustering {
         		ki += weight;
         	
         	for( double[] v2 : graph.keySet() ) {
-        		if( membership.get(v1) != membership.get(v2) ) 
+        		if( membership.get(v1).intValue() != membership.get(v2).intValue() ) 
         			continue;
         		
         		double kj = 0;

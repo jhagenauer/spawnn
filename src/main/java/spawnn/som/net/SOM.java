@@ -1,12 +1,13 @@
 package spawnn.som.net;
 
+import spawnn.UnsupervisedNet;
 import spawnn.som.bmu.BmuGetter;
 import spawnn.som.decay.DecayFunction;
 import spawnn.som.grid.Grid;
 import spawnn.som.grid.GridPos;
 import spawnn.som.kernel.KernelFunction;
 
-public class SOM {
+public class SOM implements UnsupervisedNet {
 			
 	protected Grid<double[]> grid; 
 	protected BmuGetter<double[]> bmuGetter;

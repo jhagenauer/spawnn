@@ -218,11 +218,11 @@ public class GraphPanel extends NeuronVisPanel<double[]> implements ItemListener
 				
 		try {		
 			FileOutputStream stream = new FileOutputStream(fn);			
-			if( mode == "PNG" ) {
+			if( mode.equals("PNG") ) {
 				Graphics2D g = bufImage.createGraphics();
 				g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 				ImageIO.write(bufImage, "PNG", stream);
-			} else if( mode == "EPS") {
+			} else if( mode.equals("EPS") ) {
 				EPSDocumentGraphics2D g = new EPSDocumentGraphics2D(false);
 				g.setGraphicContext(new org.apache.xmlgraphics.java2d.GraphicContext());
 				g.setupDocument(stream, bufImage.getWidth(), bufImage.getHeight());

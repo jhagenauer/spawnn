@@ -7,7 +7,9 @@ import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -168,9 +170,10 @@ public abstract class ResultPanel<T> extends JPanel {
 		double colWidth = (double) scaleWidth / sortedKeys.size();
 
 		DecimalFormat df = new DecimalFormat("#0.00");
-		for (Double d : sortedKeys) {
+		for( int i = 0; i < sortedKeys.size(); i++ ) {
+			Double d = sortedKeys.get(i);
 			g.setColor(Color.BLACK);
-			if (d == sortedKeys.get(0) || d == sortedKeys.get(sortedKeys.size() - 1)) {
+			if (i == 0 || i == sortedKeys.size() - 1) {
 				g.drawLine((int) Math.floor(fontSize + x + 0.5 * colWidth), y, (int) Math.floor(fontSize + x + 0.5 * colWidth), (int) Math.round(y + 1.25 * symbolHeight));
 				g.drawString(df.format(d.doubleValue()).replace(',', '.'), (int) Math.round(x), (int) (Math.round(y + 2.35 * symbolHeight)));
 
@@ -196,7 +199,7 @@ public abstract class ResultPanel<T> extends JPanel {
 			int numColors = (new HashSet<Color>(colorMap.values())).size();
 
 			FileOutputStream stream = new FileOutputStream(fn);
-			if (fileMode == "PNG") {
+			if (fileMode.equals("PNG")) {
 				if (numColors > 12) { // cont legend
 					int width = 390, height = 35;
 					BufferedImage bufImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
@@ -212,7 +215,7 @@ public abstract class ResultPanel<T> extends JPanel {
 					drawLegend(g, colorMap, neuronValues, width, height, outline);
 					ImageIO.write(bufImage, "PNG", stream);
 				}
-			} else if (fileMode == "EPS") {
+			} else if (fileMode.equals("EPS")) {
 				if (numColors > 12) { // cont legend
 					int width = 390, height = 35;
 					EPSDocumentGraphics2D g = new EPSDocumentGraphics2D(false);
@@ -234,9 +237,12 @@ public abstract class ResultPanel<T> extends JPanel {
 			}
 			stream.flush();
 			stream.close();
-		} catch (Exception e) {
-
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
+		
 	}
 
 	public static <T> void saveLegend2(final Map<T, Color> colorMap, final Map<T, Double> neuronValues, File fn, boolean outline, boolean ng ) {

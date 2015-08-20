@@ -7,18 +7,19 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Random;
 
+import spawnn.UnsupervisedNet;
 import spawnn.ng.sorter.Sorter;
 import spawnn.som.decay.DecayFunction;
 import spawnn.som.decay.PowerDecay;
 
-public class NG {
+public class NG implements UnsupervisedNet {
 	
 	protected List<double[]> neurons = null;
 	protected Sorter<double[]> sorter;
 	protected DecayFunction neighborhoodRange, adaptationRate;
 	
 	public NG( Collection<double[]> neurons, double lInit, double lFinal, double eInit, double eFinal, Sorter<double[]> sorter  ) {
-		this( new ArrayList<double[]>(neurons),new PowerDecay(lInit, lFinal), new PowerDecay(eInit, eFinal),sorter);
+		this( neurons,new PowerDecay(lInit, lFinal), new PowerDecay(eInit, eFinal),sorter);
 		assert eInit >= 0 && eFinal < eInit;
 	}
 	
@@ -53,7 +54,7 @@ public class NG {
 		sorter.sort(x, neurons);
 	}
 		
-	public double[] train( double t, double[] x ) {
+	public void train( double t, double[] x ) {
 		sortNeurons(x);
 		
 		double l = neighborhoodRange.getValue(t);
@@ -67,7 +68,7 @@ public class NG {
 			for( int i = 0; i < w.length; i++ ) 
 				w[i] +=  adapt * ( x[i] - w[i] ) ;
 		} 
-		return neurons.get(0);
+		return;
 	}
 		
 	public List<double[]> getNeurons() {

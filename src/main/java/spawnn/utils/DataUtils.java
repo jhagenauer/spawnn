@@ -1168,7 +1168,7 @@ public class DataUtils {
 		return ns;
 	}
 
-	public static void retainColumns(List<double[]> samples, int[] r) {
+	public static List<double[]> retainColumns(List<double[]> samples, int[] r) {
 		int n = samples.get(0).length;
 
 		// build list from array
@@ -1190,7 +1190,7 @@ public class DataUtils {
 			a[i] = idx.get(i);
 
 		// remove collums of all-,list
-		samples = removeColumns(samples, a);
+		return removeColumns(samples, a);
 	}
 
 	public static <T> Map<T, Map<T, Double>> readDistMatrixSquare(List<T> samples, File fn) {
@@ -1289,7 +1289,7 @@ public class DataUtils {
 		return ssq;
 	}
 	
-	public static List<double[]> reduceDimensionByPCA(List<double[]> samples, int nrComponents, boolean scaled ) {
+	public static List<double[]> reduceDimensionByPCA(List<double[]> samples, int nrComponents, boolean cor ) {
 		int length = samples.get(0).length;
 		double[][] s = new double[length][samples.size()];
 		for (int i = 0; i < samples.size(); i++)
@@ -1297,21 +1297,14 @@ public class DataUtils {
 				s[j][i] = samples.get(i)[j];
 
 		PCA pca = null;
-		if (scaled) // kohonen talks only of correlation matrix
+		if (cor) // kohonen talks only of correlation matrix
 			pca = new PCA(0.95, "correlation", s);
 		else
 			pca = new PCA(0.95, "covariance", s);
-		
 		log.debug("Nr of pcs: "+pca.principalComponents.length);
-		/*for( int i = 0; i < pca.principalComponents.length; i++ ) {
-			double[] pc = pca.principalComponents[i];
-			double l = 0;
-			for( double d : pc )
-				l += d*d;
-			l = Math.sqrt(l);
-			log.debug("Length of pc "+i+": "+l);
-		}*/
-
+		/*for( double d : pca.variance )
+			log.debug("variance: "+d);*/
+		
 		List<double[]> nSamples = new ArrayList<double[]>();
 		for( double[] d : samples ) {
 			double[] nd = new double[nrComponents];

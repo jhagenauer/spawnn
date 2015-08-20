@@ -143,7 +143,7 @@ public class GridPanel extends NeuronVisPanel<GridPos> implements MouseListener 
 	public void saveImage( File fn, String mode ) {
 		try {		
 			FileOutputStream stream = new FileOutputStream(fn);			
-			if( mode == "PNG" ) {
+			if( mode.equals("PNG") ) {
 				BufferedImage bufImage = new BufferedImage((int)Math.ceil(maxX*scale)+2*offset, (int)Math.ceil(maxY*scale)+2*offset, BufferedImage.TYPE_INT_ARGB);
 				Graphics2D g = bufImage.createGraphics();
 
@@ -151,7 +151,7 @@ public class GridPanel extends NeuronVisPanel<GridPos> implements MouseListener 
 				draw(g);
 				
 				ImageIO.write(bufImage, "PNG", stream);
-			} else if( mode == "EPS") {
+			} else if( mode.equals("EPS")) {
 				EPSDocumentGraphics2D g = new EPSDocumentGraphics2D(false);
 				g.setGraphicContext(new org.apache.xmlgraphics.java2d.GraphicContext());
 				g.setupDocument(stream, (int)Math.ceil(scale*maxX+2*offset), (int)Math.ceil(scale*maxY+2*offset) ); 	

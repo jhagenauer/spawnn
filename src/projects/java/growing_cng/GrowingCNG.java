@@ -6,6 +6,8 @@ import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.charset.CharsetEncoder;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -15,6 +17,8 @@ import java.util.Random;
 import java.util.Set;
 
 import javax.imageio.ImageIO;
+
+import org.apache.commons.lang3.StringUtils;
 
 import spawnn.dist.Dist;
 import spawnn.ng.Connection;
@@ -51,18 +55,21 @@ public class GrowingCNG {
 		this.neurons = new ArrayList<double[]>(neurons);
 		
 		this.errors = new HashMap<double[],Double>();
-		for( double[] n : this.neurons )
+		for( double[] n : this.neurons ) {
 			this.errors.put( n, 0.0 );
+		}
 	}
 	
 	public int distMode = 0;
 	public double aErrorSum = 0, bErrorSum = 0;
+	public int k = 0;
 	public List<double[]> samples;
 	public int run = 0;
 		
 	public void train( int t, double[] x ) {
-		int l = sortNeurons(x);
+		int[] stats = sortNeurons(x);
 		
+		// find idxF1
 		double[] f1 = null;
 		int idxF1 = -1;
 		for( int i = 0; i < neurons.size(); i++ ) {
@@ -72,6 +79,9 @@ public class GrowingCNG {
 				idxF1 = i;
 			}
 		}
+		int idxG1 = stats[0];
+		int idxF2 = stats[1];
+		int l = (int)stats[2];
 						
 		double[] s_1 = neurons.get(0);
 		double[] s_2 = neurons.get(1);
@@ -81,16 +91,19 @@ public class GrowingCNG {
 			errors.put( s_1, errors.get(s_1) + r.nextDouble() );
 		else if( distMode == 1)
 			errors.put(s_1, errors.get(s_1) + distA.dist(s_1, x) );
-		else if( distMode == 2)
-			errors.put(s_1, errors.get(s_1) + Math.pow(distA.dist(s_1, x),2) );
-		else if( distMode == 3 )
+		else if( distMode == 2 )
 			errors.put(s_1, errors.get(s_1) + distB.dist(s_1, x) );		
 		else if( distMode == 4 ) 
-			errors.put(s_1, errors.get(s_1) + Math.pow(distB.dist(s_1, x) ,2) );
-		else if( distMode == 5 )
-			errors.put( s_1, errors.get(s_1) + (idxF1+1) > l ? 1.0 : 0.0 );
-		else if( distMode == 6 ) // 6 is superior to 5, 7, 8
-			errors.put( s_1, errors.get(s_1) + (double)(idxF1+1)/neurons.size() );
+			errors.put( s_1, errors.get(s_1) + ratio*idxF1/neurons.size() );
+		else if( distMode == 5 ) 
+			errors.put( s_1, errors.get(s_1) + ratio*(idxF1+1)/neurons.size() ); // deutlich besser als 4... Warum?!
+		else if( distMode == 6 ) 
+			errors.put( s_1, errors.get(s_1) + ratio*(idxF2+1)/l );
+		else if( distMode == 7 ) 
+			errors.put( s_1, errors.get(s_1) + (1.0-ratio)*(idxG1+1)/l + ratio*(idxF2+1)/l );
+		else if( distMode == 8 ) 
+			errors.put( s_1, errors.get(s_1) + (1.0-ratio)*(idxG1+1)/l + ratio*(idxF1+1)/neurons.size() );
+		
 		
 		for( Connection c : cons.keySet() )
 			cons.put(c, cons.get(c)+1 );
@@ -119,60 +132,64 @@ public class GrowingCNG {
 		neurons.retainAll(neuronsToKeep);
 		errors.keySet().retainAll(neuronsToKeep);
 		
-		if( t % lambda == 0 ) {	
-			
-			Map<double[],Set<double[]>> map = getMapping(samples);
-			double preA = DataUtils.getMeanQuantizationError(map, distA);
-			double preB = DataUtils.getMeanQuantizationError(map, distB);
-						
-			double[] q = null;
-			double[] f = null;
-			
-			for( double[] n : neurons )
-				if( q == null || errors.get(q) < errors.get(n) ) 
-					q = n;
-						
-			for( double[] n : Connection.getNeighbors(cons.keySet(), q, 1) )
-				if( f == null || errors.get(f) < errors.get(n) )
-					f = n;
-			
-			if( distMode == -1 ) {
-				q = neurons.get(r.nextInt(neurons.size()));
-				List<double[]> nbs = new ArrayList<double[]>( Connection.getNeighbors(cons.keySet(), q, 1));
-				f = nbs.get(r.nextInt(nbs.size()));
-			}
+		if( t % lambda == 0 ) 
+			insertNeuron(t);
+					
+		for( double[] n : neurons )
+			errors.put(n, errors.get(n) - beta*errors.get(n) );
+	}
+	
+	public void insertNeuron(int t) {
+		Map<double[],Set<double[]>> map = getMapping(samples);
+		double preA = DataUtils.getMeanQuantizationError(map, distA);
+		double preB = DataUtils.getMeanQuantizationError(map, distB);
+					
+		double[] q = null;
+		double[] f = null;
+		
+		for( double[] n : neurons )
+			if( q == null || errors.get(q) < errors.get(n) ) 
+				q = n;
+					
+		for( double[] n : Connection.getNeighbors(cons.keySet(), q, 1) )
+			if( f == null || errors.get(f) < errors.get(n) )
+				f = n;
+		
+		if( distMode == -1 ) {
+			q = neurons.get(r.nextInt(neurons.size()));
+			List<double[]> nbs = new ArrayList<double[]>( Connection.getNeighbors(cons.keySet(), q, 1));
+			f = nbs.get(r.nextInt(nbs.size()));
+		}
+							
+		double[] nn = new double[q.length];
+		for( int i = 0; i < nn.length; i++ )
+			nn[i] = (q[i]+f[i])/2;
+		neurons.add(nn);
 								
-			double[] nn = new double[q.length];
-			for( int i = 0; i < nn.length; i++ )
-				nn[i] = (q[i]+f[i])/2;
-			neurons.add(nn);
-									
-			cons.put( new Connection(q, nn), 0 );
-			cons.put( new Connection(f, nn), 0 );
-			cons.remove( new Connection( q, f ) );
-			
-			errors.put(q, errors.get(q) - alpha * errors.get(q) );
-			errors.put(f, errors.get(f) - alpha * errors.get(f) );
-			errors.put(nn, (errors.get(q) + errors.get(f))/2);
-			//errors.put(nn, errors.get(q) );
-			
-			if( t > 30000 ) {
+		cons.put( new Connection(q, nn), 0 );
+		cons.put( new Connection(f, nn), 0 );
+		cons.remove( new Connection( q, f ) );
+		
+		errors.put(q, errors.get(q) - alpha * errors.get(q) );
+		errors.put(f, errors.get(f) - alpha * errors.get(f) );
+		errors.put(nn, (errors.get(q) + errors.get(f))/2);
+		//errors.put(nn, errors.get(q) );
+		
+		if( t > 60000 ) {
 			map = getMapping(samples);
 			aErrorSum += DataUtils.getMeanQuantizationError(map, distA) - preA;
 			bErrorSum += DataUtils.getMeanQuantizationError(map, distB) - preB;
-			}					
-			// draw
-			/*DecimalFormat df = new DecimalFormat("000000");
-			Set<double[]> hiliNeurons = new HashSet<double[]>();
-			hiliNeurons.add(nn);
-			Set<Connection> hiliCons = new HashSet<Connection>();
-			hiliCons.add(new Connection(q, nn));
-			hiliCons.add(new Connection(f, nn));
-			geoDrawNG2("output/"+distMode+"_"+df.format(t)+"_"+run+".png", neurons, hiliNeurons, cons, hiliCons, new int[]{0,1}, samples );*/
-		}
+			k++;
+		}		
 		
-		for( double[] n : neurons )
-			errors.put(n, errors.get(n) - beta*errors.get(n) );
+		// draw
+		/*DecimalFormat df = new DecimalFormat("000000");
+		Set<double[]> hiliNeurons = new HashSet<double[]>();
+		hiliNeurons.add(nn);
+		Set<Connection> hiliCons = new HashSet<Connection>();
+		hiliCons.add(new Connection(q, nn));
+		hiliCons.add(new Connection(f, nn));
+		geoDrawNG2("output/"+distMode+"_"+df.format(t)+"_"+run+".png", neurons, hiliNeurons, cons, hiliCons, new int[]{0,1}, samples );*/
 	}
 			
 	public List<double[]> getNeurons() {
@@ -183,17 +200,16 @@ public class GrowingCNG {
 		return cons;
 	}
 	
-	private int sortNeurons(double[] x) {
-		int l = (int)Math.ceil(neurons.size()*ratio);
-		if( l == 1 ) { // short cuts to make sorting faster for extreme cases
-			new DefaultSorter<double[]>(distA).sort(x, neurons);
-		} else if( l == neurons.size() ) {
-			new DefaultSorter<double[]>(distB).sort(x, neurons.subList(0, l));
-		} else {
-			new DefaultSorter<double[]>(distA).sort(x, neurons);
-			new DefaultSorter<double[]>(distB).sort(x, neurons.subList(0, l));
-		}	
-		return l;
+	private int[] sortNeurons(double[] x) {
+		int l = (int)Math.round( ratio * ( neurons.size() -1 ) + 1 );
+		new DefaultSorter<double[]>(distA).sort(x, neurons);
+		List<double[]> sortedA = new ArrayList<double[]>(neurons);
+				
+		new DefaultSorter<double[]>(distB).sort(x, neurons.subList(0, l));
+		
+		int idxG1 = neurons.indexOf(sortedA.get(0));
+		int idxF2 = sortedA.indexOf(neurons.get(0));
+		return new int[]{idxG1, idxF2, l};
 	}
 	
 	public Map<double[],Set<double[]>> getMapping( List<double[]> samples ) {

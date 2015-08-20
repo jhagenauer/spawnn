@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import spawnn.UnsupervisedNet;
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
 import spawnn.som.decay.DecayFunction;
@@ -13,7 +14,7 @@ import spawnn.som.grid.Grid;
 import spawnn.som.grid.GridPos;
 import spawnn.som.kernel.KernelFunction;
 
-public class RSOM {
+public class RSOM implements UnsupervisedNet {
 			
 	protected Grid<double[]> grid; 
 	protected DecayFunction lr;

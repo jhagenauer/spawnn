@@ -22,7 +22,7 @@ public class ContextNG extends NG {
 	}
 		
 	@Override
-	public double[] train(double t, double[] x) {
+	public void train(double t, double[] x) {
 		sortNeurons(x);
 				
 		double[] context = ((SorterContext)sorter).getContext(x);
@@ -45,6 +45,5 @@ public class ContextNG extends NG {
 				for( int i = 0; i < context.length; i++ )
 					w[ x.length + i ] += adapt * (context[i] - w[x.length + i]);
 		}
-		return neurons.get(0);
 	}
 }

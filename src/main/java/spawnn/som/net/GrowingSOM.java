@@ -4,6 +4,7 @@ package spawnn.som.net;
 import java.util.HashMap;
 import java.util.Map;
 
+import spawnn.UnsupervisedNet;
 import spawnn.dist.Dist;
 import spawnn.som.bmu.BmuGetter;
 import spawnn.som.decay.DecayFunction;
@@ -13,7 +14,7 @@ import spawnn.som.grid.GrowingGrid2D;
 import spawnn.som.kernel.KernelFunction;
 
 // See Fritzke 95, requires finetuning with regular SOM
-public class GrowingSOM {
+public class GrowingSOM implements UnsupervisedNet {
 			
 	protected GrowingGrid2D grid; 
 	protected BmuGetter<double[]> bmuGetter;
@@ -36,7 +37,7 @@ public class GrowingSOM {
 		this.c = 0;
 	}
 				
-	public boolean train( double t, double[] x ) {
+	public void train( double t, double[] x ) {
 		
 		GridPos bmuPos = bmuGetter.getBmuPos( x, grid );
 		if( counter.containsKey( bmuPos) )
@@ -68,7 +69,7 @@ public class GrowingSOM {
 				return false;*/
 			
 			if( grid.size() >= 500 )
-				return false;
+				return;
 													
 			GridPos worstNb = null;
 			double dist = Double.MIN_VALUE;
@@ -110,7 +111,7 @@ public class GrowingSOM {
 			grid.setPrototypeAt( p, v );
 		}
 		c++;
-		return true;
+		return;
 	}
 		
 	public Grid<double[]> getGrid() {

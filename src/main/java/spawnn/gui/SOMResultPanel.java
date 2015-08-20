@@ -25,8 +25,10 @@ import javax.swing.JButton;
 import javax.swing.JColorChooser;
 import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
+import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JToggleButton;
+import javax.swing.ListCellRenderer;
 
 import net.miginfocom.swing.MigLayout;
 
@@ -65,7 +67,8 @@ public class SOMResultPanel extends ResultPanel<GridPos> implements ActionListen
 	private static Logger log = Logger.getLogger(SOMResultPanel.class);
 	private static final long serialVersionUID = -4518072006960672609L;
 
-	private JComboBox gridComboBox, colorComboBox, gridModeComboBox;
+	private JComboBox<String> gridComboBox;
+	private JComboBox colorComboBox, gridModeComboBox;
 	private JButton btnExpGrid, btnExpMap, colorChooser;
 	private GridPanel pnlGrid;
 	private GraphPanel pnlGraph;
@@ -108,10 +111,18 @@ public class SOMResultPanel extends ResultPanel<GridPos> implements ActionListen
 
 		setLayout(new MigLayout(""));
 		
-		gridComboBox = new JComboBox();
+		gridComboBox = new JComboBox<String>();
 		gridComboBox.addItem(RANDOM);
 		gridComboBox.addItem(DISTANCE);
 		gridComboBox.addItem(CLUSTER);
+		
+		gridComboBox.setRenderer(new ComboSeparatorsRenderer<String>((ListCellRenderer<String>)gridComboBox.getRenderer()){        
+		    @Override
+			protected boolean addSeparatorAfter(JList list, String value, int index) {
+		    	return CLUSTER.equals(value);
+			}                                                                            
+		});     
+		
 		for (String s : orig.names)
 			gridComboBox.addItem(s);
 		gridComboBox.addActionListener(this);
@@ -133,7 +144,7 @@ public class SOMResultPanel extends ResultPanel<GridPos> implements ActionListen
 		btnExpGrid = new JButton("Export grid...");
 		btnExpGrid.addActionListener(this);
 
-		colorChooser = new JButton("Color...");
+		colorChooser = new JButton("Select color...");
 		colorChooser.setBackground(selectedColor);
 		colorChooser.addActionListener(this);
 
@@ -208,13 +219,13 @@ public class SOMResultPanel extends ResultPanel<GridPos> implements ActionListen
 		cards.add(pnlGrid, GRID);
 		cards.add(pnlGraph, GRAPH);
 
-		add(gridComboBox, "split 5");
+		add(gridComboBox, "split 4");
 		add(colorComboBox, "");
 		add(gridModeComboBox, "");
-		add(colorChooser, "");
 		add(btnExpGrid, "");
 				
-		add(selectSingle, "split 2");
+		add(colorChooser, "split 3");
+		add(selectSingle, "");
 		add(btnExpMap, "pushx, wrap");
 		
 		add( cards, "w 50%, pushy, grow");

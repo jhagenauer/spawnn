@@ -60,8 +60,8 @@ public class WMNGParamSensBF {
 		int threads = 4;
 		final boolean normed = true;
 
-		final List<double[]> samples = DataUtils.readCSV("output/toroid50x50_1.csv");
-		final Map<double[], Map<double[], Double>> dMap = SpaceTestDiscrete.readDistMap(samples, "output/toroid50x50_1.wtg");
+		final List<double[]> samples = DataUtils.readCSV("/home/julian/publications/wmdmng/geographical_systems_v2/data/grid/toroid50x50_1.csv");
+		final Map<double[], Map<double[], Double>> dMap = SpaceTestDiscrete.readDistMap(samples, "/home/julian/publications/wmdmng/geographical_systems_v2/data/grid/toroid50x50_1.wtg");
 		
 		double[] meanBasicNG = new double[maxDist+1];
 		{ // basic NG

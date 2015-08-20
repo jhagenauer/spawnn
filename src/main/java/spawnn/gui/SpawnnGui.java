@@ -110,6 +110,15 @@ public class SpawnnGui extends JFrame implements PropertyChangeListener, ActionL
 	}
 
 	public static void main(String[] args) {
+		/*try {
+			UIManager.setLookAndFeel("javax.swing.plaf.nimbus.NimbusLookAndFeel");
+		} catch (Exception e) {
+			try {
+				UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
+			} catch (Exception ex) {
+				ex.printStackTrace();
+			}
+		}*/
 		new SpawnnGui();
 	}
 
@@ -275,7 +284,7 @@ public class SpawnnGui extends JFrame implements PropertyChangeListener, ActionL
 							Dist<double[]> wDist = new WeightedDist<double[]>(map);
 							s = new DefaultSorter<double[]>(wDist);
 						} else if (annPanel.tpContextModel.getSelectedComponent() == annPanel.augmentedPanel) {
-							double a = ((WeightedPanel) annPanel.augmentedPanel).getAlpha();
+							double a = ((AugmentedPanel) annPanel.augmentedPanel).getAlpha();
 							Dist<double[]> aDist = new AugmentedDist(ga, fa, a);
 							s = new DefaultSorter<double[]>(aDist);
 						} else

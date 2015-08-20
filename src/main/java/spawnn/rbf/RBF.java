@@ -10,12 +10,13 @@ import java.util.Set;
 
 import org.apache.log4j.Logger;
 
+import spawnn.SupervisedNet;
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
 import spawnn.utils.Clustering;
 import spawnn.utils.DataUtils;
 
-public class RBF {
+public class RBF implements SupervisedNet {
 
 	private static Logger log = Logger.getLogger(RBF.class);
 
@@ -47,6 +48,19 @@ public class RBF {
 				response[i] += weights.get(i).get(c) * output;
 		}
 		return response;
+	}
+	
+	public double[] getResponse( double[] x, double[] neuron ) {
+		double output = Math.exp( -0.5 * Math.pow(dist.dist(x, neuron) / hidden.get(neuron), 2) );
+		
+		double[] response = new double[weights.size()];
+		for (int i = 0; i < weights.size(); i++)
+			response[i] += weights.get(i).get(neuron) * output;
+		return response;
+	}
+	
+	public void train( double t, double[] x, double[] desired ) {
+		 train(x, desired);
 	}
 
 	public void train(double[] x, double[] desired) {

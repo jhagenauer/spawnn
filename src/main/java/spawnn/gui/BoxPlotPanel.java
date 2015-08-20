@@ -1,5 +1,7 @@
 package spawnn.gui;
 
+import java.awt.Color;
+import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.util.ArrayList;
 import java.util.List;
@@ -49,6 +51,15 @@ public class BoxPlotPanel extends JPanel {
 		CategoryAxis xAxis = new CategoryAxis("");
 		NumberAxis yAxis = new NumberAxis("");
 		BoxAndWhiskerRenderer renderer = new BoxAndWhiskerRenderer();
+		  
+	    renderer.setFillBox(true);
+	    renderer.setSeriesPaint(0, Color.LIGHT_GRAY);
+	    renderer.setSeriesPaint(1, Color.LIGHT_GRAY);
+	    renderer.setSeriesOutlinePaint(0, Color.BLACK);
+	    renderer.setSeriesOutlinePaint(1, Color.BLACK);
+	    renderer.setUseOutlinePaintForWhiskers(true);  
+	    renderer.setMedianVisible(true);
+	    renderer.setMeanVisible(true);
 
 		class MyCategoryPlot extends CategoryPlot {
 			public MyCategoryPlot(DefaultBoxAndWhiskerCategoryDataset dataset, CategoryAxis xAxis, NumberAxis yAxis, BoxAndWhiskerRenderer renderer) {

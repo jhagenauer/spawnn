@@ -177,7 +177,9 @@ public class SpaceTestDiscrete {
 
 		@Override
 		public boolean equals(Object o) {
-			return node.equals((QueueEntry) o);
+			log.debug("AHA");
+			System.exit(1);
+			return node.equals( ((QueueEntry)o).node );
 		}
 	}
 

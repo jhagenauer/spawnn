@@ -34,6 +34,9 @@ public class GrowingCNG_Housing_Thread {
 
 	private static Logger log = Logger.getLogger(GrowingCNG_Housing_Thread.class);
 
+	/* Note: Submarket-Stuff does not totally fit in here: Needed GWR + Kriging
+	 * 
+	 */
 	public static void main(String[] args) {
 		final Random r = new Random();
 	
@@ -41,7 +44,7 @@ public class GrowingCNG_Housing_Thread {
 		final List<double[]> desired = new ArrayList<double[]>();
 		final List<Geometry> geoms = new ArrayList<Geometry>();
 		
-		SpatialDataFrame sdf = DataUtils.readSpatialDataFrameFromCSV(new File("data/marco/dat4/gwr.csv"), new int[] { 6, 7 }, new int[] {}, true);
+		/*SpatialDataFrame sdf = DataUtils.readSpatialDataFrameFromCSV(new File("data/marco/dat4/gwr.csv"), new int[] { 6, 7 }, new int[] {}, true);
 		List<String> vars = new ArrayList<String>();
 		vars.add("xco");
 		vars.add("yco");
@@ -72,9 +75,9 @@ public class GrowingCNG_Housing_Thread {
 			samples.add(nd);
 			desired.add(new double[] { d[sdf.names.indexOf("lnp")] });
 			geoms.add(sdf.geoms.get(idx));
-		}
-				
-		/*SpatialDataFrame sdf = DataUtils.readSpatialDataFrameFromShapefile(new File("data/cng/test2c.shp"), true);
+		}*/
+		
+		SpatialDataFrame sdf = DataUtils.readSpatialDataFrameFromShapefile(new File("data/cng/test2c.shp"), true);
 		List<String> vars = new ArrayList<String>();
 		vars.add("X");
 		vars.add("Y");
@@ -87,18 +90,20 @@ public class GrowingCNG_Housing_Thread {
 				nd[i] = d[sdf.names.indexOf(vars.get(i))];
 			samples.add(nd);
 			geoms.add(sdf.geoms.get(idx));
-		}*/
-		
+			desired.add( new double[]{ r.nextDouble() });
+		}
+				
 		int[] fa = new int[vars.size() - 2];
 		for (int i = 0; i < fa.length; i++)
 			fa[i] = i + 2;
 		final int[] ga = new int[] { 0, 1 };
 		DataUtils.zScoreColumns(samples, fa);
 		
+		/*
 		// PCA
-		int nrComponents = 4;
+		int nrComponents = 1;
 		List<double[]> ns = DataUtils.removeColumns(samples, ga);
-		ns = DataUtils.reduceDimensionByPCA(ns, nrComponents, false);
+		ns = DataUtils.reduceDimensionByPCA(ns, nrComponents, true);
 		for (int k = 0; k < ns.size(); k++) {
 			double[] nd = new double[ga.length + nrComponents];
 			for (int i = 0; i < ga.length; i++)
@@ -109,10 +114,10 @@ public class GrowingCNG_Housing_Thread {
 		}
 		final int[] nFa = new int[nrComponents];
 		for (int i = 0; i < nrComponents; i++)
-			nFa[i] = i + ga.length;
-						
+			nFa[i] = i + ga.length;*/
+										
 		final Dist<double[]> gDist = new EuclideanDist(ga);
-		final Dist<double[]> fDist = new EuclideanDist(nFa);
+		final Dist<double[]> fDist = new EuclideanDist(fa);
 		
 		boolean firstWrite = true;
 
@@ -124,21 +129,20 @@ public class GrowingCNG_Housing_Thread {
 		for( final int T_MAX : new int[]{ 40000 } )
 		for (final double lrB : new double[] { 0.05 }) 
 			for (final double lrN : new double[] { lrB/100 })
-				for (final int lambda : new int[] { 600 }) // 300 bringts gar nichts, besser 600 evtl. auch 900
+				for (final int lambda : new int[] { 600, 900, 1200 }) // 300 bringts gar nichts, besser 600 evtl. auch 900
 					for (final int aMax : new int[] { lambda/3 })
 						for( final double alpha : new double[]{ 0.45 } ) //  0.45 oder 0.5, kein großer unterschied
 							for( final double beta : new double[]{ 0.00005 } )
-								for( double ratio : new double[]{ 0.01, 1.0 } )
+								for( double ratio : new double[]{ 1.0 } )
 								//for( double ratio = 0.0; (ratio+=0.01) <= 1.0; )
-									//for( final int distMode : new int[]{ /*-1,*/ 0, 1, /*2,*/ 3, /*4,*/ 5, 6 } ){
-									for( final int distMode : new int[]{ 1, 3, 5 } ){
+								for( final int distMode : new int[]{ -1, 0, 2, 7, 8 } ){
 																														
 
 							final double RATIO = ratio;
 							ExecutorService es = Executors.newFixedThreadPool(4);
 							List<Future<double[]>> futures = new ArrayList<Future<double[]>>();
 							
-							for (int i = 0; i < 64; i++) {
+							for (int i = 0; i < 16; i++) {
 								final int RUN = i;
 								futures.add(es.submit(new Callable<double[]>() {
 

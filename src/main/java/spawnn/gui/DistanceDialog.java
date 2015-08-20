@@ -67,7 +67,7 @@ public class DistanceDialog extends JDialog implements ActionListener {
 		if (e.getSource() == ok) {
 			okPressed = true;
 			dispose();
-		} else {
+		} else if( e.getSource() == cancel ){
 			okPressed = false;
 			dispose();
 		}

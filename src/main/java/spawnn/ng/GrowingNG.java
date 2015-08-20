@@ -15,13 +15,14 @@ import java.util.Set;
 
 import org.apache.log4j.Logger;
 
+import spawnn.UnsupervisedNet;
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
 import spawnn.ng.sorter.DefaultSorter;
 import spawnn.ng.sorter.Sorter;
 import spawnn.utils.DataUtils;
 
-public class GrowingNG {
+public class GrowingNG implements UnsupervisedNet {
 	
 	private static Logger log = Logger.getLogger(GrowingNG.class);
 	
@@ -50,7 +51,7 @@ public class GrowingNG {
 			this.errors.put( n, 0.0 );
 	}
 		
-	public void train( int t, double[] x ) {
+	public void train( double t, double[] x ) {
 		
 		sorter.sort(x, neurons);;
 		double[] s_1 = neurons.get(0);

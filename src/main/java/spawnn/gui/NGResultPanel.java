@@ -26,8 +26,10 @@ import javax.swing.JButton;
 import javax.swing.JColorChooser;
 import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
+import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JToggleButton;
+import javax.swing.ListCellRenderer;
 import javax.xml.stream.XMLOutputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamWriter;
@@ -66,7 +68,8 @@ public class NGResultPanel extends ResultPanel<double[]> implements ActionListen
 	private static Logger log = Logger.getLogger(NGResultPanel.class);
 	private static final long serialVersionUID = -4518072006960672609L;
 
-	private JComboBox vertexComboBox, edgeComboBox, colorComboBox, layoutComboBox;
+	private JComboBox<String> vertexComboBox;
+	private JComboBox edgeComboBox, colorComboBox, layoutComboBox;
 	private JButton btnExpGraph, btnExpMap, colorChooser;
 	private JToggleButton selectSingle;
 	private GraphPanel pnlGraph;
@@ -107,6 +110,14 @@ public class NGResultPanel extends ResultPanel<double[]> implements ActionListen
 		vertexComboBox.addItem(DISTANCE);
 		vertexComboBox.addItem(CLUSTER);
 		vertexComboBox.addItem(CLUSTER_GRAPH);
+		
+		vertexComboBox.setRenderer(new ComboSeparatorsRenderer<String>((ListCellRenderer<String>)vertexComboBox.getRenderer()){        
+		    @Override
+			protected boolean addSeparatorAfter(JList list, String value, int index) {
+		    	return CLUSTER_GRAPH.equals(value);
+			}                                                                            
+		});  
+		
 		for (String s : orig.names)
 			vertexComboBox.addItem(s);
 		vertexComboBox.addActionListener(this);
@@ -136,7 +147,7 @@ public class NGResultPanel extends ResultPanel<double[]> implements ActionListen
 		btnExpGraph = new JButton("Export gas...");
 		btnExpGraph.addActionListener(this);
 
-		colorChooser = new JButton("Color...");
+		colorChooser = new JButton("Select color...");
 		colorChooser.setBackground(selectedColor);
 		colorChooser.addActionListener(this);
 		
@@ -155,14 +166,14 @@ public class NGResultPanel extends ResultPanel<double[]> implements ActionListen
 		pnlGraph.setGridColors(colorMap, selectedColors, neuronValues);
 		pnlGraph.addNeuronSelectedListener(this);
 
-		add(vertexComboBox, "split 6");
+		add(vertexComboBox, "split 5");
 		add(colorComboBox, "");
 		add(edgeComboBox,"");
 		add(layoutComboBox, "");
-		add(colorChooser, "");		
 		add(btnExpGraph, "");
 				
-		add(selectSingle, "split 2");
+		add(colorChooser, "split 3");		
+		add(selectSingle, "");
 		add(btnExpMap, "pushx, wrap");
 		
 		add(pnlGraph, "w 50%, pushy, grow");

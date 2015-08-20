@@ -92,6 +92,7 @@ public class MapPanel<T> extends NeuronVisPanel<T> implements MapPaneListener, C
 
 	@Override
 	public void onDisplayAreaChanged(MapPaneEvent e) {
+		mp.repaint(); //?
 	}
 
 	@Override
@@ -116,6 +117,7 @@ public class MapPanel<T> extends NeuronVisPanel<T> implements MapPaneListener, C
 
 	@Override
 	public void componentResized(ComponentEvent arg0) {
+		mp.repaint(); //?
 	}
 
 	@Override
@@ -140,13 +142,13 @@ public class MapPanel<T> extends NeuronVisPanel<T> implements MapPaneListener, C
 		BufferedImage bufImage = new BufferedImage(imageBounds.width, imageBounds.height, BufferedImage.TYPE_INT_RGB);
 		try {
 			FileOutputStream stream = new FileOutputStream(fn);
-			if (mode == "PNG") {
+			if (mode.equals("PNG")) {
 				Graphics2D g = bufImage.createGraphics();
 				g.drawImage(bufImage, 0, 0, imageBounds.width + 2 * offset, imageBounds.height + 2 * offset, null);
 				mp.getRenderer().paint(g, imageBounds, mapBounds);
 
 				ImageIO.write(bufImage, "PNG", stream);
-			} else if (mode == "EPS") {
+			} else if (mode.equals("EPS")) {
 				EPSDocumentGraphics2D g = new EPSDocumentGraphics2D(false);
 				g.setGraphicContext(new org.apache.xmlgraphics.java2d.GraphicContext());
 				g.setupDocument(stream, imageBounds.width + 2 * offset, imageBounds.height + 2 * offset);
