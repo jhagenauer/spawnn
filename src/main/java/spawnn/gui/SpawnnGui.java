@@ -7,9 +7,12 @@ import java.awt.event.ActionListener;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -74,6 +77,7 @@ public class SpawnnGui extends JFrame implements PropertyChangeListener, ActionL
 		setJMenuBar(mb);
 
 		JMenu fileMenu = new JMenu("File");
+		
 		quitItem = new JMenuItem("Quit");
 		quitItem.addActionListener(this);
 		fileMenu.add(quitItem);
@@ -127,14 +131,50 @@ public class SpawnnGui extends JFrame implements PropertyChangeListener, ActionL
 
 	@Override
 	public void propertyChange(PropertyChangeEvent e) {
-		if (e.getPropertyName().equals(AnnPanel.TRAIN_PROP) && (Boolean) e.getNewValue()) {
-			
-			// get data
+		if( e.getPropertyName().equals(AnnPanel.APPLY_EXISTING) && (Boolean) e.getNewValue() ) {
 			int[] fa = dataPanel.getFA();
 			int[] ga = dataPanel.getGA(false);
 
-			log.debug("fa: " + Arrays.toString(fa));
-			log.debug("ga: " + Arrays.toString(ga));
+			List<double[]> samples = dataPanel.getNormedSamples();
+			SpatialDataFrame origData = dataPanel.getSpatialData();
+			
+			if (dataPanel.getSpatialData() == null) {
+				JOptionPane.showMessageDialog(this, "No data loaded yet!", "No data!", JOptionPane.ERROR_MESSAGE);
+				return;
+			}
+			
+			Dist<double[]> fDist = new EuclideanDist(fa);
+			Dist<double[]> gDist = ga.length > 0 ? new EuclideanDist(ga) : null;
+			
+			ApplyExistingDialog aed = new ApplyExistingDialog(this, "Apply existing", true);
+			if( aed.isOkPressed() ) {
+				
+				Grid2D<double[]> grid = null;
+				List<double[]> l = null;
+				try {
+					grid = SomUtils.loadGrid(new FileInputStream(aed.getGridFile()));
+					l = DataUtils.readCSV( new FileInputStream(aed.getMapFile()));
+					
+				} catch (FileNotFoundException e1) {
+					e1.printStackTrace();
+				}
+				Map<GridPos,Set<double[]>> bmus = new HashMap<GridPos,Set<double[]>>();
+				for( double[] d : l ) {
+					GridPos p = new GridPos((int)d[0],(int)d[1]);
+					if( !bmus.containsKey(p))
+						bmus.put(p,new HashSet<double[]>());
+					bmus.get(p).add(samples.get((int)d[2]));
+				}
+								
+				SOMResultPanel srp = new SOMResultPanel(this, origData, samples, bmus, grid, fDist, gDist, ga);
+				tp.addTab("Results (SOM," + (numSom++) + ")", srp);
+				tp.setSelectedComponent(srp);
+				tp.setTabComponentAt(tp.indexOfComponent(srp), new ButtonTabComponent(tp));
+			}
+			
+		} else if (e.getPropertyName().equals(AnnPanel.TRAIN_PROP) && (Boolean) e.getNewValue()) {
+			int[] fa = dataPanel.getFA();
+			int[] ga = dataPanel.getGA(false);
 
 			List<double[]> samples = dataPanel.getNormedSamples();
 			SpatialDataFrame origData = dataPanel.getSpatialData();
@@ -146,17 +186,14 @@ public class SpawnnGui extends JFrame implements PropertyChangeListener, ActionL
 			
 			int sampleLength = samples.get(0).length;
 			Dist<double[]> fDist = new EuclideanDist(fa);
-			Dist<double[]> gDist = null;
-			if (ga.length > 0)
-				gDist = new EuclideanDist(ga);
-
+			Dist<double[]> gDist = ga.length > 0 ? new EuclideanDist(ga) : null;
 			int t_max = annPanel.getNumTraining();
 			
-			Map<double[],Map<double[],Double>> dm = null;
+			Map<double[],Map<double[],Double>> distanceMatrix = null;
 			if( annPanel.tpContextModel.getSelectedComponent() == annPanel.wmcPanel ) {
 				try {
 					File dmFile = ((WMCPanel)annPanel.wmcPanel).getDistMapFile();
-					dm = DataUtils.readDistMatrixKeyValue(samples, dmFile);
+					distanceMatrix = DataUtils.readDistMatrixKeyValue(samples, dmFile);
 				} catch( Exception ex ) {
 					JOptionPane.showMessageDialog(this, "Could read/parse distance matrix file: "+ex.getLocalizedMessage(), "Read/Parse error!", JOptionPane.ERROR_MESSAGE);
 					return;
@@ -190,7 +227,7 @@ public class SpawnnGui extends JFrame implements PropertyChangeListener, ActionL
 						for (double[] d : samples)
 							bmuHist.put(d, prototypes.get(r.nextInt(prototypes.size())));
 						
-						SorterWMC s = new SorterWMC(bmuHist, dm , fDist, wp.getAlpha(), wp.getBeta());
+						SorterWMC s = new SorterWMC(bmuHist, distanceMatrix , fDist, wp.getAlpha(), wp.getBeta());
 						BmuGetter<double[]> bg = new SorterBmuGetterContext(s);
 						ContextSOM som = new ContextSOM(sp.getKernelFunction(), sp.getLearningRate(), grid, (BmuGetterContext) bg, sampleLength);
 
@@ -270,7 +307,7 @@ public class SpawnnGui extends JFrame implements PropertyChangeListener, ActionL
 						for (double[] d : samples)
 							bmuHist.put(d, neurons.get(r.nextInt(neurons.size())));
 
-						s = new SorterWMC(bmuHist, dm, fDist, wp.getAlpha(), wp.getBeta());
+						s = new SorterWMC(bmuHist, distanceMatrix, fDist, wp.getAlpha(), wp.getBeta());
 						ng = new ContextNG(neurons, np.getNeighborhoodRate(), np.getAdaptationRate(), (SorterWMC) s);
 
 					} else {
@@ -368,6 +405,6 @@ public class SpawnnGui extends JFrame implements PropertyChangeListener, ActionL
 			JOptionPane.showMessageDialog(this, "Spatial Analysis with (Self-Organinzing) Neural Networks (SPAWNN) ©2013-2015\n\n" + "All rights reserved.\n\n" + "Julian Hagenauer", "About", JOptionPane.INFORMATION_MESSAGE);
 		} else if (e.getSource() == quitItem) {
 			System.exit(1);
-		}
+		} 
 	}
 }

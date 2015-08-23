@@ -35,7 +35,7 @@ public class LLMNG_Housing_Optimize {
 
 	public static void main(String[] args) {
 		boolean firstWrite = true;
-		final int T_MAX = 10000;
+		final int T_MAX = 20000;
 
 		final List<double[]> samples = new ArrayList<double[]>();
 		final List<Geometry> geoms = new ArrayList<Geometry>();
@@ -81,14 +81,14 @@ public class LLMNG_Housing_Optimize {
 		final Dist<double[]> gDist = new EuclideanDist(ga);
 		final Dist<double[]> fDist = new EuclideanDist(fa);
 
-		for (int nrNeurons = 29; nrNeurons < 30; nrNeurons++)
+		for (int nrNeurons = 2; nrNeurons < 20; nrNeurons++)
 			for (int l = 1; l <= nrNeurons; l++) {
 				final int N = nrNeurons, L = l;
 
 				ExecutorService es = Executors.newFixedThreadPool(4);
 				List<Future<double[]>> futures = new ArrayList<Future<double[]>>();
 
-				for (int i = 0; i < 32; i++) {
+				for (int i = 0; i < 16; i++) {
 					futures.add(es.submit(new Callable<double[]>() {
 
 						@Override

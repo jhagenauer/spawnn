@@ -23,6 +23,9 @@ public class ErrorBmuGetter extends BmuGetter<double[]> {
 		double minError = Double.MAX_VALUE;
 		
 		for( GridPos gp : grid.getPositions() ) {
+			if( ign.contains( gp) )
+				continue;
+			
 			double[] r = llm.getResponse(x, gp);
 			double[] d = desired.get(samples.indexOf(x));
 			double error = 0;

@@ -18,7 +18,6 @@ import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
-import javax.swing.filechooser.FileFilter;
 import javax.swing.table.DefaultTableModel;
 
 import net.miginfocom.swing.MigLayout;
@@ -127,40 +126,25 @@ public class DataPanel extends JPanel implements ActionListener, TableModelListe
 		
 		if( ae.getSource() == btnLoadShp ) {
 			JFileChooser fc = new JFileChooser();
-			
-			FileFilter csvFilter = new FileFilter() {
-				@Override
-				public boolean accept(File f) {	return f.isDirectory() || f.getName().toLowerCase().endsWith(".csv"); }
-
-				@Override
-				public String getDescription() { return "Comma-separated values (*.csv)"; }
-			};
-			
-			FileFilter shpFilter = new FileFilter() {
-				@Override
-				public boolean accept(File f) {	return f.isDirectory() || f.getName().toLowerCase().endsWith(".shp"); }
-
-				@Override
-				public String getDescription() { return "ESRI Shapefile (*.shp)"; }
-			};
-			fc.setFileFilter(csvFilter); // not supported by now. Problem: how to deal with coordinate vectors
-			fc.setFileFilter(shpFilter);
+					
+			fc.setFileFilter(FFilter.csvFilter); 
+			fc.setFileFilter(FFilter.shpFilter);
 									
 			int state = fc.showOpenDialog(this);
 			if( state == JFileChooser.APPROVE_OPTION ) {
 				File fn = fc.getSelectedFile(); 
 				
-				if( fc.getFileFilter() == shpFilter ) {
+				if( fc.getFileFilter() == FFilter.shpFilter ) {
 			      sd = DataUtils.readSpatialDataFrameFromShapefile(fn, false);     
 			      addCCoords.setEnabled(true);
-			      useAll.setEnabled(true);
-				} else if( fc.getFileFilter() == csvFilter ) {				
+				} else if( fc.getFileFilter() == FFilter.csvFilter ) {				
 					DataFrame df = DataUtils.readDataFrameFromCSV(fn, new int[]{}, true ); 
 					sd = new SpatialDataFrame();				
 					sd.samples = df.samples;
 					sd.names = df.names;
 					sd.bindings = df.bindings;
 				}
+				useAll.setEnabled(true);
 				
 				dataTable.setRowCount(0);
 								
@@ -298,7 +282,7 @@ public class DataPanel extends JPanel implements ActionListener, TableModelListe
 			GeometryFactory gf = new GeometryFactory();
 			sd.geoms = new ArrayList<Geometry>();
 			
-			int[] ga = getGA(false);
+			int[] ga = getGA(true);
 						
 			for( double[] d : sd.samples ) {
 				Coordinate c;

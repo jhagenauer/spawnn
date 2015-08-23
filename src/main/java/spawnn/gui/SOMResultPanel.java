@@ -102,7 +102,6 @@ public class SOMResultPanel extends ResultPanel<GridPos> implements ActionListen
 		this.pos = new ArrayList<GridPos>(grid.getPositions()); // fixed order for indexing/coloring
 		this.fc = buildClusterFeatures(orig, samples, bmus, pos);
 		this.grid = grid;
-		this.samples = samples;
 		this.bmus = bmus;
 		this.fDist = fDist;
 		this.gDist = gDist;

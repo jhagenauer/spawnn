@@ -10,8 +10,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -21,7 +19,6 @@ import java.util.Set;
 
 import javax.imageio.ImageIO;
 
-import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.log4j.Logger;
 import org.geotools.feature.DefaultFeatureCollection;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
@@ -39,29 +36,20 @@ import org.opengis.referencing.crs.CoordinateReferenceSystem;
 import rbf.Meuse;
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
-import spawnn.gui.DistanceDialog.DistMode;
-import spawnn.ng.NG;
-import spawnn.ng.sorter.DefaultSorter;
-import spawnn.ng.sorter.KangasSorter;
-import spawnn.ng.sorter.Sorter;
-import spawnn.ng.utils.NGUtils;
 import spawnn.som.bmu.BmuGetter;
 import spawnn.som.bmu.DefaultBmuGetter;
 import spawnn.som.bmu.KangasBmuGetter;
 import spawnn.som.decay.LinearDecay;
-import spawnn.som.decay.PowerDecay;
 import spawnn.som.grid.Grid2DHex;
+import spawnn.som.grid.Grid2DHexToroid;
 import spawnn.som.grid.GridPos;
 import spawnn.som.kernel.GaussKernel;
 import spawnn.som.utils.SomUtils;
-import spawnn.utils.Clustering;
 import spawnn.utils.ColorBrewerUtil;
+import spawnn.utils.ColorBrewerUtil.ColorMode;
 import spawnn.utils.DataUtils;
 import spawnn.utils.Drawer;
 import spawnn.utils.SpatialDataFrame;
-import spawnn.utils.Clustering.TreeNode;
-import spawnn.utils.ColorBrewerUtil.ColorMode;
-import cng_houseprice.OptimizeHousingLLMCNG;
 
 import com.vividsolutions.jts.geom.Geometry;
 
@@ -72,7 +60,7 @@ public class LLM_Housing {
 	public static void main(String[] args) {
 		final DecimalFormat df = new DecimalFormat("00");
 		final Random r = new Random();
-		final int T_MAX = 10000;
+		final int T_MAX = 100000;
 		
 		final List<double[]> samples = new ArrayList<double[]>();
 		final List<Geometry> geoms = new ArrayList<Geometry>();
@@ -128,10 +116,13 @@ public class LLM_Housing {
 		// ------------------------------------------------------------------------
 		
 		DataUtils.zScoreColumns(samples, fa);
+		DataUtils.writeCSV("output/samples.csv", samples, vars.toArray( new String[]{}) );
+		
 		final Dist<double[]> gDist = new EuclideanDist(ga);
 		final Dist<double[]> fDist = new EuclideanDist(fa);
 		
-		for( int l = 3; l < 4; l++ ) {
+		for( int run = 0; run < 10; run++ )
+		for( int l = 13; l <= 13; l++ ) {
 		
 		/*List<double[]> neurons = new ArrayList<double[]>();
 		for( int i = 0; i < 10; i++ ) {
@@ -145,6 +136,7 @@ public class LLM_Housing {
 		errorSorter.setLLMNG(ng);*/
 		
 		Grid2DHex<double[]> grid = new Grid2DHex<>(12, 8);
+		//log.debug(grid.getMaxDist()); System.exit(1);
 		SomUtils.initRandom(grid, samples);
 		ErrorBmuGetter errorBmuGetter = new ErrorBmuGetter(samples, desired);
 		BmuGetter<double[]> bmuGetter = new KangasBmuGetter<>(new DefaultBmuGetter<>(gDist), errorBmuGetter, l);
@@ -161,7 +153,7 @@ public class LLM_Housing {
 		List<double[]> response = new ArrayList<double[]>();
 		for (double[] x : samples)
 			response.add(llm.present(x));
-		log.debug("RMSE: "+Meuse.getRMSE(response, desired)+", R2: "+Math.pow(Meuse.getPearson(response, desired), 2));
+		// log.debug("RMSE: "+Meuse.getRMSE(response, desired)+", R2: "+Math.pow(Meuse.getPearson(response, desired), 2));
 		
 		/*for( double[] d : ng.getNeurons() ) {
 			log.debug("Prt: "+Arrays.toString(d) );
@@ -171,18 +163,40 @@ public class LLM_Housing {
 		
 		//Map<double[], Set<double[]>> mapping = NGUtils.getBmuMapping(samples, llm.getNeurons(), sorter ).values();
 		Map<GridPos,Set<double[]>> mapping = SomUtils.getBmuMapping(samples, grid, bmuGetter);
-		Drawer.geoDrawCluster(mapping.values(), samples, geoms, "output/cluster_"+df.format(l)+".png", true);
+		Drawer.geoDrawCluster(mapping.values(), samples, geoms, "output/cluster_"+df.format(l)+"_"+df.format(run)+".png", true);
+		Map<GridPos,double[]> om = new HashMap<GridPos,double[]>(grid.getGridMap());
+				
+		//save mapping
+		List<double[]> m = new ArrayList<double[]>();
+		for( GridPos p : mapping.keySet() ) 
+			for( double[] d : mapping.get(p) ) 
+				m.add( new double[]{p.getPosVector()[0], p.getPosVector()[1], samples.indexOf(d)});
+		DataUtils.writeCSV("output/mapping_"+df.format(l)+"_"+df.format(run)+".csv", m, new String[]{"x","y","idx"});
+				
 		try {
-			SomUtils.printDMatrix(grid, fDist, ColorMode.Blues, new FileOutputStream("output/dmatrix_"+df.format(l)+".png"));
+			SomUtils.printDMatrix(grid, fDist, ColorMode.Blues, new FileOutputStream("output/dmatrix_"+df.format(l)+"_"+df.format(run)+".png"));
+			SomUtils.saveGrid(grid, new FileOutputStream("output/orig_grid_"+df.format(l)+"_"+df.format(run)+".xml"));
 						
 			Dist<double[]> eDist = new EuclideanDist();
 			for( GridPos p : grid.getPositions() )
 				grid.setPrototypeAt(p, llm.output.get(p) );
-			SomUtils.printDMatrix(grid, eDist, ColorMode.Blues, new FileOutputStream("output/dmatrix_output_"+df.format(l)+".png"));
+			SomUtils.printDMatrix(grid, eDist, ColorMode.Blues, new FileOutputStream("output/dmatrix_output_"+df.format(l)+"_"+df.format(run)+".png"));
+			//SomUtils.saveGrid(grid, new FileOutputStream("output/output_grid.xml"));
 			
 			for( GridPos p : grid.getPositions() )
 				grid.setPrototypeAt(p, llm.matrix.get(p)[0] );
-			SomUtils.printDMatrix(grid, eDist, ColorMode.Blues, new FileOutputStream("output/dmatrix_matrix_"+df.format(l)+".png"));
+			SomUtils.printDMatrix(grid, eDist, ColorMode.Blues, new FileOutputStream("output/dmatrix_matrix_"+df.format(l)+"_"+df.format(run)+".png"));
+			
+			for( GridPos p : grid.getPositions() ) {
+				double[] d = new double[fa.length+2];
+				d[0] = om.get(p)[0];
+				d[1] = om.get(p)[1];
+				for( int i = 0; i < fa.length; i++ )
+					d[i+2] = llm.matrix.get(p)[0][i];
+				grid.setPrototypeAt(p, d );
+			}
+			
+			SomUtils.saveGrid(grid, new FileOutputStream("output/matrix_grid_"+df.format(l)+"_"+df.format(run)+".xml"));
 			
 			/*Map<GridPos,Double> vMap = new HashMap<GridPos,Double>();
 			for (GridPos p : grid.getPositions()) {

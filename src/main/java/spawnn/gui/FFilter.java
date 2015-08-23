@@ -101,4 +101,12 @@ public class FFilter {
 			return "ESRI shapefile (*.shp)";
 		}
 	};
+	
+	public static final FileFilter csvFilter = new FileFilter() {
+		@Override
+		public boolean accept(File f) {	return f.isDirectory() || f.getName().toLowerCase().endsWith(".csv"); }
+
+		@Override
+		public String getDescription() { return "Comma-separated values (*.csv)"; }
+	};
 }

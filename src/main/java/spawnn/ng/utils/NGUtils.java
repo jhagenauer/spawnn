@@ -1,5 +1,10 @@
 package spawnn.ng.utils;
 
+import java.awt.Color;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
+import java.awt.image.BufferedImage;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -11,13 +16,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.imageio.ImageIO;
+
 import org.jdom.Document;
 import org.jdom.Element;
 import org.jdom.input.SAXBuilder;
 import org.jdom.output.Format;
 import org.jdom.output.XMLOutputter;
 
+import spawnn.ng.Connection;
 import spawnn.ng.sorter.Sorter;
+import spawnn.utils.ColorBrewerUtil;
+import spawnn.utils.ColorBrewerUtil.ColorMode;
 
 public class NGUtils {
 	
@@ -91,5 +101,76 @@ public class NGUtils {
 			bmus.get(neurons.get(0)).add(x);
 		}	
 		return bmus;
+	}
+	
+	public static void geoDrawNG(String fn, Map<double[],Double> neurons, Collection<Connection> conections, int[] ga, List<double[]> samples ) {
+		int xScale = 1000;
+		int yScale = 800;
+		
+		BufferedImage bufImg = new BufferedImage(xScale, yScale, BufferedImage.TYPE_INT_RGB);
+		Graphics2D g2 = bufImg.createGraphics();
+		g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+		g2.fillRect(0, 0, xScale, yScale);
+
+		// for scaling
+		double maxX = Double.MIN_VALUE;
+		double minX = Double.MAX_VALUE;
+		double maxY = Double.MIN_VALUE;
+		double minY = Double.MAX_VALUE;
+
+		for (double[] n : samples ) {
+			double x = n[ga[0]];
+			double y = n[ga[1]];
+			
+			if (x > maxX)
+				maxX = x;
+			if (y > maxY)
+				maxY = y;
+			if (x < minX)
+				minX = x;
+			if (y < minY)
+				minY = y;
+		}
+		
+		for( double[] n : samples ) {
+			g2.setColor(Color.GRAY);
+			int x1 = (int)(xScale * (n[ga[0]] - minX)/(maxX-minX));
+			int y1 = (int)(yScale * (n[ga[1]] - minY)/(maxY-minY));
+			g2.fillOval( x1 - 3, y1 - 3, 6, 6	);
+		}
+
+		if( conections != null )
+		for( Connection c : conections ) {
+			g2.setColor(Color.BLACK);
+			double[] a = c.getA();
+			double[] b = c.getB();
+			int x1 = (int)(xScale * (a[ga[0]] - minX)/(maxX-minX));
+			int y1 = (int)(yScale * (a[ga[1]] - minY)/(maxY-minY));
+			int x2 = (int)(xScale * (b[ga[0]] - minX)/(maxX-minX));
+			int y2 = (int)(yScale * (b[ga[1]] - minY)/(maxY-minY));
+			g2.drawLine(x1,y1,x2,y2);
+		}
+
+		Map<double[],Color> cMap = ColorBrewerUtil.valuesToColors(neurons, ColorMode.Blues);
+		for( double[] n : neurons.keySet() ) {
+			int x1 = (int)(xScale * (n[ga[0]] - minX)/(maxX-minX));
+			int y1 = (int)(yScale * (n[ga[1]] - minY)/(maxY-minY));
+			
+			g2.setColor(Color.BLACK);
+			g2.fillOval( x1 - 8, y1 - 8, 16, 16	);
+			
+			g2.setColor(cMap.get(n));
+			g2.fillOval( x1 - 7, y1 - 7, 14, 14	);
+			
+			/*g2.setColor(Color.BLACK);
+			g2.drawString(""+n.hashCode(),x1,y1);*/
+		}
+		g2.dispose();
+
+		try {
+			ImageIO.write(bufImg, "png", new FileOutputStream(fn));
+		} catch (IOException ex) {
+			ex.printStackTrace();
+		}
 	}
 }

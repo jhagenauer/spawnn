@@ -75,7 +75,6 @@ public class IrisTestBatch {
 				SomUtils.printComponentPlane(grid, i, new FileOutputStream("output/component"+i+".png"));
 			
 			SomUtils.saveGrid(grid, new FileOutputStream("output/grid.xml"));
-			grid = new Grid2DHex<double[]>( SomUtils.loadGrid(new FileInputStream("output/grid.xml")) );
 			
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();

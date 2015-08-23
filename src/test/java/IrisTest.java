@@ -21,6 +21,7 @@ import spawnn.som.bmu.DefaultBmuGetter;
 import spawnn.som.decay.LinearDecay;
 import spawnn.som.grid.Grid2D;
 import spawnn.som.grid.Grid2DHex;
+import spawnn.som.grid.Grid2DHexToroid;
 import spawnn.som.grid.GridPos;
 import spawnn.som.kernel.GaussKernel;
 import spawnn.som.net.SOM;
@@ -46,7 +47,7 @@ public class IrisTest {
 		DataUtils.zScore(samples);
 						
 		Dist<double[]> eDist = new EuclideanDist();
-		Grid2D<double[]> grid = new Grid2DHex<double[]>(12, 8);
+		Grid2D<double[]> grid = new Grid2DHexToroid<double[]>(12, 8);
 		SomUtils.initRandom(grid, samples);
 		
 		log.debug("max radius: "+grid.getMaxDist());
@@ -81,7 +82,7 @@ public class IrisTest {
 			
 			
 			SomUtils.saveGrid(grid, new FileOutputStream("output/grid.xml"));
-			grid = new Grid2DHex<double[]>( SomUtils.loadGrid(new FileInputStream("output/grid.xml")) );
+			grid = SomUtils.loadGrid(new FileInputStream("output/grid.xml"));
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}

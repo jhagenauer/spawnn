@@ -17,13 +17,13 @@ import net.miginfocom.swing.MigLayout;
 public class AnnPanel extends JPanel implements ChangeListener, ActionListener {
 	
 	private static final long serialVersionUID = -5917163707063857622L;
-	public static final String TRAIN_PROP = "train";
+	public static final String TRAIN_PROP = "train", APPLY_EXISTING = "apply_existing";
 	
 	protected JTabbedPane tpANN, tpContextModel;
 	protected JTextField trainingCycles, runs;
 	protected JPanel somPanel, ngPanel;
 	protected JPanel nonePanel, weightedPanel, geoSomPanel, cngPanel, wmcPanel, augmentedPanel;
-	private JButton btnTrain;
+	private JButton btnTrain, btnApply;
 	private boolean contextModelsEnabled = false;
 		
 	private static final int NONE = 0, AUGMENTED = 1, WEIGHTED = 2, GEOSOM = 3, CNG = 4, WMC = 5;
@@ -82,6 +82,12 @@ public class AnnPanel extends JPanel implements ChangeListener, ActionListener {
 		add( trainingCycles, "" );
 		add( new JLabel("Runs:"));
 		add( runs, "" );
+		
+		//TODO comment me out plz!!!
+		/*btnApply = new JButton("Apply existing...");
+		btnApply.addActionListener(this);
+		add( btnApply,"split 2, align right");*/
+		
 		add( btnTrain, "align right" );	
 	}
 
@@ -113,11 +119,14 @@ public class AnnPanel extends JPanel implements ChangeListener, ActionListener {
 		contextModelsEnabled = b;
 		updateContextModelsEnabled();
 	}
-
+	
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		if( e.getSource() == btnTrain ) 
 			firePropertyChange(TRAIN_PROP, false, true);
+		else if( e.getSource() == btnApply ) {
+			firePropertyChange(APPLY_EXISTING, false, true);
+		}
 	}
 	
 	public int getNumTraining() {

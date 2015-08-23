@@ -67,6 +67,8 @@ import spawnn.som.bmu.KangasBmuGetter;
 import spawnn.som.grid.Grid;
 import spawnn.som.grid.Grid2D;
 import spawnn.som.grid.Grid2DHex;
+import spawnn.som.grid.Grid2DHexToroid;
+import spawnn.som.grid.Grid2DToroid;
 import spawnn.som.grid.GridPos;
 import spawnn.utils.ColorBrewerUtil;
 import spawnn.utils.ColorBrewerUtil.ColorMode;
@@ -1280,6 +1282,7 @@ public class SomUtils {
 
 		Element root = new Element("grid");
 		root.setAttribute("hex", (grid instanceof Grid2DHex<?>) + "");
+		root.setAttribute("toroid", (grid instanceof Grid2DHexToroid<?> || grid instanceof Grid2DToroid<?>) + "");
 		Element u = new Element("units");
 
 		for (GridPos pos : grid.getPositions()) {
@@ -1309,8 +1312,9 @@ public class SomUtils {
 		}
 	}
 
-	public static Map<GridPos, double[]> loadGrid(InputStream is) {
+	public static Grid2D<double[]> loadGrid(InputStream is) {
 		HashMap<GridPos, double[]> map = null;
+		boolean toroid = false, hex=false;
 
 		try {
 			SAXBuilder builder = new SAXBuilder();
@@ -1318,6 +1322,9 @@ public class SomUtils {
 			Element root = doc.getRootElement();
 			map = new HashMap<GridPos, double[]>();
 
+			hex = Boolean.parseBoolean( root.getAttribute("hex").getValue() );
+			toroid = Boolean.parseBoolean( root.getAttribute("toroid").getValue() );
+			
 			for (Object o1 : root.getChild("units").getChildren()) {
 				Element e = (Element) o1;
 
@@ -1338,7 +1345,18 @@ public class SomUtils {
 		} catch (Exception ex) {
 			ex.printStackTrace();
 		}
-		return map;
+		
+		if( hex ) {
+			if( toroid )
+				return new Grid2DHexToroid<>(map);
+			else
+				return new Grid2DHex<>(map);
+		} else {
+			if( toroid )
+				return new Grid2DToroid<>(map);
+			else
+				return new Grid2D<>(map);
+		}
 	}
 
 	public static void initRandom(Grid<double[]> grid, List<double[]> samples) {

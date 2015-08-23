@@ -31,10 +31,10 @@ public class NG implements UnsupervisedNet {
 	}
 	
 	@Deprecated
-	public NG( int numNeurons, double lInit, double lFinal, double eInit, double eFinal, int dim, Sorter<double[]> bg  ) {
+	public NG( int numNeurons, double lInit, double lFinal, double eInit, double eFinal, int dim, Sorter<double[]> sorter  ) {
 		Random r = new Random();
 		
-		this.sorter = bg;
+		this.sorter = sorter;
 		this.neighborhoodRange = new PowerDecay(lInit, lFinal);
 		this.adaptationRate = new PowerDecay(eInit, eFinal);
 				

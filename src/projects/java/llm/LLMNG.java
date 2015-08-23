@@ -8,68 +8,35 @@ import java.util.Random;
 import spawnn.SupervisedNet;
 import spawnn.ng.NG;
 import spawnn.ng.sorter.Sorter;
+import spawnn.som.decay.DecayFunction;
+import spawnn.som.decay.PowerDecay;
 
 // TODO It is better to separate NG and LLMNG, either completly or just give the ng as an argument to llm
-// Also make an interface or somethin for supervised learning
 // Question: Is LLMNG a neuralnet itself? What are the mappings?
 public class LLMNG extends NG implements SupervisedNet {
 		
 	public Map<double[],double[]> output = new HashMap<double[],double[]>(); // intercept
 	public Map<double[],double[][]> matrix = new HashMap<double[],double[][]>(); // slope, jacobian matrix (m(output-dim) x n(input-dim) ), m rows, n columns
 	
-	private double lInit2, lFinal2, eInit2, eFinal2;
 	private int[] fa;
+	private DecayFunction neighborhoodRange2, adaptationRate2;
+	private boolean ignoreSupport = false;
 	
-	@Deprecated
-	public LLMNG( int numNeurons, double lInit, double lFinal, double eInit, double eFinal, int dim, Sorter<double[]> bg, int outDim ) {
-		this(numNeurons,lInit,lFinal,eInit,eFinal,lInit,lFinal,eInit,eFinal, bg, null, dim, 1);
+	public LLMNG( List<double[]> neurons, DecayFunction neighborhoodRange, DecayFunction adaptationRate,
+			DecayFunction neighborhoodRange2, DecayFunction adaptationRate2, 
+			Sorter<double[]> sorter, int[] fa, int outDim, boolean ignoreSupport ) {
+		this(neurons,neighborhoodRange,adaptationRate,neighborhoodRange2,adaptationRate2,sorter,fa,outDim);
+		this.ignoreSupport = ignoreSupport;
 	}
 	
-	@Deprecated
-	public LLMNG( int numNeurons, double lInit, double lFinal, double eInit, double eFinal,
-			double lInit2, double lFinal2, double eInit2, double eFinal2, 
-			Sorter<double[]> bg, int[] fa, int inDim, int outDim ) {
-		super(numNeurons,lInit,lFinal,eInit,eFinal,inDim,bg);
+	public LLMNG( List<double[]> neurons, DecayFunction neighborhoodRange, DecayFunction adaptationRate,
+			DecayFunction neighborhoodRange2, DecayFunction adaptationRate2, 
+			Sorter<double[]> sorter, int[] fa, int outDim ) {
+		super(neurons,neighborhoodRange,adaptationRate,sorter);
 		
-		this.lInit2 = lInit2;
-		this.lFinal2 = lFinal2;
-		this.eInit2 = eInit2;
-		this.eFinal2 = eFinal2;
-		
-		if( fa == null ) {
-			this.fa = new int[inDim];
-			for( int i = 0; i < this.fa.length; i++ )
-				this.fa[i] = i;
-		} else
-			this.fa = fa;
-
-		Random r = new Random();
-		for( double[] d : getNeurons() ) {
-			// init output
-			double[] o = new double[outDim];
-			for( int i = 0; i < o.length; i++ )
-				o[i] = r.nextDouble();
-			output.put( d, o );
-			
-			// init matrices
-			double[][] m = new double[outDim][this.fa.length]; // m x n
-			for (int i = 0; i < m.length; i++)
-				for (int j = 0; j < m[i].length; j++)
-					m[i][j] = r.nextDouble();
-			matrix.put(d, m);
-		}
-	}
-	
-	public LLMNG( List<double[]> neurons, double lInit, double lFinal, double eInit, double eFinal,
-			double lInit2, double lFinal2, double eInit2, double eFinal2, 
-			Sorter<double[]> bg, int[] fa, int outDim ) {
-		super(neurons,lInit,lFinal,eInit,eFinal,bg);
-		
-		this.lInit2 = lInit2;
-		this.lFinal2 = lFinal2;
-		this.eInit2 = eInit2;
-		this.eFinal2 = eFinal2;
-		
+		this.adaptationRate2 = adaptationRate2;
+		this.neighborhoodRange2 = neighborhoodRange2;
+				
 		if( fa == null ) {
 			this.fa = new int[neurons.get(0).length];
 			for( int i = 0; i < this.fa.length; i++ )
@@ -93,6 +60,13 @@ public class LLMNG extends NG implements SupervisedNet {
 			matrix.put(d, m);
 		}
 	}
+			
+	@Deprecated
+	public LLMNG( List<double[]> neurons, double lInit, double lFinal, double eInit, double eFinal,
+			double lInit2, double lFinal2, double eInit2, double eFinal2, 
+			Sorter<double[]> bg, int[] fa, int outDim ) {
+		this(neurons, new PowerDecay(lInit, lFinal), new PowerDecay(eInit, eFinal), new PowerDecay(lInit2, lFinal2), new PowerDecay(eInit2, eFinal2), bg, fa, outDim);
+	}
 	
 	public double[] present( double[] x ) {
 		sorter.sort(x, neurons);
@@ -105,7 +79,10 @@ public class LLMNG extends NG implements SupervisedNet {
 		
 		for( int i = 0; i < m.length; i++ ) // row, outputs
 			for( int j = 0; j < m[i].length; j++ ) // column, inputs
-				r[i] += m[i][j] * (x[fa[j]] - neuron[fa[j]]);
+				if( !ignoreSupport )
+					r[i] += m[i][j] * (x[fa[j]] - neuron[fa[j]] );
+				else
+					r[i] += m[i][j] * x[fa[j]];
 				
 		// add output
 		for( int i = 0; i < r.length; i++ )
@@ -117,8 +94,8 @@ public class LLMNG extends NG implements SupervisedNet {
 	public void train( double t, double[] x, double[] desired ) {
 		train(t, x); // assumes that neurons are sorted after this call
 		
-		double l = lInit2 * Math.pow( lFinal2/lInit2, t );
-		double e = eInit2 * Math.pow( eFinal2/eInit2, t );
+		double l = neighborhoodRange2.getValue(t);
+		double e = adaptationRate2.getValue(t);
 				
 		for( int k = 0; k < getNeurons().size(); k++ ) {
 			double adapt = e * Math.exp( -(double)k/l );
@@ -139,7 +116,10 @@ public class LLMNG extends NG implements SupervisedNet {
 			double[][] m = matrix.get(w);
 			for( int i = 0; i < m.length; i++ )  // row
 				for( int j = 0; j < m[i].length; j++ ) // column
-					m[i][j] += adapt * (desired[i] - r[i]) * (x[fa[j]] - w[fa[j]]); // outer product
+					if( !ignoreSupport )
+						m[i][j] += adapt * (desired[i] - r[i]) * (x[fa[j]] - w[fa[j]]); // outer product
+					else
+						m[i][j] += adapt * (desired[i] - r[i]) * x[fa[j]];
 		}
 	}
 	
