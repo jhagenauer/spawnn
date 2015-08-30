@@ -92,12 +92,12 @@ public class NGUtils {
 		return map;
 	}
 
-	public static Map<double[],Set<double[]>> getBmuMapping( List<double[]> samples, List<double[]> neurons, Sorter<double[]> bg ) {
+	public static Map<double[],Set<double[]>> getBmuMapping( List<double[]> samples, List<double[]> neurons, Sorter<double[]> sorter ) {
 		Map<double[],Set<double[]>> bmus = new HashMap<double[],Set<double[]>>();
 		for( double[] d : neurons )
 			bmus.put( d, new HashSet<double[]>() );
 		for( double[] x : samples ) {
-			bg.sort(x, neurons );
+			sorter.sort(x, neurons );
 			bmus.get(neurons.get(0)).add(x);
 		}	
 		return bmus;

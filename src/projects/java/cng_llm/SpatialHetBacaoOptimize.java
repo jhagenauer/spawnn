@@ -1,4 +1,4 @@
-package llm_cng;
+package cng_llm;
 
 import java.io.File;
 import java.io.IOException;
@@ -63,7 +63,7 @@ public class SpatialHetBacaoOptimize {
 
 		final int[] fa = new int[] { 2, 3 };
 		final int[] ga = new int[] { 0, 1 };
-		final int T_MAX = 50000;
+		final int T_MAX = 20000;
 
 		// ------------------------------------------------------------------------
 
@@ -82,14 +82,14 @@ public class SpatialHetBacaoOptimize {
 		final Dist<double[]> fDist = new EuclideanDist(fa);
 		
 		// Ohne ignore ist es etwas besser
-		for( final boolean ignore : new boolean[]{true, false} )
-		for (int l = 2; l <= 3; l++) {
+		for( final boolean ignore : new boolean[]{false} )
+		for (int l = 1; l <= 6; l++) {
 			final int L = l;
 
 			ExecutorService es = Executors.newFixedThreadPool(4);
 			List<Future<double[]>> futures = new ArrayList<Future<double[]>>();
 
-			for (int run = 0; run < 512; run++) {
+			for (int run = 0; run < 32; run++) {
 
 				futures.add(es.submit(new Callable<double[]>() {
 
@@ -171,8 +171,20 @@ public class SpatialHetBacaoOptimize {
 									c.addAll(mapping.get(n));
 							cluster.add(c);
 						}
+						
+						DefaultSorter<double[]> fSorter = new DefaultSorter<>(fDist);
+						ng.setSorter( new KangasSorter<>(gSorter, fSorter, L) );
+						List<double[]> response2 = new ArrayList<double[]>();
+						for( double[] x : samples )
+							response2.add( ng.present(x) );
+						double rmse2 =  Meuse.getRMSE(response2, desired);
 
-						return new double[] { Meuse.getRMSE(response, desired), Math.pow(Meuse.getPearson(response, desired), 2), ClusterValidation.getNormalizedMutualInformation(cluster, ref.values()) };
+						return new double[] { 
+								Meuse.getRMSE(response, desired), 
+								Math.pow(Meuse.getPearson(response, desired), 2), 
+								ClusterValidation.getNormalizedMutualInformation(cluster, ref.values()),
+								rmse2
+						};
 					}
 				}));
 			}

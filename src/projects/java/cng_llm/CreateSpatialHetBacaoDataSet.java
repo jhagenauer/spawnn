@@ -1,4 +1,4 @@
-package llm_cng;
+package cng_llm;
 
 import java.io.FileWriter;
 import java.io.IOException;
@@ -27,7 +27,7 @@ public class CreateSpatialHetBacaoDataSet {
 					else
 						y = x2;
 					c = 0;
-				} else if (lon > 0.6) {
+				} else if (lon > 0.6) { // mitte
 					if (r.nextDouble() < 0.1)
 						y = x1;
 					else

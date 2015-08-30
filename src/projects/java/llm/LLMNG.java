@@ -11,8 +11,13 @@ import spawnn.ng.sorter.Sorter;
 import spawnn.som.decay.DecayFunction;
 import spawnn.som.decay.PowerDecay;
 
-// TODO It is better to separate NG and LLMNG, either completly or just give the ng as an argument to llm
+// TODO It is better to separate NG and LLMNG, either completely or just give the ng as an argument to llm
 // Question: Is LLMNG a neuralnet itself? What are the mappings?
+// Separation:
+// Pro:		
+//		- Clean separation of sup und unsup training
+// Contra:
+//		- Is not independent of NG, because of sorter, neurons and range/rate
 public class LLMNG extends NG implements SupervisedNet {
 		
 	public Map<double[],double[]> output = new HashMap<double[],double[]>(); // intercept

@@ -1,4 +1,4 @@
-package llm_cng;
+package cng_llm;
 
 import java.awt.Color;
 import java.awt.Graphics2D;
@@ -9,6 +9,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -48,7 +49,6 @@ import com.vividsolutions.jts.geom.Geometry;
 public class SpatialHetBacaoTest {
 
 	private static Logger log = Logger.getLogger(SpatialHetBacaoTest.class);
-
 	public static void main(String[] args) {
 		Random r = new Random();
 		DecimalFormat df = new DecimalFormat("00");
@@ -63,7 +63,7 @@ public class SpatialHetBacaoTest {
 
 		final int[] fa = new int[] { 2, 3 };
 		final int[] ga = new int[] { 0, 1 };
-		final int T_MAX = 50000;
+		final int T_MAX = 20000;
 		
 		// ------------------------------------------------------------------------
 
@@ -81,8 +81,7 @@ public class SpatialHetBacaoTest {
 				List<double[]> neurons = new ArrayList<double[]>();
 				for (int i = 0; i < 60; i++) {
 					double[] d = samples.get(r.nextInt(samples.size()));
-					//neurons.add(Arrays.copyOf(d, d.length));
-					neurons.add( new double[d.length]);
+					neurons.add(Arrays.copyOf(d, d.length));
 				}
 
 				// With just errorSorter, we could not distinguish between space. 
@@ -97,7 +96,7 @@ public class SpatialHetBacaoTest {
 				DefaultSorter<double[]> gSorter = new DefaultSorter<>(gDist);
 				Sorter<double[]> sorter = new KangasSorter<>(gSorter, errorSorter, l);
 				
-				DecayFunction nbRate = new PowerDecay(neurons.size()/3, 1);
+				DecayFunction nbRate = new PowerDecay(neurons.size()/2, 1);
 				DecayFunction lrRate = new PowerDecay(0.5, 0.005);
 				LLMNG ng = new LLMNG(neurons, 
 						nbRate, lrRate, 

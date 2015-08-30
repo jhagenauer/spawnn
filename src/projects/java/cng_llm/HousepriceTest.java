@@ -1,11 +1,10 @@
-package llm_cng;
+package cng_llm;
 
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.DecimalFormat;
@@ -20,10 +19,8 @@ import java.util.Set;
 
 import javax.imageio.ImageIO;
 
-import llm.ErrorBmuGetter;
 import llm.ErrorSorter;
 import llm.LLMNG;
-import llm.LLMSOM;
 
 import org.apache.log4j.Logger;
 import org.geotools.feature.DefaultFeatureCollection;
@@ -46,18 +43,11 @@ import spawnn.ng.sorter.DefaultSorter;
 import spawnn.ng.sorter.KangasSorter;
 import spawnn.ng.sorter.Sorter;
 import spawnn.ng.utils.NGUtils;
-import spawnn.som.bmu.BmuGetter;
-import spawnn.som.bmu.DefaultBmuGetter;
-import spawnn.som.bmu.KangasBmuGetter;
-import spawnn.som.decay.LinearDecay;
-import spawnn.som.grid.Grid2DHex;
-import spawnn.som.grid.GridPos;
-import spawnn.som.kernel.GaussKernel;
-import spawnn.som.utils.SomUtils;
+import spawnn.som.decay.DecayFunction;
+import spawnn.som.decay.PowerDecay;
 import spawnn.utils.ColorBrewerUtil;
 import spawnn.utils.ColorBrewerUtil.ColorMode;
 import spawnn.utils.DataUtils;
-import spawnn.utils.Drawer;
 import spawnn.utils.SpatialDataFrame;
 
 import com.vividsolutions.jts.geom.Geometry;
@@ -69,7 +59,7 @@ public class HousepriceTest {
 	public static void main(String[] args) {
 		final DecimalFormat df = new DecimalFormat("00");
 		final Random r = new Random();
-		final int T_MAX = 100000;
+		final int T_MAX = 20000;
 
 		final List<double[]> samples = new ArrayList<double[]>();
 		final List<Geometry> geoms = new ArrayList<Geometry>();
@@ -117,6 +107,9 @@ public class HousepriceTest {
 		final int[] ga = new int[] { 0, 1 };
 
 		// ------------------------------------------------------------------------
+		
+		DataUtils.zScoreColumns(samples, fa);
+		DataUtils.zScoreColumn(samples, da); // should not be necessary
 
 		{ // just write it to csv inkl. csv for external use
 			List<double[]> l = new ArrayList<double[]>();
@@ -129,14 +122,12 @@ public class HousepriceTest {
 			nv.add("lnp");
 			DataUtils.writeCSV("output/houseprice.csv", l, nv.toArray(new String[] {}));
 		}
-		DataUtils.zScoreColumns(samples, fa);
-		DataUtils.zScoreColumn(samples, da); // should not be necessary
-	
+			
 		final Dist<double[]> gDist = new EuclideanDist(ga);
 		final Dist<double[]> fDist = new EuclideanDist(fa);
 
 		for (int run = 0; run < 1; run++)
-			for (int l = 3; l <= 3; l++) {
+			for (int l = 1; l <= 9; l++) {
 
 				List<double[]> neurons = new ArrayList<double[]>();
 				for (int i = 0; i < 60; i++) {
@@ -147,23 +138,27 @@ public class HousepriceTest {
 				ErrorSorter errorSorter = new ErrorSorter(samples, desired);
 				DefaultSorter<double[]> gSorter = new DefaultSorter<>(gDist);
 				Sorter<double[]> sorter = new KangasSorter<>(gSorter, errorSorter, l);
+				
+				DecayFunction nbRate = new PowerDecay(40, 1);
+				DecayFunction lrRate1 = new PowerDecay(0.5, 0.001);
+				DecayFunction lrRate2 = new PowerDecay(0.1, 0.001);
 				LLMNG ng = new LLMNG(neurons, 
-						neurons.size()/3, 1, 0.5, 0.005, 
-						neurons.size()/3, 1, 0.1, 0.005, 
-						sorter, fa, 1);
+						nbRate, lrRate1, 
+						nbRate, lrRate2, 
+						sorter, fa, 1, true );
 				errorSorter.setLLMNG(ng);
 
 				for (int t = 0; t < T_MAX; t++) {
 					int j = r.nextInt(samples.size());
 					ng.train((double) t / T_MAX, samples.get(j), desired.get(j));
 				}
-				Map<double[], Set<double[]>> mapping = NGUtils.getBmuMapping(samples, ng.getNeurons(), sorter);
-
+				
 				List<double[]> response = new ArrayList<double[]>();
 				for (double[] x : samples)
 					response.add(ng.present(x));
 				log.debug(l+", RMSE: " + Meuse.getRMSE(response, desired) + ", R2: " + Math.pow(Meuse.getPearson(response, desired), 2));
 				
+				// coefs ----------------------------------------------------------
 				Map<double[],double[]> geoCoefs = new HashMap<double[],double[]>();
 				for( double[] n : ng.getNeurons() ) {
 					double[] cg = new double[2+fa.length];
@@ -173,8 +168,35 @@ public class HousepriceTest {
 						cg[2+i] = ng.matrix.get(n)[0][i];
 					geoCoefs.put(n, cg);
 				}
-				DataUtils.writeCSV("output/coefs_"+df.format(l)+"_"+df.format(run)+".csv", geoCoefs.values(), vars.toArray( new String[]{} ));
-	
+				DataUtils.writeCSV("output/cng_coefs_"+l+".csv", geoCoefs.values(), vars.toArray(new String[]{}));
+				
+				// plot coefficients at locations of observations (like gwr)
+				List<double[]> li = new ArrayList<double[]>();
+				Map<double[],Set<double[]>> mapping = NGUtils.getBmuMapping(samples, neurons, sorter);
+				
+				for( double[] d : samples ) {
+					double[] coef = null;
+					for( double[] n : mapping.keySet() )
+						if( mapping.get(n).contains(d) )
+							coef = geoCoefs.get(n);
+					double[] nd = Arrays.copyOf(coef, coef.length);
+					nd[0] = d[0];
+					nd[1] = d[1];
+					li.add(nd);
+				}
+				DataUtils.writeCSV("output/cng_points_"+l+".csv", li, vars.toArray(new String[]{}));
+				
+								
+				// output/intercept ----------------------------------------------------
+				Map<double[],double[]> geoOut = new HashMap<double[],double[]>();
+				for( double[] n : ng.getNeurons() ) {
+					double[] cg = new double[ga.length+1];
+					cg[0] = n[ga[0]];
+					cg[1] = n[ga[1]];
+					cg[2] = ng.output.get(n)[0];
+					geoOut.put(n, cg);
+				}
+				DataUtils.writeCSV("output/cng_intercept_"+l+".csv", geoOut.values(), vars.toArray(new String[]{}));
 			}
 	}
 
