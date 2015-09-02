@@ -27,7 +27,7 @@ public class CreateNonstatCluster {
 	private static Logger log = Logger.getLogger(SampleBuilder.class);
 
 	public static void main(String[] args) {
-		buildNonstationaryCluster(25, 1000, "output/cluster.shp");
+		buildNonstationaryCluster(25, 1000, "output/nonstatCluster.shp");
 	}
 
 	public static void buildNonstationaryCluster(int numCluster, int numSamples, String fn) {
@@ -152,22 +152,25 @@ public class CreateNonstatCluster {
 				if (clusterMap.get(i).contains(d))
 					cl = i;
 			
-			double x = r.nextDouble();
+			/* c0 and c1 cannot get distinguished using intercept, c2 and c3 cannot get distinguished using coefficient
+			 * c0 and c3 cannot get distinguished using y
+			 */
+			double x1 = r.nextDouble();
 			double y = 0;
 			if( c == 0 ) {
-				y = x + 1;
+				y = x1;
 			} else if( c == 1 ) {
-				y = x - 1;
+				y = -x1;
 			} else if( c == 2 ) {
-				y = -x + 1;
+				y = 1+x1;
 			} else if( c == 3 ) {
-				y = -y - 1;
+				y = 1-x1;
 			}
-			
-			double[] nd = new double[]{ d[0], d[1], x, y, c };
+						
+			double[] nd = new double[]{ d[0], d[1], x1, y, cl, c };
 			samples.add(nd);
 		}
 
-		DataUtils.writeShape(samples, geoms, new String[] { "lat", "lon", "x", "y", "class" }, fn);
+		DataUtils.writeShape(samples, geoms, new String[] { "lat", "lon", "x1", "y", "class", "color" }, fn);
 	}
 }

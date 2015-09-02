@@ -98,7 +98,7 @@ public class SpawnnGui extends JFrame implements PropertyChangeListener, ActionL
 		tp.addTab("Data", dataPanel);
 
 		annPanel = new AnnPanel();
-		annPanel.setContextModelsEnabled(false);
+		annPanel.enableCentroidBasedContextModels(false);
 		annPanel.addPropertyChangeListener(this);
 
 		tp.addTab("ANN", annPanel);
@@ -131,7 +131,7 @@ public class SpawnnGui extends JFrame implements PropertyChangeListener, ActionL
 
 	@Override
 	public void propertyChange(PropertyChangeEvent e) {
-		if( e.getPropertyName().equals(AnnPanel.APPLY_EXISTING) && (Boolean) e.getNewValue() ) {
+		if( e.getPropertyName().equals(AnnPanel.APPLY_EXISTING) && (Boolean)e.getNewValue() ) {
 			int[] fa = dataPanel.getFA();
 			int[] ga = dataPanel.getGA(false);
 
@@ -393,9 +393,9 @@ public class SpawnnGui extends JFrame implements PropertyChangeListener, ActionL
 			}
 			setCursor(Cursor.getDefaultCursor());
 		} else if (e.getPropertyName().equals(DataPanel.TRAIN_ALLOWED_PROP) ) {
-			tp.setEnabledAt(1, (Integer) e.getNewValue() > 0 );
+			tp.setEnabledAt(1, (Boolean)e.getNewValue() );
 		} else if (e.getPropertyName().equals(DataPanel.COORD_CHANGED_PROP)) {
-			annPanel.setContextModelsEnabled((Integer) e.getNewValue() > 0);
+			annPanel.enableCentroidBasedContextModels((Boolean)e.getNewValue());
 		}  
 	}
 

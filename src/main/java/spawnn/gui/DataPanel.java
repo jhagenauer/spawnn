@@ -37,11 +37,13 @@ public class DataPanel extends JPanel implements ActionListener, TableModelListe
 	
 	private static Logger log = Logger.getLogger(DataPanel.class);
 	private static final long serialVersionUID = 1736311423918203189L;
-	public static final String TRAIN_ALLOWED_PROP ="DATA_LOADED";
+	/* Training allowed, if one variable at least AND shapefile OR coordinates are marked
+	 * centroid-models allowed only if coordinates are marked */
+	public static final String TRAIN_ALLOWED_PROP ="TRAIN_ALLOWED";
 	public static final String COORD_CHANGED_PROP = "COORDINATES_CHANGED";
 	static Set<String> coordNames;
 	private boolean useAllState = false;
-	
+		
 	static {
 		coordNames = new HashSet<String>();
 		coordNames.add("x");
@@ -50,9 +52,11 @@ public class DataPanel extends JPanel implements ActionListener, TableModelListe
 		coordNames.add("Y");
 		coordNames.add("lon");
 		coordNames.add("LON");
+		coordNames.add("Lon");
 		coordNames.add("longitude");
 		coordNames.add("lat");
 		coordNames.add("LAT");
+		coordNames.add("Lat");
 		coordNames.add("latitude");
 	}
 		
@@ -160,8 +164,8 @@ public class DataPanel extends JPanel implements ActionListener, TableModelListe
 				boxPlotPnl.setData(sd.names, getNormedSamples() );
 				boxPlotPnl.plot();
 				
-				firePropertyChange(TRAIN_ALLOWED_PROP, false, false);
-			    firePropertyChange(COORD_CHANGED_PROP, 0, numCoords);
+			    firePropertyChange(COORD_CHANGED_PROP, coordsMarked, numCoords > 0);
+			    coordsMarked = numCoords > 0;
 			}
 		} else if( ae.getSource() == addCCoords ) {
 			
@@ -198,7 +202,8 @@ public class DataPanel extends JPanel implements ActionListener, TableModelListe
 			boxPlotPnl.setData(sd.names, getNormedSamples() );
 			boxPlotPnl.plot();
 			
-			firePropertyChange(COORD_CHANGED_PROP, 0, 2);
+			firePropertyChange(COORD_CHANGED_PROP, coordsMarked, true);
+			coordsMarked = true;
 		} else if ( ae.getSource() == useAll ) {
 			for( int i = 0; i < dataTable.getRowCount(); i++ )
 				dataTable.setValueAt( !useAllState, i, USE );
@@ -206,18 +211,21 @@ public class DataPanel extends JPanel implements ActionListener, TableModelListe
 		}	
 	}
 	
-	private int oldGALength = 0, oldFALength = 0;
-		
+	private boolean trainAllowed = false, coordsMarked = false;
+			
 	@Override
-	public void tableChanged(TableModelEvent e) {	
-		if( e.getColumn() == COORDINATE ) {
-			int newGALength = getGA(false).length; // only used GA
-			firePropertyChange(COORD_CHANGED_PROP, oldGALength, newGALength );
-			oldGALength = newGALength;
-		} else if( e.getColumn() == USE ) {
-			int newFALength = getFA().length;
-			firePropertyChange(TRAIN_ALLOWED_PROP, oldFALength, newFALength );
-			oldFALength = newFALength;
+	public void tableChanged(TableModelEvent e) {		
+		if( e.getColumn() == USE ) { // USE changed
+			// check if there is any fa and geographic information
+			boolean a = getFA().length > 0 && ( sd.geoms!= null || getGA(true).length > 0 );
+			firePropertyChange(TRAIN_ALLOWED_PROP, trainAllowed, a );
+			trainAllowed = a;
+		}
+		
+		if( e.getColumn() == COORDINATE || e.getColumn() == USE ) {
+			boolean b = getGA(false).length > 0;
+			firePropertyChange(COORD_CHANGED_PROP, coordsMarked, b);
+			coordsMarked = b;
 		}
 		
 		dataTable.removeTableModelListener(this);

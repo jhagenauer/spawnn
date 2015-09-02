@@ -20,22 +20,22 @@ public class CreateSpatialHetBacaoDataSet {
 				double x2 = r.nextDouble();
 				int c;
 
-				// correlation of y with x1 is larger for cluster lon>=0.5
+				// since all cluster have same mean, clustering y is not sufficient. Coefficients must be considered
 				if (lon < 0.3) {
-					if (r.nextDouble() < 0.1)
+					if (r.nextDouble() < 0.0)
 						y = x1;
 					else
 						y = x2;
 					c = 0;
 				} else if (lon > 0.6) { // mitte
-					if (r.nextDouble() < 0.1)
+					if (r.nextDouble() < 0.0)
 						y = x1;
 					else
 						y = x2;
 					c = 1;
 					y+=1;
 				} else {
-					if (r.nextDouble() < 0.9)
+					if (r.nextDouble() < 1.0)
 						y = x1;
 					else
 						y = x2;

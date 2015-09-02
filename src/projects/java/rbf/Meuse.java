@@ -333,19 +333,18 @@ public class Meuse {
 		return mse / response.size();
 	}
 
-	// FIXME seems not correct?!?!
 	public static double getR2(List<double[]> response, List<double[]> desired) {
 		if (response.size() != desired.size())
 			throw new RuntimeException();
 
+		double ssRes = 0;
+		for (int i = 0; i < response.size(); i++)
+			ssRes += Math.pow(desired.get(i)[0] - response.get(i)[0], 2);
+	
 		double mean = 0;
 		for (double[] d : desired)
 			mean += d[0];
 		mean /= desired.size();
-
-		double ssRes = 0;
-		for (int i = 0; i < response.size(); i++)
-			ssRes += Math.pow(desired.get(i)[0] - response.get(i)[0], 2);
 
 		double ssTot = 0;
 		for (int i = 0; i < desired.size(); i++)

@@ -49,6 +49,7 @@ import org.opengis.filter.Filter;
 import org.opengis.filter.FilterFactory2;
 
 import com.vividsolutions.jts.geom.Coordinate;
+import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.MultiPoint;
 import com.vividsolutions.jts.geom.MultiPolygon;
@@ -170,39 +171,27 @@ public class MapPanel<T> extends NeuronVisPanel<T> implements MapPaneListener, C
 		GeometryType gt = fc.getSchema().getGeometryDescriptor().getType();
 
 		MapContent mc = new MapContent();
+		ReferencedEnvelope bounds = new ReferencedEnvelope();
 
-		// color layers
+		// color layers, TODO: better just one Layer, but Color According property
 		for (int i = 0; i < pos.size(); i++) {
 			Color c = colorMap.get(pos.get(i));
 			FeatureCollection<SimpleFeatureType, SimpleFeature> sub = fc.subCollection(ff.equals(ff.property("neuron"), ff.literal(i)));
 
 			Style style = null;
 			if (gt.getBinding() == Polygon.class || gt.getBinding() == MultiPolygon.class) {
-				style = SLD.wrapSymbolizers(sb.createPolygonSymbolizer(c));
+				style = SLD.wrapSymbolizers(sb.createPolygonSymbolizer(c, Color.BLACK, 0.01));
 			} else if (gt.getBinding() == Point.class || gt.getBinding() == MultiPoint.class) {
-				Mark mark = sb.createMark(StyleBuilder.MARK_CIRCLE, c);
+				Mark mark = sb.createMark(StyleBuilder.MARK_CIRCLE, c, Color.BLACK, 0.01);
 				style = SLD.wrapSymbolizers(sb.createPointSymbolizer(sb.createGraphic(null, mark, null)));
 			} else {
 				log.warn("GeomType not supported: " + gt.getBinding());
 			}
-			mc.addLayer(new FeatureLayer(sub, style));
+			FeatureLayer fl = new FeatureLayer(sub, style);
+			bounds.expandToInclude(fl.getBounds());
+			mc.addLayer(fl);
 		}
-
-		
-		// outline layer
-		Style outlineStyle = null;
-		if (gt.getBinding() == Polygon.class || gt.getBinding() == MultiPolygon.class) {
-			outlineStyle = SLD.wrapSymbolizers(sb.createPolygonSymbolizer(Color.BLACK, 0.01));
-		} else if (gt.getBinding() == Point.class || gt.getBinding() == MultiPoint.class) {
-			Mark mark = sb.createMark(StyleBuilder.MARK_CIRCLE, Color.BLACK, 0.01);
-			mark.setFill(null);
-			outlineStyle = SLD.wrapSymbolizers(sb.createPointSymbolizer(sb.createGraphic(null, mark, null)));
-		} else {
-			log.warn("GeomType not supported: " + gt.getBinding());
-		}
-		FeatureLayer fl = new FeatureLayer(fc, outlineStyle);
-		mc.addLayer(fl);
-		
+			
 		List<Color> colors = new ArrayList<Color>();
 		for( Color c : selectedColors.values() )
 			if( !colors.contains(c) )
@@ -242,8 +231,9 @@ public class MapPanel<T> extends NeuronVisPanel<T> implements MapPaneListener, C
 				mc.addLayer(new FeatureLayer(sub, style));
 			}
 		}
+				
 		
-		mc.setViewport( new MapViewport(fl.getBounds()));			
+		mc.setViewport( new MapViewport(bounds));			
 		mp.setBackground(getBackground()); // quick and dirty hack. setOpaque(false) does not work somehow
 		mp.getMapContent().dispose();
 		mp.setMapContent(mc);
@@ -258,17 +248,20 @@ public class MapPanel<T> extends NeuronVisPanel<T> implements MapPaneListener, C
 		Point2D ptSrc = new Point2D.Double(evt.getPoint().getX(), evt.getPoint().getY());
 		Point2D ptDst = null;
 		ptDst = af.transform(ptSrc, ptDst);
-
+		
 		// find selected feature
 		GeometryFactory gf = new GeometryFactory();
-		Filter filter = ff.intersects(ff.property("the_geom"), ff.literal(gf.createPoint(new Coordinate(ptDst.getX(), ptDst.getY()))));
-		
+		//FIXME does not really work well for point features
+		Geometry p = gf.createPoint(new Coordinate(ptDst.getX(), ptDst.getY()));
+		Filter filter = ff.intersects(ff.property("the_geom"), ff.literal(p));
 		try {
-			FeatureIterator<SimpleFeature> iter = fc.subCollection(filter).features();
+			FeatureCollection<SimpleFeatureType, SimpleFeature> sub = fc.subCollection(filter);
+			log.debug("Sub-size: "+sub.size());
+			FeatureIterator<SimpleFeature> iter = sub.features();
 			try {
 				while (iter.hasNext()) {
 					SimpleFeature feature = iter.next();
-
+					
 					if (selectSingle)
 						selected = feature;
 

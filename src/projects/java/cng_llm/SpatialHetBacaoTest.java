@@ -150,7 +150,7 @@ public class SpatialHetBacaoTest {
 						double[] out = geoOut.get(d);
 						vMap.put(out, out[2]);
 					}
-					geoDrawNG("output/ng_output_"+df.format(l)+"_"+df.format(run)+".png", vMap, outConns, ga, samples);
+					geoDrawNG("output/ng_output_"+df.format(l)+"_"+df.format(run)+".png", vMap, outConns, ga, samples, 5);
 				}
 				
 				// coefs ---------------------------------------------------------------
@@ -178,7 +178,7 @@ public class SpatialHetBacaoTest {
 							ds.addValue( fDist.dist(coef, nb));
 						vMap.put( coef, ds.getMean() );
 					}
-					geoDrawNG("output/ng_coef_dmatrix_"+df.format(l)+"_"+df.format(run)+".png", vMap, coefConns, ga, samples);
+					geoDrawNG("output/ng_coef_dmatrix_"+df.format(l)+"_"+df.format(run)+".png", vMap, coefConns, ga, samples, 5);
 				}
 				
 				// components
@@ -188,7 +188,7 @@ public class SpatialHetBacaoTest {
 						double[] coef = geoCoefs.get(d);
 						vMap.put(coef, coef[i]);
 					}
-					geoDrawNG("output/ng_coef_v"+i+"_"+df.format(l)+"_"+df.format(run)+".png", vMap, coefConns, ga, samples);
+					geoDrawNG("output/ng_coef_v"+i+"_"+df.format(l)+"_"+df.format(run)+".png", vMap, coefConns, ga, samples, 5);
 				}
 												
 				// graph clustering
@@ -230,7 +230,7 @@ public class SpatialHetBacaoTest {
 		}
 	}
 	
-	public static void geoDrawNG(String fn, Map<double[],Double> neurons, Collection<Connection> conections, int[] ga, List<double[]> samples ) {
+	public static void geoDrawNG(String fn, Map<double[],Double> neurons, Collection<Connection> connection, int[] ga, List<double[]> samples, int sampleClassIdx ) {
 		int xScale = 1000;
 		int yScale = 800;
 		
@@ -261,8 +261,8 @@ public class SpatialHetBacaoTest {
 		
 		Map<double[],Double> values = new HashMap<double[],Double>();
 		for( double[] d : samples )
-			values.put(d,d[5]);
-		Map<double[],Color> col = ColorBrewerUtil.valuesToColors(values, ColorMode.Set2);
+			values.put(d,d[sampleClassIdx]);
+		Map<double[],Color> col = ColorBrewerUtil.valuesToColors(values, ColorMode.Set1);
 					
 		for( double[] n : samples ) {
 			g2.setColor(col.get(n));
@@ -271,8 +271,8 @@ public class SpatialHetBacaoTest {
 			g2.fillOval( x1 - 3, y1 - 3, 6, 6	);
 		}
 
-		if( conections != null )
-		for( Connection c : conections ) {
+		if( connection != null )
+		for( Connection c : connection ) {
 			g2.setColor(Color.BLACK);
 			double[] a = c.getA();
 			double[] b = c.getB();

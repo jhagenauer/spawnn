@@ -115,7 +115,7 @@ public class AnnPanel extends JPanel implements ChangeListener, ActionListener {
 		tpContextModel.setEnabledAt(CNG,contextModelsEnabled);	
 	}
 	
-	public void setContextModelsEnabled(boolean b) {
+	public void enableCentroidBasedContextModels(boolean b) {
 		contextModelsEnabled = b;
 		updateContextModelsEnabled();
 	}

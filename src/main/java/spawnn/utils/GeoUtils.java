@@ -1,6 +1,8 @@
 package spawnn.utils;
 
+import java.io.File;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -10,10 +12,22 @@ import java.util.Set;
 import org.apache.log4j.Logger;
 
 import spawnn.dist.Dist;
+import spawnn.dist.EuclideanDist;
 
 public class GeoUtils {
 
 	private static Logger log = Logger.getLogger(GeoUtils.class);
+	
+	public static void rowNormalizeMatrix( Map<double[],Map<double[],Double>> map ) {
+		for( double[] a : map.keySet() ) {
+			double sum = 0;
+			for( double d : map.get(a).values() )
+				sum += d;
+						
+			for( double[] b : new ArrayList<double[]>(map.get(a).keySet() ) )
+				map.get(a).put(b, map.get(a).get(b)/sum );
+		}
+	}
 	
 	public static Map<double[],Map<double[],Double>> getRowNormedMatrix( Map<double[],Map<double[],Double>> map ) {
 		Map<double[],Map<double[],Double>> normedMatrix = new HashMap<double[],Map<double[],Double>>();
@@ -22,7 +36,7 @@ public class GeoUtils {
 			double sum = 0;
 			for( double d : map.get(a).values() )
 				sum += d;
-			
+						
 			Map<double[], Double> n = new HashMap<double[], Double>();
 			for( double[] b : map.get(a).keySet() )
 				n.put(b,map.get(a).get(b)/sum );
@@ -49,22 +63,10 @@ public class GeoUtils {
 		return knnM;
 	}
 
-	public static Map<double[], Map<double[], Double>> getInverseDistanceMatrix(List<double[]> samples, Dist<double[]> gDist, int pow) {
+	public static Map<double[], Map<double[], Double>> getInverseDistanceMatrix(Collection<double[]> samples, Dist<double[]> gDist, int pow) {
 		Map<double[], Map<double[], Double>> r = new HashMap<double[], Map<double[], Double>>();
 		
-		double minDist = Double.POSITIVE_INFINITY;
-		for (double[] a : samples) { 
-			for (double[] b : samples) {
-				if( a == b )
-					continue;
-				double d = gDist.dist(a, b);
-				if( d > 0 && d < minDist )
-					minDist = d;
-			}
-		}
-		
-		boolean warn = true;
-		
+		double minDist = -1;
 		for (double[] a : samples) {
 			Map<double[], Double> m = new HashMap<double[], Double>();
 
@@ -74,9 +76,18 @@ public class GeoUtils {
 				
 				double dist = gDist.dist(a, b);
 				if( dist == 0 ) {
-					if( warn ) {
+					if( minDist < 0  ) { // only calc/show message once
+						minDist = Double.POSITIVE_INFINITY;
+						for (double[] aa : samples) { 
+							for (double[] bb : samples) {
+								if( aa == bb )
+									continue;
+								double d = gDist.dist(aa, bb);
+								if( d > 0 && d < minDist )
+									minDist = d;
+							}
+						}		
 						log.warn("Identical points present. Setting dist to "+minDist);
-						warn = false;
 					}
 					dist = minDist;
 				}
@@ -144,7 +155,7 @@ public class GeoUtils {
 		for (Map<double[], Double> m : dMap.values())
 			for (double d : m.values()) 
 				std += d;
-				
+						
 		return (n / ftd) * (stn / std);
 	}
 
@@ -173,5 +184,19 @@ public class GeoUtils {
 						
 		}
 		return lisa;
+	}
+	
+	public static void main(String[] args) {
+		
+		SpatialDataFrame sdf = DataUtils.readSpatialDataFrameFromCSV(new File("data/ozone.csv"), new int[]{2,3}, new int[]{}, true);
+		List<double[]> samples = sdf.samples;
+		Dist<double[]> gDist = new EuclideanDist(new int[]{2,3});
+		
+		Map<double[], Map<double[], Double>> m1 = getInverseDistanceMatrix(samples, gDist, 1);
+		log.debug( "Inv, 1: "+getMoransI( m1, 1) ); 
+		log.debug( "Inv, 1, norm: "+getMoransI( getRowNormedMatrix(m1), 1) ); 
+		
+		rowNormalizeMatrix(m1);
+		log.debug( "Inv, 1, norm v2: "+getMoransI( m1, 1) ); 
 	}
 }
