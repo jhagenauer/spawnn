@@ -39,6 +39,7 @@ import org.geotools.styling.Mark;
 import org.geotools.styling.SLD;
 import org.geotools.styling.Style;
 import org.geotools.styling.StyleBuilder;
+import org.geotools.styling.Symbolizer;
 import org.geotools.swing.JMapPane;
 import org.geotools.swing.event.MapPaneEvent;
 import org.geotools.swing.event.MapPaneListener;
@@ -169,29 +170,40 @@ public class MapPanel<T> extends NeuronVisPanel<T> implements MapPaneListener, C
 	public void setGridColors(Map<T, Color> colorMap, Map<T, Color> selectedColors, Map<T, Double> neuronValues) {
 		StyleBuilder sb = new StyleBuilder();
 		GeometryType gt = fc.getSchema().getGeometryDescriptor().getType();
-
-		MapContent mc = new MapContent();
-		ReferencedEnvelope bounds = new ReferencedEnvelope();
-
-		// color layers, TODO: better just one Layer, but Color According property
+		
+		// set color attributes
 		for (int i = 0; i < pos.size(); i++) {
 			Color c = colorMap.get(pos.get(i));
 			FeatureCollection<SimpleFeatureType, SimpleFeature> sub = fc.subCollection(ff.equals(ff.property("neuron"), ff.literal(i)));
+			FeatureIterator<SimpleFeature> iter = sub.features();
+			try {
+				while (iter.hasNext())
+					iter.next().setAttribute("color", c);
+			} finally {
+				iter.close();
+			}
+		}
 
+		MapContent mc = new MapContent();
+		ReferencedEnvelope bounds = new ReferencedEnvelope();		
+		{
 			Style style = null;
 			if (gt.getBinding() == Polygon.class || gt.getBinding() == MultiPolygon.class) {
-				style = SLD.wrapSymbolizers(sb.createPolygonSymbolizer(c, Color.BLACK, 0.01));
+				Symbolizer sym = sb.createPolygonSymbolizer(sb.createStroke(),sb.createFill(ff.property("color")));
+				style = SLD.wrapSymbolizers(sym);
 			} else if (gt.getBinding() == Point.class || gt.getBinding() == MultiPoint.class) {
-				Mark mark = sb.createMark(StyleBuilder.MARK_CIRCLE, c, Color.BLACK, 0.01);
-				style = SLD.wrapSymbolizers(sb.createPointSymbolizer(sb.createGraphic(null, mark, null)));
+				Mark mark = sb.createMark(StyleBuilder.MARK_CIRCLE, sb.createFill(ff.property("color")), sb.createStroke());
+				Symbolizer sym = sb.createPointSymbolizer(sb.createGraphic(null, mark, null));
+				style = SLD.wrapSymbolizers(sym);
 			} else {
 				log.warn("GeomType not supported: " + gt.getBinding());
 			}
-			FeatureLayer fl = new FeatureLayer(sub, style);
+			FeatureLayer fl = new FeatureLayer(fc, style);
 			bounds.expandToInclude(fl.getBounds());
 			mc.addLayer(fl);
 		}
 			
+		// Maybe it would be better to have a single layer here
 		List<Color> colors = new ArrayList<Color>();
 		for( Color c : selectedColors.values() )
 			if( !colors.contains(c) )
@@ -232,7 +244,6 @@ public class MapPanel<T> extends NeuronVisPanel<T> implements MapPaneListener, C
 			}
 		}
 				
-		
 		mc.setViewport( new MapViewport(bounds));			
 		mp.setBackground(getBackground()); // quick and dirty hack. setOpaque(false) does not work somehow
 		mp.getMapContent().dispose();
@@ -256,7 +267,7 @@ public class MapPanel<T> extends NeuronVisPanel<T> implements MapPaneListener, C
 		Filter filter = ff.intersects(ff.property("the_geom"), ff.literal(p));
 		try {
 			FeatureCollection<SimpleFeatureType, SimpleFeature> sub = fc.subCollection(filter);
-			log.debug("Sub-size: "+sub.size());
+			//log.debug("Sub-size: "+sub.size());
 			FeatureIterator<SimpleFeature> iter = sub.features();
 			try {
 				while (iter.hasNext()) {

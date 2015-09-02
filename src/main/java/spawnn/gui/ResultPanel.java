@@ -73,6 +73,7 @@ public abstract class ResultPanel<T> extends JPanel {
 		sftb.add("nValue", Double.class);
 		sftb.add("selected", Integer.class);
 		sftb.add("color", Color.class);
+		sftb.add("selCol",Color.class);
 
 		Geometry g = sd.geoms.get(0);
 		if (g instanceof Polygon)
@@ -99,7 +100,6 @@ public abstract class ResultPanel<T> extends JPanel {
 						builder.set(sd.names.get(j), sd.samples.get(k)[j]);
 					builder.set("neuron", i);
 					builder.set("the_geom", sd.geoms.get(k));
-					builder.set("color", Color.BLACK);
 					fc.add(builder.buildFeature(fc.size() + ""));
 					break;
 				}

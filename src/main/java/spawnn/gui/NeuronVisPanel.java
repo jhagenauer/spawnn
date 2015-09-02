@@ -1,25 +1,10 @@
 package spawnn.gui;
 
-import java.awt.BasicStroke;
 import java.awt.Color;
-import java.awt.Cursor;
-import java.awt.Font;
-import java.awt.Graphics2D;
-import java.awt.RenderingHints;
-import java.awt.image.BufferedImage;
 import java.io.File;
-import java.io.FileOutputStream;
-import java.text.DecimalFormat;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
-import javax.imageio.ImageIO;
 import javax.swing.JPanel;
-
-import org.apache.xmlgraphics.java2d.ps.EPSDocumentGraphics2D;
 
 import spawnn.som.grid.GridPos;
 

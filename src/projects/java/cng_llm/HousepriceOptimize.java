@@ -158,7 +158,7 @@ public class HousepriceOptimize {
 		// ------------------------------------------------------------------------
 				
 		// Ohne ignore ist es etwas besser
-		for( final int T_MAX : new int[]{ 40000 } )
+		for( final int T_MAX : new int[]{ 20000, 40000, 80000 } )
 		for( final int nrNeurons : new int[]{ 12 } )
 		for( final double lInit : new double[]{ nrNeurons/3 })
 		for( final double lFinal : new double[]{ 0.1 })	

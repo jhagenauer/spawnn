@@ -24,7 +24,7 @@ public class AnnPanel extends JPanel implements ChangeListener, ActionListener {
 	protected JPanel somPanel, ngPanel;
 	protected JPanel nonePanel, weightedPanel, geoSomPanel, cngPanel, wmcPanel, augmentedPanel;
 	private JButton btnTrain, btnApply;
-	private boolean contextModelsEnabled = false;
+	private boolean centroidModelsEnabled = false;
 		
 	private static final int NONE = 0, AUGMENTED = 1, WEIGHTED = 2, GEOSOM = 3, CNG = 4, WMC = 5;
 	
@@ -83,7 +83,6 @@ public class AnnPanel extends JPanel implements ChangeListener, ActionListener {
 		add( new JLabel("Runs:"));
 		add( runs, "" );
 		
-		//TODO comment me out plz!!!
 		/*btnApply = new JButton("Apply existing...");
 		btnApply.addActionListener(this);
 		add( btnApply,"split 2, align right");*/
@@ -93,30 +92,27 @@ public class AnnPanel extends JPanel implements ChangeListener, ActionListener {
 
 	@Override
 	public void stateChanged(ChangeEvent e) {
-		if( e.getSource() == tpANN ) {
-			if( tpANN.getSelectedComponent() == somPanel ) {
-				updateContextModelsEnabled();
-			} else if( tpANN.getSelectedComponent() == ngPanel ) {
-				if( tpContextModel.getSelectedComponent() == geoSomPanel )
-					tpContextModel.setSelectedComponent(nonePanel);
-				
-				updateContextModelsEnabled();
-			}
-		}
+		if( e.getSource() == tpANN ) 
+			updateContextModelsEnabled();
+		System.out.println(e);
 	}
 	
 	private void updateContextModelsEnabled() {
-		tpContextModel.setEnabledAt(AUGMENTED, contextModelsEnabled);
-		tpContextModel.setEnabledAt(WEIGHTED, contextModelsEnabled);
+		tpContextModel.setEnabledAt(AUGMENTED, centroidModelsEnabled);
+		tpContextModel.setEnabledAt(WEIGHTED, centroidModelsEnabled);
+		tpContextModel.setEnabledAt(CNG,centroidModelsEnabled);	
+		
 		if( tpANN.getSelectedComponent() == somPanel )
-			tpContextModel.setEnabledAt(GEOSOM, contextModelsEnabled);
+			tpContextModel.setEnabledAt(GEOSOM, centroidModelsEnabled);
 		else
-			tpContextModel.setEnabledAt(GEOSOM, false);
-		tpContextModel.setEnabledAt(CNG,contextModelsEnabled);	
+			tpContextModel.setEnabledAt(GEOSOM, false); // never for ng
+		
+		if( !tpContextModel.getSelectedComponent().isEnabled() );
+			tpContextModel.setSelectedIndex(NONE);
 	}
 	
-	public void enableCentroidBasedContextModels(boolean b) {
-		contextModelsEnabled = b;
+	public void setEnabledCentroidModels(boolean b) {
+		centroidModelsEnabled = b;
 		updateContextModelsEnabled();
 	}
 	

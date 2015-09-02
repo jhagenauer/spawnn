@@ -138,11 +138,11 @@ public class HousepriceTest {
 			
 		final Dist<double[]> gDist = new EuclideanDist(ga);
 		final Dist<double[]> fDist = new EuclideanDist(fa);
-		int nrNeurons = 12;
-		int nrCluster = nrNeurons;
+		int nrNeurons = 30;
+		int nrCluster = 12;
 		
 		for (int run = 0; run < 1; run++)
-			for (int l = 1; l <= nrNeurons; l++) {
+			for (int l = 1; l <= nrNeurons/2; l++) {
 
 				List<double[]> neurons = new ArrayList<double[]>();
 				for (int i = 0; i < nrNeurons; i++) {
@@ -154,9 +154,9 @@ public class HousepriceTest {
 				DefaultSorter<double[]> gSorter = new DefaultSorter<>(gDist);
 				Sorter<double[]> sorter = new KangasSorter<>(gSorter, errorSorter, l);
 				
-				DecayFunction nbRate = new PowerDecay(nrNeurons/2, 0.1);
-				DecayFunction lrRate1 = new PowerDecay(0.5, 0.005);
-				DecayFunction lrRate2 = new PowerDecay(0.1, 0.005);
+				DecayFunction nbRate = new PowerDecay(nrNeurons/3, 0.1);
+				DecayFunction lrRate1 = new PowerDecay(0.5, 0.001);
+				DecayFunction lrRate2 = new PowerDecay(0.1, 0.001);
 				LLMNG ng = new LLMNG(neurons, 
 						nbRate, lrRate1, 
 						nbRate, lrRate2, 
