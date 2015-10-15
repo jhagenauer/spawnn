@@ -120,7 +120,7 @@ public class NonstatClusterTest {
 						if( m == method.error ) {
 							Sorter<double[]> secSorter = new ErrorSorter(samples, desired);
 							Sorter<double[]> sorter = new KangasSorter<>(gSorter, secSorter, L);
-							LLMNG ng = new LLMNG(neurons, nbRate, lrRate1, nbRate, lrRate2, sorter, fa, 1, false);
+							LLMNG ng = new LLMNG(neurons, nbRate, lrRate1, nbRate, lrRate2, sorter, fa, 1);
 							((ErrorSorter)secSorter).setLLMNG(ng);
 							
 							for (int t = 0; t < T_MAX; t++) {

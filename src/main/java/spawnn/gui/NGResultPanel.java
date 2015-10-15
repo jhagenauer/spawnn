@@ -111,7 +111,7 @@ public class NGResultPanel extends ResultPanel<double[]> implements ActionListen
 		vertexComboBox.addItem(CLUSTER);
 		vertexComboBox.addItem(CLUSTER_GRAPH);
 		
-		vertexComboBox.setRenderer(new ComboSeparatorsRenderer<String>((ListCellRenderer<String>)vertexComboBox.getRenderer()){        
+		vertexComboBox.setRenderer(new ComboSeparatorsRenderer((ListCellRenderer<String>)vertexComboBox.getRenderer()){        
 		    @Override
 			protected boolean addSeparatorAfter(JList list, String value, int index) {
 		    	return CLUSTER_GRAPH.equals(value);

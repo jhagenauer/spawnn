@@ -10,7 +10,7 @@ import java.util.Map;
 
 public class ColorBrewerUtil {
 	
-	public static enum ColorMode { Gray, Temp, Reds, Blues, Greys, Spectral, Set1, Set2, Set3, Paired  };
+	public static enum ColorMode { Gray, Temp, Reds, Blues, Greys, Spectral, Set1, Set2, Set3, Paired };
 	
 	public static <T> Map<T, Color> valuesToColors(Map<T, Double> valueMap, ColorMode cm ) {
 		Map<T, Color> colors = new HashMap<T, Color>();

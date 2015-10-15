@@ -64,7 +64,7 @@ public class NG implements UnsupervisedNet {
 		for( int k = 0; k < neurons.size(); k++ ) {
 			double[] w = neurons.get(k);
 			double adapt = e * Math.exp( -(double)k/l );
-			
+						
 			for( int i = 0; i < w.length; i++ ) 
 				w[i] +=  adapt * ( x[i] - w[i] ) ;
 		} 

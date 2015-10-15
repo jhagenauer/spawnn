@@ -24,7 +24,6 @@ import javax.imageio.ImageIO;
 import llm.ErrorSorter;
 import llm.LLMNG;
 
-import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.log4j.Logger;
 import org.geotools.factory.CommonFactoryFinder;
 import org.geotools.feature.DefaultFeatureCollection;
@@ -71,7 +70,7 @@ public class HousepriceTest {
 	public static void main(String[] args) {
 		final DecimalFormat df = new DecimalFormat("00");
 		final Random r = new Random();
-		final int T_MAX = 40000;
+		final int T_MAX = 80000;
 
 		final List<double[]> samples = new ArrayList<double[]>();
 		final List<Geometry> geoms = new ArrayList<Geometry>();
@@ -122,7 +121,7 @@ public class HousepriceTest {
 		// ------------------------------------------------------------------------
 		
 		DataUtils.zScoreColumns(samples, fa);
-		DataUtils.zScoreColumn(samples, da); // should not be necessary
+		DataUtils.zScoreColumn(desired, 0); // should not be necessary
 
 		{ // just write it to csv inkl. csv for external use
 			List<double[]> l = new ArrayList<double[]>();
@@ -138,11 +137,11 @@ public class HousepriceTest {
 			
 		final Dist<double[]> gDist = new EuclideanDist(ga);
 		final Dist<double[]> fDist = new EuclideanDist(fa);
-		int nrNeurons = 30;
-		int nrCluster = 12;
+		int nrNeurons = 12;
+		int nrCluster = -1;
 		
-		for (int run = 0; run < 1; run++)
-			for (int l = 1; l <= nrNeurons/2; l++) {
+		for (int run = 0; run < 5; run++)
+			for (int l = 2; l <= 5; l++) {
 
 				List<double[]> neurons = new ArrayList<double[]>();
 				for (int i = 0; i < nrNeurons; i++) {
@@ -160,7 +159,7 @@ public class HousepriceTest {
 				LLMNG ng = new LLMNG(neurons, 
 						nbRate, lrRate1, 
 						nbRate, lrRate2, 
-						sorter, fa, 1, true );
+						sorter, fa, 1 );
 				errorSorter.setLLMNG(ng);
 
 				for (int t = 0; t < T_MAX; t++) {
@@ -175,46 +174,7 @@ public class HousepriceTest {
 				Map<double[],Set<double[]>> mapping = NGUtils.getBmuMapping(samples, neurons, sorter);
 				
 				log.debug(l+", RMSE: " + Meuse.getRMSE(response, desired) + ", R2: " + Math.pow(Meuse.getPearson(response, desired), 2));
-				DataUtils.writeCSV("output/cng_proto", neurons, vars.toArray(new String[]{}));
 				
-				// coefs ----------------------------------------------------------
-				Map<double[],double[]> geoCoefs = new HashMap<double[],double[]>();
-				for( double[] n : ng.getNeurons() ) {
-					double[] cg = new double[2+fa.length];
-					cg[0] = n[ga[0]];
-					cg[1] = n[ga[1]];
-					for( int i = 0; i < fa.length; i++ )
-						cg[2+i] = ng.matrix.get(n)[0][i];
-					geoCoefs.put(n, cg);
-				}
-				DataUtils.writeCSV("output/cng_coefs_"+l+".csv", geoCoefs.values(), vars.toArray(new String[]{}));
-												
-				// output/intercept ----------------------------------------------------
-				Map<double[],double[]> geoOut = new HashMap<double[],double[]>();
-				for( double[] n : ng.getNeurons() ) {
-					double[] cg = new double[ga.length+1];
-					cg[0] = n[ga[0]];
-					cg[1] = n[ga[1]];
-					cg[2] = ng.output.get(n)[0];
-					geoOut.put(n, cg);
-				}
-				DataUtils.writeCSV("output/cng_output_"+l+".csv", geoOut.values(), new String[]{"xco","yco","output"});
-				
-				// write cluster to csv
-				int i = 0;
-				List<double[]> ns = new ArrayList<double[]>();
-				for( double[] n : mapping.keySet() ) {
-					for( double[] d : mapping.get(n) ) {
-						double[] nd = Arrays.copyOf(d, d.length+1);
-						nd[nd.length-1] = i;
-						ns.add(nd);
-					}
-					i++;
-				}
-				List<String> nVars = new ArrayList<String>(vars);
-				nVars.add("neuron");
-				DataUtils.writeCSV("output/cng_cluster_"+l+".csv", ns, nVars.toArray( new String[]{} ) );	
-								
 				// CHL 
 				Map<Connection, Integer> conns = new HashMap<Connection, Integer>();
 				for (double[] x : samples) {
@@ -227,9 +187,78 @@ public class HousepriceTest {
 					else
 						conns.put(c, conns.get(c) + 1);
 				}
-				geoDrawNG("output/cng_graph_"+df.format(l)+".png", mapping, conns, ga, null);
+				geoDrawNG("output/cng_graph_l"+df.format(l)+"_r"+df.format(run)+".png", mapping, conns, ga, null);
 				
-				if( nrCluster < nrNeurons ) {
+				
+				{ // protos ---------------------------------------------------------
+					List<double[]> ns = new ArrayList<double[]>();
+					for( double[] n : neurons ) {
+						double[] nd = Arrays.copyOf(n, n.length+1);
+							nd[nd.length-1] = neurons.indexOf(n);
+							ns.add(nd);
+					}
+					List<String> nVars = new ArrayList<String>(vars);
+					nVars.add("neuron");
+					DataUtils.writeCSV("output/cng_proto_l"+df.format(l)+"_r"+df.format(run)+".csv", ns, nVars.toArray( new String[]{} ) );
+				}
+								
+				{ // coefs ----------------------------------------------------------
+					Map<double[],double[]> geoCoefs = new HashMap<double[],double[]>();
+					for( double[] n : neurons ) {
+						double[] cg = new double[3+fa.length];
+						cg[0] = n[ga[0]];
+						cg[1] = n[ga[1]];
+						for( int i = 0; i < fa.length; i++ )
+							cg[2+i] = ng.matrix.get(n)[0][i];
+						cg[cg.length-1] = neurons.indexOf(n);
+						geoCoefs.put(n, cg);
+					}
+					List<String> nVars = new ArrayList<String>(vars);
+					nVars.add("neuron");
+					DataUtils.writeCSV("output/cng_coefs_l"+df.format(l)+"_r"+df.format(run)+".csv", geoCoefs.values(), nVars.toArray(new String[]{}));
+
+					/*for( int i = 0; i < fa.length; i++ ) {
+						Map<double[],Double> m = new HashMap<double[],Double>();
+						for( double[] n : neurons ) 
+							m.put(n,ng.matrix.get(n)[0][i]);
+						NGUtils.geoDrawNG("output/cng_coefs_l"+df.format(l)+"_i"+df.format(i)+"_r"+df.format(run)+".png", m, conns.keySet(), ga, samples);
+					}*/
+				}
+												
+				{ // output/intercept ----------------------------------------------------
+					Map<double[],double[]> geoOut = new HashMap<double[],double[]>();
+					for( double[] n : neurons ) {
+						double[] cg = new double[ga.length+2];
+						cg[0] = n[ga[0]];
+						cg[1] = n[ga[1]];
+						cg[2] = ng.output.get(n)[0];
+						cg[3] = neurons.indexOf(n);
+						geoOut.put(n, cg);
+					}
+					DataUtils.writeCSV("output/cng_output_l"+df.format(l)+"_r"+df.format(run)+".csv", geoOut.values(), new String[]{"xco","yco","output","neuron"});
+					
+					/*Map<double[],Double> m = new HashMap<double[],Double>();
+					for( double[] n : neurons ) 
+						m.put(n,ng.output.get(n)[0]);
+					NGUtils.geoDrawNG("output/cng_output_l"+df.format(l)+"_r"+df.format(run)+".png", m, conns.keySet(), ga, samples);*/
+				}
+								
+				{ // cluster ---------------------------
+					List<double[]> ns = new ArrayList<double[]>();
+					for( double[] n : mapping.keySet() ) {
+						for( double[] d : mapping.get(n) ) {
+							double[] nd = Arrays.copyOf(d, d.length+1);
+							nd[nd.length-1] = neurons.indexOf(n);
+							ns.add(nd);
+						}
+					}
+					List<String> nVars = new ArrayList<String>(vars);
+					nVars.add("neuron");
+					DataUtils.writeCSV("output/cng_cluster_l"+df.format(l)+"_r"+df.format(run)+".csv", ns, nVars.toArray( new String[]{} ) );
+				}	
+				
+				// cluster cng
+				/*if( nrCluster < nrNeurons ) {
 					Map<double[],Map<double[],Double>> graph = new HashMap<double[],Map<double[],Double>>();
 					for( Connection c : conns.keySet() ) {
 						double[] a = c.getA();
@@ -244,56 +273,15 @@ public class HousepriceTest {
 					}
 					Map<double[],Integer> clust = GraphClustering.greedyOptModularity(graph, 10, nrCluster);
 					Map<Integer,Set<double[]>> cluster = new HashMap<Integer,Set<double[]>>();
-					for( double[] d : clust.keySet() ) {
-						int c = clust.get(d);
+					for( double[] n : clust.keySet() ) {
+						int c = clust.get(n);
 						if( !cluster.containsKey(c) )
 							cluster.put(c, new HashSet<double[]>());
-						cluster.get(c).add(d);
+						for( double[] d : mapping.get(n) )
+							cluster.get(c).add(d);
 					}
-					Drawer.geoDrawCluster(cluster.values(), samples, geoms, "output/cng_graph_cluster_"+l+".png", true);
-				}
-				
-				{ 	// d-matrix
-					Map<double[],Double> vMap = new HashMap<double[],Double>();
-					for( double[] n : ng.getNeurons() ) {
-						DescriptiveStatistics ds = new DescriptiveStatistics();
-						for( double[] nb : Connection.getNeighbors(conns.keySet(), n, 1))
-							ds.addValue( fDist.dist(n, nb));
-						vMap.put( n, ds.getMean() );
-					}
-					SpatialHetBacaoTest.geoDrawNG("output/cng_proto_dmatrix_"+df.format(l)+".png", vMap, conns.keySet(), ga, samples, 5);
-				}
-				
-				List<Connection> coefConns = new ArrayList<Connection>();
-				for( Connection c : conns.keySet() )
-					coefConns.add( new Connection( geoCoefs.get(c.getA()), geoCoefs.get(c.getB() )) );
-				
-				{ 	// d-matrix coef
-					Map<double[],Double> vMap = new HashMap<double[],Double>();
-					for( double[] d : ng.getNeurons() ) {
-						DescriptiveStatistics ds = new DescriptiveStatistics();
-						double[] coef = geoCoefs.get(d);
-						for( double[] nb : Connection.getNeighbors(coefConns, coef, 1))
-							ds.addValue( fDist.dist(coef, nb));
-						vMap.put( coef, ds.getMean() );
-					}
-					SpatialHetBacaoTest.geoDrawNG("output/cng_coef_dmatrix_"+df.format(l)+".png", vMap, coefConns, ga, samples, 5);
-				}
-				
-				
-				List<Connection> outConns = new ArrayList<Connection>();
-				for( Connection c : conns.keySet() )
-					outConns.add( new Connection( geoOut.get(c.getA()), geoOut.get(c.getB() )) );
-							
-				// components
-				{
-					Map<double[],Double> vMap = new HashMap<double[],Double>();
-					for( double[] d : ng.getNeurons() ) {
-						double[] out = geoOut.get(d);
-						vMap.put(out, out[2]);
-					}
-					SpatialHetBacaoTest.geoDrawNG("output/ng_output_"+df.format(l)+"_"+df.format(run)+".png", vMap, outConns, ga, samples, 5);
-				}
+					Drawer.geoDrawCluster(cluster.values(), samples, geoms, "output/cng_graph_cluster_l"+df.format(l)+"_r"+df.format(run)+".png", true);
+				}*/
 			}
 	}
 

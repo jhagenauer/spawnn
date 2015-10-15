@@ -28,14 +28,7 @@ import spawnn.ng.sorter.Sorter;
 import spawnn.ng.sorter.SorterWMC;
 import spawnn.ng.utils.NGUtils;
 import spawnn.som.grid.Grid2D;
-import spawnn.utils.ClusterValidation;
 import spawnn.utils.DataUtils;
-import spawnn.utils.Drawer;
-
-import com.vividsolutions.jts.geom.Coordinate;
-import com.vividsolutions.jts.geom.Geometry;
-import com.vividsolutions.jts.geom.GeometryFactory;
-
 import context.space.binary_field.SpaceTestDiscrete;
 import context.space.binary_field.SpaceTestDiscrete2;
 
@@ -56,7 +49,7 @@ public class WMNGParamSensBF {
 		final Dist<double[]> gDist = new EuclideanDist(ga);
 
 		final int T_MAX = 150000;
-		int runs = 8;
+		int runs = 16; // 4 -> 6717s, 16 -> 27643s
 		int threads = 4;
 		final boolean normed = true;
 
@@ -96,7 +89,7 @@ public class WMNGParamSensBF {
 							Map<double[], Set<Grid2D<Boolean>>> rf = SpaceTestDiscrete.getReceptiveFields(samples, dMap, bmus, maxDist, maxRfSize, ga, fa);
 															
 							Result r = new Result();
-							r.bmus = bmus;
+							//r.bmus = bmus;
 							r.qe = SpaceTestDiscrete2.getUncertainty(rf, maxDist, normed);
 							return r;
 						}
@@ -193,7 +186,7 @@ public class WMNGParamSensBF {
 		}*/
 		
 		List<double[]> params = new ArrayList<double[]>();
-		double steps = 0.05;
+		double steps = 0.01;
 		for (double alpha = 0.0; alpha <= 1; alpha += steps, alpha = Math.round(alpha * 10000) / 10000.0 )
 			for (double beta = 0.0; beta <= 1; beta += steps, beta = Math.round(beta * 10000) / 10000.0 ) {
 				double[] d = new double[] { alpha, beta };
@@ -256,7 +249,7 @@ public class WMNGParamSensBF {
 							Map<double[], Set<Grid2D<Boolean>>> rf = SpaceTestDiscrete.getReceptiveFields(samples, dMap, bmus, maxDist, maxRfSize, ga, fa);
 							
 							Result r = new Result();
-							r.bmus = bmus;
+							//r.bmus = bmus;
 							r.qe = SpaceTestDiscrete2.getUncertainty(rf, maxDist, normed);
 							return r;
 						}
@@ -305,7 +298,7 @@ public class WMNGParamSensBF {
 		}
 		
 		// write diff-means to file
-		try {
+		/*try {
 			FileWriter fw = new FileWriter("output/wmng_bf_diff.csv");
 			fw.write("# runs " + runs + ", maxDist " + maxDist + "\n");
 			fw.write("alpha,beta");
@@ -322,10 +315,10 @@ public class WMNGParamSensBF {
 			fw.close();
 		} catch (IOException e) {
 			e.printStackTrace();
-		}
+		}*/
 		
 		// calculate mean NMIs
-		try {
+		/*try {
 			FileWriter fw = new FileWriter("output/wmng_bf_nmi.csv");
 			fw.write("# runs " + runs + ", maxDist " + maxDist + "\n");
 			fw.write("alpha,beta,meanNMI\n");
@@ -341,7 +334,7 @@ public class WMNGParamSensBF {
 			fw.close();
 		} catch (IOException e) {
 			e.printStackTrace();
-		}
+		}*/
 		
 	}
 }

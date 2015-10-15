@@ -8,7 +8,7 @@ import java.nio.file.StandardOpenOption;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -23,9 +23,12 @@ import llm.ErrorSorter;
 import llm.LLMNG;
 
 import org.apache.commons.math3.linear.SingularMatrixException;
+import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression;
 import org.apache.log4j.Logger;
+
+import com.vividsolutions.jts.geom.Geometry;
 
 import rbf.Meuse;
 import spawnn.dist.Dist;
@@ -40,11 +43,11 @@ import spawnn.utils.DataUtils;
 import spawnn.utils.GeoUtils;
 import spawnn.utils.SpatialDataFrame;
 
-import com.vividsolutions.jts.geom.Geometry;
-
 public class HousepriceOptimize {
 
 	private static Logger log = Logger.getLogger(HousepriceOptimize.class);
+	
+	enum method { error, coef, inter, y };
 
 	public static void main(String[] args) {
 		boolean firstWrite = true;
@@ -52,60 +55,75 @@ public class HousepriceOptimize {
 		final DecimalFormat df = new DecimalFormat("00");
 		
 		final List<double[]> samples = new ArrayList<double[]>();
-		final List<Geometry> geoms = new ArrayList<Geometry>();
 		final List<double[]> desired = new ArrayList<double[]>();
-
-		SpatialDataFrame sdf = DataUtils.readSpatialDataFrameFromCSV(new File("data/marco/dat4/gwr.csv"), new int[] { 6, 7 }, new int[] {}, true);
-		List<String> vars = new ArrayList<String>();
-		vars.add("xco");
-		vars.add("yco");
-
-		vars.add("lnarea_tot");
-		vars.add("lnarea_plo");
-		vars.add("attic_dum");
-		vars.add("cellar_dum");
-		vars.add("cond_house_3");
-		vars.add("heat_3");
-		vars.add("bath_3");
-		vars.add("garage_3");
-		vars.add("terr_dum");
-		vars.add("age_num");
-		vars.add("time_index");
-		vars.add("zsp_alq_09");
-		vars.add("gem_kauf_i");
-		vars.add("gem_abi");
-		vars.add("gem_alter_");
-		vars.add("ln_gem_dic");
-
-		final int da = sdf.names.indexOf("lnp");
+				
+		final SpatialDataFrame sdf = DataUtils.readSpatialDataFrameFromCSV(new File("output/houseprice.csv"), new int[] { 0,1 }, new int[] {}, true);
 		for (double[] d : sdf.samples) {
-			if (d[sdf.names.indexOf("time_index")] < 6)
-				continue;
-			int idx = sdf.samples.indexOf(d);
-			double[] nd = new double[vars.size()];
-			
-			for (int i = 0; i < nd.length; i++)
-				nd[i] = d[sdf.names.indexOf(vars.get(i))]; 
+			double[] nd = Arrays.copyOf(d, d.length-1);
 			
 			// jitter
-			nd[0] += 0.02+r.nextDouble()*0.01;
-			nd[1] += 0.02+r.nextDouble()*0.01;
+			//nd[0] += 0.02+r.nextDouble()*0.01;
+			//nd[1] += 0.02+r.nextDouble()*0.01;
 					
 			samples.add(nd);
-			desired.add(new double[]{d[da]});
-			geoms.add(sdf.geoms.get(idx));
+			desired.add(new double[]{d[d.length-1]});
 		}
-
-		final int[] fa = new int[vars.size()-2]; // omit geo-vars
+						
+		final int[] fa = new int[samples.get(0).length-2]; // omit geo-vars
 		for( int i = 0; i < fa.length; i++ )
 			fa[i] = i+2;
 		final int[] ga = new int[] { 0, 1 };
-		
-		DataUtils.zScoreColumns(samples, fa);
-		DataUtils.zScoreColumn(desired, 0); // should not be necessary
-		
+				
 		final Dist<double[]> gDist = new EuclideanDist(ga);
 		final Dist<double[]> fDist = new EuclideanDist(fa);
+		
+		//DataUtils.zScoreColumns(samples, fa);
+		//DataUtils.zScoreColumn(desired, 0);
+		/*DataUtils.zScoreGeoColumns(samples, ga, gDist); //not necessary*/
+		
+		final Map<double[],Map<double[],Double>> rMap = GeoUtils.getInverseDistanceMatrix(samples, gDist, 1);
+		GeoUtils.rowNormalizeMatrix(rMap);
+		
+		// ------------------------------------------------------------------------
+
+		final SpatialDataFrame gwrResults = DataUtils.readSpatialDataFrameFromShapefile(new File("output/gwr.shp"), true);
+		
+		final Map<double[],Geometry> gMap = new HashMap<double[],Geometry>();
+		for( int i = 0; i < gwrResults.samples.size(); i++ ) 
+			gMap.put( gwrResults.samples.get(i), gwrResults.geoms.get(i) );
+		
+		Dist<double[]> geomDist = new Dist<double[]>() {
+			@Override
+			public double dist(double[] a, double[] b) {
+				return gMap.get(a).distance(gMap.get(b));
+			}	
+		};
+		
+		List<double[]> bestL = null;
+		double bestW = 0;
+		for( List<double[]> l : GeoUtils.getKNNs(gwrResults.samples, geomDist, 6).values() ) {
+			
+			boolean toClose = false ;
+			for( double[] a : l )
+				for( double[] b : l )
+					if( a != b && geomDist.dist(a, b) < 10 )
+						toClose = true;
+			if( toClose )
+				continue;
+			
+			double wF = DataUtils.getSumOfSquares(l, new EuclideanDist( new int[]{ 0, 1} ) );
+			if( bestL == null || wF < bestW ) {
+				bestW = wF;
+				bestL = l;
+			}
+		}
+		
+		final List<double[]> hGroup = new ArrayList<double[]>();
+		for( double[] d : bestL )
+			hGroup.add( samples.get( gwrResults.samples.indexOf(d)));
+					
+		DataUtils.writeCSV("output/hGroup.csv", hGroup, new String[]{ "x","y","area"} );
+		
 		// ------------------------------------------------------------------------
 
 		try { // predict for rmse and r2
@@ -122,12 +140,11 @@ public class HousepriceOptimize {
 			ols.setNoIntercept(false);
 			ols.newSampleData(y, x);
 			double[] beta = ols.estimateRegressionParameters();
-			log.debug(Arrays.toString(beta));
 			
 			// testing
 			List<double[]> response = new ArrayList<double[]>();
 			List<double[]> desiredResponse = new ArrayList<double[]>();
-			List<double[]> residuals = new ArrayList<double[]>();
+			Map<double[],Double> residuals = new HashMap<double[],Double>();
 			for (int i = 0; i < samples.size(); i++) {
 				double[] d = samples.get(i);
 				double[] xi = stripToFA(d,fa);
@@ -138,47 +155,54 @@ public class HousepriceOptimize {
 
 				response.add(new double[] { p });
 				desiredResponse.add(desired.get(i));
-				residuals.add( new double[]{ d[ga[0]], d[ga[1]], p - desired.get(i)[0] } );
+				residuals.put( d, p - desired.get(i)[0] );
 			}
-			log.debug("RMSE: "+Meuse.getRMSE(response, desiredResponse));
-			log.debug("R^2: "+Math.pow(Meuse.getPearson(response, desiredResponse), 2));
-						
-			Map<double[],Map<double[],Double>> rMap = GeoUtils.getInverseDistanceMatrix(residuals, gDist, 1);
-			GeoUtils.rowNormalizeMatrix(rMap);
-			log.debug("moran: "+Math.abs( GeoUtils.getMoransI(rMap, 2) ) ); 
-			
-			rMap = GeoUtils.getInverseDistanceMatrix(residuals, gDist, 2);
-			GeoUtils.rowNormalizeMatrix(rMap);
-			log.debug("moran2: "+Math.abs( GeoUtils.getMoransI(rMap, 2) ) ); 
-			
+			double[] m = GeoUtils.getMoransIStatistics(rMap, residuals); 
+			log.debug("RMSE, R2, Moran, pValue: "+Meuse.getRMSE(response, desiredResponse)+","+Meuse.getR2(response, desiredResponse)+","+m[0]+","+m[4]);
 		} catch (SingularMatrixException e) {
 			log.debug(e.getMessage());
 		}
 		
 		// ------------------------------------------------------------------------
-				
-		// Ohne ignore ist es etwas besser
-		for( final int T_MAX : new int[]{ 20000, 40000, 80000 } )
-		for( final int nrNeurons : new int[]{ 12 } )
-		for( final double lInit : new double[]{ nrNeurons/3 })
-		for( final double lFinal : new double[]{ 0.1 })	
-		for( final double lr1Init : new double[]{ 0.5 })
-		for( final double lr1Final : new double[]{ 0.001 })
-		for( final double lr2Init : new double[]{ 0.1 })
-		for( final double lr2Final : new double[]{ 0.001 })
-		for( final boolean ign : new boolean[]{ false } )
-		for (int l : new int[]{ 3 } ) {
+		
+		for( final method m : new method[]{ /*method.coef, method.inter,*/ method.error } )
+		for( final int T_MAX : new int[]{ 40000 } )	
+		for( final int nrNeurons : new int[]{ 16 } )
+		for( final double lInit : new double[]{ 3 })
+		for( final double lFinal : new double[]{ 1.0, 0.1 })	
+		for( final double lr1Init : new double[]{ 0.1  }) 
+		for( final double lr1Final : new double[]{ 0.01 })
+		for( final double lr2Init : new double[]{ 0.8  })
+		for( final double lr2Final : new double[]{ 0.1 })
+		for( final boolean ignSupport : new boolean[]{ false } )
+		for( final boolean fritzkeMode : new boolean[]{ true } )
+		for (int l : new int[]{ nrNeurons } )
+		//for (int l = 1; l <= nrNeurons; l++ )
+		{
 			final int L = l;
 
 			ExecutorService es = Executors.newFixedThreadPool(4);
 			List<Future<double[]>> futures = new ArrayList<Future<double[]>>();
 
-			for (int run = 0; run < 256; run++) {
+			for (int run = 0; run < 24; run++) {
 
 				futures.add(es.submit(new Callable<double[]>() {
 
 					@Override
 					public double[] call() throws Exception {
+
+						List<Double> old = new ArrayList<Double>();
+						if( m == method.coef || m == method.inter ) {
+							for( int i = 0; i < samples.size(); i++ ) {
+								double[] d = samples.get(i);
+								old.add(d[fa[0]]);
+								
+								if( m == method.coef )
+									d[fa[0]] = gwrResults.samples.get(i)[1];
+								else if( m == method.inter )
+									d[fa[0]] = gwrResults.samples.get(i)[0];
+							}
+						}
 
 						List<double[]> neurons = new ArrayList<double[]>();
 						for (int i = 0; i < nrNeurons; i++) {
@@ -186,56 +210,127 @@ public class HousepriceOptimize {
 							neurons.add(Arrays.copyOf(d, d.length));
 						}
 
-						ErrorSorter errorSorter = new ErrorSorter(samples, desired);
-						DefaultSorter<double[]> gSorter = new DefaultSorter<>(gDist);
-						Sorter<double[]> sorter = new KangasSorter<>(gSorter, errorSorter, L);
+						Sorter<double[]> secSorter = null;
+						if( m == method.error )
+							secSorter = new ErrorSorter(samples, desired);
+						else if( m == method.coef || m == method.inter )
+							secSorter = new DefaultSorter<>(fDist);
 						
-						sorter = new KangasSorter<>(gSorter, new DefaultSorter<>(fDist), L);
-
-						DecayFunction nbRate = new PowerDecay(/*neurons.size()/*/lInit, lFinal);
+						DefaultSorter<double[]> gSorter = new DefaultSorter<>(gDist);
+						Sorter<double[]> sorter = new KangasSorter<>(gSorter, secSorter, L);
+						
+						DecayFunction nbRate = new PowerDecay((double)nrNeurons/lInit, lFinal);
 						DecayFunction lrRate1 = new PowerDecay(lr1Init, lr1Final);
 						DecayFunction lrRate2 = new PowerDecay(lr2Init, lr2Final);
 						LLMNG ng = new LLMNG(neurons, 
 								nbRate, lrRate1, 
 								nbRate, lrRate2, 
-								sorter, fa, 1, ign );
-						errorSorter.setLLMNG(ng);
-
+								sorter, fa, 1 );
+						ng.fritzkeMode = fritzkeMode;
+						ng.ignoreSupport = ignSupport;
+						
+						if( m == method.error )
+							((ErrorSorter) secSorter).setLLMNG(ng);
+						
 						for (int t = 0; t < T_MAX; t++) {
 							int j = r.nextInt(samples.size());
 							ng.train((double) t / T_MAX, samples.get(j), desired.get(j));
 						}
 						
-						Map<double[],Set<double[]>> map = NGUtils.getBmuMapping(samples, neurons, sorter);
-						
 						List<double[]> response = new ArrayList<double[]>();
 						for (double[] x : samples)
 							response.add(ng.present(x));					
-						double rmse1 =  Meuse.getRMSE(response, desired);
-												
-						List<double[]> residuals = new ArrayList<double[]>();
-						for( double[] d : samples ) {
-							int idx = samples.indexOf(d);	
-							residuals.add( new double[]{ d[ga[0]], d[ga[1]], ng.present(d)[0] - desired.get(idx)[0] } );
+						double mse =  Meuse.getMSE(response, desired);
+						
+						Map<double[],Set<double[]>> mapping = NGUtils.getBmuMapping(samples, neurons, sorter);
+											
+						Map<double[],Double> residuals = new HashMap<double[],Double>();
+						for( int i = 0; i < response.size(); i++ )
+							residuals.put(samples.get(i), response.get(i)[0] - desired.get(i)[0] );
+																		
+						if( m == method.coef || m == method.inter ) {
+							for( int i = 0; i < samples.size(); i++ ) { // restore
+								double[] d = samples.get(i);
+								d[fa[0]] = old.get(i);
+							}
 						}
+									
+						//double[] moran1 = GeoUtils.getMoransIStatistics(rMap, residuals);
+						//double[] moran1 = new double[]{GeoUtils.getMoransI(rMap, residuals),0,0,0,0};
+						double[] moran1 = new double[]{0,0,0,0,0};
 						
-						/*Map<double[],Map<double[],Double>> rMap = GeoUtils.getInverseDistanceMatrix(residuals, gDist, 1);
-						GeoUtils.rowNormalizeMatrix(rMap);
-						double moran = Math.abs( GeoUtils.getMoransI(rMap, 2) ); 
+						int nrParams = -1;
+						if( L == nrNeurons )
+							nrParams = nrNeurons * ( ga.length + 2 * fa.length + 1 + 1);
+						else 
+							nrParams = nrNeurons * ( 2 * fa.length + 1 + 1);
 						
-						rMap = GeoUtils.getInverseDistanceMatrix(residuals, gDist, 2);
-						GeoUtils.rowNormalizeMatrix(rMap);
-						double moran2 = Math.abs( GeoUtils.getMoransI(rMap, 2) ); */
-																	
-						DefaultSorter<double[]> fSorter = new DefaultSorter<>(fDist);
-						ng.setSorter( new KangasSorter<>(gSorter, fSorter, L) );
-						List<double[]> response2 = new ArrayList<double[]>();
-						for( double[] x : samples )
-							response2.add( ng.present(x) );
-						double rmse2 =  Meuse.getRMSE(response2, desired);
-																						
-						return new double[] { rmse1, rmse2, DataUtils.getMeanQuantizationError(map, fDist), 
-								//moran, moran2
+						List<Double> interceptValues = new ArrayList<Double>();
+						List<Double> coefValues = new ArrayList<Double>();
+						for( double[] d : samples ) 
+							for( double[] n : neurons ) 
+								if( mapping.get(n).contains(d)) {
+									interceptValues.add( ng.output.get(n)[0] );
+									coefValues.add( ng.matrix.get(n)[0][0]);
+									break;
+								}
+						/*Drawer.geoDrawValues(sdf.geoms, interceptValues, sdf.crs, ColorMode.Blues, "output/intercept_"+df.format(L)+".png");
+						Drawer.geoDrawValues(sdf.geoms, coefValues, sdf.crs, ColorMode.Blues, "output/coef_"+df.format(L)+".png");
+						Drawer.geoDrawCluster(mapping.values(), samples, sdf.geoms, "output/cluster"+df.format(L)+".png", true);
+						
+						// write clusters
+						{
+						List<double[]> l = new ArrayList<double[]>();
+						for( double[] n : mapping.keySet() ) {
+							int idx = neurons.indexOf(n);
+							for( double[] d : mapping.get(n) ) {
+								double[] nd = Arrays.copyOf(d, d.length+1);
+								nd[nd.length-1] = idx;
+								l.add(nd);
+							}
+						}
+						List<String> n = new ArrayList<String>(sdf.names);
+						n.remove(n.size()-1);
+						n.add("neuron");
+						DataUtils.writeCSV("output/cluster_"+df.format(L)+".csv", l, n.toArray(new String[]{}) );
+						}*/
+						
+						/*DataUtils.writeCSV("output/intercept_"+df.format(L)+"csv", toDoubleArray(interceptValues), new String[]{"intercept"} );
+						DataUtils.writeCSV("output/coef_"+df.format(L)+"csv", toDoubleArray(coefValues), new String[]{"coef"} );*/
+						
+						int sameCluster = 0;
+						for( Set<double[]> s : mapping.values() )
+							if( s.containsAll(hGroup) ) {
+								sameCluster = 1;
+								break;
+							}
+												
+						return new double[] { 
+								Math.sqrt(mse), // rmse
+								
+								Math.abs(moran1[0]), // moran
+								moran1[4], // p-Value
+								
+								DataUtils.getWithinClusterSumOfSuqares(mapping.values(), fDist),
+								DataUtils.getWithinClusterSumOfSuqares(mapping.values(), gDist),
+								
+								DataUtils.getMeanQuantizationError(mapping, fDist),
+								DataUtils.getMeanQuantizationError(mapping, gDist),
+								
+								Meuse.getAIC(mse, nrParams, samples.size() ),
+								Meuse.getAICc(mse, nrParams, samples.size() ),
+								Meuse.getBIC(mse, nrParams, samples.size() ),
+								
+								getPearsonCor(gwrResults.samples, 0, interceptValues),
+								getPearsonCor(gwrResults.samples, 1, coefValues),
+								
+								sameCluster,
+								
+								getDS(interceptValues).getMean(),
+								getDS(coefValues).getMean(),
+								
+								getDS(interceptValues).getStandardDeviation(),
+								getDS(coefValues).getStandardDeviation(),
 								};
 					}
 				}));
@@ -264,11 +359,11 @@ public class HousepriceOptimize {
 				String fn = "output/resultHouseprice.csv";
 				if( firstWrite ) {
 					firstWrite = false;
-					Files.write(Paths.get(fn), ("t_max,nrNeurons,l,lInit,lFinal,lr1Init,lr1Final,lr2Init,lr2Final,rmse,rmse_sd,rmse2,rmse2_sd,qe,qe_sd,moran,moran_sd,moran2,moran2_sd\n").getBytes());
+					Files.write(Paths.get(fn), ("method,fritzke,ignSup,t_max,nrNeurons,l,lInit,lFinal,lr1Init,lr1Final,lr2Init,lr2Final,rmse,moran,pValue,wcssF,wcssG,qe,sqe,aic,aicc,bic,corIntercept,corCoefs,sameCluster,meanIntercept,meanCoef,sdIntercept,sdCoef\n").getBytes());
 				}
-				String s = T_MAX+","+nrNeurons+","+l+","+lInit+","+lFinal+","+lr1Init+","+lr1Final+","+lr2Init+","+lr2Final+"";
+				String s = m+","+fritzkeMode+","+ignSupport+","+T_MAX+","+nrNeurons+","+l+","+lInit+","+lFinal+","+lr1Init+","+lr1Final+","+lr2Init+","+lr2Final;
 				for (int i = 0; i < ds.length; i++)
-					s += ","+ds[i].getMean()+","+ds[i].getStandardDeviation();
+					s += ","+ds[i].getMean();
 				s += "\n";
 				Files.write(Paths.get(fn), s.getBytes(), StandardOpenOption.APPEND);
 				System.out.print(s);
@@ -283,5 +378,30 @@ public class HousepriceOptimize {
 		for( int i = 0; i < fa.length; i++ )
 			nd[i] = d[fa[i]];
 		return nd;
+	}
+	
+	public static List<double[]> toDoubleArray(List<Double> l ) {
+		List<double[]> nl = new ArrayList<double[]>();
+		for( double d : l )
+			nl.add(new double[]{d});
+		return nl;
+	}
+	
+	public static double getPearsonCor(List<double[]> a, int aIdx, List<Double> b ) {
+		double[] aa = new double[a.size()];
+		for( int i = 0; i < a.size(); i++ )
+			aa[i] = a.get(i)[aIdx];
+		
+		double[] bb = new double[b.size()];
+		for( int i = 0; i < b.size(); i++ )
+			bb[i] = b.get(i);
+		return (new PearsonsCorrelation()).correlation(aa, bb);
+	}
+	
+	public static DescriptiveStatistics getDS(List<Double> l ) {
+		DescriptiveStatistics ds = new DescriptiveStatistics();
+		for( double d : l )
+			ds.addValue(d);
+		return ds;
 	}
 }

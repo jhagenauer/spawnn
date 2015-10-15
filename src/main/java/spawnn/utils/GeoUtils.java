@@ -3,14 +3,19 @@ package spawnn.utils;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.commons.math3.distribution.NormalDistribution;
+import org.apache.commons.math3.distribution.TDistribution;
+import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.log4j.Logger;
 
+import cern.colt.Arrays;
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
 
@@ -125,30 +130,23 @@ public class GeoUtils {
 	}
 
 	// morans ------------------------------>>>
-
-	public static double getMoransI(Map<double[], Map<double[], Double>> dMap, int fa) {
-		Set<double[]> samples = new HashSet<double[]>();
-		for (double[] d : dMap.keySet()) {
-			samples.add(d);
-			for (double[] d2 : dMap.get(d).keySet())
-				samples.add(d2);
-		}
-
-		double n = samples.size();
+	
+	public static double getMoransI(Map<double[], Map<double[], Double>> dMap, Map<double[],Double> values ) {		
+		double n = values.size();
 		double mean = 0;
-		for (double[] d : samples)
-			mean += d[fa] / n;
+		for (double[] d : values.keySet() )
+			mean += values.get(d) / n;
 
 		// first term denominator
 		double ftd = 0;
-		for (double[] d : samples)
-			ftd += Math.pow(d[fa] - mean, 2);
+		for (double[] d : values.keySet() )
+			ftd += Math.pow(values.get(d) - mean, 2);
 
 		// sec term numerator
 		double stn = 0;
 		for (double[] d1 : dMap.keySet())
 			for (double[] d2 : dMap.get(d1).keySet())		
-				stn += dMap.get(d1).get(d2) * (d1[fa] - mean) * (d2[fa] - mean);
+				stn += dMap.get(d1).get(d2) * (values.get(d1) - mean) * (values.get(d2) - mean);
 		
 		// sec term denominator
 		double std = 0;
@@ -157,6 +155,112 @@ public class GeoUtils {
 				std += d;
 						
 		return (n / ftd) * (stn / std);
+	}
+	
+	public static double[] getMoransIStatistics( Map<double[], Map<double[], Double>> dMap, Map<double[],Double> values ) {
+		double n = values.size();
+		double moran = getMoransI(dMap, values);
+		
+		double E_I = -1.0/(n-1);
+		
+		// calculate variance, from wikipedia
+		double s1 = 0;
+		for( double[] i : dMap.keySet() ) 
+			for( double[] j : dMap.keySet() )
+				if( i != j )
+					s1 += Math.pow(dMap.get(i).get(j)+dMap.get(j).get(i), 2);
+		s1 *= 0.5;
+		
+		double s2 = 0;
+		for( double[] i : dMap.keySet() ) {
+			double s = 0;
+			for( double[] j : dMap.keySet() )
+				if( i != j )
+					s += dMap.get(i).get(j);
+			for( double[] j : dMap.keySet() )
+				if( i != j )
+					s += dMap.get(j).get(i);
+			s2 += Math.pow(s, 2);
+		}
+		
+		double m = 0;
+		for( double d : values.values() )
+			m += d;
+		m /= values.size();
+		
+		double s3 = 0;
+		for( double d : values.values() )
+			s3 += Math.pow(d-m,4);
+		s3 /= n;
+		
+		double nom = 0;
+		for( double d : values.values() )
+			nom += Math.pow(d-m,2);
+		s3 /= Math.pow( nom/n, 2);
+		
+		double sumWij = 0;
+		for( double[] i : dMap.keySet() ) 
+			for( double[] j : dMap.keySet() )
+				if( i != j )
+					sumWij += dMap.get(i).get(j);
+		
+		double s4 = (Math.pow(n,2)-3*n+3)*s1 - s2*n + 3*Math.pow(sumWij,2);	
+		double s5 = (Math.pow(n,2)-n)*s1 - 2*n*s2 + 6*Math.pow(sumWij,2);
+		
+		double Var_I = ( (n * s4 - s3 * s5) / ((n-1)*(n-2)*(n-3)*Math.pow(sumWij, 2)) ) - Math.pow(E_I, 2);	
+		double zScore = (moran - E_I )/Math.sqrt(Var_I);
+		NormalDistribution nd = new NormalDistribution();
+										
+		return new double[]{ 
+				moran, 
+				E_I,
+				Var_I,
+				zScore,
+				2*nd.density(-Math.abs(zScore)) 
+			};
+	}
+	
+	public static double[] getMoransIStatisticsMonteCarlo( Map<double[], Map<double[], Double>> dMap, Map<double[],Double> values, int reps ) {
+		double moran = getMoransI(dMap, values);
+		double n = values.size();
+		
+		DescriptiveStatistics ds = new DescriptiveStatistics();
+		for( int i = 0; i < reps; i++ ) {
+			
+			// permute
+			List<Double> l = new ArrayList<Double>(values.values());
+			Collections.shuffle(l);
+			Map<double[],Double> m = new HashMap<double[],Double>();
+			int j = 0;
+			for( double[] d : values.keySet() )
+				m.put(d, l.get(j++));
+			
+			double permMoran = getMoransI(dMap, m);
+			ds.addValue(permMoran);
+		}
+		
+		TDistribution td = new TDistribution(n-1); // ????
+		
+		double tStatistic = ( moran - ds.getMean() ) / Math.sqrt(ds.getVariance() ); 
+		return new double[]{ 
+				moran,
+				ds.getMean(),
+				ds.getVariance(),
+				tStatistic, // ?????
+				2*td.density(-Math.abs(tStatistic)), // p-Value????
+			};
+	}
+
+	@Deprecated
+	public static double getMoransI(Map<double[], Map<double[], Double>> dMap, int fa) {
+		Set<double[]> samples = new HashSet<double[]>(dMap.keySet());
+		for (double[] d : dMap.keySet()) 
+			samples.addAll(dMap.get(d).keySet());
+		
+		Map<double[],Double> values = new HashMap<double[],Double>();
+		for( double[] d : samples )
+			values.put(d, d[fa]);
+		return getMoransI(dMap, values);
 	}
 
 	// only univariate at the moment
@@ -187,16 +291,16 @@ public class GeoUtils {
 	}
 	
 	public static void main(String[] args) {
-		
 		SpatialDataFrame sdf = DataUtils.readSpatialDataFrameFromCSV(new File("data/ozone.csv"), new int[]{2,3}, new int[]{}, true);
 		List<double[]> samples = sdf.samples;
 		Dist<double[]> gDist = new EuclideanDist(new int[]{2,3});
 		
 		Map<double[], Map<double[], Double>> m1 = getInverseDistanceMatrix(samples, gDist, 1);
-		log.debug( "Inv, 1: "+getMoransI( m1, 1) ); 
-		log.debug( "Inv, 1, norm: "+getMoransI( getRowNormedMatrix(m1), 1) ); 
-		
-		rowNormalizeMatrix(m1);
-		log.debug( "Inv, 1, norm v2: "+getMoransI( m1, 1) ); 
+		Map<double[],Double> values = new HashMap<double[],Double>();
+		for( double[] d : samples )
+			values.put(d, d[1]);
+		log.debug( "Inv, 1, norm: "+getMoransI( getRowNormedMatrix(m1), values) ); 
+		log.debug(Arrays.toString(getMoransIStatistics(m1, values )));
+		log.debug(Arrays.toString(getMoransIStatisticsMonteCarlo(m1, values, 2000000 )));
 	}
 }

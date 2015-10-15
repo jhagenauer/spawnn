@@ -4,7 +4,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Random;
 
-public class CreateSpatialHetBacaoDataSet {
+public class CreateBacaoCluster {
 
 	public static void main(String[] args) {
 		try {
@@ -27,14 +27,14 @@ public class CreateSpatialHetBacaoDataSet {
 					else
 						y = x2;
 					c = 0;
-				} else if (lon > 0.6) { // mitte
+				} else if (lon > 0.6) {
 					if (r.nextDouble() < 0.0)
 						y = x1;
 					else
 						y = x2;
 					c = 1;
 					y+=1;
-				} else {
+				} else {  // mittel
 					if (r.nextDouble() < 1.0)
 						y = x1;
 					else

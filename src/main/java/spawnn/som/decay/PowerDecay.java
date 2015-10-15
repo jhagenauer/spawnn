@@ -1,9 +1,7 @@
 package spawnn.som.decay;
 
 
-/* From Ritter, Martinetz and Schulten... Mainly used for neural gas
- * 
- */
+// From Ritter, Martinetz and Schulten... primarily used for neural gas 
 public class PowerDecay extends DecayFunction {
 	
 	private double i, f;

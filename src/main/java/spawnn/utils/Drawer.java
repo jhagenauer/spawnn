@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -33,6 +34,9 @@ import org.geotools.styling.Mark;
 import org.geotools.styling.SLD;
 import org.geotools.styling.StyleBuilder;
 import org.geotools.swing.JMapPane;
+import org.opengis.referencing.crs.CoordinateReferenceSystem;
+
+import spawnn.utils.ColorBrewerUtil.ColorMode;
 
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.MultiPolygon;
@@ -306,6 +310,60 @@ public class Drawer {
 		System.out.println("float");
 		for (float i = 0; i < 5; i++) {
 			System.out.println(getColor(i));
+		}
+	}
+
+	public static void geoDrawValues(List<Geometry> geoms, List<Double> values, CoordinateReferenceSystem crs, ColorMode cm, String fn) {
+		SimpleFeatureTypeBuilder typeBuilder = new SimpleFeatureTypeBuilder();
+		typeBuilder.setName("data");
+		typeBuilder.setCRS(crs);
+		typeBuilder.add("the_geom", geoms.get(0).getClass());
+	
+		SimpleFeatureBuilder featureBuilder = new SimpleFeatureBuilder(typeBuilder.buildFeatureType());
+		Map<Geometry, Double> m = new HashMap<Geometry, Double>();
+		for (int i = 0; i < geoms.size(); i++)
+			m.put(geoms.get(i), values.get(i));
+	
+		Map<Geometry, Color> colMap = ColorBrewerUtil.valuesToColors(m, cm);
+		Set<Color> cols = new HashSet<Color>(colMap.values());
+	
+		try {
+			StyleBuilder sb = new StyleBuilder();
+			MapContent mc = new MapContent();
+	
+			ReferencedEnvelope mapBounds = mc.getMaxBounds();
+			for (Color c : cols) {
+				DefaultFeatureCollection features = new DefaultFeatureCollection();
+				for (Geometry g : colMap.keySet()) {
+					if (!c.equals(colMap.get(g)))
+						continue;
+					featureBuilder.set("the_geom", g);
+					features.add(featureBuilder.buildFeature("" + features.size()));
+				}
+				Mark mark = sb.createMark(StyleBuilder.MARK_CIRCLE, c);
+				FeatureLayer fl = new FeatureLayer(features, SLD.wrapSymbolizers(sb.createPointSymbolizer(sb.createGraphic(null, mark, null))));
+				mc.addLayer(fl);
+				mapBounds.expandToInclude(fl.getBounds());
+			}
+	
+			GTRenderer renderer = new StreamingRenderer();
+			renderer.setMapContent(mc);
+	
+			Rectangle imageBounds = null;
+			
+			double heightToWidth = mapBounds.getSpan(1) / mapBounds.getSpan(0);
+			int imageWidth = 2000;
+			imageBounds = new Rectangle(0, 0, imageWidth, (int) Math.round(imageWidth * heightToWidth));
+	
+			BufferedImage image = new BufferedImage(imageBounds.width, imageBounds.height, BufferedImage.TYPE_INT_ARGB);
+			Graphics2D gr = image.createGraphics();
+			renderer.paint(gr, imageBounds, mapBounds);
+	
+			ImageIO.write(image, "png", new FileOutputStream(fn));
+			image.flush();
+			mc.dispose();
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
 	}
 }

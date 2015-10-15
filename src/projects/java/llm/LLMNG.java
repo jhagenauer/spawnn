@@ -11,13 +11,6 @@ import spawnn.ng.sorter.Sorter;
 import spawnn.som.decay.DecayFunction;
 import spawnn.som.decay.PowerDecay;
 
-// TODO It is better to separate NG and LLMNG, either completely or just give the ng as an argument to llm
-// Question: Is LLMNG a neuralnet itself? What are the mappings?
-// Separation:
-// Pro:		
-//		- Clean separation of sup und unsup training
-// Contra:
-//		- Is not independent of NG, because of sorter, neurons and range/rate
 public class LLMNG extends NG implements SupervisedNet {
 		
 	public Map<double[],double[]> output = new HashMap<double[],double[]>(); // intercept
@@ -25,16 +18,9 @@ public class LLMNG extends NG implements SupervisedNet {
 	
 	private int[] fa;
 	private DecayFunction neighborhoodRange2, adaptationRate2;
-	private boolean ignoreSupport = false;
-	
-	public LLMNG( List<double[]> neurons, DecayFunction neighborhoodRange, DecayFunction adaptationRate,
-			DecayFunction neighborhoodRange2, DecayFunction adaptationRate2, 
-			Sorter<double[]> sorter, int[] fa, int outDim, boolean ignoreSupport ) {
-		this(neurons,neighborhoodRange,adaptationRate,neighborhoodRange2,adaptationRate2,sorter,fa,outDim);
-		this.ignoreSupport = ignoreSupport;
-	}
-	
-	public LLMNG( List<double[]> neurons, DecayFunction neighborhoodRange, DecayFunction adaptationRate,
+		
+	public LLMNG( List<double[]> neurons, 
+			DecayFunction neighborhoodRange, DecayFunction adaptationRate,
 			DecayFunction neighborhoodRange2, DecayFunction adaptationRate2, 
 			Sorter<double[]> sorter, int[] fa, int outDim ) {
 		super(neurons,neighborhoodRange,adaptationRate,sorter);
@@ -87,7 +73,7 @@ public class LLMNG extends NG implements SupervisedNet {
 				if( !ignoreSupport )
 					r[i] += m[i][j] * (x[fa[j]] - neuron[fa[j]] );
 				else
-					r[i] += m[i][j] * x[fa[j]];
+					r[i] += m[i][j] * (x[fa[j]] );
 				
 		// add output
 		for( int i = 0; i < r.length; i++ )
@@ -96,35 +82,44 @@ public class LLMNG extends NG implements SupervisedNet {
 		return r;
 	}
 	
+	public boolean fritzkeMode = false;
+	public boolean ignoreSupport = false;
+	
 	public void train( double t, double[] x, double[] desired ) {
-		train(t, x); // assumes that neurons are sorted after this call
+		sortNeurons(x);
 		
-		double l = neighborhoodRange2.getValue(t);
-		double e = adaptationRate2.getValue(t);
-				
+		double l = neighborhoodRange.getValue(t);
+		double e = adaptationRate.getValue(t);
+		double l2 = neighborhoodRange2.getValue(t);
+		double e2 = adaptationRate2.getValue(t);
+						
 		for( int k = 0; k < getNeurons().size(); k++ ) {
-			double adapt = e * Math.exp( -(double)k/l );
 			double[] w = getNeurons().get(k);
+			double[] r = getResponse( x, w ); 
 			
-			// double[] r = getResponse( x, w ); 
-			
-			// adapt output
+			// adapt prototype
+			double adapt = e * Math.exp( -(double)k/l );
+			for( int i = 0; i < w.length; i++ ) 
+				w[i] +=  adapt * ( x[i] - w[i] ) ;
+						
+			// adapt output and matrix
+			double adapt2 = e2 * Math.exp( -(double)k/l2 );
 			double[] o = output.get(w); // output Vector
-			for( int i = 0; i < desired.length; i++ ) { 
-				o[i] += adapt * (desired[i] - o[i]); // martinetz
-				//o[i] += adapt * (desired[i] - r[i]); // fritzke
+			for( int i = 0; i < desired.length; i++ ) {
+				if( !fritzkeMode )
+					o[i] += adapt2 * (desired[i] - o[i]); // martinetz
+				else
+					o[i] += adapt2 * (desired[i] - r[i]); // fritzke
 			}
-			
-			double[] r = getResponse( x, w );
 			
 			// adapt matrix
 			double[][] m = matrix.get(w);
 			for( int i = 0; i < m.length; i++ )  // row
 				for( int j = 0; j < m[i].length; j++ ) // column
 					if( !ignoreSupport )
-						m[i][j] += adapt * (desired[i] - r[i]) * (x[fa[j]] - w[fa[j]]); // outer product
+						m[i][j] += adapt2 * (desired[i] - r[i]) * (x[fa[j]] - w[fa[j]]); // outer product
 					else
-						m[i][j] += adapt * (desired[i] - r[i]) * x[fa[j]];
+						m[i][j] += adapt2 * (desired[i] - r[i]) * (x[fa[j]]); 
 		}
 	}
 	

@@ -386,4 +386,16 @@ public class Meuse {
 
 		return a / (b * c);
 	}
+	
+	public static double getAIC( double mse, int nrParams, int nrSamples ) {
+		return nrSamples * Math.log(mse) + 2 * nrParams;
+	}
+	
+	public static double getAICc( double mse, int nrParams, int nrSamples ) {
+		return getAIC(mse,nrParams,nrSamples) * (2*nrParams*(nrParams+1))/(nrSamples-nrParams-1);
+	}
+
+	public static double getBIC(double mse, int nrParams, int nrSamples) {
+		return nrSamples * Math.log(mse) + nrParams * Math.log(nrSamples);
+	}
 }

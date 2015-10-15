@@ -22,17 +22,17 @@ import java.awt.*;
  * @author Santhosh Kumar T
  * @email santhosh.tekuri@gmail.com
  */
-public abstract class ComboSeparatorsRenderer<T> implements ListCellRenderer<T>{
-    private ListCellRenderer<T> delegate;
+public abstract class ComboSeparatorsRenderer implements ListCellRenderer<String>{
+    private ListCellRenderer<String> delegate;
     private JPanel separatorPanel = new JPanel(new BorderLayout());
     private JSeparator separator = new JSeparator();
 
-    public ComboSeparatorsRenderer(ListCellRenderer<T> delegate){
+    public ComboSeparatorsRenderer(ListCellRenderer<String> delegate){
         this.delegate = delegate;
     }
 
     @Override
-    public Component getListCellRendererComponent(JList list, T value, int index, boolean isSelected, boolean cellHasFocus){
+    public Component getListCellRendererComponent(JList list, String value, int index, boolean isSelected, boolean cellHasFocus){
         Component comp = delegate.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
         if(index!=-1 && addSeparatorAfter(list, value, index)){ // index==1 if renderer is used to paint current value in combo
             separatorPanel.removeAll();
@@ -43,5 +43,5 @@ public abstract class ComboSeparatorsRenderer<T> implements ListCellRenderer<T>{
             return comp;
     }
 
-    protected abstract boolean addSeparatorAfter(JList list, T value, int index);
+    protected abstract boolean addSeparatorAfter(JList list, String value, int index);
 }

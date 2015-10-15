@@ -94,7 +94,6 @@ public class AnnPanel extends JPanel implements ChangeListener, ActionListener {
 	public void stateChanged(ChangeEvent e) {
 		if( e.getSource() == tpANN ) 
 			updateContextModelsEnabled();
-		System.out.println(e);
 	}
 	
 	private void updateContextModelsEnabled() {

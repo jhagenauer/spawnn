@@ -380,7 +380,7 @@ public class DataUtils {
 		return sum / clusters.size();
 	}
 
-	public static double[] getMeanClusterElement(Set<double[]> cluster) {
+	public static double[] getMeanClusterElement(Collection<double[]> cluster) {
 		int l = cluster.iterator().next().length;
 		double[] r = new double[l];
 		for (double[] d : cluster)
@@ -1267,7 +1267,7 @@ public class DataUtils {
 		}
 	}
 
-	public static double getWithinClusterSumOfSuqares(Set<double[]> s, Dist<double[]> dist) {
+	public static double getSumOfSquares(Collection<double[]> s, Dist<double[]> dist) {
 		double ssq = 0;
 		if (s.isEmpty())
 			return ssq;
@@ -1284,8 +1284,7 @@ public class DataUtils {
 	public static double getWithinClusterSumOfSuqares(Collection<Set<double[]>> c, Dist<double[]> dist) {
 		double ssq = 0;
 		for (Set<double[]> s : c)
-			ssq += getWithinClusterSumOfSuqares(s, dist);
-
+			ssq += getSumOfSquares(s, dist);
 		return ssq;
 	}
 	

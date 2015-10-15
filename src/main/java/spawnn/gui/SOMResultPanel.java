@@ -115,7 +115,7 @@ public class SOMResultPanel extends ResultPanel<GridPos> implements ActionListen
 		gridComboBox.addItem(DISTANCE);
 		gridComboBox.addItem(CLUSTER);
 		
-		gridComboBox.setRenderer(new ComboSeparatorsRenderer<String>((ListCellRenderer<String>)gridComboBox.getRenderer()){        
+		gridComboBox.setRenderer(new ComboSeparatorsRenderer((ListCellRenderer<String>)gridComboBox.getRenderer()){        
 		    @Override
 			protected boolean addSeparatorAfter(JList list, String value, int index) {
 		    	return CLUSTER.equals(value);

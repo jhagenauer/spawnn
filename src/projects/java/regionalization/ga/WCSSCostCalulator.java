@@ -15,6 +15,6 @@ public class WCSSCostCalulator implements ClusterCostCalculator {
 
 	@Override
 	public double getCost(Set<double[]> cluster) {
-		return DataUtils.getWithinClusterSumOfSuqares(cluster, fDist);
+		return DataUtils.getSumOfSquares(cluster, fDist);
 	}
 }

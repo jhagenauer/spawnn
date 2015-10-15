@@ -1,37 +1,17 @@
 package llm;
 
-import java.awt.Color;
-import java.awt.Graphics2D;
-import java.awt.Rectangle;
-import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
-import javax.imageio.ImageIO;
-
 import org.apache.log4j.Logger;
-import org.geotools.feature.DefaultFeatureCollection;
-import org.geotools.feature.simple.SimpleFeatureBuilder;
-import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
-import org.geotools.geometry.jts.ReferencedEnvelope;
-import org.geotools.map.FeatureLayer;
-import org.geotools.map.MapContent;
-import org.geotools.renderer.GTRenderer;
-import org.geotools.renderer.lite.StreamingRenderer;
-import org.geotools.styling.Mark;
-import org.geotools.styling.SLD;
-import org.geotools.styling.StyleBuilder;
-import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
 import rbf.Meuse;
 import spawnn.dist.Dist;
@@ -45,7 +25,6 @@ import spawnn.som.grid.Grid2DHexToroid;
 import spawnn.som.grid.GridPos;
 import spawnn.som.kernel.GaussKernel;
 import spawnn.som.utils.SomUtils;
-import spawnn.utils.ColorBrewerUtil;
 import spawnn.utils.ColorBrewerUtil.ColorMode;
 import spawnn.utils.DataUtils;
 import spawnn.utils.Drawer;
@@ -244,59 +223,5 @@ public class LLM_Housing {
 		}
 		
 	}
-	}
-	
-	public static void geoDrawValues(List<Geometry> geoms, List<Double> values, CoordinateReferenceSystem crs, ColorMode cm, String fn) {
-		SimpleFeatureTypeBuilder typeBuilder = new SimpleFeatureTypeBuilder();
-		typeBuilder.setName("data");
-		typeBuilder.setCRS(crs);
-		typeBuilder.add("the_geom", geoms.get(0).getClass());
-
-		SimpleFeatureBuilder featureBuilder = new SimpleFeatureBuilder(typeBuilder.buildFeatureType());
-		Map<Geometry, Double> m = new HashMap<Geometry, Double>();
-		for (int i = 0; i < geoms.size(); i++)
-			m.put(geoms.get(i), values.get(i));
-
-		Map<Geometry, Color> colMap = ColorBrewerUtil.valuesToColors(m, cm);
-		Set<Color> cols = new HashSet<Color>(colMap.values());
-
-		try {
-			StyleBuilder sb = new StyleBuilder();
-			MapContent mc = new MapContent();
-
-			ReferencedEnvelope mapBounds = mc.getMaxBounds();
-			for (Color c : cols) {
-				DefaultFeatureCollection features = new DefaultFeatureCollection();
-				for (Geometry g : colMap.keySet()) {
-					if (!c.equals(colMap.get(g)))
-						continue;
-					featureBuilder.set("the_geom", g);
-					features.add(featureBuilder.buildFeature("" + features.size()));
-				}
-				Mark mark = sb.createMark(StyleBuilder.MARK_CIRCLE, c);
-				FeatureLayer fl = new FeatureLayer(features, SLD.wrapSymbolizers(sb.createPointSymbolizer(sb.createGraphic(null, mark, null))));
-				mc.addLayer(fl);
-				mapBounds.expandToInclude(fl.getBounds());
-			}
-
-			GTRenderer renderer = new StreamingRenderer();
-			renderer.setMapContent(mc);
-
-			Rectangle imageBounds = null;
-			
-			double heightToWidth = mapBounds.getSpan(1) / mapBounds.getSpan(0);
-			int imageWidth = 2000;
-			imageBounds = new Rectangle(0, 0, imageWidth, (int) Math.round(imageWidth * heightToWidth));
-
-			BufferedImage image = new BufferedImage(imageBounds.width, imageBounds.height, BufferedImage.TYPE_INT_ARGB);
-			Graphics2D gr = image.createGraphics();
-			renderer.paint(gr, imageBounds, mapBounds);
-
-			ImageIO.write(image, "png", new FileOutputStream(fn));
-			image.flush();
-			mc.dispose();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
 	}
 }

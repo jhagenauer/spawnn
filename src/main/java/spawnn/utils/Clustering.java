@@ -801,7 +801,7 @@ public class Clustering {
 
 						if (ssdT == -1) {
 							Set<double[]> s = getNodes(getSubGraphOf(sg, e.a));
-							sgCache.put(s, DataUtils.getWithinClusterSumOfSuqares(s, dist));
+							sgCache.put(s, DataUtils.getSumOfSquares(s, dist));
 						}
 
 						// remove edge
@@ -811,8 +811,8 @@ public class Clustering {
 						Set<double[]> nodesA = getNodes(getSubGraphOf(sg, e.a));
 						Set<double[]> nodesB = getNodes(getSubGraphOf(sg, e.b));
 
-						double ssdT_a = DataUtils.getWithinClusterSumOfSuqares(nodesA, dist);
-						double ssdT_b = DataUtils.getWithinClusterSumOfSuqares(nodesB, dist);
+						double ssdT_a = DataUtils.getSumOfSquares(nodesA, dist);
+						double ssdT_b = DataUtils.getSumOfSquares(nodesB, dist);
 
 						double f1 = ssdT - ( ssdT_a + ssdT_b );
 						if (Math.min(nodesA.size(), nodesB.size()) >= minClusterSize 
