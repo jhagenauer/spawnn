@@ -1,5 +1,6 @@
 package spawnn.gui;
 
+import java.awt.Frame;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
@@ -7,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import javax.swing.DefaultCellEditor;
@@ -24,9 +26,12 @@ import net.miginfocom.swing.MigLayout;
 
 import org.apache.log4j.Logger;
 
+import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
+import spawnn.gui.DistMatrixDialog.DistMatType;
 import spawnn.utils.DataFrame;
 import spawnn.utils.DataUtils;
+import spawnn.utils.GeoUtils;
 import spawnn.utils.SpatialDataFrame;
 
 import com.vividsolutions.jts.geom.Coordinate;
@@ -61,16 +66,18 @@ public class DataPanel extends JPanel implements ActionListener, TableModelListe
 	}
 		
 	private DefaultTableModel dataTable;
-	private JButton btnLoadShp, addCCoords, useAll;
+	private JButton btnLoadShp, addCCoords, useAll, distMat;
 	private BoxPlotPanel boxPlotPnl;
+	private Frame parent;
 	
 	enum norm {none, scale, zScore};
 	final int ATTRIBUTE = 0, NORM = 1, COORDINATE = 2, USE = 3;
 	
 	protected SpatialDataFrame sd = null;
 	
-	DataPanel() {
+	DataPanel(Frame parent) {
 		super();
+		this.parent = parent;
 		
 		setLayout(new MigLayout(""));
 		
@@ -84,6 +91,10 @@ public class DataPanel extends JPanel implements ActionListener, TableModelListe
 		useAll = new JButton("Use all");
 		useAll.addActionListener(this);
 		useAll.setEnabled(false);
+		
+		distMat = new JButton("Dist. matrix...");
+		distMat.addActionListener(this);
+		distMat.setEnabled(false);
 						
 		dataTable = new DefaultTableModel( new String[]{"Attribute","Normalize","Coordinate","Use"}, 0 ) {
 			private static final long serialVersionUID = -78686917074445663L;
@@ -117,9 +128,10 @@ public class DataPanel extends JPanel implements ActionListener, TableModelListe
 				
 		boxPlotPnl = new BoxPlotPanel();
 		
-		add(btnLoadShp, "split 3");
+		add(btnLoadShp, "split 4");
 		add(addCCoords, "");
-		add(useAll,"wrap");
+		add(useAll,"");
+		add(distMat,"wrap");
 		
 		add( new JScrollPane(table), "w 50%, grow" );
 		add( boxPlotPnl, "w 50%, push, grow");
@@ -204,28 +216,41 @@ public class DataPanel extends JPanel implements ActionListener, TableModelListe
 			
 			firePropertyChange(COORD_CHANGED_PROP, coordsMarked, true);
 			coordsMarked = true;
+			distMat.setEnabled(true);
 		} else if ( ae.getSource() == useAll ) {
 			for( int i = 0; i < dataTable.getRowCount(); i++ )
 				dataTable.setValueAt( !useAllState, i, USE );
 			useAllState = !useAllState;
-		}	
+		} else if( ae.getSource() == distMat ) {
+			DistMatrixDialog dmd = new DistMatrixDialog( parent, "Distance Matrix...", true);
+			if( dmd.getFile() != null ) {
+				Dist<double[]> dist = new EuclideanDist(getGA(true));
+				List<double[]> samples = getNormedSamples();
+				Map<double[], Map<double[], Double>> dMap;
+				if( dmd.getDMType() == DistMatType.InvDistance )
+					dMap = GeoUtils.getInverseDistanceMatrix(samples, dist, dmd.getPower() );
+				else 
+					dMap = GeoUtils.knnsToWeights( GeoUtils.getKNNs(samples, dist, dmd.getKNNs()));
+				if( dmd.rowNorm() )
+					GeoUtils.rowNormalizeMatrix(dMap);
+				GeoUtils.writeDistMatrixKeyValue(dMap, samples, dmd.getFile().toString() );
+			}
+		}
 	}
 	
 	private boolean trainAllowed = false, coordsMarked = false;
 			
 	@Override
 	public void tableChanged(TableModelEvent e) {		
-		if( e.getColumn() == USE ) { // USE changed
-			// check if there is any fa and geographic information
-			boolean a = getFA().length > 0 && ( sd.geoms!= null || getGA(true).length > 0 );
+		if( e.getColumn() == COORDINATE || e.getColumn() == USE ) {
+			boolean a = getFA().length > 0 && ( sd.geoms != null || getGA(true).length > 0 );
 			firePropertyChange(TRAIN_ALLOWED_PROP, trainAllowed, a );
 			trainAllowed = a;
-		}
-		
-		if( e.getColumn() == COORDINATE || e.getColumn() == USE ) {
+			
 			boolean b = getGA(false).length > 0;
 			firePropertyChange(COORD_CHANGED_PROP, coordsMarked, b);
 			coordsMarked = b;
+			distMat.setEnabled(getGA(true).length > 0 );
 		}
 		
 		dataTable.removeTableModelListener(this);

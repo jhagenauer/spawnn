@@ -52,6 +52,7 @@ import spawnn.som.net.ContextSOM;
 import spawnn.som.net.SOM;
 import spawnn.som.utils.SomUtils;
 import spawnn.utils.DataUtils;
+import spawnn.utils.GeoUtils;
 import spawnn.utils.SpatialDataFrame;
 import edu.uci.ics.jung.graph.Graph;
 import edu.uci.ics.jung.graph.UndirectedSparseGraph;
@@ -92,7 +93,7 @@ public class SpawnnGui extends JFrame implements PropertyChangeListener, ActionL
 
 		// Tabs
 		tp = new JTabbedPane();
-		dataPanel = new DataPanel();
+		dataPanel = new DataPanel(this);
 		dataPanel.addPropertyChangeListener(this);
 
 		tp.addTab("Data", dataPanel);
@@ -193,7 +194,7 @@ public class SpawnnGui extends JFrame implements PropertyChangeListener, ActionL
 			if( annPanel.tpContextModel.getSelectedComponent() == annPanel.wmcPanel ) {
 				try {
 					File dmFile = ((WMCPanel)annPanel.wmcPanel).getDistMapFile();
-					distanceMatrix = DataUtils.readDistMatrixKeyValue(samples, dmFile);
+					distanceMatrix = GeoUtils.readDistMatrixKeyValue(samples, dmFile);
 				} catch( Exception ex ) {
 					JOptionPane.showMessageDialog(this, "Could read/parse distance matrix file: "+ex.getLocalizedMessage(), "Read/Parse error!", JOptionPane.ERROR_MESSAGE);
 					return;

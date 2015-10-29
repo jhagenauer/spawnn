@@ -1223,50 +1223,6 @@ public class DataUtils {
 		return distMatrix;
 	}
 
-	public static <T> Map<T, Map<T, Double>> readDistMatrixKeyValue(List<T> samples, File fn) throws NumberFormatException, IOException, FileNotFoundException {
-		Map<T, Map<T, Double>> distMatrix = new HashMap<T, Map<T, Double>>();
-		BufferedReader br = null;
-		try {
-			br = new BufferedReader(new FileReader(fn));
-			String line = null;
-			while ((line = br.readLine()) != null) {
-
-				String[] s = line.split(",");
-
-				T a = samples.get(Integer.parseInt(s[0]));
-				T b = samples.get(Integer.parseInt(s[1]));
-
-				if (!distMatrix.containsKey(a))
-					distMatrix.put(a, new HashMap<T, Double>());
-
-				distMatrix.get(a).put(b, Double.parseDouble(s[2]));
-			}
-		} finally {
-			try {
-				if( br != null )
-					br.close();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		}
-		return distMatrix;
-	}
-
-	public static <T> void writeDistMatrixKeyValue(Map<T, Map<T, Double>> dMap, List<T> samples, String fn) {
-		try {
-			FileWriter fw = new FileWriter(fn);
-			fw.write("id1,id2,dist\n");
-			for (Entry<T, Map<T, Double>> e1 : dMap.entrySet()) {
-				int a = samples.indexOf(e1.getKey());
-				for (Entry<T, Double> e2 : e1.getValue().entrySet())
-					fw.write(a + "," + samples.indexOf(e2.getKey()) + "," + e2.getValue() + "\n");
-			}
-			fw.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
-
 	public static double getSumOfSquares(Collection<double[]> s, Dist<double[]> dist) {
 		double ssq = 0;
 		if (s.isEmpty())

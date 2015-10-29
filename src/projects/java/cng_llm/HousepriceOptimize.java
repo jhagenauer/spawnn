@@ -28,8 +28,6 @@ import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression;
 import org.apache.log4j.Logger;
 
-import com.vividsolutions.jts.geom.Geometry;
-
 import rbf.Meuse;
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
@@ -39,9 +37,13 @@ import spawnn.ng.sorter.Sorter;
 import spawnn.ng.utils.NGUtils;
 import spawnn.som.decay.DecayFunction;
 import spawnn.som.decay.PowerDecay;
+import spawnn.utils.ColorBrewerUtil.ColorMode;
 import spawnn.utils.DataUtils;
+import spawnn.utils.Drawer;
 import spawnn.utils.GeoUtils;
 import spawnn.utils.SpatialDataFrame;
+
+import com.vividsolutions.jts.geom.Geometry;
 
 public class HousepriceOptimize {
 
@@ -166,16 +168,16 @@ public class HousepriceOptimize {
 		// ------------------------------------------------------------------------
 		
 		for( final method m : new method[]{ /*method.coef, method.inter,*/ method.error } )
-		for( final int T_MAX : new int[]{ 40000 } )	
+		for( final int T_MAX : new int[]{ 80000 } )	
 		for( final int nrNeurons : new int[]{ 16 } )
 		for( final double lInit : new double[]{ 3 })
-		for( final double lFinal : new double[]{ 1.0, 0.1 })	
-		for( final double lr1Init : new double[]{ 0.1  }) 
+		for( final double lFinal : new double[]{ 0.1 })	
+		for( final double lr1Init : new double[]{ 0.8  }) 
 		for( final double lr1Final : new double[]{ 0.01 })
 		for( final double lr2Init : new double[]{ 0.8  })
-		for( final double lr2Final : new double[]{ 0.1 })
-		for( final boolean ignSupport : new boolean[]{ false } )
-		for( final boolean fritzkeMode : new boolean[]{ true } )
+		for( final double lr2Final : new double[]{ 0.01 })
+		for( final boolean ignSupport : new boolean[]{ true, false } )
+		for( final LLMNG.mode mode : new LLMNG.mode[]{ LLMNG.mode.fritzke } )
 		for (int l : new int[]{ nrNeurons } )
 		//for (int l = 1; l <= nrNeurons; l++ )
 		{
@@ -184,7 +186,7 @@ public class HousepriceOptimize {
 			ExecutorService es = Executors.newFixedThreadPool(4);
 			List<Future<double[]>> futures = new ArrayList<Future<double[]>>();
 
-			for (int run = 0; run < 24; run++) {
+			for (int run = 0; run < 1; run++) {
 
 				futures.add(es.submit(new Callable<double[]>() {
 
@@ -226,8 +228,7 @@ public class HousepriceOptimize {
 								nbRate, lrRate1, 
 								nbRate, lrRate2, 
 								sorter, fa, 1 );
-						ng.fritzkeMode = fritzkeMode;
-						ng.ignoreSupport = ignSupport;
+						ng.aMode = mode;
 						
 						if( m == method.error )
 							((ErrorSorter) secSorter).setLLMNG(ng);
@@ -274,9 +275,9 @@ public class HousepriceOptimize {
 									coefValues.add( ng.matrix.get(n)[0][0]);
 									break;
 								}
-						/*Drawer.geoDrawValues(sdf.geoms, interceptValues, sdf.crs, ColorMode.Blues, "output/intercept_"+df.format(L)+".png");
-						Drawer.geoDrawValues(sdf.geoms, coefValues, sdf.crs, ColorMode.Blues, "output/coef_"+df.format(L)+".png");
-						Drawer.geoDrawCluster(mapping.values(), samples, sdf.geoms, "output/cluster"+df.format(L)+".png", true);
+						Drawer.geoDrawValues(sdf.geoms, interceptValues, sdf.crs, ColorMode.Blues, "output/intercept_"+ignSupport+".png");
+						Drawer.geoDrawValues(sdf.geoms, coefValues, sdf.crs, ColorMode.Blues, "output/coef_"+ignSupport+".png");
+						/*Drawer.geoDrawCluster(mapping.values(), samples, sdf.geoms, "output/cluster"+df.format(L)+".png", true);
 						
 						// write clusters
 						{
@@ -359,9 +360,9 @@ public class HousepriceOptimize {
 				String fn = "output/resultHouseprice.csv";
 				if( firstWrite ) {
 					firstWrite = false;
-					Files.write(Paths.get(fn), ("method,fritzke,ignSup,t_max,nrNeurons,l,lInit,lFinal,lr1Init,lr1Final,lr2Init,lr2Final,rmse,moran,pValue,wcssF,wcssG,qe,sqe,aic,aicc,bic,corIntercept,corCoefs,sameCluster,meanIntercept,meanCoef,sdIntercept,sdCoef\n").getBytes());
+					Files.write(Paths.get(fn), ("method,fritzke,ignSupport,t_max,nrNeurons,l,lInit,lFinal,lr1Init,lr1Final,lr2Init,lr2Final,rmse,moran,pValue,wcssF,wcssG,qe,sqe,aic,aicc,bic,corIntercept,corCoefs,sameCluster,meanIntercept,meanCoef,sdIntercept,sdCoef\n").getBytes());
 				}
-				String s = m+","+fritzkeMode+","+ignSupport+","+T_MAX+","+nrNeurons+","+l+","+lInit+","+lFinal+","+lr1Init+","+lr1Final+","+lr2Init+","+lr2Final;
+				String s = m+","+mode+","+ignSupport+","+T_MAX+","+nrNeurons+","+l+","+lInit+","+lFinal+","+lr1Init+","+lr1Final+","+lr2Init+","+lr2Final;
 				for (int i = 0; i < ds.length; i++)
 					s += ","+ds[i].getMean();
 				s += "\n";

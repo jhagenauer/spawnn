@@ -1,6 +1,11 @@
 package spawnn.utils;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -8,6 +13,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import org.apache.commons.math3.distribution.NormalDistribution;
@@ -68,7 +74,7 @@ public class GeoUtils {
 		return knnM;
 	}
 
-	public static Map<double[], Map<double[], Double>> getInverseDistanceMatrix(Collection<double[]> samples, Dist<double[]> gDist, int pow) {
+	public static Map<double[], Map<double[], Double>> getInverseDistanceMatrix(Collection<double[]> samples, Dist<double[]> gDist, double pow) {
 		Map<double[], Map<double[], Double>> r = new HashMap<double[], Map<double[], Double>>();
 		
 		double minDist = -1;
@@ -302,5 +308,49 @@ public class GeoUtils {
 		log.debug( "Inv, 1, norm: "+getMoransI( getRowNormedMatrix(m1), values) ); 
 		log.debug(Arrays.toString(getMoransIStatistics(m1, values )));
 		log.debug(Arrays.toString(getMoransIStatisticsMonteCarlo(m1, values, 2000000 )));
+	}
+
+	public static <T> void writeDistMatrixKeyValue(Map<T, Map<T, Double>> dMap, List<T> samples, String fn) {
+		try {
+			FileWriter fw = new FileWriter(fn);
+			fw.write("id1,id2,dist\n");
+			for (Entry<T, Map<T, Double>> e1 : dMap.entrySet()) {
+				int a = samples.indexOf(e1.getKey());
+				for (Entry<T, Double> e2 : e1.getValue().entrySet())
+					fw.write(a + "," + samples.indexOf(e2.getKey()) + "," + e2.getValue() + "\n");
+			}
+			fw.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	public static <T> Map<T, Map<T, Double>> readDistMatrixKeyValue(List<T> samples, File fn) throws NumberFormatException, IOException, FileNotFoundException {
+		Map<T, Map<T, Double>> distMatrix = new HashMap<T, Map<T, Double>>();
+		BufferedReader br = null;
+		try {
+			br = new BufferedReader(new FileReader(fn));
+			String line = br.readLine(); // ignore first line by reading but not using
+			while ((line = br.readLine()) != null) {
+	
+				String[] s = line.split(",");
+	
+				T a = samples.get(Integer.parseInt(s[0]));
+				T b = samples.get(Integer.parseInt(s[1]));
+	
+				if (!distMatrix.containsKey(a))
+					distMatrix.put(a, new HashMap<T, Double>());
+	
+				distMatrix.get(a).put(b, Double.parseDouble(s[2]));
+			}
+		} finally {
+			try {
+				if( br != null )
+					br.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		return distMatrix;
 	}
 }

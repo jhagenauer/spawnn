@@ -111,7 +111,7 @@ public class HousepriceOptimize_CV {
 		for( final double lr1Final : new double[]{ 0.001 })
 		for( final double lr2Init : new double[]{ 0.1 })
 		for( final double lr2Final : new double[]{ 0.001 })
-		for( final boolean ign : new boolean[]{ false } )
+		for( final LLMNG.mode mode : new LLMNG.mode[]{ LLMNG.mode.fritzke } )
 		for (int l = 1; l <= nrNeurons; l++ ) {
 			final int L = l;
 
@@ -154,7 +154,7 @@ public class HousepriceOptimize_CV {
 								nbRate, lrRate2, 
 								sorter, fa, 1 );
 						errorSorter.setLLMNG(ng);
-						ng.fritzkeMode = ign;
+						ng.aMode = mode;
 
 						for (int t = 0; t < T_MAX; t++) {
 							int j = r.nextInt(samples.size());

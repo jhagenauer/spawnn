@@ -98,7 +98,7 @@ public class NonstatClusterOptimize {
 			for( final double lr1Final : new double[]{ 0.01 })
 			for( final double lr2Init : new double[]{ 0.5 })
 			for( final double lr2Final : new double[]{ lr1Final })
-			for( final boolean ign : new boolean[]{ false } )
+			for( final LLMNG.mode mode : new LLMNG.mode[]{ LLMNG.mode.fritzke } )
 			//for (int l = 5; l <= 5; l++ ) {
 			for (int l : new int[]{ nrNeurons } ) {
 			final int L = l;
@@ -131,7 +131,7 @@ public class NonstatClusterOptimize {
 								nbRate, lrRate2, 
 								sorter, fa, 1 );
 						errorSorter.setLLMNG(ng);
-						ng.fritzkeMode = ign;
+						ng.aMode = mode;
 						
 						for (int t = 0; t < T_MAX; t++) {
 							int j = r.nextInt(samples.size());
