@@ -21,6 +21,8 @@ import org.apache.commons.math3.distribution.TDistribution;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.log4j.Logger;
 
+import com.vividsolutions.jts.geom.Geometry;
+
 import cern.colt.Arrays;
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
@@ -109,16 +111,16 @@ public class GeoUtils {
 		return r;
 	}
 	
-	public static Map<double[], Map<double[], Double>> knnsToWeights( Map<double[], List<double[]>> knns ) {
+	public static Map<double[], Map<double[], Double>> listsToWeights( Map<double[], List<double[]>> connectMap ) {
 		Map<double[], Map<double[], Double>> r = new HashMap<double[], Map<double[], Double>>();
-		for( double[] a : knns.keySet() ) {
+		for( double[] a : connectMap.keySet() ) {
 			r.put(a, new HashMap<double[],Double>() );
-			for( double[] nb : knns.get(a) )
-				r.get(a).put(nb, 1.0/knns.get(a).size() );
+			for( double[] nb : connectMap.get(a) )
+				r.get(a).put(nb, 1.0 );
 		}
 		return r;
 	}
-
+	
 	public static Map<double[], List<double[]>> getKNNs(List<double[]> samples, Dist<double[]> gDist, int k) {
 		Map<double[], List<double[]>> r = new HashMap<double[], List<double[]>>();
 		for (double[] x : samples) {
@@ -131,6 +133,26 @@ public class GeoUtils {
 				sub.add(minD);
 			}
 			r.put(x, sub);
+		}
+		return r;
+	}
+	
+	public static Map<double[], List<double[]>> getContiguityMap(List<double[]> samples, List<Geometry> geoms, boolean rook ) {
+		Map<double[], List<double[]>> r = new HashMap<double[], List<double[]>>();
+		for( int i = 0; i < samples.size(); i++ ) {
+			Geometry a = geoms.get(i);
+			List<double[]> l = new ArrayList<double[]>();
+			for( int j = 0; j < samples.size(); j++ ) {
+				Geometry b = geoms.get(j);
+				if( !rook ) { // queen
+					if( a.touches(b) || a.intersects(b) )
+						l.add( samples.get(j));
+				} else { // rook
+					if( a.intersection(b).getCoordinates().length > 0 ) // SLOW
+						l.add( samples.get(j));
+				}
+			}
+			r.put(samples.get(i), l);
 		}
 		return r;
 	}
@@ -310,14 +332,17 @@ public class GeoUtils {
 		log.debug(Arrays.toString(getMoransIStatisticsMonteCarlo(m1, values, 2000000 )));
 	}
 
-	public static <T> void writeDistMatrixKeyValue(Map<T, Map<T, Double>> dMap, List<T> samples, String fn) {
+	public static <T> void writeDistMatrixKeyValue(Map<T, Map<T, Double>> dMap, List<T> samples, File fn) {
+		Map<T,Integer> idxMap = new HashMap<T,Integer>();
+		for( int i = 0; i < samples.size(); i++ )
+			idxMap.put(samples.get(i), i);
 		try {
 			FileWriter fw = new FileWriter(fn);
 			fw.write("id1,id2,dist\n");
 			for (Entry<T, Map<T, Double>> e1 : dMap.entrySet()) {
-				int a = samples.indexOf(e1.getKey());
+				int a = idxMap.get(e1.getKey());
 				for (Entry<T, Double> e2 : e1.getValue().entrySet())
-					fw.write(a + "," + samples.indexOf(e2.getKey()) + "," + e2.getValue() + "\n");
+					fw.write(a + "," + idxMap.get(e2.getKey()) + "," + e2.getValue() + "\n");
 			}
 			fw.close();
 		} catch (IOException e) {

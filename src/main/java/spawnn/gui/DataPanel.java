@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import javax.swing.DefaultCellEditor;
@@ -26,17 +25,16 @@ import net.miginfocom.swing.MigLayout;
 
 import org.apache.log4j.Logger;
 
-import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
-import spawnn.gui.DistMatrixDialog.DistMatType;
 import spawnn.utils.DataFrame;
 import spawnn.utils.DataUtils;
-import spawnn.utils.GeoUtils;
 import spawnn.utils.SpatialDataFrame;
 
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
+import com.vividsolutions.jts.geom.MultiPolygon;
+import com.vividsolutions.jts.geom.Polygon;
 
 public class DataPanel extends JPanel implements ActionListener, TableModelListener {
 	
@@ -153,6 +151,7 @@ public class DataPanel extends JPanel implements ActionListener, TableModelListe
 				if( fc.getFileFilter() == FFilter.shpFilter ) {
 			      sd = DataUtils.readSpatialDataFrameFromShapefile(fn, false);     
 			      addCCoords.setEnabled(true);
+			      distMat.setEnabled(sd.geoms.get(0) instanceof Polygon || sd.geoms.get(0) instanceof MultiPolygon);
 				} else if( fc.getFileFilter() == FFilter.csvFilter ) {				
 					DataFrame df = DataUtils.readDataFrameFromCSV(fn, new int[]{}, true ); 
 					sd = new SpatialDataFrame();				
@@ -221,21 +220,8 @@ public class DataPanel extends JPanel implements ActionListener, TableModelListe
 			for( int i = 0; i < dataTable.getRowCount(); i++ )
 				dataTable.setValueAt( !useAllState, i, USE );
 			useAllState = !useAllState;
-		} else if( ae.getSource() == distMat ) {
-			DistMatrixDialog dmd = new DistMatrixDialog( parent, "Distance Matrix...", true);
-			if( dmd.getFile() != null ) {
-				Dist<double[]> dist = new EuclideanDist(getGA(true));
-				List<double[]> samples = getNormedSamples();
-				Map<double[], Map<double[], Double>> dMap;
-				if( dmd.getDMType() == DistMatType.InvDistance )
-					dMap = GeoUtils.getInverseDistanceMatrix(samples, dist, dmd.getPower() );
-				else 
-					dMap = GeoUtils.knnsToWeights( GeoUtils.getKNNs(samples, dist, dmd.getKNNs()));
-				if( dmd.rowNorm() )
-					GeoUtils.rowNormalizeMatrix(dMap);
-				GeoUtils.writeDistMatrixKeyValue(dMap, samples, dmd.getFile().toString() );
-			}
-		}
+		} else if( ae.getSource() == distMat )
+			new DistMatrixDialog( parent, "Create dist. matrix...", true, sd, getGA(true) );
 	}
 	
 	private boolean trainAllowed = false, coordsMarked = false;
@@ -250,7 +236,9 @@ public class DataPanel extends JPanel implements ActionListener, TableModelListe
 			boolean b = getGA(false).length > 0;
 			firePropertyChange(COORD_CHANGED_PROP, coordsMarked, b);
 			coordsMarked = b;
-			distMat.setEnabled(getGA(true).length > 0 );
+			distMat.setEnabled( sd.geoms != null 
+					&& ( sd.geoms.get(0) instanceof Polygon || sd.geoms.get(0) instanceof MultiPolygon )
+					|| getGA(true).length > 0 );
 		}
 		
 		dataTable.removeTableModelListener(this);

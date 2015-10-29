@@ -95,8 +95,8 @@ public class HousepriceOptimize_CV {
 			params.get(method.CNG).add(new double[] { t_max, nrNeurons, lInit, lFinal, lr1Init, lr1Final, l, Double.NaN });
 		
 		params.put(method.WMNG, new ArrayList<double[]>());
-		for ( double alpha = 0; alpha <= 1; alpha += 0.02 )
-			for( double beta = 0; beta <= 1; beta += 0.02 )
+		for ( double alpha = 0; alpha <= 1; alpha += 0.025 )
+			for( double beta = 0; beta <= 1; beta += 0.025 )
 				params.get(method.WMNG).add(new double[] { t_max, nrNeurons, lInit, lFinal, lr1Init, lr1Final, alpha, beta });
 
 		for (final method m : params.keySet())
