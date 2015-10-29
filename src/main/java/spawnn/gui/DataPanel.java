@@ -33,8 +33,6 @@ import spawnn.utils.SpatialDataFrame;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
-import com.vividsolutions.jts.geom.MultiPolygon;
-import com.vividsolutions.jts.geom.Polygon;
 
 public class DataPanel extends JPanel implements ActionListener, TableModelListener {
 	
@@ -43,7 +41,6 @@ public class DataPanel extends JPanel implements ActionListener, TableModelListe
 	/* Training allowed, if one variable at least AND shapefile OR coordinates are marked
 	 * centroid-models allowed only if coordinates are marked */
 	public static final String TRAIN_ALLOWED_PROP ="TRAIN_ALLOWED";
-	public static final String COORD_CHANGED_PROP = "COORDINATES_CHANGED";
 	static Set<String> coordNames;
 	private boolean useAllState = false;
 		
@@ -64,7 +61,7 @@ public class DataPanel extends JPanel implements ActionListener, TableModelListe
 	}
 		
 	private DefaultTableModel dataTable;
-	private JButton btnLoadShp, addCCoords, useAll, distMat;
+	private JButton btnLoadShp, addCCoords, useAll;
 	private BoxPlotPanel boxPlotPnl;
 	private Frame parent;
 	
@@ -89,10 +86,6 @@ public class DataPanel extends JPanel implements ActionListener, TableModelListe
 		useAll = new JButton("Use all");
 		useAll.addActionListener(this);
 		useAll.setEnabled(false);
-		
-		distMat = new JButton("Dist. matrix...");
-		distMat.addActionListener(this);
-		distMat.setEnabled(false);
 						
 		dataTable = new DefaultTableModel( new String[]{"Attribute","Normalize","Coordinate","Use"}, 0 ) {
 			private static final long serialVersionUID = -78686917074445663L;
@@ -128,8 +121,7 @@ public class DataPanel extends JPanel implements ActionListener, TableModelListe
 		
 		add(btnLoadShp, "split 4");
 		add(addCCoords, "");
-		add(useAll,"");
-		add(distMat,"wrap");
+		add(useAll,"wrap");
 		
 		add( new JScrollPane(table), "w 50%, grow" );
 		add( boxPlotPnl, "w 50%, push, grow");
@@ -151,7 +143,6 @@ public class DataPanel extends JPanel implements ActionListener, TableModelListe
 				if( fc.getFileFilter() == FFilter.shpFilter ) {
 			      sd = DataUtils.readSpatialDataFrameFromShapefile(fn, false);     
 			      addCCoords.setEnabled(true);
-			      distMat.setEnabled(sd.geoms.get(0) instanceof Polygon || sd.geoms.get(0) instanceof MultiPolygon);
 				} else if( fc.getFileFilter() == FFilter.csvFilter ) {				
 					DataFrame df = DataUtils.readDataFrameFromCSV(fn, new int[]{}, true ); 
 					sd = new SpatialDataFrame();				
@@ -163,20 +154,15 @@ public class DataPanel extends JPanel implements ActionListener, TableModelListe
 				
 				dataTable.setRowCount(0);
 								
-				int numCoords = 0;
-			    for( String s : sd.names ) {
-			    	if( coordNames.contains(s) ) {
-			    		numCoords++;
+				for( String s : sd.names )
+			    	if( coordNames.contains(s) )
 			    		dataTable.addRow( new Object[]{s, norm.none, true, false } );
-			    	} else {
+			    	else
 			    		dataTable.addRow( new Object[]{s, norm.zScore, false, false } );
-			    	}
-			    }			    
+			    			    
 				boxPlotPnl.setData(sd.names, getNormedSamples() );
 				boxPlotPnl.plot();
 				
-			    firePropertyChange(COORD_CHANGED_PROP, coordsMarked, numCoords > 0);
-			    coordsMarked = numCoords > 0;
 			}
 		} else if( ae.getSource() == addCCoords ) {
 			
@@ -212,19 +198,14 @@ public class DataPanel extends JPanel implements ActionListener, TableModelListe
 			
 			boxPlotPnl.setData(sd.names, getNormedSamples() );
 			boxPlotPnl.plot();
-			
-			firePropertyChange(COORD_CHANGED_PROP, coordsMarked, true);
-			coordsMarked = true;
-			distMat.setEnabled(true);
 		} else if ( ae.getSource() == useAll ) {
 			for( int i = 0; i < dataTable.getRowCount(); i++ )
 				dataTable.setValueAt( !useAllState, i, USE );
 			useAllState = !useAllState;
-		} else if( ae.getSource() == distMat )
-			new DistMatrixDialog( parent, "Create dist. matrix...", true, sd, getGA(true) );
+		} 
 	}
 	
-	private boolean trainAllowed = false, coordsMarked = false;
+	private boolean trainAllowed = false;
 			
 	@Override
 	public void tableChanged(TableModelEvent e) {		
@@ -232,13 +213,6 @@ public class DataPanel extends JPanel implements ActionListener, TableModelListe
 			boolean a = getFA().length > 0 && ( sd.geoms != null || getGA(true).length > 0 );
 			firePropertyChange(TRAIN_ALLOWED_PROP, trainAllowed, a );
 			trainAllowed = a;
-			
-			boolean b = getGA(false).length > 0;
-			firePropertyChange(COORD_CHANGED_PROP, coordsMarked, b);
-			coordsMarked = b;
-			distMat.setEnabled( sd.geoms != null 
-					&& ( sd.geoms.get(0) instanceof Polygon || sd.geoms.get(0) instanceof MultiPolygon )
-					|| getGA(true).length > 0 );
 		}
 		
 		dataTable.removeTableModelListener(this);
@@ -333,10 +307,10 @@ public class DataPanel extends JPanel implements ActionListener, TableModelListe
 	}
 	
 	// Returns either the used GA or the complete GA, depending on flag
-	public int[] getGA(boolean ignoreUsedFlag) {
+	public int[] getGA(boolean allGA) {
 		List<Integer> l = new ArrayList<Integer>();
 		for( int i = 0; i < dataTable.getRowCount(); i++ ) {
-			if( ( ignoreUsedFlag || (Boolean)dataTable.getValueAt(i, USE) ) && (Boolean)dataTable.getValueAt(i, COORDINATE) )
+			if( ( allGA || (Boolean)dataTable.getValueAt(i, USE) ) && (Boolean)dataTable.getValueAt(i, COORDINATE) )
 				l.add(i);
 		}
 		int[] ga = new int[l.size()];

@@ -105,7 +105,7 @@ public class HousepriceOptimize_CV {
 				ExecutorService es = Executors.newFixedThreadPool(4);
 				List<Future<double[]>> futures = new ArrayList<Future<double[]>>();
 
-				for (int run = 0; run < 12; run++) {
+				for (int run = 0; run < 4; run++) {
 
 					futures.add(es.submit(new Callable<double[]>() {
 

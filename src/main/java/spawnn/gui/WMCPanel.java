@@ -1,85 +1,107 @@
 package spawnn.gui;
 
+import java.awt.Frame;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
+import java.util.List;
+import java.util.Map;
 
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 
 import net.miginfocom.swing.MigLayout;
+import spawnn.utils.GeoUtils;
+import spawnn.utils.SpatialDataFrame;
 
 public class WMCPanel extends JPanel implements ActionListener {
 
 	private static final long serialVersionUID = 1671229973714048612L;
-	private JTextField textField;
-	private JTextField textField_1;
-	private JButton btnDistMatrix;
+	private JTextField alphaField;
+	private JTextField betaField;
+	private JButton selDM, createDM;
 	
-	private JTextField textField_2;
-	private JTextField textField_3;
-	private JTextField selFile;
+	private Frame parent;
 	
-	private File distMapFile = null;
-	
-
-	public WMCPanel() {
-		setLayout(new MigLayout());
+	public WMCPanel(Frame parent) {
+		this.parent = parent;
+		setLayout(new MigLayout(""));
 		
 		JLabel lblAlpha = new JLabel("Alpha:");
 		add(lblAlpha, "");
 		
-		textField = new JTextField();
-		textField.setText("0.5");
-		textField.setColumns(10);
-		add(textField, "pushx");
+		alphaField = new JTextField();
+		alphaField.setText("0.5");
+		alphaField.setColumns(10);
+		add(alphaField, "");
 				
 		JLabel lblBeta = new JLabel("Beta:");
 		add(lblBeta, "");
 		
-		textField_1 = new JTextField();
-		textField_1.setText("0.5");
-		textField_1.setColumns(10);
-		add(textField_1, "wrap");
+		betaField = new JTextField();
+		betaField.setText("0.5");
+		betaField.setColumns(10);
+		add(betaField, "wrap");
 				
 		add( new JLabel("Dist. matrix:"),""); 
 		
-		selFile = new JTextField();
-		selFile.setColumns(20);
-		selFile.setEditable(true);
-		add(selFile,"growx");
+		selDM = new JButton("Load...");
+		selDM.addActionListener(this);
+		add(selDM, "");
 		
-		btnDistMatrix = new JButton("Select...");
-		btnDistMatrix.addActionListener(this);
-		add(btnDistMatrix, "");
-		
-		
+		createDM = new JButton("Create...");
+		createDM.addActionListener(this);
+		add(createDM, "skip");	
 	}
+	
+	Map<double[],Map<double[],Double>> dMap = null;
 
 	@Override
 	public void actionPerformed(ActionEvent ae) {
-		if( ae.getSource() == btnDistMatrix ) {
+		if( ae.getSource() == selDM ) {
 			JFileChooser fc = new JFileChooser();
 			int state = fc.showOpenDialog(this);
 			if( state == JFileChooser.APPROVE_OPTION ) { 
-			      distMapFile = fc.getSelectedFile();
-			      selFile.setText(""+distMapFile);
+			      File file = fc.getSelectedFile();
+			      try {
+			    	  dMap = GeoUtils.readDistMatrixKeyValue(normedSamples, file);
+			      } catch( Exception e ) {
+			    	  JOptionPane.showMessageDialog(this, "Could read/parse distance matrix file: "+e.getLocalizedMessage(), "Read/Parse error!", JOptionPane.ERROR_MESSAGE);
+			    	  e.printStackTrace();
+			      }
 			}
-		}	
+		} else if( ae.getSource() == createDM ) {
+			DistMatrixDialog dmd = new DistMatrixDialog(parent, "Create dist. matrix", true, normedSamples, sdf, ga);
+			if( dmd.okPressed )
+				dMap = dmd.getDistanceMap();
+			else
+				dMap = null;
+		}
+	}
+				
+	public Map<double[],Map<double[],Double>> getDistanceMap() {
+		return dMap;
+	}
+	
+	private List<double[]> normedSamples;
+	private SpatialDataFrame sdf;
+	private int[] ga;
+	
+	public void setTrainingData( List<double[]> normedSamples, SpatialDataFrame spatialData, int[] ga) {
+		this.normedSamples = normedSamples;
+		this.sdf = spatialData;
+		this.ga = ga;
 	}
 	
 	public double getAlpha() {
-		return Double.parseDouble(textField.getText());
+		return Double.parseDouble(alphaField.getText());
 	}
-	
+
 	public double getBeta() {
-		return Double.parseDouble(textField_1.getText());
-	}
-			
-	public File getDistMapFile() {
-		return distMapFile;
+		return Double.parseDouble(betaField.getText());
 	}
 }

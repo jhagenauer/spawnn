@@ -6,6 +6,7 @@ import java.awt.Frame;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
+import java.util.List;
 import java.util.Map;
 
 import javax.swing.DefaultComboBoxModel;
@@ -31,13 +32,12 @@ import com.vividsolutions.jts.geom.Polygon;
 public class DistMatrixDialog extends JDialog implements ActionListener {
 
 	private static final long serialVersionUID = 2783445681242978907L;
-	JButton save, cancel;
+	JButton ok, cancel, save, create;
 	
 	JPanel cards;
 	JComboBox cb, adjCb;
 	JTextField power, knns, selFile;
 	JCheckBox rowNorm;
-	JButton btnDistMatrix;
 	File file = null;
 
 	public static enum DistMatType {InvDistance, kNN, Adjacency};
@@ -47,17 +47,21 @@ public class DistMatrixDialog extends JDialog implements ActionListener {
 	private enum Card { one, two, three };
 	
 	private Dist<double[]> dist;
-	private SpatialDataFrame sd;
+	private SpatialDataFrame sdf;
+	private List<double[]> samples;
 	
 	private Frame parent;
 	
-	public DistMatrixDialog(Frame parent, String string, boolean b, SpatialDataFrame sd, int[] ga ) {
+	public DistMatrixDialog(Frame parent, String string, boolean b, List<double[]> samples, SpatialDataFrame sd, int[] ga ) {
 		super(parent, string, b);
-		boolean adjEnable = sd.geoms != null && ( sd.geoms.get(0) instanceof Polygon || sd.geoms.get(0) instanceof MultiPolygon );
+		
 		this.parent = parent;
 		this.dist = new EuclideanDist(ga);
-		this.sd = sd;
+		this.sdf = sd;
+		this.samples = samples;
 		
+		boolean adjEnable = sd.geoms != null && ( sd.geoms.get(0) instanceof Polygon || sd.geoms.get(0) instanceof MultiPolygon );
+				
 		setLayout(new MigLayout(""));
 
 		add(new JLabel("Type:"));
@@ -102,22 +106,21 @@ public class DistMatrixDialog extends JDialog implements ActionListener {
 		rowNorm.setEnabled(true);
 		add( rowNorm, "span 2, wrap" );
 		
-		add( new JLabel("Target file:"),""); 
-		
-		selFile = new JTextField();
-		selFile.setColumns(20);
-		selFile.setEditable(true);
-		add(selFile,"growx");
-		
-		btnDistMatrix = new JButton("Select...");
-		btnDistMatrix.addActionListener(this);
-		add(btnDistMatrix, "wrap");
-
-		save = new JButton("Create...");
+		create = new JButton("Create");
+		create.addActionListener(this);
+		add(create, "");
+						
+		save = new JButton("Save...");
 		save.addActionListener(this);
+		save.setEnabled(false);
+		add(save, "wrap");
+
+		ok = new JButton("OK");
+		ok.setEnabled(false);
+		ok.addActionListener(this);
 		cancel = new JButton("Cancel");
 		cancel.addActionListener(this);
-		add(save, "span2, split 2, push");
+		add(ok, "span2, split 2, push");
 		add(cancel);
 
 		setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
@@ -126,6 +129,9 @@ public class DistMatrixDialog extends JDialog implements ActionListener {
 		setLocationRelativeTo(parent);
 		setVisible(true);
 	}
+	
+	boolean okPressed = false;
+	Map<double[], Map<double[], Double>> dMap = null;
 
 	@Override
 	public void actionPerformed(ActionEvent e) {
@@ -137,33 +143,40 @@ public class DistMatrixDialog extends JDialog implements ActionListener {
 				cl.show(cards, Card.two.toString());
 			else
 				cl.show(cards, Card.three.toString());
-		} else if (e.getSource() == save) {
+		} else if (e.getSource() == create) {
 			setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 			
-			Map<double[], Map<double[], Double>> dMap = null;
 			if( cb.getSelectedItem() == DistMatType.Adjacency ) {
-				dMap = GeoUtils.listsToWeights( GeoUtils.getContiguityMap(sd.samples, sd.geoms, adjCb.getSelectedItem() == AdjMode.Rook ));
+				dMap = GeoUtils.listsToWeights( GeoUtils.getContiguityMap(samples, sdf.geoms, adjCb.getSelectedItem() == AdjMode.Rook ));
 			} else if( cb.getSelectedItem() == DistMatType.InvDistance ) {
-				dMap = GeoUtils.getInverseDistanceMatrix(sd.samples, dist, Double.parseDouble(power.getText() ) );
+				dMap = GeoUtils.getInverseDistanceMatrix(samples, dist, Double.parseDouble(power.getText() ) );
 			} else { // knn
-				dMap = GeoUtils.listsToWeights( GeoUtils.getKNNs(sd.samples, dist, Integer.parseInt(knns.getText())));
+				dMap = GeoUtils.listsToWeights( GeoUtils.getKNNs(samples, dist, Integer.parseInt(knns.getText())));
 			}
 			
 			if( rowNorm.isSelected() )
 				GeoUtils.rowNormalizeMatrix(dMap);
-			GeoUtils.writeDistMatrixKeyValue(dMap, sd.samples, file );
 			
 			setCursor(Cursor.getDefaultCursor());
-			dispose();
-		} else if( e.getSource() == btnDistMatrix ) {
+			save.setEnabled(true);
+			ok.setEnabled(true);
+		} else if( e.getSource() == save ) {
 			JFileChooser fc = new JFileChooser();
-			int state = fc.showSaveDialog(this);
-			if( state == JFileChooser.APPROVE_OPTION ) { 
-			      file = fc.getSelectedFile();
-			      selFile.setText(""+file);
-			}
-		} else {
+			if( fc.showSaveDialog(this) == JFileChooser.APPROVE_OPTION )
+				  GeoUtils.writeDistMatrixKeyValue(dMap, samples, fc.getSelectedFile() );
+		} else if( e.getSource() == ok ){
+			okPressed = true;
+			dispose(); 
+		} else { // cancel
 			dispose();
 		}
+	}
+	
+	public boolean okPressed() {
+		return okPressed;
+	}
+	
+	public Map<double[], Map<double[], Double>> getDistanceMap() {
+		return dMap;
 	}
 }

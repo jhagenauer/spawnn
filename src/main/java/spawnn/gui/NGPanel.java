@@ -55,7 +55,7 @@ public class NGPanel extends JPanel {
 		add(lblLambdaFinal, "");
 		
 		textField_5 = new JTextField();
-		textField_5.setText("0.1");
+		textField_5.setText("0.01");
 		textField_5.setColumns(10);
 		add(textField_5, "wrap");
 		
@@ -77,7 +77,7 @@ public class NGPanel extends JPanel {
 		add(lblEpsilonFinal, "");
 		
 		textField_7 = new JTextField();
-		textField_7.setText("0.001");
+		textField_7.setText("0.01");
 		add(textField_7, "");
 		textField_7.setColumns(10);
 	}
