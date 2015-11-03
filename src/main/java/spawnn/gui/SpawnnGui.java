@@ -55,7 +55,7 @@ public class SpawnnGui extends JFrame implements PropertyChangeListener, ActionL
 
 		// Tabs
 		tp = new JTabbedPane();
-		dataPanel = new DataPanel(this);
+		dataPanel = new DataPanel();
 		dataPanel.addPropertyChangeListener(this);
 
 		tp.addTab("Data", dataPanel);
@@ -108,8 +108,9 @@ public class SpawnnGui extends JFrame implements PropertyChangeListener, ActionL
 	@Override
 	public void stateChanged(ChangeEvent ce) {
 		if( ((JTabbedPane)ce.getSource()).getSelectedComponent() == annPanel ) { // submit data for training
-			int[] ga = dataPanel.getGA(false); 
-			annPanel.setTrainingData(dataPanel.getNormedSamples(), dataPanel.getSpatialData(), dataPanel.getFA(), ga);
+			int[] gaUsed = dataPanel.getGA(false);
+			int[] gaAll = dataPanel.getGA(true);
+			annPanel.setTrainingData(dataPanel.getNormedSamples(), dataPanel.getSpatialData(), dataPanel.getFA(), gaUsed, gaAll);
 		}
 	}
 
@@ -118,7 +119,8 @@ public class SpawnnGui extends JFrame implements PropertyChangeListener, ActionL
 
 	@Override
 	public void trainingResultsAvailable(TrainingEvent te) {
-		Dist<double[]> fDist = new EuclideanDist(dataPanel.getFA());
+		int[] fa = dataPanel.getFA();
+		Dist<double[]> fDist = new EuclideanDist(fa);
 		Dist<double[]> gDist = new EuclideanDist(dataPanel.getGA(false));
 		List<double[]> samples = te.getSamples();
 		SpatialDataFrame sdf = dataPanel.getSpatialData();
@@ -126,13 +128,13 @@ public class SpawnnGui extends JFrame implements PropertyChangeListener, ActionL
 		
 		if( te instanceof TrainingFinishedSOM ) { // SOM-results
 			TrainingFinishedSOM tfs = (TrainingFinishedSOM)te;
-			SOMResultPanel srp = new SOMResultPanel(this, sdf, samples, tfs.getBmus(), tfs.getGrid(), fDist, gDist, ga);
+			SOMResultPanel srp = new SOMResultPanel(this, sdf, samples, tfs.getBmus(), tfs.getGrid(), fDist, gDist, fa, ga, tfs.isWMC());
 			tp.addTab("Results (SOM," + (numSom++) + ")", srp);
 			tp.setSelectedComponent(srp);
 			tp.setTabComponentAt(tp.indexOfComponent(srp), new ButtonTabComponent(tp));
 		} else {
 			TrainingFinishedNG tfn = (TrainingFinishedNG)te;
-			NGResultPanel srp = new NGResultPanel(this, sdf, samples, tfn.getBmus(), tfn.getGraph(), fDist, gDist, ga);
+			NGResultPanel srp = new NGResultPanel(this, sdf, samples, tfn.getBmus(), tfn.getGraph(), fDist, gDist, fa, ga, tfn.isWMC() );
 			tp.addTab("Results (NG, " + (numNg++) + ")", srp);
 			tp.setSelectedComponent(srp);
 			tp.setTabComponentAt(tp.indexOfComponent(srp), new ButtonTabComponent(tp));

@@ -48,7 +48,7 @@ public class IrisTestBatch {
 		
 		int vLength = samples.get(0).length;
 		Grid2DHex<double[]> grid = new Grid2DHex<double[]>(X_DIM, Y_DIM );
-		SomUtils.initLinear(grid, samples, true);
+		SomUtils.initRandom(grid, samples);
 			
 		BmuGetter<double[]> bmuGetter = new DefaultBmuGetter<double[]>(eDist);
 		

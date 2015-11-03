@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -59,18 +60,19 @@ public class GeoUtils {
 	}
 	
 	// useful to strip large distance-matrices from not relevant entries (????)
-	public static Map<double[],Map<double[],Double>> getKNearestMatrix( Map<double[],Map<double[],Double>> invDistMatrix, int k ) {
+	public static Map<double[],Map<double[],Double>> getKNearestMatrix( final Map<double[],Map<double[],Double>> invDistMatrix, int k ) {
 		Map<double[],Map<double[],Double>> knnM = new HashMap<double[],Map<double[],Double>>();
 		for( double[] a : invDistMatrix.keySet() ) {
-			Map<double[],Double> m = new HashMap<double[],Double>();
-			while( m.size() < k ) {
-				double[] maxB = null;
-				for( double[] b : invDistMatrix.get(a).keySet() ) {
-					if( !m.containsKey(b) && ( maxB == null || invDistMatrix.get(a).get(maxB) < invDistMatrix.get(a).get(b) ) )
-						maxB = b;
+			List<double[]> l = new ArrayList<double[]>( invDistMatrix.get(a).keySet() );
+			Collections.sort(l, new Comparator<double[]>() {
+				@Override
+				public int compare(double[] o1, double[] o2) {
+					return invDistMatrix.get(o1).get(o2).compareTo(invDistMatrix.get(o1).get(o2));
 				}
-				m.put(maxB, invDistMatrix.get(a).get(maxB));
-			}
+			});			
+			Map<double[],Double> m = new HashMap<double[],Double>();
+			for( double[] d : l.subList(0, 1) )
+				m.put(d, invDistMatrix.get(a).get(d) );
 			knnM.put(a, m);
 		}
 		return knnM;
@@ -121,22 +123,23 @@ public class GeoUtils {
 		return r;
 	}
 	
-	public static Map<double[], List<double[]>> getKNNs(List<double[]> samples, Dist<double[]> gDist, int k) {
+	public static Map<double[], List<double[]>> getKNNs(final List<double[]> samples, final Dist<double[]> gDist, int k) {
 		Map<double[], List<double[]>> r = new HashMap<double[], List<double[]>>();
-		for (double[] x : samples) {
-			List<double[]> sub = new ArrayList<double[]>();
-			while (sub.size() <= k) {
-				double[] minD = null;
-				for (double[] d : samples)
-					if (!sub.contains(d) && (minD == null || gDist.dist(d, x) < gDist.dist(minD, x)))
-						minD = d;
-				sub.add(minD);
-			}
-			r.put(x, sub);
+		for (final double[] x : samples) {
+			
+			List<double[]> l = new ArrayList<double[]>( samples );
+			Collections.sort(l, new Comparator<double[]>() {
+				@Override
+				public int compare(double[] o1, double[] o2) {
+					return Double.compare(gDist.dist(x, o1),gDist.dist(x, o2));
+				}
+			});		
+			r.put(x, l.subList(0, k));
 		}
 		return r;
 	}
 	
+	@Deprecated
 	public static Map<double[], List<double[]>> getContiguityMap(List<double[]> samples, List<Geometry> geoms, boolean rook ) {
 		Map<double[], List<double[]>> r = new HashMap<double[], List<double[]>>();
 		for( int i = 0; i < samples.size(); i++ ) {
@@ -145,6 +148,28 @@ public class GeoUtils {
 			for( int j = 0; j < samples.size(); j++ ) {
 				Geometry b = geoms.get(j);
 				if( !rook ) { // queen
+					if( a.touches(b) || a.intersects(b) )
+						l.add( samples.get(j));
+				} else { // rook
+					if( a.intersection(b).getCoordinates().length > 0 ) // SLOW
+						l.add( samples.get(j));
+				}
+			}
+			r.put(samples.get(i), l);
+		}
+		return r;
+	}
+	
+	public static Map<double[], List<double[]>> getContiguityMap(List<double[]> samples, List<Geometry> geoms, boolean rookAdjacency, boolean includeIdentity ) {
+		Map<double[], List<double[]>> r = new HashMap<double[], List<double[]>>();
+		for( int i = 0; i < samples.size(); i++ ) {
+			Geometry a = geoms.get(i);
+			List<double[]> l = new ArrayList<double[]>();
+			for( int j = 0; j < samples.size(); j++ ) {
+				Geometry b = geoms.get(j);
+				if( !includeIdentity && a == b )
+					continue;				
+				if( !rookAdjacency ) { // queen
 					if( a.touches(b) || a.intersects(b) )
 						l.add( samples.get(j));
 				} else { // rook

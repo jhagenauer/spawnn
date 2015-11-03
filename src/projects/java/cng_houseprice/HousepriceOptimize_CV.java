@@ -76,13 +76,10 @@ public class HousepriceOptimize_CV {
 		DataUtils.zScoreColumn(desired, 0);
 		/* DataUtils.zScoreGeoColumns(samples, ga, gDist); //not necessary */
 
-		final Map<double[], Map<double[], Double>> rMap = GeoUtils.getInverseDistanceMatrix(samples, gDist, 1);
-		GeoUtils.rowNormalizeMatrix(rMap);
-
 		// ------------------------------------------------------------------------
 
 		int t_max = 40000;
-		int nrNeurons = 16;
+		int nrNeurons = 64; // mit sehr vieln neuronen ist tatsächlich ein größerer Radius leicht(!) besser
 		double lInit = nrNeurons / 2;
 		double lFinal = 0.1;
 		double lr1Init = 0.7;
@@ -92,20 +89,73 @@ public class HousepriceOptimize_CV {
 
 		params.put(method.CNG, new ArrayList<double[]>());
 		for (int l = 1; l <= nrNeurons; l++)
-			params.get(method.CNG).add(new double[] { t_max, nrNeurons, lInit, lFinal, lr1Init, lr1Final, l, Double.NaN });
+			params.get(method.CNG).add( new double[] { t_max, nrNeurons, lInit, lFinal, lr1Init, lr1Final, l, Double.NaN } );
 		
-		params.put(method.WMNG, new ArrayList<double[]>());
-		for ( double alpha = 0; alpha <= 1; alpha += 0.025 )
-			for( double beta = 0; beta <= 1; beta += 0.025 )
+		/*params.put(method.WMNG, new ArrayList<double[]>());
+		for ( double alpha = 0; alpha <= 1; alpha += 0.05 )
+			for( double beta = 0; beta <= 1; beta += 0.05 )
 				params.get(method.WMNG).add(new double[] { t_max, nrNeurons, lInit, lFinal, lr1Init, lr1Final, alpha, beta });
-
+		params.get(method.WMNG).add(new double[] { t_max, nrNeurons, lInit, lFinal, lr1Init, lr1Final, 0.625, 0.45 });*/
+		
+		int nrParams = 0;
+		for( List<double[]> l : params.values() )
+			nrParams += l.size();
+		log.debug("Nr. params: "+nrParams);
+		
+		for( int dm : new int[]{ 0 } ) {
+		
+			log.debug("Building dm...");
+			final Map<double[], Map<double[], Double>> rMap;
+			switch(dm) {
+			case 0:
+				 rMap = GeoUtils.listsToWeights(GeoUtils.getKNNs(samples, gDist, 4));				 
+				 break;
+			case 1:
+				 rMap = GeoUtils.listsToWeights(GeoUtils.getKNNs(samples, gDist, 8));
+				 break;
+			case 2:
+				 rMap = GeoUtils.listsToWeights(GeoUtils.getKNNs(samples, gDist, 12));
+				 break;
+			case 3:
+				 rMap = GeoUtils.listsToWeights(GeoUtils.getKNNs(samples, gDist, 16));
+				 break;
+			case 4:
+				 rMap = GeoUtils.listsToWeights(GeoUtils.getKNNs(samples, gDist, 20));
+				 break;
+			case 5:
+				 rMap = GeoUtils.listsToWeights(GeoUtils.getKNNs(samples, gDist, 24));
+				 break;
+			case 6:
+				//rMap = GeoUtils.getInverseDistanceMatrix(samples, gDist, 1);
+				rMap = GeoUtils.getKNearestMatrix(GeoUtils.getInverseDistanceMatrix(samples, gDist, 1), 2000);
+				break;
+			case 7:
+				//rMap = GeoUtils.getInverseDistanceMatrix(samples, gDist, 2);
+				rMap = GeoUtils.getKNearestMatrix(GeoUtils.getInverseDistanceMatrix(samples, gDist, 2), 2000);
+				break;
+			case 8:
+				//rMap = GeoUtils.getInverseDistanceMatrix(samples, gDist, 2);
+				rMap = GeoUtils.getKNearestMatrix(GeoUtils.getInverseDistanceMatrix(samples, gDist, 3), 2000);
+				break;
+			
+			default:
+				rMap = null;
+				System.exit(1);
+			}
+						 
+			//final Map<double[], Map<double[], Double>> rMap = GeoUtils.getInverseDistanceMatrix(samples, gDist, 2);
+			//final Map<double[], Map<double[], Double>> rMap = GeoUtils.getKNearestMatrix(GeoUtils.getInverseDistanceMatrix(samples, gDist, 2), 1000);
+			
+			GeoUtils.rowNormalizeMatrix(rMap);
+			log.debug("done");
+				
 		for (final method m : params.keySet())
 			for (final double[] param : params.get(m)) {
 
 				ExecutorService es = Executors.newFixedThreadPool(4);
 				List<Future<double[]>> futures = new ArrayList<Future<double[]>>();
 
-				for (int run = 0; run < 4; run++) {
+				for (int run = 0; run < 64; run++) {
 
 					futures.add(es.submit(new Callable<double[]>() {
 
@@ -165,7 +215,8 @@ public class HousepriceOptimize_CV {
 							
 							List<double[]> sortedNeurons = new ArrayList<double[]>(neurons);
 
-							DescriptiveStatistics ds = new DescriptiveStatistics();
+							DescriptiveStatistics rmseDs = new DescriptiveStatistics();
+							DescriptiveStatistics r2Ds = new DescriptiveStatistics();
 							for (int k = 0; k < 10; k++) {
 								List<double[]> samplesTrain = new ArrayList<double[]>(samples);
 								List<double[]> desiredTrain = new ArrayList<double[]>(desired);
@@ -213,14 +264,15 @@ public class HousepriceOptimize_CV {
 
 										responseVal.add(new double[] { p });
 									}
-									ds.addValue(Meuse.getRMSE(responseVal, desiredVal));
+									rmseDs.addValue(Meuse.getRMSE(responseVal, desiredVal));
+									r2Ds.addValue(Meuse.getR2(responseVal, desiredVal));
 
 								} catch (SingularMatrixException e) {
 									log.debug(e.getMessage());
 								}
 							}
 
-							return new double[] { ds.getMean() };
+							return new double[] { rmseDs.getMean(), r2Ds.getMean() };
 						}
 					}));
 				}
@@ -248,9 +300,9 @@ public class HousepriceOptimize_CV {
 					String fn = "output/resultHousepriceCV.csv";
 					if (firstWrite) {
 						firstWrite = false;
-						Files.write(Paths.get(fn), ("method,param_0,param_1,rmse\n").getBytes());
+						Files.write(Paths.get(fn), ("dm,method,param_0,param_1,rmse,r2\n").getBytes());
 					}
-					String s = m + ","+ param[param.length-2]+","+param[param.length-1];
+					String s = dm+","+m + ","+ param[param.length-2]+","+param[param.length-1];
 					for (int i = 0; i < ds.length; i++)
 						s += "," + ds[i].getMean();
 					s += "\n";
@@ -260,6 +312,7 @@ public class HousepriceOptimize_CV {
 					e.printStackTrace();
 				}
 			}
+	}
 	}
 
 	public static double[] getStripped(double[] d, int[] fa) {

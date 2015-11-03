@@ -9,6 +9,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -312,6 +313,14 @@ public class Drawer {
 			System.out.println(getColor(i));
 		}
 	}
+	
+	public static void geoDrawValues(SpatialDataFrame sdf, int column, ColorMode cm, String fn) {
+		List<Double> values = new ArrayList<Double>();
+		for( double[] d : sdf.samples )
+			values.add( d[column] );
+		geoDrawValues(sdf.geoms, values, sdf.crs, cm, fn);
+	}
+		
 
 	public static void geoDrawValues(List<Geometry> geoms, List<Double> values, CoordinateReferenceSystem crs, ColorMode cm, String fn) {
 		SimpleFeatureTypeBuilder typeBuilder = new SimpleFeatureTypeBuilder();

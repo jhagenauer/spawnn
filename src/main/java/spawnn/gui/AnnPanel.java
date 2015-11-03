@@ -58,7 +58,6 @@ public class AnnPanel extends JPanel implements ChangeListener, ActionListener {
 	protected JPanel nonePanel, weightedPanel, geoSomPanel, cngPanel, augmentedPanel;
 	protected WMCPanel wmcPanel;
 	private JButton btnTrain;
-	private boolean centroidModelsEnabled = false;
 		
 	private static final int NONE = 0, AUGMENTED = 1, WEIGHTED = 2, GEOSOM = 3, CNG = 4, WMC = 5;
 	
@@ -124,7 +123,7 @@ public class AnnPanel extends JPanel implements ChangeListener, ActionListener {
 
 	@Override
 	public void stateChanged(ChangeEvent e) {
-		if( e.getSource() == tpANN ) 
+		if( e.getSource() == tpANN ) // switch NG-SOM happened
 			updateContextModelsEnabled();
 		//TODO would be nice if train-button is only enabled if distance-matrix is loaded
 		/*else if( tpContextModel.getSelectedComponent() == wmcPanel && wmcPanel.getDistanceMap() == null )
@@ -134,6 +133,7 @@ public class AnnPanel extends JPanel implements ChangeListener, ActionListener {
 	}
 	
 	private void updateContextModelsEnabled() {
+		boolean centroidModelsEnabled = gaUsed != null && gaUsed.length > 0;
 		tpContextModel.setEnabledAt(AUGMENTED, centroidModelsEnabled);
 		tpContextModel.setEnabledAt(WEIGHTED, centroidModelsEnabled);
 		tpContextModel.setEnabledAt(CNG,centroidModelsEnabled);	
@@ -143,7 +143,7 @@ public class AnnPanel extends JPanel implements ChangeListener, ActionListener {
 		else
 			tpContextModel.setEnabledAt(GEOSOM, false); // never for ng
 		
-		if( !tpContextModel.getSelectedComponent().isEnabled() );
+		if( !tpContextModel.getSelectedComponent().isEnabled() )
 			tpContextModel.setSelectedIndex(NONE);
 	}
 	
@@ -153,17 +153,18 @@ public class AnnPanel extends JPanel implements ChangeListener, ActionListener {
 						
 			int sampleLength = normedSamples.get(0).length;
 			Dist<double[]> fDist = new EuclideanDist(fa);
-			Dist<double[]> gDist = ga.length > 0 ? new EuclideanDist(ga) : null;
+			Dist<double[]> gDist = gaUsed.length > 0 ? new EuclideanDist(gaUsed) : null;
 			int t_max = Integer.parseInt(trainingCycles.getText() );
 			
 			Map<double[],Map<double[],Double>> distanceMatrix = null;
-			if( tpContextModel.getSelectedComponent() == wmcPanel )
+			if( tpContextModel.getSelectedComponent() == wmcPanel ) {
 				distanceMatrix = wmcPanel.getDistanceMap();
-			if( distanceMatrix == null ) {
-				JOptionPane.showMessageDialog(this, "Missing distance matrix! Load or create distance matrix first!", "Missing distance matrix!", JOptionPane.ERROR_MESSAGE);
-				return;
+				if( distanceMatrix == null ) {
+					JOptionPane.showMessageDialog(this, "Missing distance matrix! Load or create distance matrix first!", "Missing distance matrix!", JOptionPane.ERROR_MESSAGE);
+					return;
+				}
 			}
-	    	  									
+			 									
 			setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 			for (int run = 0; run < Integer.parseInt(runs.getText()); run++) {
 
@@ -219,7 +220,7 @@ public class AnnPanel extends JPanel implements ChangeListener, ActionListener {
 							bg = new DefaultBmuGetter<double[]>(wDist);
 						} else if (tpContextModel.getSelectedComponent() == augmentedPanel) {
 							double a = ((AugmentedPanel) augmentedPanel).getAlpha();
-							Dist<double[]> aDist = new AugmentedDist(ga, fa, a);
+							Dist<double[]> aDist = new AugmentedDist(gaUsed, fa, a);
 							bg = new DefaultBmuGetter<double[]>(aDist);
 						} else {
 							bg = new DefaultBmuGetter<double[]>(fDist);
@@ -235,7 +236,7 @@ public class AnnPanel extends JPanel implements ChangeListener, ActionListener {
 					
 					synchronized (bmus) {
 						for( TrainingListener tl : _listeners )
-							tl.trainingResultsAvailable( new TrainingFinishedSOM(this, normedSamples, bmus, grid));
+							tl.trainingResultsAvailable( new TrainingFinishedSOM(this, normedSamples, bmus, grid,tpContextModel.getSelectedComponent() == wmcPanel));
 					}
 				} else { // ng
 					NGPanel np = (NGPanel) ngPanel;
@@ -273,7 +274,7 @@ public class AnnPanel extends JPanel implements ChangeListener, ActionListener {
 							s = new DefaultSorter<double[]>(wDist);
 						} else if (tpContextModel.getSelectedComponent() == augmentedPanel) {
 							double a = ((AugmentedPanel) augmentedPanel).getAlpha();
-							Dist<double[]> aDist = new AugmentedDist(ga, fa, a);
+							Dist<double[]> aDist = new AugmentedDist(gaUsed, fa, a);
 							s = new DefaultSorter<double[]>(aDist);
 						} else
 							s = new DefaultSorter<double[]>(fDist);
@@ -327,7 +328,7 @@ public class AnnPanel extends JPanel implements ChangeListener, ActionListener {
 					
 					synchronized (bmus) {
 						for( TrainingListener tl : _listeners )
-							tl.trainingResultsAvailable( new TrainingFinishedNG(this, normedSamples, bmus, g));
+							tl.trainingResultsAvailable( new TrainingFinishedNG(this, normedSamples, bmus, g, tpContextModel.getSelectedComponent() == wmcPanel));
 					}
 				}
 			}
@@ -337,15 +338,14 @@ public class AnnPanel extends JPanel implements ChangeListener, ActionListener {
 	
 	private Random r = new Random();
 	private List<double[]> normedSamples;
-	private int[] fa, ga;
+	private int[] fa, gaUsed = null;
 	
-	public void setTrainingData(List<double[]> normedSamples, SpatialDataFrame spatialData, int[] fa, int[] ga) {
+	public void setTrainingData(List<double[]> normedSamples, SpatialDataFrame spatialData, int[] fa, int[] gaUsed, int[] gaAll) {
 		this.normedSamples = normedSamples;
 		this.fa = fa;
-		this.ga = ga;
+		this.gaUsed = gaUsed;
 		
-		wmcPanel.setTrainingData(normedSamples,spatialData,ga);
-		centroidModelsEnabled = ga.length > 0;
+		wmcPanel.setTrainingData(normedSamples,spatialData,gaAll);
 		updateContextModelsEnabled();
 	}
 

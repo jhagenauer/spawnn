@@ -34,6 +34,9 @@
             </manifest>
           </archive>
           <appendAssemblyId>true</appendAssemblyId>
+	<archiverConfig>
+            <compress>true</compress>
+        </archiverConfig>
         </configuration>
       </plugin>
       <!--<plugin>
@@ -144,11 +147,6 @@
     <dependency>
       <groupId>watershed_plugin</groupId>
       <artifactId>watershed_plugin</artifactId>
-      <version>0.0</version>
-    </dependency>
-    <dependency>
-      <groupId>javastatsoft</groupId>
-      <artifactId>javastatsoft</artifactId>
       <version>0.0</version>
     </dependency>
     <dependency>

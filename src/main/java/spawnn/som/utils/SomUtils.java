@@ -38,9 +38,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
-import javastat.multivariate.PCA;
-import javastat.util.BasicStatistics;
-
 import javax.imageio.ImageIO;
 
 import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
@@ -583,7 +580,7 @@ public class SomUtils {
 
 	public static void printComponentPlane(Grid2D<double[]> grid, int idx, ColorMode colorMode, OutputStream os) {
 		if (grid instanceof Grid2DHex)
-			printImage(getHexMatrixImage( (Grid2DHex<double[]>)grid, 5, colorMode, HEX_NORMAL, idx), os);
+			printImage(getHexMatrixImage((Grid2DHex<double[]>) grid, 5, colorMode, HEX_NORMAL, idx), os);
 		else {
 			double[][] cm = getComponentMatrix(grid, idx);
 			printImage(getRectMatrixImage(cm, 50, colorMode), os);
@@ -712,10 +709,10 @@ public class SomUtils {
 		for (Shape sp : colors.keySet()) {
 			g2.setColor(colors.get(sp));
 			g2.fill(sp);
-			
+
 			Rectangle r = sp.getBounds();
 			g2.setColor(Color.BLACK);
-			g2.drawString(df.format(shapes.get(sp))+"",(int)r.getMinX()+5,(int)r.getCenterY());
+			g2.drawString(df.format(shapes.get(sp)) + "", (int) r.getMinX() + 5, (int) r.getCenterY());
 		}
 
 		// draw outlines
@@ -727,7 +724,7 @@ public class SomUtils {
 		g2.dispose();
 		return bufImg;
 	}
-	
+
 	public static BufferedImage getHexMatrixImage(Grid2DHex<double[]> grid, int scale, ColorMode colorScale, boolean type, int idx) {
 		int xDiff = 12;
 		int yDiff = 14;
@@ -769,7 +766,7 @@ public class SomUtils {
 			AffineTransform at = new AffineTransform();
 			at.scale(scale, scale);
 			Shape sp = at.createTransformedShape(p);
-			shapes.put(sp, grid.getPrototypeAt(gp)[idx] );
+			shapes.put(sp, grid.getPrototypeAt(gp)[idx]);
 		}
 		Map<Shape, Color> colors = ColorBrewerUtil.valuesToColors(shapes, colorScale);
 
@@ -778,10 +775,10 @@ public class SomUtils {
 		for (Shape sp : colors.keySet()) {
 			g2.setColor(colors.get(sp));
 			g2.fill(sp);
-			
+
 			Rectangle r = sp.getBounds();
 			g2.setColor(Color.BLACK);
-			g2.drawString(df.format(shapes.get(sp))+"",(int)r.getMinX()+5,(int)r.getCenterY());
+			g2.drawString(df.format(shapes.get(sp)) + "", (int) r.getMinX() + 5, (int) r.getCenterY());
 		}
 
 		// draw outlines
@@ -1314,7 +1311,7 @@ public class SomUtils {
 
 	public static Grid2D<double[]> loadGrid(InputStream is) {
 		HashMap<GridPos, double[]> map = null;
-		boolean toroid = false, hex=false;
+		boolean toroid = false, hex = false;
 
 		try {
 			SAXBuilder builder = new SAXBuilder();
@@ -1322,9 +1319,9 @@ public class SomUtils {
 			Element root = doc.getRootElement();
 			map = new HashMap<GridPos, double[]>();
 
-			hex = Boolean.parseBoolean( root.getAttribute("hex").getValue() );
-			toroid = Boolean.parseBoolean( root.getAttribute("toroid").getValue() );
-			
+			hex = Boolean.parseBoolean(root.getAttribute("hex").getValue());
+			toroid = Boolean.parseBoolean(root.getAttribute("toroid").getValue());
+
 			for (Object o1 : root.getChild("units").getChildren()) {
 				Element e = (Element) o1;
 
@@ -1345,14 +1342,14 @@ public class SomUtils {
 		} catch (Exception ex) {
 			ex.printStackTrace();
 		}
-		
-		if( hex ) {
-			if( toroid )
+
+		if (hex) {
+			if (toroid)
 				return new Grid2DHexToroid<>(map);
 			else
 				return new Grid2DHex<>(map);
 		} else {
-			if( toroid )
+			if (toroid)
 				return new Grid2DToroid<>(map);
 			else
 				return new Grid2D<>(map);
@@ -1367,23 +1364,18 @@ public class SomUtils {
 		}
 	}
 
-	// for iris this seems to work well
-	public static void initLinear(Grid2D<double[]> grid, List<double[]> samples, boolean scaled) {
-		int vLength = samples.get(0).length;
-
-		double[][] s = new double[vLength][samples.size()];
+	//TODO buggy and not correct, presumably
+	/*public static void initLinear(Grid2D<double[]> grid, List<double[]> samples, boolean scaled) {
+		RealMatrix matrix = new Array2DRowRealMatrix(samples.size(), samples.get(0).length);
 		for (int i = 0; i < samples.size(); i++)
-			for (int j = 0; j < vLength; j++)
-				s[j][i] = samples.get(i)[j];
+			matrix.setRow(i, samples.get(i));
 
-		PCA pca = null;
-		if (scaled) // kohonen talks only of correlation matrix
-			pca = new PCA(0.95, "correlation", s);
-		else
-			pca = new PCA(0.95, "covariance", s);
+		SingularValueDecomposition svd = new SingularValueDecomposition(matrix);
+		// RealMatrix v = svd.getV().multiply( svd.getS().scalarMultiply(1.0/Math.sqrt(samples.size()-1))); // loadings
+		RealMatrix v = svd.getV(); // Eigenvectors
 
-		double[] firstComponent = pca.principalComponents[0];
-		double[] secondComponent = pca.principalComponents[1];
+		double[] firstComponent = v.getRow(0);
+		double[] secondComponent = v.getRow(1);
 
 		// get mean
 		BasicStatistics bs = new BasicStatistics();
@@ -1402,7 +1394,7 @@ public class SomUtils {
 				grid.setPrototypeAt(new GridPos(i, j), d);
 			}
 		}
-	}
+	}*/
 
 	public static <T> void printGeoGrid(int[] ga, Grid<double[]> grid, String fn) {
 		try {

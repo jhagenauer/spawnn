@@ -1,6 +1,5 @@
 package spawnn.gui;
 
-import java.awt.Frame;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
@@ -17,6 +16,7 @@ import javax.swing.JFileChooser;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
+import javax.swing.JTextField;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.DefaultTableModel;
@@ -38,12 +38,10 @@ public class DataPanel extends JPanel implements ActionListener, TableModelListe
 	
 	private static Logger log = Logger.getLogger(DataPanel.class);
 	private static final long serialVersionUID = 1736311423918203189L;
-	/* Training allowed, if one variable at least AND shapefile OR coordinates are marked
-	 * centroid-models allowed only if coordinates are marked */
-	public static final String TRAIN_ALLOWED_PROP ="TRAIN_ALLOWED";
+	public static final String TRAIN_ALLOWED_PROP ="TRAIN_ALLOWED"; //TODO maybe better use training-events instead of property changes
 	static Set<String> coordNames;
 	private boolean useAllState = false;
-		
+			
 	static {
 		coordNames = new HashSet<String>();
 		coordNames.add("x");
@@ -61,23 +59,22 @@ public class DataPanel extends JPanel implements ActionListener, TableModelListe
 	}
 		
 	private DefaultTableModel dataTable;
-	private JButton btnLoadShp, addCCoords, useAll;
+	private JButton btnLoadData, addCCoords, useAll;
 	private BoxPlotPanel boxPlotPnl;
-	private Frame parent;
+	private JTextField infoField;
 	
 	enum norm {none, scale, zScore};
 	final int ATTRIBUTE = 0, NORM = 1, COORDINATE = 2, USE = 3;
 	
 	protected SpatialDataFrame sd = null;
 	
-	DataPanel(Frame parent) {
+	DataPanel() {
 		super();
-		this.parent = parent;
 		
 		setLayout(new MigLayout(""));
 		
-		btnLoadShp = new JButton("Load data...");
-		btnLoadShp.addActionListener(this);
+		btnLoadData = new JButton("Load data...");
+		btnLoadData.addActionListener(this);
 		
 		addCCoords = new JButton("Add centroid coordinates");
 		addCCoords.addActionListener(this);
@@ -119,18 +116,22 @@ public class DataPanel extends JPanel implements ActionListener, TableModelListe
 				
 		boxPlotPnl = new BoxPlotPanel();
 		
-		add(btnLoadShp, "split 4");
+		add(btnLoadData, "split 4");
 		add(addCCoords, "");
 		add(useAll,"wrap");
 		
 		add( new JScrollPane(table), "w 50%, grow" );
-		add( boxPlotPnl, "w 50%, push, grow");
+		add( boxPlotPnl, "w 50%, push, grow,wrap");
+		
+		infoField = new JTextField("No data loaded.");
+		infoField.setEditable(false);
+		add( infoField,"span 2, growx");
 	}
 
 	@Override
 	public void actionPerformed(ActionEvent ae) {
 		
-		if( ae.getSource() == btnLoadShp ) {
+		if( ae.getSource() == btnLoadData ) {
 			JFileChooser fc = new JFileChooser();
 					
 			fc.setFileFilter(FFilter.csvFilter); 
@@ -161,8 +162,8 @@ public class DataPanel extends JPanel implements ActionListener, TableModelListe
 			    		dataTable.addRow( new Object[]{s, norm.zScore, false, false } );
 			    			    
 				boxPlotPnl.setData(sd.names, getNormedSamples() );
-				boxPlotPnl.plot();
-				
+				boxPlotPnl.plot();	
+				infoField.setText(sd.samples.size()+" observations, "+sd.names.size()+" attributes.");
 			}
 		} else if( ae.getSource() == addCCoords ) {
 			
@@ -248,28 +249,28 @@ public class DataPanel extends JPanel implements ActionListener, TableModelListe
 			return null;
 		}
 		
-		List<double[]> l = new ArrayList<double[]>();
+		List<double[]> normedSamples = new ArrayList<double[]>();
 		for( double[] d : sd.samples )
-			l.add( Arrays.copyOf(d, d.length));
+			normedSamples.add( Arrays.copyOf(d, d.length));
 		
 		boolean geoNormed = false;
 		
 		for( int i = 0; i < dataTable.getRowCount(); i++ ) {
 			if( !(Boolean)dataTable.getValueAt(i, COORDINATE) ) {
 				if( dataTable.getValueAt(i, NORM) == norm.scale )
-					DataUtils.normalizeColumn(l, i);
+					DataUtils.normalizeColumn(normedSamples, i);
 				else if( dataTable.getValueAt(i, NORM) == norm.zScore )
-					DataUtils.zScoreColumn(l, i);
+					DataUtils.zScoreColumn(normedSamples, i);
 			} else if( !geoNormed && (Boolean)dataTable.getValueAt(i, COORDINATE) ) { // only once
 				int[] ga = getGA(true);
 				if( dataTable.getValueAt(i, NORM) == norm.scale )
-					DataUtils.normalizeGeoColumns(l, ga );
+					DataUtils.normalizeGeoColumns(normedSamples, ga );
 				else if( dataTable.getValueAt(i, NORM) == norm.zScore  )
-					DataUtils.zScoreGeoColumns(l, ga, new EuclideanDist(ga) );
+					DataUtils.zScoreGeoColumns(normedSamples, ga, new EuclideanDist(ga) );
 				geoNormed = true;	
 			}
 		}		
-		return l;
+		return normedSamples;
 	}
 	
 	public SpatialDataFrame getSpatialData() {

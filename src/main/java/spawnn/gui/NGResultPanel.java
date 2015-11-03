@@ -91,7 +91,7 @@ public class NGResultPanel extends ResultPanel<double[]> implements ActionListen
 
 	private Color selectedColor = Color.RED;
 
-	public NGResultPanel(Frame parent, SpatialDataFrame orig, List<double[]> samples, Map<double[], Set<double[]>> bmus, Graph<double[], double[]> g, Dist<double[]> fDist, Dist<double[]> gDist, int[] ga) {
+	public NGResultPanel(Frame parent, SpatialDataFrame orig, List<double[]> samples, Map<double[], Set<double[]>> bmus, Graph<double[], double[]> g, Dist<double[]> fDist, Dist<double[]> gDist, int[] fa, int[] ga, boolean wmc) {
 		super();
 		
 		this.parent = parent;
@@ -118,8 +118,23 @@ public class NGResultPanel extends ResultPanel<double[]> implements ActionListen
 			}                                                                            
 		});  
 		
-		for (String s : orig.names)
+		Set<Integer> fas = new HashSet<Integer>();
+		for( int i : fa )
+			fas.add(i);
+		for( int i = 0; i < orig.names.size(); i++ ) {
+			String s = orig.names.get(i);
+			if( fas.contains(i))
+				s+="*";
 			vertexComboBox.addItem(s);
+		}
+		if( wmc )
+			for( int i = 0; i < orig.names.size(); i++ ) {
+				String s = orig.names.get(i);
+				if( fas.contains(i))
+					s+="*";
+				s+= " (ctx)";
+				vertexComboBox.addItem(s);
+			}
 		vertexComboBox.addActionListener(this);
 		
 		edgeComboBox = new JComboBox<String>();

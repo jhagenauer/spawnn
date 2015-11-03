@@ -107,7 +107,10 @@ public class LLMNG extends NG implements SupervisedNet {
 		
 		for( int i = 0; i < m.length; i++ ) // row, outputs
 			for( int j = 0; j < m[i].length; j++ ) // column, inputs
-				r[i] += m[i][j] * (x[fa[j]] - neuron[fa[j]] );
+				if( ignSupport )
+					r[i] += m[i][j] * x[fa[j]];
+				else
+					r[i] += m[i][j] * (x[fa[j]] - neuron[fa[j]] );
 				
 		// add output
 		for( int i = 0; i < r.length; i++ )
@@ -117,6 +120,7 @@ public class LLMNG extends NG implements SupervisedNet {
 	}
 	
 	public mode aMode = mode.fritzke;
+	public boolean ignSupport = false;
 		
 	Map<double[],LinkedList<double[]>> lastX = new HashMap<double[],LinkedList<double[]>>();
 	Map<double[],LinkedList<double[]>> lastDesired = new HashMap<double[],LinkedList<double[]>>();
@@ -124,7 +128,6 @@ public class LLMNG extends NG implements SupervisedNet {
 	public void train( double t, double[] x, double[] desired ) {
 		sortNeurons(x);
 				
-		Dist<double[]> fDist = new EuclideanDist(fa);
 		double l = neighborhoodRange.getValue(t);
 		double e = adaptationRate.getValue(t);
 		double l2 = neighborhoodRange2.getValue(t);
@@ -132,8 +135,6 @@ public class LLMNG extends NG implements SupervisedNet {
 
 		double[] lnSys = new double[fa.length+1];
 		lnSys[lnSys.length-1] = desired[0]; 
-		double[] dists = new double[fa.length];
-		double[] norms = new double[fa.length];
 		double det = 1;
 		
 		for( int k = 0; k < getNeurons().size(); k++ ) {
@@ -165,31 +166,12 @@ public class LLMNG extends NG implements SupervisedNet {
 						}
 						LUDecomposition decomp = new LUDecomposition(coefficients);
 						lnSys = decomp.getSolver().solve(constants).toArray();	
-						//det = decomp.getDeterminant();
 						
 						RealMatrix m1 = new Array2DRowRealMatrix(fa.length,fa.length);
 						for( int i = 0; i < fa.length; i++ )
 							for( int j = 0; j < fa.length; j++ )
 								m1.setEntry(i, j, lastX.get(w).get(i)[fa[j]]-x[fa[j]]);							
-						det = new LUDecomposition(m1).getDeterminant();
-						
-						for( int i = 0; i < fa.length; i++ ) {
-							dists[i] = fDist.dist(x, lastX.get(w).get(i));
-							norms[i] = m1.getRowVector(i).getNorm();
-						}
-						
-						RealVector v1 = m1.getRowVector(0);
-						RealVector v2 = m1.getRowVector(1);
-						double arc = Math.acos(v1.dotProduct(v2)/(v1.getNorm()*v2.getNorm()));
-						
-						// normal det 0.24896901326536755,0.9819613679209513
-						// det = 1; // 6.741588066956663,0.8038982209764507
-						// det = arc; // 1.7790935997412634,0.819767292098227 arc ist kein dist-proxy, sonst wäre das besser
-						det = Math.PI/2.0 - Math.abs(arc - Math.PI/2.0); // 0.22449439432613927,0.9855264323805992
-						// det = fDist.dist(lastX.get(w).get(0), lastX.get(w).get(1)); // 1.4048465529223269,0.8086059525204171
-						// det = v1.getNorm()+v2.getNorm(); // 1.3054345404720193,0.8143039678266933
-						// det = v1.getNorm()*v2.getNorm(); // 1.34683655366302,0.8186413062383862
-						
+						det = new LUDecomposition(m1).getDeterminant();					
 					} catch( SingularMatrixException ex ) { 
 						//log.debug(ex.getMessage());
 					}
@@ -218,9 +200,7 @@ public class LLMNG extends NG implements SupervisedNet {
 				else if( aMode == mode.martinetz)
 					o[i] += adapt2 * (desired[i] - r[i]);
 				else { // hagenauer
-					//o[i] += adapt2 * (d - o[i]);
 					o[i] += adapt2 * (d - o[i]);
-					//o[i] += adapt2 * (desired[i] - o[i]);
 				}
 			}
 							
@@ -229,14 +209,13 @@ public class LLMNG extends NG implements SupervisedNet {
 			for( int i = 0; i < m.length; i++ )  // row
 				for( int j = 0; j < m[i].length; j++ ) // column, nr of attributes
 					if( aMode == mode.hagenauer ) {
-						//m[i][j] += adapt2 * (desired[i] - r[i]) * (x[fa[j]] - w[fa[j]]);  
-						//m[i][j] += adapt2 * (lnSys[j] - m[i][j]) * Math.abs(det);
-						m[i][j] += adapt2 * (lnSys[j] - m[i][j]) * Math.abs(det);// * Math.abs(x[fa[j]] - w[fa[j]]);
-						//m[i][j] += adapt2 * (lnSys[j] - m[i][j]) * norms[j] * Math.abs(x[fa[j]] - w[fa[j]]);
-						//m[i][j] += adapt2 * (lnSys[j] - m[i][j]) * dists[j] * Math.abs(x[fa[j]] - w[fa[j]]);
-							
-					} else 
-						m[i][j] += adapt2 * (desired[i] - r[i]) * (x[fa[j]] - w[fa[j]]); // outer product				
+						m[i][j] += adapt2 * (lnSys[j] - m[i][j]) * Math.abs(det);							
+					} else {
+						if( ignSupport )
+							m[i][j] += adapt2 * (desired[i] - r[i]) * x[fa[j]]; // outer product
+						else
+							m[i][j] += adapt2 * (desired[i] - r[i]) * (x[fa[j]] - w[fa[j]]); // outer product
+					}
 		}
 	}
 	
@@ -249,7 +228,7 @@ public class LLMNG extends NG implements SupervisedNet {
 	public static void main(String[] args) {
 		final Random r = new Random();
 				
-		final List<double[]> samples = new ArrayList<double[]>();
+		/*final List<double[]> samples = new ArrayList<double[]>();
 		final List<double[]> desired = new ArrayList<double[]>();
 		while( samples.size() < 100000 ) {
 			
@@ -258,15 +237,15 @@ public class LLMNG extends NG implements SupervisedNet {
 			double noise = r.nextDouble()*0.2;
 			
 			//double y = -2*x1 + 1 + noise;
-			//double y = -2*Math.pow(x1,2) + 1 + noise;
+			double y = -2*Math.pow(x1,2) + 1 + noise;
 			//double y = 3*x1 - 2*x2 - 3 + noise;
-			double y = 2*Math.pow(x2,3)+4*Math.pow(x1,2) -5 + noise;
+			//double y = 2*Math.pow(x2,3)+4*Math.pow(x1,2) -5 + noise;
 			
-			samples.add( new double[]{ x1, x2 } );
+			samples.add( new double[]{ x1 } );
 			desired.add( new double[]{y} );
 		}		
-		final int[] fa = new int[] { 0, 1 };
-		DataUtils.zScoreColumns(samples, fa);
+		final int[] fa = new int[] { 0 };
+		DataUtils.zScoreColumns(samples, fa);*/
 		
 		/*DataFrame df = DataUtils.readDataFrameFromCSV(new File("output/houseprice.csv"), new int[]{}, true);
 		final List<double[]> samples = new ArrayList<double[]>();
@@ -277,6 +256,16 @@ public class LLMNG extends NG implements SupervisedNet {
 		}		
 		final int[] fa = new int[] { 0 };
 		DataUtils.zScoreColumns(samples, fa);*/
+		
+		DataFrame df = DataUtils.readDataFrameFromCSV(new File("output/simulatedRegression.csv"), new int[]{}, true);
+		final List<double[]> samples = new ArrayList<double[]>();
+		final List<double[]> desired = new ArrayList<double[]>();
+		for( double[] d :df.samples ) {			
+			samples.add( new double[]{ d[0] } );
+			desired.add( new double[]{ d[1] } );
+		}		
+		final int[] fa = new int[] { 0 };
+		DataUtils.zScoreColumns(samples, fa);
 		
 		final Dist<double[]> fDist = new EuclideanDist(fa);
 				

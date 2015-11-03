@@ -169,7 +169,7 @@ public class SpaceTimeTest2 {
 		BmuGetter<double[]> tBg;
 		{
 			Grid2D<double[]> grid = new Grid2DHex<double[]>(TIME_DIM_X, TIME_DIM_Y );
-			SomUtils.initLinear(grid, samples, true);
+			SomUtils.initRandom(grid, samples);
 						
 			// TODO: Wichtig: Zeit ist unidirektional, dass wird hier nicht berücksichtigt
 			BmuGetter<double[]> bmuGetter = new KangasBmuGetter<double[]>( timeDist, fDist, TIME_RADIUS );

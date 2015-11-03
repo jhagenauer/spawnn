@@ -49,7 +49,7 @@ public class BasicVsBatch {
 		double avgTE = 0;
 		for( int i = 0; i < 100; i++ ) {
 			Grid2DHex<double[]> grid = new Grid2DHex<double[]>(X_DIM, Y_DIM );
-			SomUtils.initLinear(grid, samples, true);
+			SomUtils.initRandom(grid, samples);
 				
 			BmuGetter<double[]> bmuGetter = new DefaultBmuGetter<double[]>(eDist);
 			
@@ -69,7 +69,7 @@ public class BasicVsBatch {
 		avgTE = 0;
 		for( int i = 0; i < 100; i++ ) {
 			Grid2DHex<double[]> grid = new Grid2DHex<double[]>(X_DIM, Y_DIM );
-			SomUtils.initLinear(grid, samples, true);
+			SomUtils.initRandom(grid, samples);
 				
 			BmuGetter<double[]> bmuGetter = new DefaultBmuGetter<double[]>(eDist);
 			

@@ -37,7 +37,7 @@ public class DistMatrixDialog extends JDialog implements ActionListener {
 	JPanel cards;
 	JComboBox cb, adjCb;
 	JTextField power, knns, selFile;
-	JCheckBox rowNorm;
+	JCheckBox rowNorm, incIdent;
 	File file = null;
 
 	public static enum DistMatType {InvDistance, kNN, Adjacency};
@@ -100,10 +100,15 @@ public class DistMatrixDialog extends JDialog implements ActionListener {
 			cards.add(jp_3, Card.three.toString());
 		
 		add(cards, "span 3, wrap");
-		
+
+		add( new JLabel("Include identity:"));
+		incIdent = new JCheckBox();
+		incIdent.setEnabled(true);
+		add( incIdent, "span 2, wrap" );
+				
 		add( new JLabel("Row-normalize:"));
 		rowNorm = new JCheckBox();
-		rowNorm.setEnabled(true);
+		rowNorm.setSelected(true);
 		add( rowNorm, "span 2, wrap" );
 		
 		create = new JButton("Create");
@@ -147,7 +152,7 @@ public class DistMatrixDialog extends JDialog implements ActionListener {
 			setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 			
 			if( cb.getSelectedItem() == DistMatType.Adjacency ) {
-				dMap = GeoUtils.listsToWeights( GeoUtils.getContiguityMap(samples, sdf.geoms, adjCb.getSelectedItem() == AdjMode.Rook ));
+				dMap = GeoUtils.listsToWeights( GeoUtils.getContiguityMap(samples, sdf.geoms, adjCb.getSelectedItem() == AdjMode.Rook, incIdent.isSelected() ));
 			} else if( cb.getSelectedItem() == DistMatType.InvDistance ) {
 				dMap = GeoUtils.getInverseDistanceMatrix(samples, dist, Double.parseDouble(power.getText() ) );
 			} else { // knn

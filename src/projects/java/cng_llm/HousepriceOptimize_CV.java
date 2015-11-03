@@ -108,9 +108,9 @@ public class HousepriceOptimize_CV {
 		for( final double lInit : new double[]{ nrNeurons/2 })
 		for( final double lFinal : new double[]{ 0.1 })	
 		for( final double lr1Init : new double[]{ 0.5 })
-		for( final double lr1Final : new double[]{ 0.001 })
+		for( final double lr1Final : new double[]{ 0.01 })
 		for( final double lr2Init : new double[]{ 0.1 })
-		for( final double lr2Final : new double[]{ 0.001 })
+		for( final double lr2Final : new double[]{ 0.01 })
 		for( final LLMNG.mode mode : new LLMNG.mode[]{ LLMNG.mode.fritzke } )
 		for (int l = 1; l <= nrNeurons; l++ ) {
 			final int L = l;

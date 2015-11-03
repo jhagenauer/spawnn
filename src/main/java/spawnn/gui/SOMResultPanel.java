@@ -10,6 +10,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -96,7 +97,7 @@ public class SOMResultPanel extends ResultPanel<GridPos> implements ActionListen
 
 	private Frame parent;
 
-	public SOMResultPanel(Frame parent, SpatialDataFrame orig, List<double[]> samples, Map<GridPos, Set<double[]>> bmus, Grid2D<double[]> grid, Dist<double[]> fDist, Dist<double[]> gDist, int[] ga) {
+	public SOMResultPanel(Frame parent, SpatialDataFrame orig, List<double[]> samples, Map<GridPos, Set<double[]>> bmus, Grid2D<double[]> grid, Dist<double[]> fDist, Dist<double[]> gDist, int[] fa, int[] ga, boolean wmc) {
 		super();
 
 		this.pos = new ArrayList<GridPos>(grid.getPositions()); // fixed order for indexing/coloring
@@ -122,8 +123,23 @@ public class SOMResultPanel extends ResultPanel<GridPos> implements ActionListen
 			}                                                                            
 		});     
 		
-		for (String s : orig.names)
+		Set<Integer> fas = new HashSet<Integer>();
+		for( int i : fa )
+			fas.add(i);
+		for( int i = 0; i < orig.names.size(); i++ ) {
+			String s = orig.names.get(i);
+			if( fas.contains(i))
+				s+="*";
 			gridComboBox.addItem(s);
+		}
+		if( wmc )
+			for( int i = 0; i < orig.names.size(); i++ ) {
+				String s = orig.names.get(i);
+				if( fas.contains(i))
+					s+="*";
+				s+= " (ctx)";
+				gridComboBox.addItem(s);
+			}
 		gridComboBox.addActionListener(this);
 
 		colorComboBox = new JComboBox();

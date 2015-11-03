@@ -122,7 +122,7 @@ public class OptimizeHousingLLMCNG {
 		// PCA
 		int nrComponents = 4;
 		List<double[]> ns = DataUtils.removeColumns(samples, ga);
-		ns = DataUtils.reduceDimensionByPCA(ns, nrComponents, false);
+		ns = DataUtils.reduceDimensionByPCA(ns, nrComponents);
 		for (int k = 0; k < ns.size(); k++) {
 			double[] d = ns.get(k);
 			double[] nd = new double[ga.length + d.length];

@@ -25,8 +25,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import javastat.multivariate.PCA;
-
+import org.apache.commons.math3.linear.Array2DRowRealMatrix;
+import org.apache.commons.math3.linear.RealMatrix;
+import org.apache.commons.math3.linear.SingularValueDecomposition;
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 import org.apache.log4j.Logger;
 import org.geotools.data.DataStore;
@@ -1244,31 +1245,23 @@ public class DataUtils {
 		return ssq;
 	}
 	
-	public static List<double[]> reduceDimensionByPCA(List<double[]> samples, int nrComponents, boolean cor ) {
-		int length = samples.get(0).length;
-		double[][] s = new double[length][samples.size()];
-		for (int i = 0; i < samples.size(); i++)
-			for (int j = 0; j < length; j++)
-				s[j][i] = samples.get(i)[j];
-
-		PCA pca = null;
-		if (cor) // kohonen talks only of correlation matrix
-			pca = new PCA(0.95, "correlation", s);
-		else
-			pca = new PCA(0.95, "covariance", s);
-		log.debug("Nr of pcs: "+pca.principalComponents.length);
-		/*for( double d : pca.variance )
-			log.debug("variance: "+d);*/
+	/* 
+	 * If one wants to perform PCA on a correlation matrix (instead of a covariance matrix), then columns of X should not only be centered, but standardized as well, i.e. divided by their standard deviations.
+	 * TODO signs are weird... correct?!
+	 */
+	public static List<double[]> reduceDimensionByPCA(List<double[]> samples, int nrComponents ) {
+		RealMatrix matrix = new Array2DRowRealMatrix(samples.size(),samples.get(0).length );
+		for( int i = 0; i < samples.size(); i++ )
+			matrix.setRow(i, samples.get(i));
 		
-		List<double[]> nSamples = new ArrayList<double[]>();
-		for( double[] d : samples ) {
-			double[] nd = new double[nrComponents];
-			for( int i = 0; i < nrComponents; i++ ) {
-				for( int k = 0; k < length; k++ )
-				nd[i] += d[k] * pca.principalComponents[i][k];
-			}
-			nSamples.add(nd);
+		SingularValueDecomposition svd = new SingularValueDecomposition(matrix);
+		RealMatrix v = svd.getU().multiply(svd.getS());
+		
+		List<double[]> ns = new ArrayList<double[]>();
+		for( int i = 0; i < v.getRowDimension(); i++ ) {
+			double[] d = Arrays.copyOf(v.getRow(i),nrComponents);
+			ns.add(d);
 		}
-		return nSamples;
+		return ns;
 	}
 }

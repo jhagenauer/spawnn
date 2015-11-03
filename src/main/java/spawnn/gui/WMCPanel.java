@@ -21,8 +21,7 @@ import spawnn.utils.SpatialDataFrame;
 public class WMCPanel extends JPanel implements ActionListener {
 
 	private static final long serialVersionUID = 1671229973714048612L;
-	private JTextField alphaField;
-	private JTextField betaField;
+	private JTextField alphaField,betaField, infoField;
 	private JButton selDM, createDM;
 	
 	private Frame parent;
@@ -55,7 +54,11 @@ public class WMCPanel extends JPanel implements ActionListener {
 		
 		createDM = new JButton("Create...");
 		createDM.addActionListener(this);
-		add(createDM, "skip");	
+		add(createDM, "skip, wrap");
+		
+		infoField = new JTextField("No dist. matrix loaded yet.");
+		infoField.setEditable(false);
+		add(infoField, "span 4, growx");
 	}
 	
 	Map<double[],Map<double[],Double>> dMap = null;
@@ -75,11 +78,17 @@ public class WMCPanel extends JPanel implements ActionListener {
 			      }
 			}
 		} else if( ae.getSource() == createDM ) {
-			DistMatrixDialog dmd = new DistMatrixDialog(parent, "Create dist. matrix", true, normedSamples, sdf, ga);
+			DistMatrixDialog dmd = new DistMatrixDialog(parent, "Create dist. matrix", true, normedSamples, sdf, gaAll);
 			if( dmd.okPressed )
 				dMap = dmd.getDistanceMap();
 			else
 				dMap = null;
+		}
+		if( dMap != null ) {
+			int entries = 0;
+			for( Map<double[], Double> s : dMap.values() )
+				entries += s.size();
+			infoField.setText(entries+" entries.");
 		}
 	}
 				
@@ -89,12 +98,12 @@ public class WMCPanel extends JPanel implements ActionListener {
 	
 	private List<double[]> normedSamples;
 	private SpatialDataFrame sdf;
-	private int[] ga;
+	private int[] gaAll;
 	
-	public void setTrainingData( List<double[]> normedSamples, SpatialDataFrame spatialData, int[] ga) {
+	public void setTrainingData( List<double[]> normedSamples, SpatialDataFrame spatialData, int[] gaAll) {
 		this.normedSamples = normedSamples;
 		this.sdf = spatialData;
-		this.ga = ga;
+		this.gaAll = gaAll;
 	}
 	
 	public double getAlpha() {

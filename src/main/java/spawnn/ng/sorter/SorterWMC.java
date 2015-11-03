@@ -67,7 +67,7 @@ public class SorterWMC extends SorterContext {
 		Map<double[],Double> nbs = weightMatrix.get(x);
 		double[] context = new double[x.length];
 		double sumWeights = 0;
-		
+				
 		for( Entry<double[],Double> nb : nbs.entrySet() ) {
 			double wij = nb.getValue(); 
 			double[] bmuNb = bmuHist.get(nb.getKey());
@@ -77,10 +77,11 @@ public class SorterWMC extends SorterContext {
 			
 			sumWeights += wij;
 		}
-				
+						
 		// normalize
-		for( int k = 0; k < x.length; k++ )
-			context[k] /= sumWeights;
+		if( sumWeights > 0.0 ) 
+			for( int k = 0; k < x.length; k++ )
+				context[k] /= sumWeights;
 					
 		return context;	
 	}

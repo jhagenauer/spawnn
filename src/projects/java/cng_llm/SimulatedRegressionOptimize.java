@@ -1,10 +1,10 @@
 package cng_llm;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
-import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -35,6 +35,8 @@ import spawnn.som.decay.DecayFunction;
 import spawnn.som.decay.LinearDecay;
 import spawnn.som.decay.PowerDecay;
 import spawnn.utils.ClusterValidation;
+import spawnn.utils.DataFrame;
+import spawnn.utils.DataUtils;
 
 public class SimulatedRegressionOptimize {
 
@@ -45,27 +47,21 @@ public class SimulatedRegressionOptimize {
 	public static void main(String[] args) {
 
 		final Random r = new Random();
-		final DecimalFormat df = new DecimalFormat("00");
 		
 		boolean firstWrite = true;
 		
+		DataFrame df = DataUtils.readDataFrameFromCSV(new File("output/simulatedRegression.csv"), new int[]{}, true);
 		final List<double[]> samples = new ArrayList<double[]>();
 		final List<double[]> desired = new ArrayList<double[]>();
 		final Map<Integer,Set<double[]>> ref = new HashMap<Integer,Set<double[]>>();
-		while( samples.size() < 10000 ) {
-			double lon = r.nextDouble();
-			double x = lon;
-			int c = (int)Math.floor( x*10 ); // class
-			double coef = 2 * c/10.0;
-			double y = x * coef;
-			
-			double[] d = new double[]{x};
-			samples.add( d );
-			desired.add( new double[]{y} );
-			
-			if( !ref.containsKey(c) )
-				ref.put(c,new HashSet<double[]>());
-			ref.get(c).add(d);
+		for( double[] d : df.samples ) {
+			double[] s = new double[]{ d[0] };
+			samples.add( s );
+			desired.add( new double[]{ d[1] } );
+			int cl = (int)d[2];
+			if( !ref.containsKey(cl) )
+				ref.put( cl, new HashSet<double[]>() );
+			ref.get(cl).add(s);
 		}
 		
 		final int ta = -1;
@@ -74,10 +70,10 @@ public class SimulatedRegressionOptimize {
 		
 		for( final int T_MAX : new int[]{ 40000 } )
 		for( final method m : new method[]{ method.error /*, method.attr*/ } )	
-		for( final LLMNG.mode mode : new LLMNG.mode[]{ LLMNG.mode.hagenauer } )
+		for( final LLMNG.mode mode : new LLMNG.mode[]{ LLMNG.mode.fritzke } )
 		for( final double lInit : new double[]{ 2 })
-		for( final int nrNeurons : new int[]{ 10 } )
-		for( final double lFinal : new double[]{ 0.1 })	
+		for( final int nrNeurons : new int[]{ 6 } )
+		for( final double lFinal : new double[]{ 0.1, 0.01 })	
 		for( final boolean lr1Power : new boolean[]{ true, false } )
 		for( final double lr1Init : new double[]{ 1.0, 0.8, 0.6, 0.4, 0.2, 0.1 })
 		for( final double lr1Final : new double[]{ 0.1, 0.01 })
@@ -152,25 +148,10 @@ public class SimulatedRegressionOptimize {
 							residuals.put(samples.get(i), response.get(i)[0] - desired.get(i)[0] );
 												
 						Map<double[],Set<double[]>> mapping = NGUtils.getBmuMapping(samples, neurons, sorter);
-												
-						double coefError = 0;
-						double xError = 0;
-						for( double[] n : neurons ) {
-							double x = n[fa[0]];
-							double coef = ng.matrix.get(n)[0][0];
-							
-							double desiredCoef = 2 * Math.floor( x*10 )/10.0;
-							coefError += Math.pow( coef - desiredCoef, 2);
-							
-							double desiredX = Math.floor(x)+0.05;						
-							xError += Math.pow( x - desiredX, 2);
-						}
-																		
+																
 						return new double[] {
 							Math.sqrt(mse),
 							ClusterValidation.getNormalizedMutualInformation(ref.values(), mapping.values()),
-							coefError,
-							xError
 						};
 					}
 				}));
@@ -201,7 +182,7 @@ public class SimulatedRegressionOptimize {
 				String fn = "output/resultSynthetic.csv";
 				if( firstWrite ) {
 					firstWrite = false;
-					Files.write(Paths.get(fn), ("method,mode,t_max,nrNeurons,lInit,lFinal,lr1Power,lr1Init,lr1Final,lr2Power,lr2Init,lr2Final,rmse,nmi,coefError,xError\n").getBytes());
+					Files.write(Paths.get(fn), ("method,mode,t_max,nrNeurons,lInit,lFinal,lr1Power,lr1Init,lr1Final,lr2Power,lr2Init,lr2Final,rmse,nmi\n").getBytes());
 				}
 				String s = m+","+mode+","+T_MAX+","+nrNeurons+","+lInit+","+lFinal+","+lr1Power+","+lr1Init+","+lr1Final+","+lr2Power+","+lr2Init+","+lr2Final+"";
 				for (int i = 0; i < ds.length; i++)

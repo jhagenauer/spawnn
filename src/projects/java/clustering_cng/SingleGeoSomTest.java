@@ -38,7 +38,7 @@ public class SingleGeoSomTest {
 		final Dist<double[]> fDist = new EuclideanDist( fa);
 		
 		Grid2DHex<double[]> grid = new Grid2DHex<double[]>(12, 8 );
-		SomUtils.initLinear(grid, samples, true);
+		SomUtils.initRandom(grid, samples);
 			
 		BmuGetter<double[]> bmuGetter = new KangasBmuGetter<double[]>(gDist, fDist, 2);
 				
