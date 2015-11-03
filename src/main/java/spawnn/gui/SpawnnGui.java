@@ -6,6 +6,7 @@ import java.awt.event.ActionListener;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.util.List;
+import java.util.Map;
 
 import javax.swing.JFrame;
 import javax.swing.JMenu;
@@ -55,7 +56,7 @@ public class SpawnnGui extends JFrame implements PropertyChangeListener, ActionL
 
 		// Tabs
 		tp = new JTabbedPane();
-		dataPanel = new DataPanel();
+		dataPanel = new DataPanel(this);
 		dataPanel.addPropertyChangeListener(this);
 
 		tp.addTab("Data", dataPanel);
@@ -110,7 +111,9 @@ public class SpawnnGui extends JFrame implements PropertyChangeListener, ActionL
 		if( ((JTabbedPane)ce.getSource()).getSelectedComponent() == annPanel ) { // submit data for training
 			int[] gaUsed = dataPanel.getGA(false);
 			int[] gaAll = dataPanel.getGA(true);
-			annPanel.setTrainingData(dataPanel.getNormedSamples(), dataPanel.getSpatialData(), dataPanel.getFA(), gaUsed, gaAll);
+			List<double[]> normedSamples = dataPanel.getNormedSamples();
+			Map<double[],Map<double[],Double>> dMap = dataPanel.getDistanceMap();
+			annPanel.setTrainingData( normedSamples, dataPanel.getSpatialData(), dataPanel.getFA(), gaUsed, gaAll, dMap);
 		}
 	}
 

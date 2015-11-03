@@ -6,6 +6,8 @@ import java.awt.Frame;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -32,8 +34,8 @@ import com.vividsolutions.jts.geom.Polygon;
 public class DistMatrixDialog extends JDialog implements ActionListener {
 
 	private static final long serialVersionUID = 2783445681242978907L;
-	JButton ok, cancel, save, create;
 	
+	JButton ok, cancel, save, create, load;
 	JPanel cards;
 	JComboBox cb, adjCb;
 	JTextField power, knns, selFile;
@@ -50,12 +52,9 @@ public class DistMatrixDialog extends JDialog implements ActionListener {
 	private SpatialDataFrame sdf;
 	private List<double[]> samples;
 	
-	private Frame parent;
-	
 	public DistMatrixDialog(Frame parent, String string, boolean b, List<double[]> samples, SpatialDataFrame sd, int[] ga ) {
 		super(parent, string, b);
 		
-		this.parent = parent;
 		this.dist = new EuclideanDist(ga);
 		this.sdf = sd;
 		this.samples = samples;
@@ -104,21 +103,25 @@ public class DistMatrixDialog extends JDialog implements ActionListener {
 		add( new JLabel("Include identity:"));
 		incIdent = new JCheckBox();
 		incIdent.setEnabled(true);
-		add( incIdent, "span 2, wrap" );
+		add( incIdent, "wrap" );
 				
 		add( new JLabel("Row-normalize:"));
 		rowNorm = new JCheckBox();
 		rowNorm.setSelected(true);
-		add( rowNorm, "span 2, wrap" );
+		add( rowNorm, "wrap" );
 		
 		create = new JButton("Create");
 		create.addActionListener(this);
-		add(create, "");
+		add(create, "span 2, split 3");
 						
 		save = new JButton("Save...");
 		save.addActionListener(this);
 		save.setEnabled(false);
-		add(save, "wrap");
+		add(save, "");
+		
+		load = new JButton("Load...");
+		load.addActionListener(this);
+		add(load, "wrap");
 
 		ok = new JButton("OK");
 		ok.setEnabled(false);
@@ -169,10 +172,28 @@ public class DistMatrixDialog extends JDialog implements ActionListener {
 			JFileChooser fc = new JFileChooser();
 			if( fc.showSaveDialog(this) == JFileChooser.APPROVE_OPTION )
 				  GeoUtils.writeDistMatrixKeyValue(dMap, samples, fc.getSelectedFile() );
+		} else if( e.getSource() == load ) { 
+			JFileChooser fc = new JFileChooser();
+			if( fc.showOpenDialog(this) == JFileChooser.APPROVE_OPTION ) {
+				try {
+					setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+					dMap = GeoUtils.readDistMatrixKeyValue(samples, fc.getSelectedFile() );
+					setCursor(Cursor.getDefaultCursor());
+				} catch (NumberFormatException e1) {
+					e1.printStackTrace();
+				} catch (FileNotFoundException e1) {
+					e1.printStackTrace();
+				} catch (IOException e1) {
+					e1.printStackTrace();
+				}
+				save.setEnabled(true);
+				ok.setEnabled(true);
+			}
 		} else if( e.getSource() == ok ){
 			okPressed = true;
 			dispose(); 
-		} else { // cancel
+		} else if( e.getSource() == cancel ){ // cancel
+			dMap = null;
 			dispose();
 		}
 	}

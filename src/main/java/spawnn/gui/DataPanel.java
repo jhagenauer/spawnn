@@ -1,5 +1,6 @@
 package spawnn.gui;
 
+import java.awt.Frame;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
@@ -7,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import javax.swing.DefaultCellEditor;
@@ -59,17 +61,21 @@ public class DataPanel extends JPanel implements ActionListener, TableModelListe
 	}
 		
 	private DefaultTableModel dataTable;
-	private JButton btnLoadData, addCCoords, useAll;
+	private JButton btnLoadData, addCCoords, useAll, btnDistMat;
 	private BoxPlotPanel boxPlotPnl;
 	private JTextField infoField;
 	
 	enum norm {none, scale, zScore};
 	final int ATTRIBUTE = 0, NORM = 1, COORDINATE = 2, USE = 3;
 	
-	protected SpatialDataFrame sd = null;
+	protected SpatialDataFrame sdf = null;
+	protected Map<double[], Map<double[], Double>> dMap = null;
 	
-	DataPanel() {
+	private Frame parent;
+	
+	DataPanel(Frame parent) {
 		super();
+		this.parent = parent;
 		
 		setLayout(new MigLayout(""));
 		
@@ -83,6 +89,10 @@ public class DataPanel extends JPanel implements ActionListener, TableModelListe
 		useAll = new JButton("Use all");
 		useAll.addActionListener(this);
 		useAll.setEnabled(false);
+		
+		btnDistMat = new JButton("Dist. matrix...");
+		btnDistMat.addActionListener(this);
+		btnDistMat.setEnabled(false);
 						
 		dataTable = new DefaultTableModel( new String[]{"Attribute","Normalize","Coordinate","Use"}, 0 ) {
 			private static final long serialVersionUID = -78686917074445663L;
@@ -116,9 +126,10 @@ public class DataPanel extends JPanel implements ActionListener, TableModelListe
 				
 		boxPlotPnl = new BoxPlotPanel();
 		
-		add(btnLoadData, "split 4");
+		add(btnLoadData, "split 5");
 		add(addCCoords, "");
-		add(useAll,"wrap");
+		add(useAll,"");
+		add(btnDistMat,"wrap");
 		
 		add( new JScrollPane(table), "w 50%, grow" );
 		add( boxPlotPnl, "w 50%, push, grow,wrap");
@@ -142,46 +153,47 @@ public class DataPanel extends JPanel implements ActionListener, TableModelListe
 				File fn = fc.getSelectedFile(); 
 				
 				if( fc.getFileFilter() == FFilter.shpFilter ) {
-			      sd = DataUtils.readSpatialDataFrameFromShapefile(fn, false);     
+			      sdf = DataUtils.readSpatialDataFrameFromShapefile(fn, false);     
 			      addCCoords.setEnabled(true);
 				} else if( fc.getFileFilter() == FFilter.csvFilter ) {				
 					DataFrame df = DataUtils.readDataFrameFromCSV(fn, new int[]{}, true ); 
-					sd = new SpatialDataFrame();				
-					sd.samples = df.samples;
-					sd.names = df.names;
-					sd.bindings = df.bindings;
+					sdf = new SpatialDataFrame();				
+					sdf.samples = df.samples;
+					sdf.names = df.names;
+					sdf.bindings = df.bindings;
 				}
 				useAll.setEnabled(true);
 				
 				dataTable.setRowCount(0);
 								
-				for( String s : sd.names )
+				for( String s : sdf.names )
 			    	if( coordNames.contains(s) )
 			    		dataTable.addRow( new Object[]{s, norm.none, true, false } );
 			    	else
 			    		dataTable.addRow( new Object[]{s, norm.zScore, false, false } );
 			    			    
-				boxPlotPnl.setData(sd.names, getNormedSamples() );
+				boxPlotPnl.setData(sdf.names, getNormedSamples() );
 				boxPlotPnl.plot();	
-				infoField.setText(sd.samples.size()+" observations, "+sd.names.size()+" attributes.");
+				infoField.setText(sdf.samples.size()+" observations, "+sdf.names.size()+" attributes.");
+				btnDistMat.setEnabled(true);
 			}
 		} else if( ae.getSource() == addCCoords ) {
 			
 			List<double[]> ns = new ArrayList<double[]>();
-			for( int i = 0; i < sd.samples.size(); i++ ) {
-			    double[] a = sd.samples.get(i); 
+			for( int i = 0; i < sdf.samples.size(); i++ ) {
+			    double[] a = sdf.samples.get(i); 
 				double[] b = Arrays.copyOf(a, a.length+2);
-				b[a.length] = sd.geoms.get(i).getCentroid().getX();
-				b[a.length+1] = sd.geoms.get(i).getCentroid().getY();
+				b[a.length] = sdf.geoms.get(i).getCentroid().getX();
+				b[a.length+1] = sdf.geoms.get(i).getCentroid().getY();
 				ns.add(b);
 			}
-			sd.samples = ns;
+			sdf.samples = ns;
 			
-			sd.names.add("x");
-			sd.names.add("y");
+			sdf.names.add("x");
+			sdf.names.add("y");
 			
-			sd.bindings.add(SpatialDataFrame.binding.Double);
-			sd.bindings.add(SpatialDataFrame.binding.Double);
+			sdf.bindings.add(SpatialDataFrame.binding.Double);
+			sdf.bindings.add(SpatialDataFrame.binding.Double);
 			
 			// get current norm-mode
 			norm n = norm.none;
@@ -197,13 +209,17 @@ public class DataPanel extends JPanel implements ActionListener, TableModelListe
 						
 			addCCoords.setEnabled(false);
 			
-			boxPlotPnl.setData(sd.names, getNormedSamples() );
+			boxPlotPnl.setData(sdf.names, getNormedSamples() );
 			boxPlotPnl.plot();
 		} else if ( ae.getSource() == useAll ) {
 			for( int i = 0; i < dataTable.getRowCount(); i++ )
 				dataTable.setValueAt( !useAllState, i, USE );
 			useAllState = !useAllState;
-		} 
+		} else if( ae.getSource() == btnDistMat ) {
+			DistMatrixDialog dmd = new DistMatrixDialog(parent, "Create dist. matrix", true, getNormedSamples(), sdf, getGA(true));
+			if( dmd.okPressed() )
+				dMap = dmd.getDistanceMap();
+		}
 	}
 	
 	private boolean trainAllowed = false;
@@ -211,7 +227,7 @@ public class DataPanel extends JPanel implements ActionListener, TableModelListe
 	@Override
 	public void tableChanged(TableModelEvent e) {		
 		if( e.getColumn() == COORDINATE || e.getColumn() == USE ) {
-			boolean a = getFA().length > 0 && ( sd.geoms != null || getGA(true).length > 0 );
+			boolean a = getFA().length > 0 && ( sdf.geoms != null || getGA(true).length > 0 );
 			firePropertyChange(TRAIN_ALLOWED_PROP, trainAllowed, a );
 			trainAllowed = a;
 		}
@@ -239,22 +255,23 @@ public class DataPanel extends JPanel implements ActionListener, TableModelListe
 		}
 		dataTable.addTableModelListener(this);
 		
-		boxPlotPnl.setData(sd.names, getNormedSamples() );
+		boxPlotPnl.setData(sdf.names, getNormedSamples() );
 		boxPlotPnl.plot();
 	}
 	
+	private List<double[]> normedSamples = null;
 	public List<double[]> getNormedSamples() {
-		if( sd == null ) { //TODO does this ever happen?
-			log.error("No data loaded yet!");
-			return null;
+		if( normedSamples == null ) {
+			normedSamples = new ArrayList<double[]>();
+			for( double[] d : sdf.samples )
+				normedSamples.add( Arrays.copyOf(d, d.length));
+		} else {
+			for( int i = 0; i < normedSamples.size(); i++ )
+				for( int j = 0; j < normedSamples.get(0).length; j++ )
+					normedSamples.get(i)[j] = sdf.samples.get(i)[j];
 		}
 		
-		List<double[]> normedSamples = new ArrayList<double[]>();
-		for( double[] d : sd.samples )
-			normedSamples.add( Arrays.copyOf(d, d.length));
-		
 		boolean geoNormed = false;
-		
 		for( int i = 0; i < dataTable.getRowCount(); i++ ) {
 			if( !(Boolean)dataTable.getValueAt(i, COORDINATE) ) {
 				if( dataTable.getValueAt(i, NORM) == norm.scale )
@@ -274,13 +291,13 @@ public class DataPanel extends JPanel implements ActionListener, TableModelListe
 	}
 	
 	public SpatialDataFrame getSpatialData() {
-		if( sd.geoms == null ) { // no geoms present, if data stems from csv
+		if( sdf.geoms == null ) { // no geoms present, if data stems from csv
 			GeometryFactory gf = new GeometryFactory();
-			sd.geoms = new ArrayList<Geometry>();
+			sdf.geoms = new ArrayList<Geometry>();
 			
 			int[] ga = getGA(true);
 						
-			for( double[] d : sd.samples ) {
+			for( double[] d : sdf.samples ) {
 				Coordinate c;
 				if( ga.length == 2 )
 					c = new Coordinate(d[ga[0]],d[ga[1]]);
@@ -289,10 +306,10 @@ public class DataPanel extends JPanel implements ActionListener, TableModelListe
 				else 
 					throw new RuntimeException("No spatial data submitted/found!");
 				
-				sd.geoms.add( gf.createPoint(c) );
+				sdf.geoms.add( gf.createPoint(c) );
 			}
 		}
-		return sd;
+		return sdf;
 	}
 		
 	public int[] getFA() {
@@ -318,5 +335,9 @@ public class DataPanel extends JPanel implements ActionListener, TableModelListe
 		for( int i = 0; i < l.size(); i++ )
 			ga[i] = l.get(i);
 		return ga;
+	}
+	
+	public Map<double[],Map<double[],Double>> getDistanceMap() {
+		return dMap;
 	}
 }

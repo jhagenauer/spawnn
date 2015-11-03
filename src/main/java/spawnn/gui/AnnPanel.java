@@ -95,7 +95,7 @@ public class AnnPanel extends JPanel implements ChangeListener, ActionListener {
 		cngPanel = new CNGPanel();
 		tpContextModel.addTab("CNG", cngPanel );
 		
-		wmcPanel = new WMCPanel(parent);
+		wmcPanel = new WMCPanel();
 		tpContextModel.addTab("WMC",wmcPanel );
 		
 		tpContextModel.addChangeListener(this);
@@ -138,6 +138,8 @@ public class AnnPanel extends JPanel implements ChangeListener, ActionListener {
 		tpContextModel.setEnabledAt(WEIGHTED, centroidModelsEnabled);
 		tpContextModel.setEnabledAt(CNG,centroidModelsEnabled);	
 		
+		tpContextModel.setEnabledAt(WMC, dMap != null);
+		
 		if( tpANN.getSelectedComponent() == somPanel )
 			tpContextModel.setEnabledAt(GEOSOM, centroidModelsEnabled);
 		else
@@ -156,10 +158,8 @@ public class AnnPanel extends JPanel implements ChangeListener, ActionListener {
 			Dist<double[]> gDist = gaUsed.length > 0 ? new EuclideanDist(gaUsed) : null;
 			int t_max = Integer.parseInt(trainingCycles.getText() );
 			
-			Map<double[],Map<double[],Double>> distanceMatrix = null;
 			if( tpContextModel.getSelectedComponent() == wmcPanel ) {
-				distanceMatrix = wmcPanel.getDistanceMap();
-				if( distanceMatrix == null ) {
+				if( dMap == null ) {
 					JOptionPane.showMessageDialog(this, "Missing distance matrix! Load or create distance matrix first!", "Missing distance matrix!", JOptionPane.ERROR_MESSAGE);
 					return;
 				}
@@ -192,7 +192,7 @@ public class AnnPanel extends JPanel implements ChangeListener, ActionListener {
 						for (double[] d : normedSamples)
 							bmuHist.put(d, prototypes.get(r.nextInt(prototypes.size())));
 						
-						SorterWMC s = new SorterWMC(bmuHist, distanceMatrix , fDist, wp.getAlpha(), wp.getBeta());
+						SorterWMC s = new SorterWMC(bmuHist, dMap , fDist, wp.getAlpha(), wp.getBeta());
 						BmuGetter<double[]> bg = new SorterBmuGetterContext(s);
 						ContextSOM som = new ContextSOM(sp.getKernelFunction(), sp.getLearningRate(), grid, (BmuGetterContext) bg, sampleLength);
 
@@ -259,7 +259,7 @@ public class AnnPanel extends JPanel implements ChangeListener, ActionListener {
 						for (double[] d : normedSamples)
 							bmuHist.put(d, neurons.get(r.nextInt(neurons.size())));
 
-						s = new SorterWMC(bmuHist, distanceMatrix, fDist, wp.getAlpha(), wp.getBeta());
+						s = new SorterWMC(bmuHist, dMap, fDist, wp.getAlpha(), wp.getBeta());
 						ng = new ContextNG(neurons, np.getNeighborhoodRate(), np.getAdaptationRate(), (SorterWMC) s);
 
 					} else {
@@ -338,14 +338,14 @@ public class AnnPanel extends JPanel implements ChangeListener, ActionListener {
 	
 	private Random r = new Random();
 	private List<double[]> normedSamples;
+	private Map<double[], Map<double[], Double>> dMap;
 	private int[] fa, gaUsed = null;
 	
-	public void setTrainingData(List<double[]> normedSamples, SpatialDataFrame spatialData, int[] fa, int[] gaUsed, int[] gaAll) {
+	public void setTrainingData(List<double[]> normedSamples, SpatialDataFrame spatialData, int[] fa, int[] gaUsed, int[] gaAll, Map<double[], Map<double[], Double>> dMap) {
 		this.normedSamples = normedSamples;
 		this.fa = fa;
 		this.gaUsed = gaUsed;
-		
-		wmcPanel.setTrainingData(normedSamples,spatialData,gaAll);
+		this.dMap = dMap;		
 		updateContextModelsEnabled();
 	}
 
