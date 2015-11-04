@@ -71,8 +71,8 @@ public class GeoUtils {
 				}
 			});			
 			Map<double[],Double> m = new HashMap<double[],Double>();
-			for( double[] d : l.subList(0, 1) )
-				m.put(d, invDistMatrix.get(a).get(d) );
+			for( double[] d : l.subList( 0, k ) )
+				m.put(d, invDistMatrix.get(a).get(d) ); // put dist
 			knnM.put(a, m);
 		}
 		return knnM;
@@ -123,7 +123,7 @@ public class GeoUtils {
 		return r;
 	}
 	
-	public static Map<double[], List<double[]>> getKNNs(final List<double[]> samples, final Dist<double[]> gDist, int k) {
+	public static Map<double[], List<double[]>> getKNNs(final List<double[]> samples, final Dist<double[]> gDist, int k, boolean includeIdentity) {
 		Map<double[], List<double[]>> r = new HashMap<double[], List<double[]>>();
 		for (final double[] x : samples) {
 			
@@ -134,32 +134,14 @@ public class GeoUtils {
 					return Double.compare(gDist.dist(x, o1),gDist.dist(x, o2));
 				}
 			});		
-			r.put(x, l.subList(0, k));
+			if( includeIdentity )
+				r.put(x, l.subList(0, k));
+			else
+				r.put(x, l.subList(1, k+1));
 		}
 		return r;
 	}
-	
-	@Deprecated
-	public static Map<double[], List<double[]>> getContiguityMap(List<double[]> samples, List<Geometry> geoms, boolean rook ) {
-		Map<double[], List<double[]>> r = new HashMap<double[], List<double[]>>();
-		for( int i = 0; i < samples.size(); i++ ) {
-			Geometry a = geoms.get(i);
-			List<double[]> l = new ArrayList<double[]>();
-			for( int j = 0; j < samples.size(); j++ ) {
-				Geometry b = geoms.get(j);
-				if( !rook ) { // queen
-					if( a.touches(b) || a.intersects(b) )
-						l.add( samples.get(j));
-				} else { // rook
-					if( a.intersection(b).getCoordinates().length > 0 ) // SLOW
-						l.add( samples.get(j));
-				}
-			}
-			r.put(samples.get(i), l);
-		}
-		return r;
-	}
-	
+		
 	public static Map<double[], List<double[]>> getContiguityMap(List<double[]> samples, List<Geometry> geoms, boolean rookAdjacency, boolean includeIdentity ) {
 		Map<double[], List<double[]>> r = new HashMap<double[], List<double[]>>();
 		for( int i = 0; i < samples.size(); i++ ) {

@@ -39,7 +39,7 @@ public class DistMatrixDialog extends JDialog implements ActionListener {
 	JPanel cards;
 	JComboBox cb, adjCb;
 	JTextField power, knns, selFile;
-	JCheckBox rowNorm, incIdent;
+	JCheckBox rowNorm, adjIncIdent, knnIncIdent;
 	File file = null;
 
 	public static enum DistMatType {InvDistance, kNN, Adjacency};
@@ -63,7 +63,7 @@ public class DistMatrixDialog extends JDialog implements ActionListener {
 				
 		setLayout(new MigLayout(""));
 
-		add(new JLabel("Type:"));
+		add(new JLabel("Distance:"));
 		cb = new JComboBox();
 		if( ga.length > 0 ) {
 			cb.addItem(DistMatType.InvDistance);
@@ -73,37 +73,43 @@ public class DistMatrixDialog extends JDialog implements ActionListener {
 			cb.addItem(DistMatType.Adjacency);
 		cb.addActionListener(this);
 		add(cb, "span 2, wrap");
-		
-		JPanel jp_1 = new JPanel(new MigLayout());
-		jp_1.add(new JLabel("Power:"));
+						
+		// inv dist
+		JPanel invDistPanel = new JPanel(new MigLayout());
+		invDistPanel.add(new JLabel("Power:"));
 		power = new JTextField("1", 3);
-		jp_1.add(power, "wrap");
-
-		JPanel jp_2 = new JPanel(new MigLayout());
-		jp_2.add(new JLabel("k:"));
-		knns = new JTextField("5", 3);
-		jp_2.add(knns, "wrap");
+		invDistPanel.add(power, "wrap");
 		
-		JPanel jp_3 = new JPanel(new MigLayout());
-		jp_3.add(new JLabel("Type:"));
+		// knn
+		JPanel knnPanel = new JPanel(new MigLayout());
+		knnPanel.add(new JLabel("k:"));
+		knns = new JTextField("5", 3);
+		knnPanel.add(knns, "wrap");
+		knnPanel.add( new JLabel("Include identity:"));
+		knnIncIdent = new JCheckBox();
+		knnIncIdent.setEnabled(true);
+		knnPanel.add( knnIncIdent, "wrap" );
+		
+		// adj
+		JPanel adjPanel = new JPanel(new MigLayout());
+		adjPanel.add(new JLabel("Type:"));
 		adjCb = new JComboBox();
 		adjCb.setModel(new DefaultComboBoxModel(AdjMode.values()));
-		jp_3.add(adjCb, "wrap");
+		adjPanel.add(adjCb, "wrap");
+		adjPanel.add( new JLabel("Include identity:"));
+		adjIncIdent = new JCheckBox();
+		adjIncIdent.setEnabled(true);
+		adjPanel.add( adjIncIdent, "wrap" );
 		
 		cards = new JPanel(new CardLayout());
 		if( ga.length > 0 ) {
-			cards.add(jp_1, Card.one.toString());
-			cards.add(jp_2, Card.two.toString());
+			cards.add(invDistPanel, Card.one.toString());
+			cards.add(knnPanel, Card.two.toString());
 		}
 		if( adjEnable )
-			cards.add(jp_3, Card.three.toString());
+			cards.add(adjPanel, Card.three.toString());
 		
 		add(cards, "span 3, wrap");
-
-		add( new JLabel("Include identity:"));
-		incIdent = new JCheckBox();
-		incIdent.setEnabled(true);
-		add( incIdent, "wrap" );
 				
 		add( new JLabel("Row-normalize:"));
 		rowNorm = new JCheckBox();
@@ -155,11 +161,11 @@ public class DistMatrixDialog extends JDialog implements ActionListener {
 			setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 			
 			if( cb.getSelectedItem() == DistMatType.Adjacency ) {
-				dMap = GeoUtils.listsToWeights( GeoUtils.getContiguityMap(samples, sdf.geoms, adjCb.getSelectedItem() == AdjMode.Rook, incIdent.isSelected() ));
+				dMap = GeoUtils.listsToWeights( GeoUtils.getContiguityMap(samples, sdf.geoms, adjCb.getSelectedItem() == AdjMode.Rook, adjIncIdent.isSelected() ));
 			} else if( cb.getSelectedItem() == DistMatType.InvDistance ) {
 				dMap = GeoUtils.getInverseDistanceMatrix(samples, dist, Double.parseDouble(power.getText() ) );
 			} else { // knn
-				dMap = GeoUtils.listsToWeights( GeoUtils.getKNNs(samples, dist, Integer.parseInt(knns.getText())));
+				dMap = GeoUtils.listsToWeights( GeoUtils.getKNNs(samples, dist, Integer.parseInt(knns.getText()), knnIncIdent.isSelected() ));
 			}
 			
 			if( rowNorm.isSelected() )

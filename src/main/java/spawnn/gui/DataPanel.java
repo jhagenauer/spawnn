@@ -134,8 +134,9 @@ public class DataPanel extends JPanel implements ActionListener, TableModelListe
 		add( new JScrollPane(table), "w 50%, grow" );
 		add( boxPlotPnl, "w 50%, push, grow,wrap");
 		
-		infoField = new JTextField("No data loaded.");
+		infoField = new JTextField();
 		infoField.setEditable(false);
+		updateStatus();
 		add( infoField,"span 2, growx");
 	}
 
@@ -150,6 +151,9 @@ public class DataPanel extends JPanel implements ActionListener, TableModelListe
 									
 			int state = fc.showOpenDialog(this);
 			if( state == JFileChooser.APPROVE_OPTION ) {
+				dMap = null;
+				normedSamples = null;
+				
 				File fn = fc.getSelectedFile(); 
 				
 				if( fc.getFileFilter() == FFilter.shpFilter ) {
@@ -174,10 +178,12 @@ public class DataPanel extends JPanel implements ActionListener, TableModelListe
 			    			    
 				boxPlotPnl.setData(sdf.names, getNormedSamples() );
 				boxPlotPnl.plot();	
-				infoField.setText(sdf.samples.size()+" observations, "+sdf.names.size()+" attributes.");
 				btnDistMat.setEnabled(true);
+				updateStatus();
 			}
 		} else if( ae.getSource() == addCCoords ) {
+			dMap = null; 
+			normedSamples = null;
 			
 			List<double[]> ns = new ArrayList<double[]>();
 			for( int i = 0; i < sdf.samples.size(); i++ ) {
@@ -219,6 +225,9 @@ public class DataPanel extends JPanel implements ActionListener, TableModelListe
 			DistMatrixDialog dmd = new DistMatrixDialog(parent, "Create dist. matrix", true, getNormedSamples(), sdf, getGA(true));
 			if( dmd.okPressed() )
 				dMap = dmd.getDistanceMap();
+			else
+				dMap = null;
+			updateStatus();
 		}
 	}
 	
@@ -339,5 +348,19 @@ public class DataPanel extends JPanel implements ActionListener, TableModelListe
 	
 	public Map<double[],Map<double[],Double>> getDistanceMap() {
 		return dMap;
+	}
+	
+	public void updateStatus() {
+		String a = "No data";
+		String b = "No dist matrix";
+		if( sdf != null && sdf.samples != null )
+			a = sdf.samples.size()+" observations, "+sdf.names.size()+" attributes";
+		if( dMap != null ) {
+			int numEntries = 0;
+			for( Map<double[],Double> m : dMap.values() )
+				numEntries += m.size();
+			b = numEntries + " entries";
+		}
+		infoField.setText(a+" / "+b);
 	}
 }

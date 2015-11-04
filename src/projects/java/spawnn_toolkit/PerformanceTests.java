@@ -100,7 +100,7 @@ public class PerformanceTests {
 			for (int i = 0; i < nrFDim; i++)
 				fa[i] = i + nrGDim;
 
-			final Map<double[], List<double[]>> knns = GeoUtils.getKNNs(samples, new EuclideanDist(ga), 4);
+			final Map<double[], List<double[]>> knns = GeoUtils.getKNNs(samples, new EuclideanDist(ga), 4, true);
 
 			List<TestPair> models = new ArrayList<TestPair>();
 			/*models.add(new TestPair(network.SOM, contextModel.Augmented, new double[] { 0.5 }));
@@ -169,7 +169,7 @@ public class PerformanceTests {
 			for (int i = 0; i < nrFDim; i++)
 				fa[i] = i + nrGDim;
 
-			final Map<double[], List<double[]>> knns = GeoUtils.getKNNs(samples, new EuclideanDist(ga), 50);
+			final Map<double[], List<double[]>> knns = GeoUtils.getKNNs(samples, new EuclideanDist(ga), 50, true);
 
 			FileWriter fw = new FileWriter("output/testB.csv");
 			fw.write("network,model,param,time\n");
@@ -262,7 +262,7 @@ public class PerformanceTests {
 				for (int i = 0; i < nrFDim; i++)
 					fa[i] = i + nrGDim;
 
-				final Map<double[], List<double[]>> knns = GeoUtils.getKNNs(samples, new EuclideanDist(ga), 5);
+				final Map<double[], List<double[]>> knns = GeoUtils.getKNNs(samples, new EuclideanDist(ga), 5, true);
 
 				for (final TestPair entry : models) {
 
@@ -333,7 +333,7 @@ public class PerformanceTests {
 				for (int i = 0; i < nrFDim; i++)
 					fa[i] = i + nrGDim;
 
-				final Map<double[], List<double[]>> knns = GeoUtils.getKNNs(samples, new EuclideanDist(ga), 5 );
+				final Map<double[], List<double[]>> knns = GeoUtils.getKNNs(samples, new EuclideanDist(ga), 5, true );
 
 				for (final TestPair entry : models) {
 

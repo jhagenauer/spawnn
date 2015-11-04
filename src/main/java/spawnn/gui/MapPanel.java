@@ -183,7 +183,7 @@ public class MapPanel<T> extends NeuronVisPanel<T> implements MapPaneListener, C
 				iter.close();
 			}
 		}
-
+		
 		MapContent mc = new MapContent();
 		ReferencedEnvelope bounds = new ReferencedEnvelope();		
 		{

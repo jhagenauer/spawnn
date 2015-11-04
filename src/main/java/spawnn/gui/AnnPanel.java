@@ -145,7 +145,7 @@ public class AnnPanel extends JPanel implements ChangeListener, ActionListener {
 		else
 			tpContextModel.setEnabledAt(GEOSOM, false); // never for ng
 		
-		if( !tpContextModel.getSelectedComponent().isEnabled() )
+		if( tpContextModel.getSelectedIndex() == GEOSOM && !tpContextModel.isEnabledAt(GEOSOM) )
 			tpContextModel.setSelectedIndex(NONE);
 	}
 	

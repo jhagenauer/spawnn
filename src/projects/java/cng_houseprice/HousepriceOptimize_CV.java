@@ -79,7 +79,7 @@ public class HousepriceOptimize_CV {
 		// ------------------------------------------------------------------------
 
 		int t_max = 40000;
-		int nrNeurons = 64; // mit sehr vieln neuronen ist tatsächlich ein größerer Radius leicht(!) besser
+		int nrNeurons = 16; // mit sehr vieln neuronen ist tatsächlich ein größerer Radius leicht(!) besser
 		double lInit = nrNeurons / 2;
 		double lFinal = 0.1;
 		double lr1Init = 0.7;
@@ -91,51 +91,51 @@ public class HousepriceOptimize_CV {
 		for (int l = 1; l <= nrNeurons; l++)
 			params.get(method.CNG).add( new double[] { t_max, nrNeurons, lInit, lFinal, lr1Init, lr1Final, l, Double.NaN } );
 		
-		/*params.put(method.WMNG, new ArrayList<double[]>());
+		params.put(method.WMNG, new ArrayList<double[]>());
 		for ( double alpha = 0; alpha <= 1; alpha += 0.05 )
 			for( double beta = 0; beta <= 1; beta += 0.05 )
 				params.get(method.WMNG).add(new double[] { t_max, nrNeurons, lInit, lFinal, lr1Init, lr1Final, alpha, beta });
-		params.get(method.WMNG).add(new double[] { t_max, nrNeurons, lInit, lFinal, lr1Init, lr1Final, 0.625, 0.45 });*/
+		/*params.get(method.WMNG).add(new double[] { t_max, nrNeurons, lInit, lFinal, lr1Init, lr1Final, 0.625, 0.45 });*/
 		
 		int nrParams = 0;
 		for( List<double[]> l : params.values() )
 			nrParams += l.size();
 		log.debug("Nr. params: "+nrParams);
 		
-		for( int dm : new int[]{ 0 } ) {
+		for( int dm : new int[]{ 0, 1, 2, 3, 4, 5, 6, 7, 8 } ) {
 		
 			log.debug("Building dm...");
 			final Map<double[], Map<double[], Double>> rMap;
 			switch(dm) {
 			case 0:
-				 rMap = GeoUtils.listsToWeights(GeoUtils.getKNNs(samples, gDist, 4));				 
+				 rMap = GeoUtils.listsToWeights(GeoUtils.getKNNs(samples, gDist, 4, false));				 
 				 break;
 			case 1:
-				 rMap = GeoUtils.listsToWeights(GeoUtils.getKNNs(samples, gDist, 8));
+				 rMap = GeoUtils.listsToWeights(GeoUtils.getKNNs(samples, gDist, 8, false));
 				 break;
 			case 2:
-				 rMap = GeoUtils.listsToWeights(GeoUtils.getKNNs(samples, gDist, 12));
+				 rMap = GeoUtils.listsToWeights(GeoUtils.getKNNs(samples, gDist, 12, false));
 				 break;
 			case 3:
-				 rMap = GeoUtils.listsToWeights(GeoUtils.getKNNs(samples, gDist, 16));
+				 rMap = GeoUtils.listsToWeights(GeoUtils.getKNNs(samples, gDist, 16, false));
 				 break;
 			case 4:
-				 rMap = GeoUtils.listsToWeights(GeoUtils.getKNNs(samples, gDist, 20));
+				 rMap = GeoUtils.listsToWeights(GeoUtils.getKNNs(samples, gDist, 20, false));
 				 break;
 			case 5:
-				 rMap = GeoUtils.listsToWeights(GeoUtils.getKNNs(samples, gDist, 24));
+				 rMap = GeoUtils.listsToWeights(GeoUtils.getKNNs(samples, gDist, 24, false));
 				 break;
 			case 6:
 				//rMap = GeoUtils.getInverseDistanceMatrix(samples, gDist, 1);
-				rMap = GeoUtils.getKNearestMatrix(GeoUtils.getInverseDistanceMatrix(samples, gDist, 1), 2000);
+				rMap = GeoUtils.getKNearestMatrix(GeoUtils.getInverseDistanceMatrix(samples, gDist, 1), 1000);
 				break;
 			case 7:
 				//rMap = GeoUtils.getInverseDistanceMatrix(samples, gDist, 2);
-				rMap = GeoUtils.getKNearestMatrix(GeoUtils.getInverseDistanceMatrix(samples, gDist, 2), 2000);
+				rMap = GeoUtils.getKNearestMatrix(GeoUtils.getInverseDistanceMatrix(samples, gDist, 2), 1000);
 				break;
 			case 8:
 				//rMap = GeoUtils.getInverseDistanceMatrix(samples, gDist, 2);
-				rMap = GeoUtils.getKNearestMatrix(GeoUtils.getInverseDistanceMatrix(samples, gDist, 3), 2000);
+				rMap = GeoUtils.getKNearestMatrix(GeoUtils.getInverseDistanceMatrix(samples, gDist, 3), 1000);
 				break;
 			
 			default:
@@ -155,7 +155,7 @@ public class HousepriceOptimize_CV {
 				ExecutorService es = Executors.newFixedThreadPool(4);
 				List<Future<double[]>> futures = new ArrayList<Future<double[]>>();
 
-				for (int run = 0; run < 64; run++) {
+				for (int run = 0; run < 12; run++) {
 
 					futures.add(es.submit(new Callable<double[]>() {
 

@@ -71,7 +71,7 @@ public class TestCluster {
 		final Dist<double[]> gDist = new EuclideanDist(ga);
 
 		// 0.72, 0.68
-		final Map<double[], List<double[]>> knns = GeoUtils.getKNNs(samples, gDist, 10); 
+		final Map<double[], List<double[]>> knns = GeoUtils.getKNNs(samples, gDist, 10, true); 
 		for( double[] a : knns.keySet() ) 
 			knns.get(a).remove(a); 
 		//final Map<double[],Map<double[],Double>> dMap = GeoUtils.knnsToWeights(knns);

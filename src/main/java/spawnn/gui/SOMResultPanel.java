@@ -6,6 +6,7 @@ import java.awt.Cursor;
 import java.awt.Frame;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.beans.FeatureDescriptor;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -508,7 +509,7 @@ public class SOMResultPanel extends ResultPanel<GridPos> implements ActionListen
 								sf.setAttribute("selected", selectedColors.get(gp).getRGB());
 						}
 						fit.close();
-
+						
 						Map map = Collections.singletonMap("url", fn.toURI().toURL());
 						FileDataStoreFactorySpi factory = new ShapefileDataStoreFactory();
 						DataStore myData = factory.createNewDataStore(map);

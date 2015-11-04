@@ -110,7 +110,7 @@ public class HousepriceOptimize {
 		
 		List<double[]> bestL = null;
 		double bestW = 0;
-		for( List<double[]> l : GeoUtils.getKNNs(gwrResults.samples, geomDist, 6).values() ) {
+		for( List<double[]> l : GeoUtils.getKNNs(gwrResults.samples, geomDist, 6, true).values() ) {
 			
 			boolean toClose = false ;
 			for( double[] a : l )
