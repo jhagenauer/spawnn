@@ -15,6 +15,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Random;
 import java.util.Set;
 
 import org.apache.commons.math3.distribution.NormalDistribution;
@@ -270,19 +271,30 @@ public class GeoUtils {
 			for( double[] d : values.keySet() )
 				m.put(d, l.get(j++));
 			
-			double permMoran = getMoransI(dMap, m);
-			ds.addValue(permMoran);
+			ds.addValue(getMoransI(dMap, m));
 		}
+				
+		double mean = ds.getMean(), var = ds.getStandardDeviation();
+		double zScore = ( moran - mean ) / var;
 		
-		TDistribution td = new TDistribution(n-1); // ????
-		
-		double tStatistic = ( moran - ds.getMean() ) / Math.sqrt(ds.getVariance() ); 
+		int i = 0;
+		for( double permMoran : ds.getValues() ) {
+			double permZScore = ( permMoran - mean ) / var;
+			if( zScore >= 0 && permZScore >= zScore )
+				i++;
+			if( zScore < 0 && permZScore <= zScore )
+				i++;
+			/*if( Math.abs(permZScore) >= Math.abs(zScore) )
+				i++;*/
+		}
+				
 		return new double[]{ 
 				moran,
 				ds.getMean(),
 				ds.getVariance(),
-				tStatistic, // ?????
-				2*td.density(-Math.abs(tStatistic)), // p-Value????
+				zScore, // standard deviate
+				2*new TDistribution(n-1).density(zScore), // p-Value???
+				(double)i/reps, // p-Value!
 			};
 	}
 
@@ -311,34 +323,81 @@ public class GeoUtils {
 		m2 /= samples.size();
 		
 		List<Double> lisa = new ArrayList<Double>();
+		for( double[] d : samples )	
+			lisa.add( getIi(d,dMap.get(d),fa,mean,1,m2) );			
+		return lisa;
+	}
+	
+	private static double getIi( double[] s, Map<double[], Double> nbs, int fa, double mean, double sd, double m2 ) {
+		double ii = 0;
+		for( Entry<double[],Double> nb : nbs.entrySet() )
+			ii += nb.getValue() * (nb.getKey()[fa] - mean )/sd;
+		return ii * (s[fa] - mean)/m2;
+	}
+		
+	public static List<double[]> getLocalMoransIMonteCarlo(List<double[]> samples, Map<double[], Map<double[], Double>> dMap, int fa, int reps ) {
+		Random r = new Random();
+		List<double[]> lisa = new ArrayList<double[]>();
+		
+		DescriptiveStatistics sampleDs = new DescriptiveStatistics();
+		for( double[] d : samples )
+			sampleDs.addValue(d[fa]);
+		double sampleMean = sampleDs.getMean();
+		double sampleSd = 1.0;//sampleDs.getStandardDeviation();
+		
+		double m2 = 0;
+		for( double[] d : samples )
+			m2 += Math.pow(d[fa] - sampleMean,2);
+		m2 /= samples.size();
+		
 		for( double[] d : samples ) {
-			double ii = 0;
+			double ii = getIi(d, dMap.get(d), fa, sampleMean, sampleSd, m2);
 			
-			Map<double[],Double> nbs = dMap.get(d);
-			for( double[] nb : nbs.keySet() ) 
-				ii += nbs.get(nb) * (nb[fa] - mean);
+			DescriptiveStatistics iiDs = new DescriptiveStatistics();
+			for( int i = 0; i < reps; i++ ) {
+				
+				// get random observation
+				/*double[] rndD = null;
+				while( rndD == null || rndD == d )
+					rndD = samples.get(r.nextInt(samples.size()));
+				Map<double[], Double> nbs = dMap.get(rndD);*/
+				
+				Map<double[],Double> nbs = new HashMap<double[],Double>();
+				for( Entry<double[],Double> e : dMap.get(d).entrySet() )
+					nbs.put( samples.get(r.nextInt(samples.size())), e.getValue());
+												
+				iiDs.addValue( getIi(d, nbs, fa, sampleMean, sampleSd, m2));
+			}
+			double meanIi = iiDs.getMean();
+			double sdIi = iiDs.getStandardDeviation();
 			
-			ii *= (d[fa] - mean)/m2;
-			lisa.add(ii);
-						
+			double zScore = ( ii - meanIi ) / sdIi;
+			
+			int i = 0;
+			for( double permIi : iiDs.getValues() ) {
+				double permIiZScore = ( permIi - meanIi ) / sdIi;
+				// two-tailed
+				/*if( Math.abs(permIiZScore) >= Math.abs(zScore) )
+					i++;*/
+				
+				// one-tailed
+				if( zScore >= 0 && permIiZScore >= zScore )
+					i++;
+				if( zScore < 0 && permIiZScore <= zScore )
+					i++;
+			}
+			
+			lisa.add( new double[]{
+				ii,	// lisa
+				meanIi, // mean
+				sdIi,
+				zScore,
+				(double)i/reps // p-Value
+			});		
 		}
 		return lisa;
 	}
 	
-	public static void main(String[] args) {
-		SpatialDataFrame sdf = DataUtils.readSpatialDataFrameFromCSV(new File("data/ozone.csv"), new int[]{2,3}, new int[]{}, true);
-		List<double[]> samples = sdf.samples;
-		Dist<double[]> gDist = new EuclideanDist(new int[]{2,3});
-		
-		Map<double[], Map<double[], Double>> m1 = getInverseDistanceMatrix(samples, gDist, 1);
-		Map<double[],Double> values = new HashMap<double[],Double>();
-		for( double[] d : samples )
-			values.put(d, d[1]);
-		log.debug( "Inv, 1, norm: "+getMoransI( getRowNormedMatrix(m1), values) ); 
-		log.debug(Arrays.toString(getMoransIStatistics(m1, values )));
-		log.debug(Arrays.toString(getMoransIStatisticsMonteCarlo(m1, values, 2000000 )));
-	}
-
 	public static <T> void writeDistMatrixKeyValue(Map<T, Map<T, Double>> dMap, List<T> samples, File fn) {
 		Map<T,Integer> idxMap = new HashMap<T,Integer>();
 		for( int i = 0; i < samples.size(); i++ )
@@ -384,5 +443,19 @@ public class GeoUtils {
 			}
 		}
 		return distMatrix;
+	}
+
+	public static void main(String[] args) {
+		SpatialDataFrame sdf = DataUtils.readSpatialDataFrameFromCSV(new File("data/ozone.csv"), new int[]{2,3}, new int[]{}, true);
+		List<double[]> samples = sdf.samples;
+		Dist<double[]> gDist = new EuclideanDist(new int[]{2,3});
+		
+		Map<double[], Map<double[], Double>> m1 = getInverseDistanceMatrix(samples, gDist, 1);
+		Map<double[],Double> values = new HashMap<double[],Double>();
+		for( double[] d : samples )
+			values.put(d, d[1]);
+		log.debug( "Inv, 1, norm: "+getMoransI( getRowNormedMatrix(m1), values) ); 
+		log.debug(Arrays.toString(getMoransIStatistics(m1, values )));
+		log.debug(Arrays.toString(getMoransIStatisticsMonteCarlo(m1, values, 100000 )));
 	}
 }

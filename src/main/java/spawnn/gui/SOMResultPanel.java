@@ -506,7 +506,7 @@ public class SOMResultPanel extends ResultPanel<GridPos> implements ActionListen
 							GridPos gp = pos.get((Integer) (sf.getAttribute("neuron")));
 							sf.setAttribute("nValue", neuronValues.get(gp));
 							if (selectedColors.containsKey(gp))
-								sf.setAttribute("selected", selectedColors.get(gp).getRGB());
+								sf.setAttribute("selColor", selectedColors.get(gp) );
 						}
 						fit.close();
 						

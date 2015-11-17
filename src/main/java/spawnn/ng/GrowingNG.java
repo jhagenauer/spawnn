@@ -53,7 +53,7 @@ public class GrowingNG implements UnsupervisedNet {
 		
 	public void train( double t, double[] x ) {
 		
-		sorter.sort(x, neurons);;
+		sorter.sort(x, neurons);
 		double[] s_1 = neurons.get(0);
 		double[] s_2 = neurons.get(1);
 		

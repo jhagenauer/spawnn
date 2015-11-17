@@ -930,7 +930,7 @@ public class SampleBuilder {
 		DataUtils.writeShape(samples, points, new String[] { "X", "Y", "Value" }, fn);
 	}
 
-	public static void buildGaussianMixture(int numSamples, String fn) {
+	public static void buildGaussianMixture( int numSamples, String fn) {
 		Random r = new Random();
 		List<double[]> samples = new ArrayList<double[]>();
 

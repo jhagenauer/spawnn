@@ -8,10 +8,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 
 import org.apache.commons.math3.random.GaussianRandomGenerator;
 import org.apache.commons.math3.random.JDKRandomGenerator;
@@ -46,9 +42,9 @@ import spawnn.som.net.SOM;
 import spawnn.som.utils.SomUtils;
 import spawnn.utils.GeoUtils;
 
-public class PerformanceTests {
+public class PerformanceTests_NoThreads {
 
-	private static Logger log = Logger.getLogger(PerformanceTests.class);
+	private static Logger log = Logger.getLogger(PerformanceTests_NoThreads.class);
 
 	public static void main(String[] args) {
 		long time = System.currentTimeMillis();
@@ -56,8 +52,7 @@ public class PerformanceTests {
 		JDKRandomGenerator r = new JDKRandomGenerator();
 		GaussianRandomGenerator grg = new GaussianRandomGenerator(r);
 
-		int runs = 32; // 4 threads 186 min, 1 thread 370 min
-		int threads = 1;
+		int runs = 32;
 		final int nrSamples = 10000;
 
 		class TestPair {
@@ -74,33 +69,98 @@ public class PerformanceTests {
 
 		// Test c: alle, fixed param increases ga-dim
 		// Test d: alle, fixed param increase fa-dim
-		
-		final int[] maxDim = new int[5];
-		for( int i = 0; i < maxDim.length; i++ )
-			maxDim[i] = i+1;
+
+		final int[] maxDim = new int[25];
+		for (int i = 0; i < maxDim.length; i++)
+			maxDim[i] = i + 1;
 
 		// Test c, Grafik: x = dim, y = zeit
 		log.debug("Test C");
 		try {
-			
+
 			final int[] dim = new int[] { 6, 6 };
 			List<TestPair> models = new ArrayList<TestPair>();
-			/*models.add(new TestPair(network.SOM, contextModel.Augmented, new double[] { 0.5 }));
-			models.add(new TestPair(network.SOM, contextModel.Weighted, new double[] { 0.5 }));
-			models.add(new TestPair(network.SOM, contextModel.GeoSOM, new double[] { 3 }));*/
+			models.add(new TestPair(network.SOM, contextModel.Augmented, new double[] { 0.5 })); 
+			models.add(new TestPair(network.SOM, contextModel.Weighted, new double[] { 0.5 })); 
+			models.add(new TestPair(network.SOM, contextModel.GeoSOM, new double[] { 3 }));
 			models.add(new TestPair(network.SOM, contextModel.CNG, new double[] { 5 }));
-			/*models.add(new TestPair(network.SOM, contextModel.WMC, new double[] { 5, 0.5, 0.5 }));
-
-			models.add(new TestPair(network.NG, contextModel.Augmented, new double[] { 0.5 }));
-			models.add(new TestPair(network.NG, contextModel.Weighted, new double[] { 0.5 }));
-			models.add(new TestPair(network.NG, contextModel.CNG, new double[] { 5 }));
-			models.add(new TestPair(network.NG, contextModel.WMC, new double[] { 5, 0.5, 0.5 }));*/
-
+			
+			models.add(new TestPair(network.SOM, contextModel.WMC, new double[] { 5, 0.5, 0.5 }));
+			models.add(new TestPair(network.NG, contextModel.Augmented, new double[] { 0.5 })); 
+			models.add(new TestPair(network.NG, contextModel.Weighted, new double[] { 0.5 })); 
+			models.add(new TestPair(network.NG, contextModel.CNG, new double[] { 5 })); 
+			models.add(new TestPair(network.NG, contextModel.WMC, new double[] { 5, 0.5, 0.5 }));
+			
 			FileWriter fw = new FileWriter("output/testC.csv");
 			fw.write("network,model,param,time\n");
 
-			for (int nrFDim : maxDim ) {
+			for (int nrFDim : maxDim) {
 				int nrGDim = 2;
+				final List<double[]> samples = new ArrayList<double[]>();
+				for (int i = 0; i < nrSamples; i++) {
+					double[] d = new double[nrGDim + nrFDim];
+					for (int j = 0; j < nrGDim; j++)
+						d[j] = grg.nextNormalizedDouble();
+
+					for (int j = 0; j < nrFDim; j++)
+						d[j + nrGDim] = grg.nextNormalizedDouble();
+					samples.add(d);
+				}
+
+				final int[] ga = new int[nrGDim];
+				for (int i = 0; i < nrGDim; i++)
+					ga[i] = i;
+				final int[] fa = new int[nrFDim];
+				for (int i = 0; i < nrFDim; i++)
+					fa[i] = i + nrGDim;
+				
+				final Map<double[], List<double[]>> knns = GeoUtils.getKNNs(samples, new EuclideanDist(ga), 5, true);
+				
+				for (final TestPair entry : models) {
+					List<Long> futures = new ArrayList<Long>();
+
+					for (int run = 0; run < runs; run++) {
+						System.gc();
+
+						if (entry.n == network.SOM)
+							futures.add(trainSOM(entry.m, entry.params, dim[0], dim[1], samples, knns, ga, fa));
+						else
+							futures.add(trainNG(entry.m, entry.params, dim[0] * dim[1], samples, knns, ga, fa));
+					}
+
+					DescriptiveStatistics ds = new DescriptiveStatistics();
+					for (Long f : futures)
+						ds.addValue(f);
+					fw.write(entry.n + "," + entry.m + "," + nrFDim + "," + ds.getMean() + "\n");
+				}
+			}
+			fw.close();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		// Test d, Grafik: x = dim, y = zeit
+		log.debug("Test D");
+		try {
+			List<TestPair> models = new ArrayList<TestPair>();
+			models.add(new TestPair(network.SOM, contextModel.Augmented, new double[] { 0.5 })); 
+			models.add(new TestPair(network.SOM, contextModel.Weighted, new double[] { 0.5 })); 
+			models.add(new TestPair(network.SOM, contextModel.GeoSOM, new double[] { 3 })); 
+			models.add(new TestPair(network.SOM, contextModel.CNG, new double[] { 5 })); 
+			models.add(new TestPair(network.SOM, contextModel.WMC, new double[] { 5, 0.5, 0.5 }));
+			
+			models.add(new TestPair(network.NG, contextModel.Augmented, new double[] { 0.5 }));
+			models.add(new TestPair(network.NG, contextModel.Weighted, new double[] { 0.5 })); 
+			models.add(new TestPair(network.NG, contextModel.CNG, new double[] { 5 })); 
+			models.add(new TestPair(network.NG, contextModel.WMC, new double[] { 5, 0.5, 0.5 }));
+			
+			FileWriter fw = new FileWriter("output/testD.csv");
+			fw.write("network,model,param,time\n");
+
+			final int[] dim = new int[] { 6, 6 };
+
+			for (int nrGDim : maxDim) {
+				int nrFDim = 5;
 				final List<double[]> samples = new ArrayList<double[]>();
 				for (int i = 0; i < nrSamples; i++) {
 					double[] d = new double[nrGDim + nrFDim];
@@ -123,97 +183,21 @@ public class PerformanceTests {
 
 				for (final TestPair entry : models) {
 
-					ExecutorService es = Executors.newFixedThreadPool(threads);
-					List<Future<Long>> futures = new ArrayList<Future<Long>>();
+					List<Long> futures = new ArrayList<Long>();
 
 					for (int run = 0; run < runs; run++) {
-						futures.add(es.submit(new Callable<Long>() {
-							@Override
-							public Long call() throws Exception {
-								if (entry.n == network.SOM)
-									return trainSOM(entry.m, entry.params, dim[0], dim[1], samples, knns, ga, fa);
-								else
-									return trainNG(entry.m, entry.params, dim[0] * dim[1], samples, knns, ga, fa);
-							}
-						}));
+						System.gc();
+
+						if (entry.n == network.SOM)
+							futures.add(trainSOM(entry.m, entry.params, dim[0], dim[1], samples, knns, ga, fa));
+						else
+							futures.add(trainNG(entry.m, entry.params, dim[0] * dim[1], samples, knns, ga, fa));
+
 					}
 
-					es.shutdown();
-					
 					DescriptiveStatistics ds = new DescriptiveStatistics();
-					for (Future<Long> f : futures)
-						ds.addValue(f.get());
-					fw.write(entry.n + "," + entry.m + "," + nrFDim + "," + ds.getMean() + "\n");
-				}
-			}
-			fw.close();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-
-		// Test d, Grafik: x = dim, y = zeit
-		log.debug("Test D");
-		try {
-			List<TestPair> models = new ArrayList<TestPair>();
-			/*models.add(new TestPair(network.SOM, contextModel.Augmented, new double[] { 0.5 }));
-			models.add(new TestPair(network.SOM, contextModel.Weighted, new double[] { 0.5 }));
-			models.add(new TestPair(network.SOM, contextModel.GeoSOM, new double[] { 3 }));
-			models.add(new TestPair(network.SOM, contextModel.CNG, new double[] { 5 }));
-			models.add(new TestPair(network.SOM, contextModel.WMC, new double[] { 5, 0.5, 0.5 }));*/
-
-			models.add(new TestPair(network.NG, contextModel.Augmented, new double[] { 0.5 }));
-			/*models.add(new TestPair(network.NG, contextModel.Weighted, new double[] { 0.5 }));
-			models.add(new TestPair(network.NG, contextModel.CNG, new double[] { 5 }));
-			models.add(new TestPair(network.NG, contextModel.WMC, new double[] { 5, 0.5, 0.5 }));*/
-
-			FileWriter fw = new FileWriter("output/testD.csv");
-			fw.write("network,model,param,time\n");
-
-			final int[] dim = new int[] { 6, 6 };
-
-			for (int nrGDim : maxDim ) {
-				int nrFDim = 5;
-				final List<double[]> samples = new ArrayList<double[]>();
-				for (int i = 0; i < nrSamples; i++) {
-					double[] d = new double[nrGDim + nrFDim];
-					for (int j = 0; j < nrGDim; j++)
-						d[j] = grg.nextNormalizedDouble();
-
-					for (int j = 0; j < nrFDim; j++)
-						d[j + nrGDim] = grg.nextNormalizedDouble();
-					samples.add(d);
-				}
-
-				final int[] ga = new int[nrGDim];
-				for (int i = 0; i < nrGDim; i++)
-					ga[i] = i;
-				final int[] fa = new int[nrFDim];
-				for (int i = 0; i < nrFDim; i++)
-					fa[i] = i + nrGDim;
-
-				final Map<double[], List<double[]>> knns = GeoUtils.getKNNs(samples, new EuclideanDist(ga), 5, true );
-
-				for (final TestPair entry : models) {
-
-					ExecutorService es = Executors.newFixedThreadPool(threads);
-					List<Future<Long>> futures = new ArrayList<Future<Long>>();
-
-					for (int run = 0; run < runs; run++) {
-						futures.add(es.submit(new Callable<Long>() {
-							@Override
-							public Long call() throws Exception {
-								if (entry.n == network.SOM)
-									return trainSOM(entry.m, entry.params, dim[0], dim[1], samples, knns, ga, fa);
-								else
-									return trainNG(entry.m, entry.params, dim[0] * dim[1], samples, knns, ga, fa);
-							}
-						}));
-					}
-					es.shutdown();
-					
-					DescriptiveStatistics ds = new DescriptiveStatistics();
-					for (Future<Long> f : futures)
-						ds.addValue(f.get());
+					for (Long f : futures)
+						ds.addValue(f);
 					fw.write(entry.n + "," + entry.m + "," + nrGDim + "," + ds.getMean() + "\n");
 				}
 			}
@@ -221,7 +205,7 @@ public class PerformanceTests {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		log.debug("took: " + ((System.currentTimeMillis() - time) / 1000.0 / 60.0 )+" minutes.");
+		log.debug("took: " + ((System.currentTimeMillis() - time) / 1000.0 / 60.0) + " minutes.");
 	}
 
 	enum contextModel {
@@ -367,7 +351,7 @@ public class PerformanceTests {
 			} else
 				s = new DefaultSorter<double[]>(fDist);
 
-			NG ng = new NG(nrNeurons, 10, 0.01, 0.5, 0.005, samples.get(0).length, s);
+			NG ng = new NG(nrNeurons, 10, 0.01, 0.5, 0.01, samples.get(0).length, s);
 
 			long time = System.currentTimeMillis();
 			for (int t = 0; t < t_max; t++) {

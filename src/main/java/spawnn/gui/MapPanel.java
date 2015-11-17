@@ -186,6 +186,7 @@ public class MapPanel<T> extends NeuronVisPanel<T> implements MapPaneListener, C
 		
 		MapContent mc = new MapContent();
 		ReferencedEnvelope bounds = new ReferencedEnvelope();		
+				
 		{
 			Style style = null;
 			if (gt.getBinding() == Polygon.class || gt.getBinding() == MultiPolygon.class) {

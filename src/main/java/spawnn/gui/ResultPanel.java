@@ -71,9 +71,8 @@ public abstract class ResultPanel<T> extends JPanel {
 		}
 		sftb.add("neuron", Integer.class);
 		sftb.add("nValue", Double.class);
-		sftb.add("selected", Integer.class);
-		sftb.add("color", Color.class);
-		sftb.add("selCol",Color.class);
+		sftb.add("color", String.class);
+		sftb.add("selColor",String.class);
 
 		Geometry g = sd.geoms.get(0);
 		if (g instanceof Polygon)

@@ -33,13 +33,17 @@ import org.geotools.renderer.GTRenderer;
 import org.geotools.renderer.lite.StreamingRenderer;
 import org.geotools.styling.Mark;
 import org.geotools.styling.SLD;
+import org.geotools.styling.Style;
 import org.geotools.styling.StyleBuilder;
+import org.geotools.styling.Symbolizer;
 import org.geotools.swing.JMapPane;
+import org.opengis.feature.type.GeometryType;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
 import spawnn.utils.ColorBrewerUtil.ColorMode;
 
 import com.vividsolutions.jts.geom.Geometry;
+import com.vividsolutions.jts.geom.MultiPoint;
 import com.vividsolutions.jts.geom.MultiPolygon;
 import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.geom.Polygon;
@@ -321,6 +325,13 @@ public class Drawer {
 		geoDrawValues(sdf.geoms, values, sdf.crs, cm, fn);
 	}
 		
+	public static void geoDrawValues(List<Geometry> geoms, List<double[]> values, int fa, CoordinateReferenceSystem crs, ColorMode cm, String fn) {
+		List<Double> l = new ArrayList<Double>();
+		for( double[] d : values )
+			l.add(d[fa]);
+		geoDrawValues(geoms, l, crs, cm, fn);
+	}
+		
 
 	public static void geoDrawValues(List<Geometry> geoms, List<Double> values, CoordinateReferenceSystem crs, ColorMode cm, String fn) {
 		SimpleFeatureTypeBuilder typeBuilder = new SimpleFeatureTypeBuilder();
@@ -349,8 +360,20 @@ public class Drawer {
 					featureBuilder.set("the_geom", g);
 					features.add(featureBuilder.buildFeature("" + features.size()));
 				}
-				Mark mark = sb.createMark(StyleBuilder.MARK_CIRCLE, c);
-				FeatureLayer fl = new FeatureLayer(features, SLD.wrapSymbolizers(sb.createPointSymbolizer(sb.createGraphic(null, mark, null))));
+				
+				Style style = null;
+				GeometryType gt = features.getSchema().getGeometryDescriptor().getType();
+				if (gt.getBinding() == Polygon.class || gt.getBinding() == MultiPolygon.class) {
+					Symbolizer sym = sb.createPolygonSymbolizer(sb.createStroke(),sb.createFill(c));
+					style = SLD.wrapSymbolizers(sym);
+				} else if (gt.getBinding() == Point.class || gt.getBinding() == MultiPoint.class) {
+					Mark mark = sb.createMark(StyleBuilder.MARK_CIRCLE, sb.createFill(c), sb.createStroke());
+					Symbolizer sym = sb.createPointSymbolizer(sb.createGraphic(null, mark, null));
+					style = SLD.wrapSymbolizers(sym);
+				} else {
+					log.warn("GeomType not supported: " + gt.getBinding());
+				}
+				FeatureLayer fl = new FeatureLayer(features, style );
 				mc.addLayer(fl);
 				mapBounds.expandToInclude(fl.getBounds());
 			}

@@ -28,7 +28,7 @@ public class SorterWMC extends SorterContext {
 		this.weightMatrix = weightMatrix;
 		this.bmuHist = bmuHist;
 	}
-	
+		
 	@Override
 	public void sort(final double[] x, List<double[]> neurons) {
 		// get context
@@ -50,16 +50,16 @@ public class SorterWMC extends SorterContext {
 			}
 		});
 		
-		// update hist
+		// update hist, affects context!
 		if( bmuHistMutable ) 
 			bmuHist.put(x, neurons.get(0) );	
 	}
 		
 	// Typically called by ContextNG
 	@Override
-	public double[] getContext(double[] x ) {
-		return context; // a little faster and very slightly better results(?)
-		//return getCurrentContext(x);
+	public double[] getContext(double[] x ) { //TODO verify
+		//return context; // context before sort, a little faster and very slightly better results(?)
+		return getCurrentContext(x);
 	}
 	
 	private double[] getCurrentContext(double[] x) {
