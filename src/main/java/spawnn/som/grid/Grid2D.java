@@ -21,13 +21,13 @@ public class Grid2D<T> extends Grid<T> {
 			
 	// in output space
 	public int dist( GridPos aPos, GridPos bPos ) {
-		return Math.abs( aPos.getPosVector()[0]-bPos.getPosVector()[0]) + Math.abs( aPos.getPosVector()[1]-bPos.getPosVector()[1] );
+		return Math.abs( aPos.getPos(0)-bPos.getPos(0)) + Math.abs( aPos.getPos(1)-bPos.getPos(1) );
 	}
 	
 	protected Collection<GridPos> getNeighborCandidates( GridPos pos ) {
 		Set<GridPos> l = new HashSet<GridPos>();
-		int x = pos.getPosVector()[0];
-		int y = pos.getPosVector()[1];
+		int x = pos.getPos(0);
+		int y = pos.getPos(1);
 		
 		l.add( new GridPos( x-1, y ) );
 		l.add( new GridPos( x, y+1 ) );

@@ -10,17 +10,14 @@ import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
 
 public class SorterWMC extends SorterContext {
-	
-	private double[] context;
-	
+
 	protected Dist<double[]> dist;
 	protected double alpha, beta;
 	protected Map<double[],double[]> bmuHist; 
 	protected Map<double[],Map<double[],Double>> weightMatrix;
 		
-	public boolean bmuHistMutable = false; 
+	public boolean bmuHistMutable = true; // setting to immutable has not an effect anyways 
 	
-
 	public SorterWMC(Map<double[],double[]> bmuHist, Map<double[],Map<double[],Double>> weightMatrix, Dist<double[]> dist, double alpha, double beta ) {
 		this.dist = dist;
 		this.alpha = alpha;
@@ -29,46 +26,46 @@ public class SorterWMC extends SorterContext {
 		this.bmuHist = bmuHist;
 	}
 		
+	public double getDist( double[] x, double[] neuron ) {	
+		double[] context = getContext(x);
+		
+		if( context != null )						
+			return (1-alpha) * dist.dist( neuron, x ) + alpha * ((EuclideanDist)dist).dist( neuron, x.length, context, 0 );
+		else 
+			return dist.dist( neuron, x );
+	}
+	
 	@Override
 	public void sort(final double[] x, List<double[]> neurons) {
-		// get context
-		context = getCurrentContext(x);
+		final double[] context = getContext(x);
 		
 		// sort
 		Collections.sort(neurons, new Comparator<double[]>() {
 			@Override
-			public int compare(double[] o1, double[] o2) {	
+			public int compare(double[] n1, double[] n2) {	
 				double d1, d2;
 				if( context != null ) {							
-					d1 = (1-alpha) * dist.dist( o1, x ) + alpha * ((EuclideanDist)dist).dist( o1, x.length, context, 0 );
-					d2 = (1-alpha) * dist.dist( o2, x ) + alpha * ((EuclideanDist)dist).dist( o2, x.length, context, 0 );
+					d1 = (1-alpha) * dist.dist( n1, x ) + alpha * ((EuclideanDist)dist).dist( n1, x.length, context, 0 );
+					d2 = (1-alpha) * dist.dist( n2, x ) + alpha * ((EuclideanDist)dist).dist( n2, x.length, context, 0 );
 				} else {
-					d1 = dist.dist( o1, x );
-					d2 = dist.dist( o2, x );
+					d1 = dist.dist( n1, x );
+					d2 = dist.dist( n2, x );
 				}
 				return Double.compare(d1, d2);
 			}
 		});
 		
-		// update hist, affects context!
-		if( bmuHistMutable ) 
-			bmuHist.put(x, neurons.get(0) );	
+		double[] bmu = neurons.get(0);
+		if( bmuHistMutable && bmuHist.get(x) != bmu )
+			bmuHist.put(x, bmu );
 	}
 		
-	// Typically called by ContextNG
 	@Override
-	public double[] getContext(double[] x ) { //TODO verify
-		//return context; // context before sort, a little faster and very slightly better results(?)
-		return getCurrentContext(x);
-	}
-	
-	private double[] getCurrentContext(double[] x) {
-		
-		Map<double[],Double> nbs = weightMatrix.get(x);
+	public double[] getContext(double[] x) {
 		double[] context = new double[x.length];
 		double sumWeights = 0;
 				
-		for( Entry<double[],Double> nb : nbs.entrySet() ) {
+		for( Entry<double[],Double> nb : weightMatrix.get(x).entrySet() ) {
 			double wij = nb.getValue(); 
 			double[] bmuNb = bmuHist.get(nb.getKey());
 			
@@ -82,27 +79,19 @@ public class SorterWMC extends SorterContext {
 		if( sumWeights > 0.0 ) 
 			for( int k = 0; k < x.length; k++ )
 				context[k] /= sumWeights;
-					
+		
 		return context;	
 	}
-	
-	public void setAlpha(double alpha) {
-		this.alpha = alpha;
-	}
-	
-	public double getAlpha() {
-		return alpha;
-	}
-	
-	public void setBeta(double beta) {
-		this.beta = beta;
-	}
-	
+		
 	public void setHistMutable(boolean f) {
 		bmuHistMutable = f;
 	}
 	
 	public boolean histMutable() {
 		return bmuHistMutable;
+	}
+	
+	public void setWeightMatrix( Map<double[],Map<double[],Double>> weightMatrix ) {
+		this.weightMatrix = weightMatrix;
 	}
 }

@@ -76,7 +76,6 @@ public class SimulatedRegressionSingle {
 
 		params.add(new Object[] { method.error, LLMNG.mode.martinetz, 8000000, 6, 2, 0.1, true, 0.6, 0.01, true, 0.6, 0.01 });		
 		params.add(new Object[] { method.error, LLMNG.mode.fritzke,   8000000, 6, 2, 0.1, true, 0.6, 0.01, true, 0.6, 0.01 });
-		params.add(new Object[] { method.error, LLMNG.mode.hagenauer, 8000000, 6, 2, 0.1, true, 0.6, 0.01, true, 0.6, 0.01 });
 				
 		for (Object[] p : params) {
 			final int idx = params.indexOf(p);

@@ -1,32 +1,31 @@
 package spawnn.ng;
 
-import java.util.Collection;
+import java.util.List;
 
 import spawnn.ng.sorter.SorterContext;
 import spawnn.som.decay.DecayFunction;
 
 public class ContextNG extends NG {
 	
-	public ContextNG( Collection<double[]> neurons, DecayFunction neighborhood, DecayFunction adaptation, SorterContext bg  ) {
-		super(neurons,neighborhood,adaptation,bg);
+	public ContextNG( List<double[]> neurons, DecayFunction neighborhood, DecayFunction adaptation, SorterContext sorter  ) {
+		super(neurons,neighborhood,adaptation,sorter);
 	}
 	
 	@Deprecated
-	public ContextNG( Collection<double[]> neurons, double lInit, double lFinal, double eInit, double eFinal, SorterContext bg  ) {
-		super(neurons,lInit,lFinal,eInit,eFinal,bg);
+	public ContextNG( List<double[]> neurons, double lInit, double lFinal, double eInit, double eFinal, SorterContext sorter  ) {
+		super(neurons,lInit,lFinal,eInit,eFinal,sorter);
 	}
 
 	@Deprecated
-	public ContextNG(int numNeurons, double lInit, double lFinal, double eInit, double eFinal, int dim, SorterContext bg) {
-		super(numNeurons, lInit, lFinal, eInit, eFinal, dim, bg);
+	public ContextNG(int numNeurons, double lInit, double lFinal, double eInit, double eFinal, int dim, SorterContext sorter) {
+		super(numNeurons, lInit, lFinal, eInit, eFinal, dim, sorter);
 	}
 		
 	@Override
 	public void train(double t, double[] x) {
+		double[] context = ((SorterContext)sorter).getContext(x); // sort affects context
 		sortNeurons(x);
-				
-		double[] context = ((SorterContext)sorter).getContext(x);
-				
+					
 		double l = neighborhoodRange.getValue(t);
 		double e = adaptationRate.getValue(t);
 			
@@ -40,7 +39,7 @@ public class ContextNG extends NG {
 			for (int i = 0; i < x.length; i++)
 				w[i] += adapt * (x[i] - w[i]);
 			
-			// adapt context
+			// adapt context vector part
 			if( context != null )
 				for( int i = 0; i < context.length; i++ )
 					w[ x.length + i ] += adapt * (context[i] - w[x.length + i]);

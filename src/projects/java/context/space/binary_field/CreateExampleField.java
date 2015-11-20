@@ -2,6 +2,7 @@ package context.space.binary_field;
 
 import spawnn.som.grid.Grid2D;
 import spawnn.som.grid.GridPos;
+import wmng.llm.DoubleGrid2DUtils;
 
 public class CreateExampleField {
 
@@ -19,8 +20,6 @@ public class CreateExampleField {
 			df.setPrototypeAt(new GridPos(1, 1), -1.0);
 			df.setPrototypeAt(new GridPos(-1, 1), -1.0);
 			df.setPrototypeAt(new GridPos(1, -1), -1.0);
-
-			DoubleGrid2DUtils.saveAsEsriGrid(df, "output/examplePF.asc");
 		}
 		
 		{ // 1
@@ -31,7 +30,6 @@ public class CreateExampleField {
 			
 			df.setPrototypeAt(new GridPos(0, 0), 1.0);
 			
-			DoubleGrid2DUtils.saveAsEsriGrid(df, "output/examplePF1.asc");
 		}
 		
 		{ // 2
@@ -45,7 +43,6 @@ public class CreateExampleField {
 			df.setPrototypeAt(new GridPos(-1, 0), 0.8);
 			df.setPrototypeAt(new GridPos(0, -1), 0.65);
 			
-			DoubleGrid2DUtils.saveAsEsriGrid(df, "output/examplePF2.asc");
 		}
 		
 		{ // 3
@@ -64,7 +61,6 @@ public class CreateExampleField {
 			df.setPrototypeAt(new GridPos(1, -1), 0.5);
 			df.setPrototypeAt(new GridPos(-1, -1), 0.5);
 			
-			DoubleGrid2DUtils.saveAsEsriGrid(df, "output/examplePF3.asc");
 		}
 	}
 

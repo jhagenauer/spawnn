@@ -51,7 +51,7 @@ public class TestWeighted3 {
 
 			Sorter bmuGetter = new DefaultSorter(wd);
 			
-			Set<double[]> neurons = new HashSet<double[]>();
+			List<double[]> neurons = new ArrayList<double[]>();
 			neurons.add( new double[]{0.5,0,0} );
 			neurons.add( new double[]{1.5,1,1} );
 			neurons.add( new double[]{2.5,2,2} );
@@ -73,7 +73,7 @@ public class TestWeighted3 {
 		log.debug("cng: ");
 		{
 			Sorter bmuGetter = new KangasSorter(gDist, fDist, 2);
-			Set<double[]> neurons = new HashSet<double[]>();
+			List<double[]> neurons = new ArrayList<double[]>();
 			neurons.add( new double[]{0.5,0,0} );
 			neurons.add( new double[]{1.5,1,1} );
 			neurons.add( new double[]{2.5,2,2} );

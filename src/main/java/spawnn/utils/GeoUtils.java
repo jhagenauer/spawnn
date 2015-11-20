@@ -15,6 +15,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.PriorityQueue;
 import java.util.Random;
 import java.util.Set;
 
@@ -28,10 +29,23 @@ import com.vividsolutions.jts.geom.Geometry;
 import cern.colt.Arrays;
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
+import spawnn.som.grid.Grid;
+import spawnn.som.grid.GridPos;
 
 public class GeoUtils {
 
 	private static Logger log = Logger.getLogger(GeoUtils.class);
+	
+	public static Map<double[],List<double[]>> getNeighborsFromGrid(Grid<double[]> grid) {
+		Map<double[],List<double[]>> m = new HashMap<double[],List<double[]>>();
+		for( GridPos p : grid.getPositions() ) {
+			List<double[]> l = new ArrayList<double[]>();
+			for( GridPos nb : grid.getNeighbours(p) )
+				l.add( grid.getPrototypeAt(nb));
+			m.put(grid.getPrototypeAt(p), l);
+		}
+		return m;
+	}
 	
 	public static void rowNormalizeMatrix( Map<double[],Map<double[],Double>> map ) {
 		for( double[] a : map.keySet() ) {
@@ -126,9 +140,26 @@ public class GeoUtils {
 	
 	public static Map<double[], List<double[]>> getKNNs(final List<double[]> samples, final Dist<double[]> gDist, int k, boolean includeIdentity) {
 		Map<double[], List<double[]>> r = new HashMap<double[], List<double[]>>();
+		
+		
+		
 		for (final double[] x : samples) {
 			
-			List<double[]> l = new ArrayList<double[]>( samples );
+			PriorityQueue<double[]> pq = new PriorityQueue<>(samples.size(), new Comparator<double[]>() {
+				@Override
+				public int compare(double[] o1, double[] o2) {
+					return Double.compare(gDist.dist(x, o1),gDist.dist(x, o2));
+				}
+			});
+			pq.addAll(samples);
+			List<double[]> sub = new ArrayList<double[]>();
+			if( !includeIdentity )
+				pq.poll(); // drop first/identity
+			while( sub.size() < k )
+				sub.add(pq.poll());
+			r.put(x, sub);
+									
+			/*List<double[]> l = new ArrayList<double[]>( samples );
 			Collections.sort(l, new Comparator<double[]>() {
 				@Override
 				public int compare(double[] o1, double[] o2) {
@@ -138,7 +169,7 @@ public class GeoUtils {
 			if( includeIdentity )
 				r.put(x, l.subList(0, k));
 			else
-				r.put(x, l.subList(1, k+1));
+				r.put(x, l.subList(1, k+1));*/
 		}
 		return r;
 	}
@@ -156,7 +187,7 @@ public class GeoUtils {
 					if( a.touches(b) || a.intersects(b) )
 						l.add( samples.get(j));
 				} else { // rook
-					if( a.intersection(b).getCoordinates().length > 0 ) // SLOW
+					if( a.intersection(b).getCoordinates().length > 1 ) // SLOW
 						l.add( samples.get(j));
 				}
 			}

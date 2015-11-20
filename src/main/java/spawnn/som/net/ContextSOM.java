@@ -14,11 +14,9 @@ public class ContextSOM extends SOM {
 
 	@Override
 	public void train( double t, double[] x) {
-		BmuGetterContext bg = (BmuGetterContext)bmuGetter;
-		
+		double[] context = ((BmuGetterContext)bmuGetter).getContext(x);
 		GridPos bmuPos = bmuGetter.getBmuPos( x, grid );	
-		double[] context = bg.getContext(x);
-																				
+																						
 		for( GridPos p : grid.getPositions() ) {
 			double theta = nb.getValue( grid.dist( bmuPos, p ), t );
 			double alpha = lr.getValue( t );

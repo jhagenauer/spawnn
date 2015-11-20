@@ -45,7 +45,7 @@ public class WMNGSingleTestBF {
 		final Dist<double[]> fDist = new EuclideanDist(new int[] { 0 });
 		
 		final int T_MAX = 150000;
-		int runs = 1024; 
+		int runs = 256; 
 		int threads = 4;
 		final boolean normed = true;
 
@@ -53,15 +53,15 @@ public class WMNGSingleTestBF {
 		final Map<double[], Map<double[], Double>> dMap = SpaceTestDiscrete.readDistMap(samples, "/home/julian/publications/wmdmng/geographical_systems_v2/data/grid/toroid50x50_1.wtg");
 		
 		List<double[]> params = new ArrayList<double[]>();
-		params.add( new double[]{0.25,0.25} );
+		/*params.add( new double[]{0.25,0.25} );
 		params.add( new double[]{0.5,0.25});
 		params.add( new double[]{0.75,0.25} );
-		params.add( new double[]{0.25,0.5} );
+		params.add( new double[]{0.25,0.5} );*/
 		params.add( new double[]{0.5,0.5});
-		params.add( new double[]{0.75,0.5} );
+		/*params.add( new double[]{0.75,0.5} );
 		params.add( new double[]{0.25,0.75} );
 		params.add( new double[]{0.5,0.75});
-		params.add( new double[]{0.75,0.75} );
+		params.add( new double[]{0.75,0.75} );*/
 		
 		long time = System.currentTimeMillis();
 		Map<double[], Set<Result>> results = new HashMap<double[], Set<Result>>();

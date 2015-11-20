@@ -38,6 +38,7 @@ import spawnn.som.kernel.GaussKernel;
 import spawnn.som.net.SOM;
 import spawnn.som.utils.SomUtils;
 import spawnn.utils.DataUtils;
+import wmng.llm.DoubleGrid2DUtils;
 
 public class SpaceTestDiscrete2 {
 
@@ -136,8 +137,6 @@ public class SpaceTestDiscrete2 {
 							if(df.dist(gp, center) <= 2)
 								subDf.setPrototypeAt(gp, df.getPrototypeAt(gp) );							
 						String fn = "output/"+s+"_"+fo.format(max);
-						DoubleGrid2DUtils.draw(subDf, fn+".png", true);
-						DoubleGrid2DUtils.saveAsEsriGrid(subDf, fn+".asc");
 						
 						for( int dist = 0; dist <= 2; dist++)
 							log.debug(dist+"->"+getEntropy( subDf, dist, true) );
@@ -216,8 +215,6 @@ public class SpaceTestDiscrete2 {
 							if(df.dist(gp, center) <= 2)
 								subDf.setPrototypeAt(gp, df.getPrototypeAt(gp) );							
 						String fn = "output/"+s+"_"+fo.format(max);
-						DoubleGrid2DUtils.draw(subDf, fn+".png", true);
-						DoubleGrid2DUtils.saveAsEsriGrid(subDf, fn+".asc");
 						
 						for( int dist = 0; dist <= 2; dist++)
 							log.debug(dist+"->"+getEntropy( subDf, dist, true) );
@@ -294,8 +291,6 @@ public class SpaceTestDiscrete2 {
 							if(df.dist(gp, center) <= 2)
 								subDf.setPrototypeAt(gp, df.getPrototypeAt(gp) );							
 						String fn = "output/"+s+"_"+fo.format(max);
-						DoubleGrid2DUtils.draw(subDf, fn+".png", true);
-						DoubleGrid2DUtils.saveAsEsriGrid(subDf, fn+".asc");
 						
 						for( int dist = 0; dist <= 2; dist++)
 							log.debug(dist+"->"+getEntropy( subDf, dist, true) );
@@ -389,8 +384,6 @@ public class SpaceTestDiscrete2 {
 							if(df.dist(gp, center) <= 2)
 								subDf.setPrototypeAt(gp, df.getPrototypeAt(gp) );							
 						String fn = "output/"+s+"_"+fo.format(max);
-						DoubleGrid2DUtils.draw(subDf, fn+".png", true);
-						DoubleGrid2DUtils.saveAsEsriGrid(subDf, fn+".asc");
 						
 						for( int dist = 0; dist <= 2; dist++)
 							log.debug(dist+"->"+getEntropy( subDf, dist, true) );

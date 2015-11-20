@@ -3,7 +3,6 @@ package spawnn.ng;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.Random;
 
@@ -18,12 +17,12 @@ public class NG implements UnsupervisedNet {
 	protected Sorter<double[]> sorter;
 	protected DecayFunction neighborhoodRange, adaptationRate;
 	
-	public NG( Collection<double[]> neurons, double lInit, double lFinal, double eInit, double eFinal, Sorter<double[]> sorter  ) {
+	public NG( List<double[]> neurons, double lInit, double lFinal, double eInit, double eFinal, Sorter<double[]> sorter  ) {
 		this( neurons,new PowerDecay(lInit, lFinal), new PowerDecay(eInit, eFinal),sorter);
 		assert eInit >= 0 && eFinal < eInit;
 	}
 	
-	public NG( Collection<double[]> neurons, DecayFunction neighborhoodRange, DecayFunction adaptationRate, Sorter<double[]> sorter  ) {
+	public NG( List<double[]> neurons, DecayFunction neighborhoodRange, DecayFunction adaptationRate, Sorter<double[]> sorter  ) {
 		this.sorter = sorter;				
 		this.neurons = new ArrayList<double[]>(neurons);
 		this.neighborhoodRange = neighborhoodRange;

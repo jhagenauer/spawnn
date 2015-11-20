@@ -23,8 +23,8 @@ public class GrowingGrid2D extends Grid2D<double[]> {
 		if( dim == 0 ) { // column/X
 			// build new grid
 			for( GridPos p : old.keySet() ) {
-				int x = p.getPosVector()[0];
-				int y = p.getPosVector()[1];
+				int x = p.getPos(0);
+				int y = p.getPos(1);
 				if( x >= pos )
 					setPrototypeAt(new GridPos(x+1,y), old.get(p));
 				else

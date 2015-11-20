@@ -30,14 +30,14 @@ public abstract class Grid<T> {
 	}
 	
 	public int getNumDimensions() {
-		return grid.keySet().iterator().next().getPosVector().length;
+		return grid.keySet().iterator().next().length();
 	}
 
 	public int getSizeOfDim( int n ) {
 		int min = Integer.MAX_VALUE, max = Integer.MIN_VALUE;
 		for( GridPos p : getPositions() ) {
-			max = Math.max( max, p.getPosVector()[n]);
-			min = Math.min( min, p.getPosVector()[n]);
+			max = Math.max( max, p.getPos(n) );
+			min = Math.min( min, p.getPos(n) );
 		}
 		return max - min + 1;
 	}
