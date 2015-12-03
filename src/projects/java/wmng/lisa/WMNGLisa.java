@@ -60,7 +60,10 @@ public class WMNGLisa {
 		final Dist<double[]> fDist = new EuclideanDist(new int[] { fa });
 		// ------------------------------------------------------------------------
 
-		List<double[]> lisa = GeoUtils.getLocalMoransIMonteCarlo(samples, dMap, fa, reps);
+		Map<double[],Double> v = new HashMap<double[],Double>();
+		for( double[] d : samples )
+			v.put(d, d[fa]);
+		List<double[]> lisa = GeoUtils.getLocalMoransIMonteCarlo( samples, v, dMap, reps);
 		Drawer.geoDrawValues(geoms, lisa, 0, sdf.crs, ColorMode.Blues, "output/lisa_mc.png");
 
 		List<Double> values = new ArrayList<Double>();
@@ -110,6 +113,7 @@ public class WMNGLisa {
 		for (Entry<Integer, Set<double[]>> e : lisaCluster.entrySet())
 			log.debug(e.getKey() + ":" + e.getValue().size());
 
+		System.exit(1);
 		// -----------------------------------------------------------------------------------------
 
 		String fn = "output/lisa_wmng.csv";

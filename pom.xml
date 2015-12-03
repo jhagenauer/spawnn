@@ -12,6 +12,28 @@
   </properties>
   <build>
     <plugins>
+
+<plugin>
+<groupId>org.codehaus.mojo</groupId>
+<artifactId>build-helper-maven-plugin</artifactId>
+<version>1.1</version>
+<executions>
+<execution>
+<id>add-source</id>
+<phase>generate-sources</phase>
+<goals>
+<goal>add-source</goal>
+</goals>
+<configuration>
+<sources>
+<source>src/projects</source>
+</sources>
+</configuration>
+</execution>
+</executions>
+</plugin>
+
+
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
         <version>3.3</version>
@@ -109,6 +131,13 @@
       <artifactId>commons-math3</artifactId>
       <version>3.2</version>
     </dependency>
+
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-lang3</artifactId>
+      <version>3.2</version>
+    </dependency>
+
     <dependency>
       <groupId>org.geotools</groupId>
       <artifactId>gt-shapefile</artifactId>

@@ -105,11 +105,11 @@ public class SomUtils {
 			}
 
 			// get center
-			double[] c = new double[cluster.get(0).getPosVector().length];
+			double[] c = new double[cluster.get(0).length()];
 
 			for (GridPos p : cluster) {
 				for (int i = 0; i < c.length; i++)
-					c[i] += p.getPosVector()[i];
+					c[i] += p.getPos(i);
 			}
 			int[] center = new int[c.length];
 			for (int i = 0; i < c.length; i++)
@@ -352,7 +352,7 @@ public class SomUtils {
 
 				GridPos pos = null; // actual pos
 				for (GridPos p : grid.getPositions())
-					if (p.getPosVector()[0] == i / 2 && p.getPosVector()[1] == j / 2)
+					if (p.getPos(0) == i / 2 && p.getPos(1) == j / 2)
 						pos = p;
 
 				int cl = nImg[i][j];
@@ -431,8 +431,8 @@ public class SomUtils {
 		g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
 		for (GridPos p : pcc.keySet()) {
-			int i = p.getPosVector()[0];
-			int j = p.getPosVector()[1];
+			int i = p.getPos(0);
+			int j = p.getPos(1);
 
 			g2.setColor(Color.BLACK);
 			g2.drawRect(i * cellSize, j * cellSize, cellSize, cellSize);
@@ -473,8 +473,8 @@ public class SomUtils {
 		g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
 		for (GridPos pos : pcc.keySet()) {
-			int i = pos.getPosVector()[0];
-			int j = pos.getPosVector()[1];
+			int i = pos.getPos(0);
+			int j = pos.getPos(1);
 			int xc = i * xDiff + (int) (2 * xDiff * 1.0 / 3);
 			int yc = j * yDiff + (int) (yDiff * 1.0 / 2);
 
@@ -649,8 +649,8 @@ public class SomUtils {
 		Map<GridPos, Color> cMap = ColorBrewerUtil.valuesToColors(mMap, colorScale);
 
 		for (GridPos p : cMap.keySet()) {
-			int i = p.getPosVector()[0];
-			int j = p.getPosVector()[1];
+			int i = p.getPos(0);
+			int j = p.getPos(1);
 			g2.setColor(cMap.get(p));
 			g2.fillRect(i * cellSize, j * cellSize, cellSize, cellSize);
 		}
@@ -746,8 +746,8 @@ public class SomUtils {
 		Map<Shape, Double> shapes = new HashMap<Shape, Double>();
 
 		for (GridPos gp : grid.getPositions()) {
-			int i = gp.getPosVector()[0];
-			int j = gp.getPosVector()[1];
+			int i = gp.getPos(0);
+			int j = gp.getPos(1);
 			int xc = i * xDiff + (int) (2 * xDiff * 1.0 / 3);
 			int yc = j * yDiff + (int) (yDiff * 1.0 / 2);
 
@@ -801,7 +801,7 @@ public class SomUtils {
 			Color col = Drawer.getColor(i++);
 
 			for (int j = 1; j < ps.length; j++) {
-				Line2D.Double l = new Line2D.Double(ps[j - 1].getPosVector()[0], ps[j - 1].getPosVector()[1], ps[j].getPosVector()[0], ps[j].getPosVector()[1]);
+				Line2D.Double l = new Line2D.Double(ps[j - 1].getPos(0), ps[j - 1].getPos(1), ps[j].getPos(0), ps[j].getPos(1));
 
 				AffineTransform at = new AffineTransform();
 				at.scale(scale, scale);
@@ -819,8 +819,8 @@ public class SomUtils {
 		double[][] umatrix = new double[grid.getSizeOfDim(0) * 2 - 1][grid.getSizeOfDim(1) * 2 - 1];
 
 		for (GridPos p : grid.getPositions()) {
-			int i = p.getPosVector()[0];
-			int j = p.getPosVector()[1];
+			int i = p.getPos(0);
+			int j = p.getPos(1);
 			double[] v = grid.getPrototypeAt(p);
 
 			// average sum of differences to all neighbors
@@ -833,8 +833,8 @@ public class SomUtils {
 
 			for (GridPos nb : grid.getNeighbours(p)) {
 
-				int ni = nb.getPosVector()[0];
-				int nj = nb.getPosVector()[1];
+				int ni = nb.getPos(0);
+				int nj = nb.getPos(1);
 				double[] nv = grid.getPrototypeAt(nb);
 
 				umatrix[2 * i + (ni - i)][2 * j + (nj - j)] = d.dist(nv, v);
@@ -871,8 +871,8 @@ public class SomUtils {
 		double[][] dmatrix = new double[grid.getSizeOfDim(0)][grid.getSizeOfDim(1)];
 
 		for (GridPos p : grid.getPositions()) {
-			int i = p.getPosVector()[0];
-			int j = p.getPosVector()[1];
+			int i = p.getPos(0);
+			int j = p.getPos(1);
 			double[] v = grid.getPrototypeAt(p);
 
 			double height = 0;
@@ -886,8 +886,8 @@ public class SomUtils {
 	public static double[][] getComponentMatrix(Grid2D<double[]> grid, int idx) {
 		double[][] componentMatrix = new double[grid.getSizeOfDim(0)][grid.getSizeOfDim(1)];
 		for (GridPos p : grid.getPositions()) {
-			int i = p.getPosVector()[0];
-			int j = p.getPosVector()[1];
+			int i = p.getPos(0);
+			int j = p.getPos(1);
 			double[] v = grid.getPrototypeAt(p);
 			componentMatrix[i][j] = v[idx];
 		}
@@ -1120,7 +1120,7 @@ public class SomUtils {
 		for (Set<GridPos> cluster : clusters) {
 			g2.setColor(Drawer.getColor(i++ % 19));
 			for (GridPos p : cluster)
-				g2.fillRect(p.getPosVector()[0] * CELL_SIZE, p.getPosVector()[1] * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+				g2.fillRect(p.getPos(0) * CELL_SIZE, p.getPos(1) * CELL_SIZE, CELL_SIZE, CELL_SIZE);
 		}
 		g2.dispose();
 
@@ -1254,13 +1254,13 @@ public class SomUtils {
 				GridPos to = bmuGetter.getBmuPos(s, grid);
 				if (from != null) {
 					int radius = 5;
-					g2.fillOval(from.getPosVector()[0] * CELL_SIZE + CELL_SIZE / 2 + rX - radius / 2, from.getPosVector()[1] * CELL_SIZE + CELL_SIZE / 2 + rY - radius / 2, radius, radius);
-					g2.fillOval(to.getPosVector()[0] * CELL_SIZE + CELL_SIZE / 2 + rX - radius / 2, to.getPosVector()[1] * CELL_SIZE + CELL_SIZE / 2 + rY - radius / 2, radius, radius);
+					g2.fillOval(from.getPos(0) * CELL_SIZE + CELL_SIZE / 2 + rX - radius / 2, from.getPos(1) * CELL_SIZE + CELL_SIZE / 2 + rY - radius / 2, radius, radius);
+					g2.fillOval(to.getPos(0) * CELL_SIZE + CELL_SIZE / 2 + rX - radius / 2, to.getPos(1) * CELL_SIZE + CELL_SIZE / 2 + rY - radius / 2, radius, radius);
 
-					g2.drawLine(from.getPosVector()[0] * CELL_SIZE + CELL_SIZE / 2 + rX, from.getPosVector()[1] * CELL_SIZE + CELL_SIZE / 2 + rY, to.getPosVector()[0] * CELL_SIZE + CELL_SIZE / 2 + rX, to.getPosVector()[1] * CELL_SIZE + CELL_SIZE / 2 + rY);
-					g2.drawString("" + (k++), to.getPosVector()[0] * CELL_SIZE + CELL_SIZE / 2 + rX, to.getPosVector()[1] * CELL_SIZE + CELL_SIZE / 2 + rY);
+					g2.drawLine(from.getPos(0) * CELL_SIZE + CELL_SIZE / 2 + rX, from.getPos(1) * CELL_SIZE + CELL_SIZE / 2 + rY, to.getPos(0) * CELL_SIZE + CELL_SIZE / 2 + rX, to.getPos(1) * CELL_SIZE + CELL_SIZE / 2 + rY);
+					g2.drawString("" + (k++), to.getPos(0) * CELL_SIZE + CELL_SIZE / 2 + rX, to.getPos(1) * CELL_SIZE + CELL_SIZE / 2 + rY);
 				} else {
-					g2.drawString(name, to.getPosVector()[0] * CELL_SIZE + CELL_SIZE / 2 + rX, to.getPosVector()[1] * CELL_SIZE + CELL_SIZE / 2 + rY);
+					g2.drawString(name, to.getPos(0) * CELL_SIZE + CELL_SIZE / 2 + rX, to.getPos(1) * CELL_SIZE + CELL_SIZE / 2 + rY);
 				}
 				from = to;
 			}
@@ -1284,8 +1284,8 @@ public class SomUtils {
 
 		for (GridPos pos : grid.getPositions()) {
 			Element p = new Element("unit");
-			p.setAttribute("x", pos.getPosVector()[0] + "");
-			p.setAttribute("y", pos.getPosVector()[1] + "");
+			p.setAttribute("x", pos.getPos(0) + "");
+			p.setAttribute("y", pos.getPos(1) + "");
 
 			Element e = new Element("vector");
 			double[] vec = grid.getPrototypeAt(pos);

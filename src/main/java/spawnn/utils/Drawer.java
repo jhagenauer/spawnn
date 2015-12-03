@@ -1,6 +1,8 @@
 package spawnn.utils;
 
+import java.awt.BasicStroke;
 import java.awt.Color;
+import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.RenderingHints;
@@ -9,8 +11,11 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -331,8 +336,7 @@ public class Drawer {
 			l.add(d[fa]);
 		geoDrawValues(geoms, l, crs, cm, fn);
 	}
-		
-
+	
 	public static void geoDrawValues(List<Geometry> geoms, List<Double> values, CoordinateReferenceSystem crs, ColorMode cm, String fn) {
 		SimpleFeatureTypeBuilder typeBuilder = new SimpleFeatureTypeBuilder();
 		typeBuilder.setName("data");
@@ -345,7 +349,13 @@ public class Drawer {
 			m.put(geoms.get(i), values.get(i));
 	
 		Map<Geometry, Color> colMap = ColorBrewerUtil.valuesToColors(m, cm);
-		Set<Color> cols = new HashSet<Color>(colMap.values());
+		List<Color> cols = new ArrayList<Color>(new HashSet<Color>(colMap.values()));
+		Collections.sort(cols, new Comparator<Color>() {
+			@Override
+			public int compare(Color o1, Color o2) {
+				return Integer.compare(o1.hashCode(), o2.hashCode());
+			}
+		});
 	
 		try {
 			StyleBuilder sb = new StyleBuilder();

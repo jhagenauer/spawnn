@@ -77,7 +77,7 @@ public class TestCluster {
 		//final Map<double[],Map<double[],Double>> dMap = GeoUtils.knnsToWeights(knns);
 		
 		// 0.78
-		final Map<double[], Map<double[], Double>> dMap = GeoUtils.getRowNormedMatrix(GeoUtils.getKNearestMatrix(GeoUtils.getInverseDistanceMatrix(samples, gDist, 2), 10));
+		final Map<double[], Map<double[], Double>> dMap = GeoUtils.getRowNormedMatrix(GeoUtils.getKNearestFromMatrix(GeoUtils.getInverseDistanceMatrix(samples, gDist, 2), 10));
 
 		final int numCluster = classes.size();
 

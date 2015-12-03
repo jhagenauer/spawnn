@@ -74,26 +74,33 @@ public class GeoUtils {
 		return normedMatrix;
 	}
 	
-	// useful to strip large distance-matrices from not relevant entries (????)
-	public static Map<double[],Map<double[],Double>> getKNearestMatrix( final Map<double[],Map<double[],Double>> invDistMatrix, int k ) {
+	// useful to strip large distance-matrices from not relevant(??) entries
+	public static Map<double[],Map<double[],Double>> getKNearestFromMatrix( final Map<double[],Map<double[],Double>> invDistMatrix, int k ) {
 		Map<double[],Map<double[],Double>> knnM = new HashMap<double[],Map<double[],Double>>();
-		for( double[] a : invDistMatrix.keySet() ) {
-			List<double[]> l = new ArrayList<double[]>( invDistMatrix.get(a).keySet() );
-			Collections.sort(l, new Comparator<double[]>() {
+		for( final double[] a : invDistMatrix.keySet() ) {
+			PriorityQueue<double[]> pq = new PriorityQueue<>( invDistMatrix.get(a).size(), new Comparator<double[]>() {
 				@Override
 				public int compare(double[] o1, double[] o2) {
-					return invDistMatrix.get(o1).get(o2).compareTo(invDistMatrix.get(o1).get(o2));
+					return invDistMatrix.get(a).get(o1).compareTo(invDistMatrix.get(a).get(o2));
 				}
-			});			
-			Map<double[],Double> m = new HashMap<double[],Double>();
-			for( double[] d : l.subList( 0, k ) )
-				m.put(d, invDistMatrix.get(a).get(d) ); // put dist
-			knnM.put(a, m);
+			});
+			pq.addAll(invDistMatrix.get(a).keySet());
+			
+			Map<double[],Double> sub = new HashMap<double[],Double>();
+			while( sub.size() < k ) {
+				double[] d = pq.poll();
+				sub.put(d,invDistMatrix.get(a).get(d));
+			}			
+			knnM.put(a, sub);
 		}
 		return knnM;
 	}
-
-	public static Map<double[], Map<double[], Double>> getInverseDistanceMatrix(Collection<double[]> samples, Dist<double[]> gDist, double pow) {
+	
+	public static Map<double[], Map<double[], Double>> getInverseDistanceMatrix(Collection<double[]> samples, Dist<double[]> gDist, double pow ) {
+		return getInverseDistanceMatrix(samples, gDist, pow, Double.MAX_VALUE);
+	}
+	
+	public static Map<double[], Map<double[], Double>> getInverseDistanceMatrix(Collection<double[]> samples, Dist<double[]> gDist, double pow, double radius ) {
 		Map<double[], Map<double[], Double>> r = new HashMap<double[], Map<double[], Double>>();
 		
 		double minDist = -1;
@@ -105,7 +112,10 @@ public class GeoUtils {
 					continue;
 				
 				double dist = gDist.dist(a, b);
-				if( dist == 0 ) {
+				if( dist > radius )
+					continue;
+				
+				if( dist == 0 ) { // a and b have same location
 					if( minDist < 0  ) { // only calc/show message once
 						minDist = Double.POSITIVE_INFINITY;
 						for (double[] aa : samples) { 
@@ -117,7 +127,7 @@ public class GeoUtils {
 									minDist = d;
 							}
 						}		
-						log.warn("Identical points present. Setting dist to "+minDist);
+						log.warn("Points with no distance present. Setting dist to "+minDist);
 					}
 					dist = minDist;
 				}
@@ -140,11 +150,8 @@ public class GeoUtils {
 	
 	public static Map<double[], List<double[]>> getKNNs(final List<double[]> samples, final Dist<double[]> gDist, int k, boolean includeIdentity) {
 		Map<double[], List<double[]>> r = new HashMap<double[], List<double[]>>();
-		
-		
-		
+				
 		for (final double[] x : samples) {
-			
 			PriorityQueue<double[]> pq = new PriorityQueue<>(samples.size(), new Comparator<double[]>() {
 				@Override
 				public int compare(double[] o1, double[] o2) {
@@ -158,18 +165,6 @@ public class GeoUtils {
 			while( sub.size() < k )
 				sub.add(pq.poll());
 			r.put(x, sub);
-									
-			/*List<double[]> l = new ArrayList<double[]>( samples );
-			Collections.sort(l, new Comparator<double[]>() {
-				@Override
-				public int compare(double[] o1, double[] o2) {
-					return Double.compare(gDist.dist(x, o1),gDist.dist(x, o2));
-				}
-			});		
-			if( includeIdentity )
-				r.put(x, l.subList(0, k));
-			else
-				r.put(x, l.subList(1, k+1));*/
 		}
 		return r;
 	}
@@ -197,6 +192,12 @@ public class GeoUtils {
 	}
 
 	// morans ------------------------------>>>
+	public static double[] getMoransIStatistics(Map<double[], Map<double[], Double>> dMap, List<double[]> samples, List<Double> values ) {
+		Map<double[],Double> m = new HashMap<double[],Double>();
+		for( int i = 0; i < samples.size(); i++ )
+			m.put(samples.get(i), values.get(i));
+		return getMoransIStatistics(dMap, m);
+	}
 	
 	public static double getMoransI(Map<double[], Map<double[], Double>> dMap, Map<double[],Double> values ) {		
 		double n = values.size();
@@ -234,18 +235,25 @@ public class GeoUtils {
 		double s1 = 0;
 		for( double[] i : dMap.keySet() ) 
 			for( double[] j : dMap.keySet() )
-				if( i != j )
-					s1 += Math.pow(dMap.get(i).get(j)+dMap.get(j).get(i), 2);
+				if( i != j ) {
+					double s = 0;
+					if( dMap.get(i).containsKey(j) )
+						s += dMap.get(i).get(j);
+					if( dMap.get(j).containsKey(i) )
+						s += dMap.get(j).get(i);
+					s1 += Math.pow(s, 2);
+				}
+				
 		s1 *= 0.5;
 		
 		double s2 = 0;
 		for( double[] i : dMap.keySet() ) {
 			double s = 0;
 			for( double[] j : dMap.keySet() )
-				if( i != j )
+				if( i != j && dMap.get(i).containsKey(j) )
 					s += dMap.get(i).get(j);
 			for( double[] j : dMap.keySet() )
-				if( i != j )
+				if( i != j && dMap.get(j).containsKey(i) )
 					s += dMap.get(j).get(i);
 			s2 += Math.pow(s, 2);
 		}
@@ -268,7 +276,7 @@ public class GeoUtils {
 		double sumWij = 0;
 		for( double[] i : dMap.keySet() ) 
 			for( double[] j : dMap.keySet() )
-				if( i != j )
+				if( i != j && dMap.get(i).containsKey(j) )
 					sumWij += dMap.get(i).get(j);
 		
 		double s4 = (Math.pow(n,2)-3*n+3)*s1 - s2*n + 3*Math.pow(sumWij,2);	
@@ -340,49 +348,38 @@ public class GeoUtils {
 			values.put(d, d[fa]);
 		return getMoransI(dMap, values);
 	}
-
-	// only univariate at the moment
-	public static List<Double> getLocalMoransI(List<double[]> samples, Map<double[], Map<double[], Double>> dMap, int fa) {
-		double mean = 0;
-		for (double[] d : samples)
-			mean += d[fa];
-		mean /= samples.size();
-		
-		double m2 = 0;
-		for( double[] d : samples )
-			m2 += Math.pow(d[fa] - mean,2);
-		m2 /= samples.size();
-		
-		List<Double> lisa = new ArrayList<Double>();
-		for( double[] d : samples )	
-			lisa.add( getIi(d,dMap.get(d),fa,mean,1,m2) );			
-		return lisa;
-	}
 	
-	private static double getIi( double[] s, Map<double[], Double> nbs, int fa, double mean, double sd, double m2 ) {
+	private static double getIi( double[] s, Map<double[], Double> nbs, Map<double[],Double> values, double mean, double sd, double m2 ) {
 		double ii = 0;
 		for( Entry<double[],Double> nb : nbs.entrySet() )
-			ii += nb.getValue() * (nb.getKey()[fa] - mean )/sd;
-		return ii * (s[fa] - mean)/m2;
+			ii += nb.getValue() * (values.get(nb.getKey()) - mean )/sd;
+		return ii * (values.get(s) - mean)/m2;
+	}
+	
+	public static List<double[]> getLocalMoransIMonteCarlo(List<double[]> samples, int idx, Map<double[], Map<double[], Double>> dMap, int reps ) {
+		Map<double[],Double> values = new HashMap<double[],Double>();
+		for( double[] d : samples )
+			values.put(d, d[idx]);
+		return getLocalMoransIMonteCarlo(samples, values, dMap, reps);
 	}
 		
-	public static List<double[]> getLocalMoransIMonteCarlo(List<double[]> samples, Map<double[], Map<double[], Double>> dMap, int fa, int reps ) {
+	public static List<double[]> getLocalMoransIMonteCarlo(List<double[]> samples, Map<double[],Double> values, Map<double[], Map<double[], Double>> dMap, int reps ) {
 		Random r = new Random();
 		List<double[]> lisa = new ArrayList<double[]>();
 		
 		DescriptiveStatistics sampleDs = new DescriptiveStatistics();
-		for( double[] d : samples )
-			sampleDs.addValue(d[fa]);
+		for( double d : values.values() )
+			sampleDs.addValue(d);
 		double sampleMean = sampleDs.getMean();
 		double sampleSd = 1.0;//sampleDs.getStandardDeviation();
 		
 		double m2 = 0;
-		for( double[] d : samples )
-			m2 += Math.pow(d[fa] - sampleMean,2);
-		m2 /= samples.size();
+		for( double d : values.values() )
+			m2 += Math.pow(d - sampleMean,2);
+		m2 /= values.size();
 		
 		for( double[] d : samples ) {
-			double ii = getIi(d, dMap.get(d), fa, sampleMean, sampleSd, m2);
+			double ii = getIi(d, dMap.get(d), values, sampleMean, sampleSd, m2);
 			
 			DescriptiveStatistics iiDs = new DescriptiveStatistics();
 			for( int i = 0; i < reps; i++ ) {
@@ -397,7 +394,7 @@ public class GeoUtils {
 				for( Entry<double[],Double> e : dMap.get(d).entrySet() )
 					nbs.put( samples.get(r.nextInt(samples.size())), e.getValue());
 												
-				iiDs.addValue( getIi(d, nbs, fa, sampleMean, sampleSd, m2));
+				iiDs.addValue( getIi(d, nbs, values, sampleMean, sampleSd, m2));
 			}
 			double meanIi = iiDs.getMean();
 			double sdIi = iiDs.getStandardDeviation();
@@ -428,6 +425,8 @@ public class GeoUtils {
 		}
 		return lisa;
 	}
+	
+	// ------------------
 	
 	public static <T> void writeDistMatrixKeyValue(Map<T, Map<T, Double>> dMap, List<T> samples, File fn) {
 		Map<T,Integer> idxMap = new HashMap<T,Integer>();

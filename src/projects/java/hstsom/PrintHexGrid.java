@@ -46,8 +46,8 @@ public class PrintHexGrid {
 			g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
 			for (GridPos pos : grid.getPositions()) {
-				int i = pos.getPosVector()[0];
-				int j = pos.getPosVector()[1];
+				int i = pos.getPos(0);
+				int j = pos.getPos(1);
 				int xc = i * xDiff + (int) (2 * xDiff * 1.0 / 3);
 				int yc = j * yDiff + (int) (yDiff * 1.0 / 2);
 

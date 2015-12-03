@@ -64,4 +64,10 @@ public class SorterMNG extends SorterContext {
 	public void setBeta(double beta) {
 		this.beta = beta;
 	}
+	
+	@Override
+	public double[] getBMU(double[] x, List<double[]> neurons) {
+		sort(x,neurons);
+		return neurons.get(0);
+	}
 }

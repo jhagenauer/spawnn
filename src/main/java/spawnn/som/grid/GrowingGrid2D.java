@@ -36,14 +36,14 @@ public class GrowingGrid2D extends Grid2D<double[]> {
 			
 			// fill new column
 			for( GridPos p1 : getPositions() ) {
-				int x1 = p1.getPosVector()[0];
+				int x1 = p1.getPos(0);
 				if( x1 != pos )
 					continue;
 				
 				int nbs = 0;
 				double[] d = new double[vLength];
 				for( GridPos p2 : getNeighbours(p1) ) {
-					if( p2.getPosVector()[0] != x1 ) {
+					if( p2.getPos(0) != x1 ) {
 						nbs++;
 						for( int i = 0; i < d.length; i++ )
 							d[i] += getPrototypeAt(p2)[i];
@@ -56,8 +56,8 @@ public class GrowingGrid2D extends Grid2D<double[]> {
 		} else if( dim == 1 ) { // row/Y
 			// build new grid
 			for( GridPos p : old.keySet() ) {
-				int x = p.getPosVector()[0];
-				int y = p.getPosVector()[1];
+				int x = p.getPos(0);
+				int y = p.getPos(1);
 				if( y >= pos )
 					setPrototypeAt(new GridPos(x,y+1), old.get(p));
 				else
@@ -69,14 +69,14 @@ public class GrowingGrid2D extends Grid2D<double[]> {
 			
 			// fill new column
 			for( GridPos p1 : getPositions() ) {
-				int y1 = p1.getPosVector()[1];
+				int y1 = p1.getPos(1);
 				if( y1 != pos )
 					continue;
 				
 				int nbs = 0;
 				double[] d = new double[vLength];
 				for( GridPos p2 : getNeighbours(p1) ) {
-					if( p2.getPosVector()[1] != y1 ) {
+					if( p2.getPos(1) != y1 ) {
 						nbs++;
 						for( int i = 0; i < d.length; i++ )
 							d[i] += getPrototypeAt(p2)[i];

@@ -43,9 +43,6 @@ import spawnn.utils.SpatialDataFrame;
 
 public class HousepriceOptimize_CV {
 
-	/*
-	 * SUCKT, weil CNG(1) immer am besten ist, weil es nutzlos ist, andere Parameter mit einzurechen, da die so oder so schon im ln-model berücksichtigt sind
-	 */
 	private static Logger log = Logger.getLogger(HousepriceOptimize_CV.class);
 
 	enum method {
@@ -59,7 +56,7 @@ public class HousepriceOptimize_CV {
 		final List<double[]> samples = new ArrayList<double[]>();
 		final List<double[]> desired = new ArrayList<double[]>();
 
-		final SpatialDataFrame sdf = DataUtils.readSpatialDataFrameFromCSV(new File("output/houseprice_no_ctx.csv"), new int[] { 0, 1 }, new int[] {}, true);
+		final SpatialDataFrame sdf = DataUtils.readSpatialDataFrameFromCSV(new File("output/houseprice.csv"), new int[] { 0, 1 }, new int[] {}, true);
 		for (double[] d : sdf.samples) {
 			double[] nd = Arrays.copyOf(d, d.length - 1);
 
@@ -90,7 +87,7 @@ public class HousepriceOptimize_CV {
 		params.put(method.CNG, new ArrayList<double[]>());
 		params.put(method.WMNG, new ArrayList<double[]>());
 
-		for (int nrNeurons : new int[] { 4, 8, 12, 16, 20, 24 }) {
+		for (int nrNeurons : new int[] { 8 }) {
 			double nbInit = nrNeurons * 3.0 / 2;
 
 			for (int l = 1; l <= nrNeurons; l++)

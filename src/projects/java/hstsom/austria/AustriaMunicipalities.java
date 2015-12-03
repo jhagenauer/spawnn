@@ -463,7 +463,7 @@ public class AustriaMunicipalities {
 				Graphics2D g = image.createGraphics();
 				
 				for( GridPos p : imgMap.keySet() ) 
-					g.drawImage(imgMap.get(p), p.getPosVector()[0]*width, p.getPosVector()[1]*height, null);
+					g.drawImage(imgMap.get(p), p.getPos(0)*width, p.getPos(1)*height, null);
 				
 				try {
 					ImageIO.write( image, "png", new FileOutputStream("output/hstsom_austria"+3+"x"+3+".png"));

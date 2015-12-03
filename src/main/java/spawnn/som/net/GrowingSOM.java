@@ -84,13 +84,13 @@ public class GrowingSOM implements UnsupervisedNet {
 			// get pos and dim
 			int dim = -1;
 			int pos = -1;
-			for( int k = 0; k < insPos.getPosVector().length; k++ ) {
-				if( worstNb.getPosVector()[k] != insPos.getPosVector()[k] ) {
+			for( int k = 0; k < insPos.length(); k++ ) {
+				if( worstNb.getPos(k) != insPos.getPos(k) ) {
 					dim = k;
-					if( worstNb.getPosVector()[k] < insPos.getPosVector()[k] )
-						pos = worstNb.getPosVector()[k];
+					if( worstNb.getPos(k) < insPos.getPos(k) )
+						pos = worstNb.getPos(k);
 					else
-						pos = insPos.getPosVector()[k];
+						pos = insPos.getPos(k);
 					break;
 				}
 			}

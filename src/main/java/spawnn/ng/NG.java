@@ -49,12 +49,13 @@ public class NG implements UnsupervisedNet {
 		}
 	}
 	
+	@Deprecated // better user sorter.sort directly
 	public void sortNeurons(double[] x ) {
 		sorter.sort(x, neurons);
 	}
 		
 	public void train( double t, double[] x ) {
-		sortNeurons(x);
+		sorter.sort(x,neurons);
 		
 		double l = neighborhoodRange.getValue(t);
 		double e = adaptationRate.getValue(t);

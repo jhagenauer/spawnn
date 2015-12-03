@@ -3,6 +3,7 @@ package spawnn.ng;
 import java.util.List;
 
 import spawnn.ng.sorter.SorterContext;
+import spawnn.ng.sorter.SorterWMC;
 import spawnn.som.decay.DecayFunction;
 
 public class ContextNG extends NG {
@@ -23,26 +24,25 @@ public class ContextNG extends NG {
 		
 	@Override
 	public void train(double t, double[] x) {
-		double[] context = ((SorterContext)sorter).getContext(x); // sort affects context
-		sortNeurons(x);
+		double[] context = ((SorterContext)sorter).getContext(x);
+		if( sorter instanceof SorterWMC )
+			((SorterWMC)sorter).sort(x, neurons, context);
+		else
+			sorter.sort(x, neurons);
 					
 		double l = neighborhoodRange.getValue(t);
 		double e = adaptationRate.getValue(t);
 			
 		// adapt
 		for (int k = 0; k < neurons.size(); k++) {
-			double adapt = e * Math.exp((double) -k / l);
-						
+			double adapt = e * Math.exp((double) -k / l);	
 			double[] w = neurons.get(k);
 			
-			// adapt weights
-			for (int i = 0; i < x.length; i++)
+			// adapt weights and adapt context vector part
+			for (int i = 0; i < x.length; i++) {
 				w[i] += adapt * (x[i] - w[i]);
-			
-			// adapt context vector part
-			if( context != null )
-				for( int i = 0; i < context.length; i++ )
-					w[ x.length + i ] += adapt * (context[i] - w[x.length + i]);
+				w[x.length + i] += adapt * (context[i] - w[x.length + i]);
+			}
 		}
 	}
 }

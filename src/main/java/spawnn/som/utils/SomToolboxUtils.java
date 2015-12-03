@@ -40,9 +40,9 @@ public class SomToolboxUtils {
 						
 			for( GridPos pos : grid.getPositions() ) {
 								
-				fsw.write("$POS_X "+pos.getPosVector()[0]+"\n");
-				fsw.write("$POS_Y "+pos.getPosVector()[1]+"\n");
-				fsw.write("$UNIT_ID u_("+pos.getPosVector()[0]+"/"+pos.getPosVector()[1]+")\n"); // optional
+				fsw.write("$POS_X "+pos.getPos(0)+"\n");
+				fsw.write("$POS_Y "+pos.getPos(1)+"\n");
+				fsw.write("$UNIT_ID u_("+pos.getPos(0)+"/"+pos.getPos(1)+")\n"); // optional
 				
 				if( bmus.containsKey(pos) ) {
 					fsw.write("$NR_VEC_MAPPED "+bmus.get(pos).size()+"\n");
@@ -86,13 +86,13 @@ public class SomToolboxUtils {
 			Collections.sort(pos, new Comparator<GridPos>() {
 				@Override
 				public int compare(GridPos o1, GridPos o2) {
-					if( o1.getPosVector()[1] < o2.getPosVector()[1] )
+					if( o1.getPos(1) < o2.getPos(1) )
 						return -1;
-					else if( o1.getPosVector()[1] > o2.getPosVector()[1] )
+					else if( o1.getPos(1) > o2.getPos(1) )
 						return 1;
-					else if( o1.getPosVector()[0] < o2.getPosVector()[0] )
+					else if( o1.getPos(0) < o2.getPos(0) )
 						return -1;
-					else if( o1.getPosVector()[0] > o2.getPosVector()[0] )
+					else if( o1.getPos(0) > o2.getPos(0) )
 						return 1;
 					else 
 						return 0;
@@ -104,7 +104,7 @@ public class SomToolboxUtils {
 				String s = "";
 				for( double d : v )
 					s += d+" ";
-				s += "SOM_MAP_u_("+p.getPosVector()[0]+"/"+p.getPosVector()[1]+")\n";
+				s += "SOM_MAP_u_("+p.getPos(0)+"/"+p.getPos(1)+")\n";
 				fsw.write(s);
 			}
 			fsw.close();

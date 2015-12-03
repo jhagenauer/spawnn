@@ -15,10 +15,10 @@ public class Grid2DHex<T> extends Grid2D<T> {
 	
 	@Override
 	public int dist( GridPos aPos, GridPos bPos ) { 
-		int x0 = aPos.getPosVector()[0];
-		int y0 = aPos.getPosVector()[1];
-		int x1 = bPos.getPosVector()[0];
-		int y1 = bPos.getPosVector()[1];
+		int x0 = aPos.getPos(0);
+		int y0 = aPos.getPos(1);
+		int x1 = bPos.getPos(0);
+		int y1 = bPos.getPos(1);
 		
 		int xDist = Math.abs( x0-x1 );
 		int yDist = Math.abs( y0-y1 );
@@ -46,8 +46,8 @@ public class Grid2DHex<T> extends Grid2D<T> {
 	@Override
 	protected Collection<GridPos> getNeighborCandidates( GridPos pos ) {
 		Collection<GridPos> l = super.getNeighborCandidates(pos);
-		int x = pos.getPosVector()[0];
-		int y = pos.getPosVector()[1];
+		int x = pos.getPos(0);
+		int y = pos.getPos(1);
 			
 		if( x % 2 == 0 ) {
 				l.add( new GridPos( x-1, y-1 ) );

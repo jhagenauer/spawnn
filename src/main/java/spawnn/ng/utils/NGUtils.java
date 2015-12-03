@@ -96,10 +96,8 @@ public class NGUtils {
 		Map<double[],Set<double[]>> bmus = new HashMap<double[],Set<double[]>>();
 		for( double[] d : neurons )
 			bmus.put( d, new HashSet<double[]>() );
-		for( double[] x : samples ) {
-			sorter.sort(x, neurons );
-			bmus.get(neurons.get(0)).add(x);
-		}	
+		for( double[] x : samples )
+			bmus.get(sorter.getBMU(x, neurons)).add(x);
 		return bmus;
 	}
 	

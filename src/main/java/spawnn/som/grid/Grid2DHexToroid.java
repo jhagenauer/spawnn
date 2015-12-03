@@ -23,10 +23,10 @@ public class Grid2DHexToroid<T> extends Grid2DHex<T> {
 
 	// in output space
 	public int dist( GridPos aPos, GridPos bPos ) {
-		int x0 = aPos.getPosVector()[0];
-		int y0 = aPos.getPosVector()[1];
-		int x1 = bPos.getPosVector()[0];
-		int y1 = bPos.getPosVector()[1];
+		int x0 = aPos.getPos(0);
+		int y0 = aPos.getPos(1);
+		int x1 = bPos.getPos(0);
+		int y1 = bPos.getPos(1);
 		
 		// direct dists
 		int xDirectDist = Math.abs( x0-x1 );
@@ -51,19 +51,20 @@ public class Grid2DHexToroid<T> extends Grid2DHex<T> {
 		int yDim = getSizeOfDim(1);
 		
 		for( GridPos p : l ) {
-			int[] pv = p.getPosVector();
+			int pv0 = p.getPos(0);
+			int pv1 = p.getPos(1);
 			
 			// wrap around x
-			if( pv[0] < 0 )
-				pv[0] = xDim - 1;
-			else if( pv[0] > xDim - 1 )
-				pv[0] = 0;
+			if( pv0 < 0 )
+				pv0 = xDim - 1;
+			else if( pv0 > xDim - 1 )
+				pv0 = 0;
 			
 			// wrap around y
-			if( pv[1] < 0 )
-				pv[1] = yDim -1;
-			else if( pv[1] > yDim -1 )
-				pv[1] = 0;
+			if( pv1 < 0 )
+				pv1 = yDim -1;
+			else if( pv1 > yDim -1 )
+				pv1 = 0;
 		}
 		return l;
 	}

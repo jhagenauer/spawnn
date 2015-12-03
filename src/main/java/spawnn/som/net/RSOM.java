@@ -30,7 +30,7 @@ public class RSOM implements UnsupervisedNet {
 	}
 	
 	private double[] getY( int t, double alpha, GridPos p ) {
-		int length = pots.get(0).keySet().iterator().next().getPosVector().length;
+		int length = pots.get(0).keySet().iterator().next().length();
 		if( t >= 0  ) {
 			double[] a = getY( t-1, alpha, p );
 			double[] b = pots.get(t).get(p);

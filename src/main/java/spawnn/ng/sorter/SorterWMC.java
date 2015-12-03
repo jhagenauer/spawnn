@@ -28,36 +28,47 @@ public class SorterWMC extends SorterContext {
 		
 	public double getDist( double[] x, double[] neuron ) {	
 		double[] context = getContext(x);
-		
 		if( context != null )						
 			return (1-alpha) * dist.dist( neuron, x ) + alpha * ((EuclideanDist)dist).dist( neuron, x.length, context, 0 );
 		else 
 			return dist.dist( neuron, x );
 	}
 	
-	@Override
-	public void sort(final double[] x, List<double[]> neurons) {
-		final double[] context = getContext(x);
-		
-		// sort
-		Collections.sort(neurons, new Comparator<double[]>() {
-			@Override
-			public int compare(double[] n1, double[] n2) {	
-				double d1, d2;
-				if( context != null ) {							
-					d1 = (1-alpha) * dist.dist( n1, x ) + alpha * ((EuclideanDist)dist).dist( n1, x.length, context, 0 );
-					d2 = (1-alpha) * dist.dist( n2, x ) + alpha * ((EuclideanDist)dist).dist( n2, x.length, context, 0 );
-				} else {
-					d1 = dist.dist( n1, x );
-					d2 = dist.dist( n2, x );
-				}
-				return Double.compare(d1, d2);
-			}
-		});
-		
+	public void sort(final double[] x, List<double[]> neurons, double[] context) {
+		Collections.sort(neurons, getComparator(x, context ) );
+		// update hist
 		double[] bmu = neurons.get(0);
 		if( bmuHistMutable && bmuHist.get(x) != bmu )
 			bmuHist.put(x, bmu );
+	}
+	
+	@Override
+	public void sort(final double[] x, List<double[]> neurons) {
+		Collections.sort(neurons, getComparator(x, getContext(x)) );
+		// update hist
+		double[] bmu = neurons.get(0);
+		if( bmuHistMutable && bmuHist.get(x) != bmu )
+			bmuHist.put(x, bmu );
+	}
+	
+	@Override
+	public double[] getBMU( final double[] x, List<double[]> neurons ) {
+		double[] bmu = Collections.min(neurons, getComparator(x, getContext(x)) );
+		// update hist
+		if( bmuHistMutable && bmuHist.get(x) != bmu )
+			bmuHist.put(x, bmu );
+		return bmu;
+	}
+	
+	private Comparator<double[]> getComparator( final double[] x, final double[] context ) {
+		return new Comparator<double[]>() {
+			@Override
+			public int compare(double[] n1, double[] n2) {	
+				double d1 = (1-alpha) * dist.dist( n1, x ) + alpha * ((EuclideanDist)dist).dist( n1, x.length, context, 0 );
+				double d2 = (1-alpha) * dist.dist( n2, x ) + alpha * ((EuclideanDist)dist).dist( n2, x.length, context, 0 );
+				return Double.compare(d1, d2);
+			}
+		};
 	}
 		
 	@Override
@@ -68,7 +79,7 @@ public class SorterWMC extends SorterContext {
 		for( Entry<double[],Double> nb : weightMatrix.get(x).entrySet() ) {
 			double wij = nb.getValue(); 
 			double[] bmuNb = bmuHist.get(nb.getKey());
-			
+						
 			for( int k = 0; k < x.length; k++ )
 				context[k] += wij * ( (1-beta) * bmuNb[k] + beta * bmuNb[x.length+k] );
 			

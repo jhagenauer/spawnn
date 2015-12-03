@@ -108,11 +108,11 @@ public class GHSOM {
 			// insert new row/column
 			if( maxNB == null ) {
 				grid.addVector(0, 0);
-			} else if( maxP.getPosVector()[1] == maxNB.getPosVector()[1] ) { // insert column
-				grid.addVector(0, Math.min( maxP.getPosVector()[0], maxNB.getPosVector()[0]) );
+			} else if( maxP.getPos(1) == maxNB.getPos(1) ) { // insert column
+				grid.addVector(0, Math.min( maxP.getPos(0), maxNB.getPos(0)) );
 			} else { // insert row
 				log.error("Inserting row!");
-				grid.addVector(1, Math.max( maxP.getPosVector()[1], maxNB.getPosVector()[1]) );
+				grid.addVector(1, Math.max( maxP.getPos(1), maxNB.getPos(1)) );
 			}			
 		}
 		

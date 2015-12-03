@@ -66,11 +66,7 @@ public class HousepriceOptimize {
 		final SpatialDataFrame sdf = DataUtils.readSpatialDataFrameFromCSV(new File("output/houseprice.csv"), new int[] { 0,1 }, new int[] {}, true);
 		for (double[] d : sdf.samples) {
 			double[] nd = Arrays.copyOf(d, d.length-1);
-			
-			// jitter
-			//nd[0] += 0.02+r.nextDouble()*0.01;
-			//nd[1] += 0.02+r.nextDouble()*0.01;
-					
+				
 			samples.add(nd);
 			desired.add(new double[]{d[d.length-1]});
 		}
@@ -83,8 +79,8 @@ public class HousepriceOptimize {
 		final Dist<double[]> gDist = new EuclideanDist(ga);
 		final Dist<double[]> fDist = new EuclideanDist(fa);
 		
-		//DataUtils.zScoreColumns(samples, fa);
-		//DataUtils.zScoreColumn(desired, 0);
+		DataUtils.zScoreColumns(samples, fa);
+		DataUtils.zScoreColumn(desired, 0);
 		/*DataUtils.zScoreGeoColumns(samples, ga, gDist); //not necessary*/
 		
 		final Map<double[],Map<double[],Double>> rMap = GeoUtils.getInverseDistanceMatrix(samples, gDist, 1);
@@ -176,12 +172,12 @@ public class HousepriceOptimize {
 		
 		for( final method m : new method[]{ /*method.coef, method.inter,*/ method.error } )
 		for( final int T_MAX : new int[]{ 40000 } )	
-		for( final int nrNeurons : new int[]{ 12 } )
-		for( final double lInit : new double[]{ 3 })
+		for( final int nrNeurons : new int[]{ 8 } )
+		for( final double lInit : new double[]{ nrNeurons*2.0/3 })
 		for( final double lFinal : new double[]{ 0.1 })	
-		for( final double lr1Init : new double[]{ 0.8 }) 
+		for( final double lr1Init : new double[]{ 0.6 }) 
 		for( final double lr1Final : new double[]{ 0.01, })
-		for( final double lr2Init : new double[]{ 0.8, })
+		for( final double lr2Init : new double[]{ 0.2, })
 		for( final double lr2Final : new double[]{ 0.01, })
 		for( final boolean ignSupport : new boolean[]{ false } )
 		for( final LLMNG.mode mode : new LLMNG.mode[]{ /*LLMNG.mode.hagenauer,*/ LLMNG.mode.fritzke } )
@@ -228,7 +224,7 @@ public class HousepriceOptimize {
 						DefaultSorter<double[]> gSorter = new DefaultSorter<>(gDist);
 						Sorter<double[]> sorter = new KangasSorter<>(gSorter, secSorter, L);
 						
-						DecayFunction nbRate = new PowerDecay((double)nrNeurons/lInit, lFinal);
+						DecayFunction nbRate = new PowerDecay(lInit, lFinal);
 						DecayFunction lrRate1 = new PowerDecay(lr1Init, lr1Final);
 						DecayFunction lrRate2 = new PowerDecay(lr2Init, lr2Final);
 						LLMNG ng = new LLMNG(neurons, 

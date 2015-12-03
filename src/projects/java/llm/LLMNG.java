@@ -83,7 +83,7 @@ public class LLMNG extends NG implements SupervisedNet {
 	
 	@Override
 	public void train( double t, double[] x, double[] desired ) {
-		sortNeurons(x);
+		sorter.sort(x, neurons);
 				
 		double l = neighborhoodRange.getValue(t);
 		double e = adaptationRate.getValue(t);

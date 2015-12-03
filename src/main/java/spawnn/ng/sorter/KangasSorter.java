@@ -34,5 +34,11 @@ public class KangasSorter<T> implements Sorter<T> {
 		}
 				
 	}
+
+	@Override
+	public T getBMU(T x, List<T> neurons) {
+		a.sort(x, neurons);
+		return b.getBMU(x, neurons.subList(0, l ) );
+	}
 }
 

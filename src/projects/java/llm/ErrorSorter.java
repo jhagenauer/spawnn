@@ -42,4 +42,10 @@ public class ErrorSorter implements Sorter<double[]> {
 	public void setLLMNG( LLMNG llm ) {
 		this.llm = llm;
 	}
+
+	@Override
+	public double[] getBMU(double[] x, List<double[]> neurons) {
+		sort(x,neurons);
+		return neurons.get(0);
+	}
 }

@@ -41,8 +41,8 @@ public class GridPanel extends NeuronVisPanel<GridPos> implements MouseListener 
 	
 	public GridPanel(Grid2D<double[]> grid, Dist<double[]> fDist) {		
 		for( GridPos gp : grid.getPositions() ) {
-			int i = gp.getPosVector()[0];
-			int j = gp.getPosVector()[1];
+			int i = gp.getPos(0);
+			int j = gp.getPos(1);
 				
 				int[] x = null, y = null;
 				
