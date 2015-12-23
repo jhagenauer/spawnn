@@ -55,7 +55,7 @@ import spawnn.gui.DistanceDialog.StatMode;
 import spawnn.ng.utils.NGUtils;
 import spawnn.utils.ClusterValidation;
 import spawnn.utils.Clustering;
-import spawnn.utils.ColorBrewerUtil;
+import spawnn.utils.ColorUtils;
 import spawnn.utils.DataUtils;
 import spawnn.utils.GraphClustering;
 import spawnn.utils.SpatialDataFrame;
@@ -147,7 +147,7 @@ public class NGResultPanel extends ResultPanel<double[]> implements ActionListen
 		edgeComboBox.addActionListener(this);
 
 		colorComboBox = new JComboBox();
-		colorComboBox.setModel(new DefaultComboBoxModel(ColorBrewerUtil.ColorMode.values()));
+		colorComboBox.setModel(new DefaultComboBoxModel(ColorUtils.ColorMode.values()));
 		colorComboBox.addActionListener(this);
 
 		layoutComboBox = new JComboBox();
@@ -176,7 +176,7 @@ public class NGResultPanel extends ResultPanel<double[]> implements ActionListen
 		mapPanel = new MapPanel<double[]>(fc, pos);
 
 		actionPerformed(new ActionEvent(vertexComboBox, 0, DISTANCE));
-		Map<double[], Color> colorMap = ColorBrewerUtil.valuesToColors(neuronValues, (ColorBrewerUtil.ColorMode)colorComboBox.getSelectedItem());
+		Map<double[], Color> colorMap = ColorUtils.getColorMap(neuronValues, (ColorUtils.ColorMode)colorComboBox.getSelectedItem());
 
 		pnlGraph.setGridColors(colorMap, selectedColors, neuronValues);
 		pnlGraph.addNeuronSelectedListener(this);
@@ -197,13 +197,13 @@ public class NGResultPanel extends ResultPanel<double[]> implements ActionListen
 		mapPanel.setGridColors(colorMap, selectedColors, neuronValues);
 		mapPanel.addNeuronSelectedListener(this);
 		
-		colorComboBox.setSelectedItem(ColorBrewerUtil.ColorMode.Blues);
+		colorComboBox.setSelectedItem(ColorUtils.ColorMode.Blues);
 	}
 
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		if (e.getSource() == colorComboBox) {
-			Map<double[], Color> colorMap = ColorBrewerUtil.valuesToColors(neuronValues, (ColorBrewerUtil.ColorMode)colorComboBox.getSelectedItem());
+			Map<double[], Color> colorMap = ColorUtils.getColorMap(neuronValues, (ColorUtils.ColorMode)colorComboBox.getSelectedItem());
 			pnlGraph.setGridColors(colorMap, selectedColors, neuronValues);
 			mapPanel.setGridColors(colorMap, selectedColors, neuronValues);
 		} else if (e.getSource() == layoutComboBox) {
@@ -549,7 +549,7 @@ public class NGResultPanel extends ResultPanel<double[]> implements ActionListen
 				for (double[] v : pos)
 					neuronValues.put(v, v[vertexComboBox.getSelectedIndex() - 4]); // RANDOM, DISTANCE, CLUSTER, CLUSTER ( GRAPH)
 			}
-			Map<double[], Color> colorMap = ColorBrewerUtil.valuesToColors(neuronValues, (ColorBrewerUtil.ColorMode)colorComboBox.getSelectedItem());
+			Map<double[], Color> colorMap = ColorUtils.getColorMap(neuronValues, (ColorUtils.ColorMode)colorComboBox.getSelectedItem());
 			pnlGraph.setGridColors(colorMap, selectedColors, neuronValues);
 			mapPanel.setGridColors(colorMap, selectedColors, neuronValues);
 		} else if( e.getSource() == edgeComboBox ) {
@@ -571,7 +571,7 @@ public class NGResultPanel extends ResultPanel<double[]> implements ActionListen
 		else
 			selectedColors.put(d, selectedColor);
 
-		Map<double[], Color> colorMap = ColorBrewerUtil.valuesToColors(neuronValues, (ColorBrewerUtil.ColorMode)colorComboBox.getSelectedItem());
+		Map<double[], Color> colorMap = ColorUtils.getColorMap(neuronValues, (ColorUtils.ColorMode)colorComboBox.getSelectedItem());
 		pnlGraph.setGridColors(colorMap, selectedColors, neuronValues);
 		mapPanel.setGridColors(colorMap, selectedColors, neuronValues);
 	}

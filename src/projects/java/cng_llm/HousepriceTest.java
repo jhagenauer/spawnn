@@ -50,8 +50,8 @@ import spawnn.ng.sorter.Sorter;
 import spawnn.ng.utils.NGUtils;
 import spawnn.som.decay.DecayFunction;
 import spawnn.som.decay.PowerDecay;
-import spawnn.utils.ColorBrewerUtil;
-import spawnn.utils.ColorBrewerUtil.ColorMode;
+import spawnn.utils.ColorUtils;
+import spawnn.utils.ColorUtils.ColorMode;
 import spawnn.utils.DataUtils;
 import spawnn.utils.Drawer;
 import spawnn.utils.GraphClustering;
@@ -296,7 +296,7 @@ public class HousepriceTest {
 		for (int i = 0; i < geoms.size(); i++)
 			m.put(geoms.get(i), values.get(i));
 
-		Map<Geometry, Color> colMap = ColorBrewerUtil.valuesToColors(m, cm);
+		Map<Geometry, Color> colMap = ColorUtils.getColorMap(m, cm);
 		Set<Color> cols = new HashSet<Color>(colMap.values());
 
 		try {
@@ -347,7 +347,7 @@ public class HousepriceTest {
 		Map<double[], Double> values = new HashMap<double[], Double>();
 		for (double[] d : neurons)
 			values.put(d, (double) neurons.indexOf(d));
-		Map<double[], Color> col = ColorBrewerUtil.valuesToColors(values, ColorMode.Spectral);
+		Map<double[], Color> col = ColorUtils.getColorMap(values, ColorMode.Spectral);
 
 		StyleBuilder sb = new StyleBuilder();
 		MapContent mc = new MapContent();

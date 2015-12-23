@@ -1,5 +1,6 @@
 package wmng.llm;
 
+import java.awt.Color;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -10,7 +11,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -24,117 +24,123 @@ import org.apache.commons.math3.linear.SingularMatrixException;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression;
 import org.apache.log4j.Logger;
+import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
 import rbf.Meuse;
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
 import spawnn.ng.sorter.DefaultSorter;
-import spawnn.ng.sorter.KangasSorter;
 import spawnn.ng.sorter.Sorter;
 import spawnn.ng.sorter.SorterWMC;
 import spawnn.som.decay.DecayFunction;
 import spawnn.som.decay.PowerDecay;
+import spawnn.utils.ColorUtils;
+import spawnn.utils.ColorUtils.ColorMode;
 import spawnn.utils.DataUtils;
+import spawnn.utils.DataUtils.transform;
+import spawnn.utils.Drawer;
 import spawnn.utils.GeoUtils;
 import spawnn.utils.SpatialDataFrame;
+
+import com.vividsolutions.jts.geom.Coordinate;
+import com.vividsolutions.jts.geom.Geometry;
+import com.vividsolutions.jts.geom.GeometryFactory;
 
 public class BostonTest {
 	
 	private static Logger log = Logger.getLogger(BostonTest.class);
 	
-	enum model {WMNG,CNG,LM};
+	enum model {WMNG, NG, NG_LAG, LM};
 		
 	public static void main(String[] args) {
 		long timeAll = System.currentTimeMillis();
 		final Random r = new Random();
+		
+		int threads = 4;
+		int maxRun = 8; 
+				
+		String fn = "output/resultBostonTest_"+maxRun+".csv";
+		fn = fn.replaceAll(" ","");
+		try {
+			Files.write(Paths.get(fn), ("vars,nr_vars,t_max,nrNeurons,nbInit,nbFinal,lr1Init,lr1Final,lr2Init,lr2Final,model,alpha,beta,rmse\n").getBytes());
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 			
-		int maxRun = 48;
-			
-		SpatialDataFrame sdf = DataUtils.readSpatialDataFrameFromCSV(new File("data/boston.csv"), new int[] { 0,1 }, new int[] {}, true);
+		SpatialDataFrame sdf = DataUtils.readSpatialDataFrameFromShapefile(new File("data/boston/boston_tracts.shp"), true);
+		DataUtils.transform(sdf.samples, new int[]{5,12,13,17}, transform.log); // without transform performance is bad
+		DataUtils.transform(sdf.samples, new int[]{9,10}, transform.pow2);
+		DataUtils.transform(sdf.samples, transform.zScore);
+				
+		for( int[] vars : new int[][]{
+				
+				//TODO get bets nr of neurons for single var
+				
+				//new int[]{17}, // best single
+				//new int[]{6,7,8,9,10,11,12,13,14,15,16,17,18} // all
+				
+				// FW select WMNG, r4, 16n
+				/*new int[]{17},
+				new int[]{17,10},
+				new int[]{17,10,6},
+				new int[]{17,10,6,16},
+				new int[]{17,10,6,16,12},
+				new int[]{17,10,6,16,12,11},
+				new int[]{17,10,6,16,12,11,15},
+				new int[]{17,10,6,16,12,11,15,9},
+				new int[]{17,10,6,16,12,11,15,9,18},
+				new int[]{17,10,6,16,12,11,15,9,18,14},
+				new int[]{17,10,6,16,12,11,15,9,18,14,13},
+				new int[]{17,10,6,16,12,11,15,9,18,14,13,8},
+				new int[]{17,10,6,16,12,11,15,9,18,14,13,8,7},*/
+				
+				// FW select, LagNG, 64r, 16n
+				new int[]{17},
+				new int[]{17,10},
+				new int[]{17,10,14},
+				new int[]{17,10,14,16},
+				new int[]{17,10,14,16,6},
+				new int[]{17,10,14,16,6,15},
+				new int[]{17,10,14,16,6,15,11},
+				new int[]{17,10,14,16,6,15,11,12},
+				new int[]{17,10,14,16,6,15,11,12,9},
+				new int[]{17,10,14,16,6,15,11,12,9,18},
+				new int[]{17,10,14,16,6,15,11,12,9,18,8},
+				new int[]{17,10,14,16,6,15,11,12,9,18,8,13},
+				new int[]{17,10,14,16,6,15,11,12,9,18,8,13,7},	
+		} ) {
+		long timeVar = System.currentTimeMillis();
+							
 		final List<double[]> samples = new ArrayList<double[]>();
 		final List<double[]> desired = new ArrayList<double[]>();
 		for (double[] d : sdf.samples) {
-			double[] nd = new double[d.length-1];
-			for( int i = 0; i < nd.length; i++ )
-				nd[i] = d[i+1];
+			double[] nd = new double[vars.length];
+			for( int i = 0; i < vars.length; i++ )
+				nd[i] = d[vars[i]];
 			samples.add(nd);
-			desired.add(new double[]{d[0]});
+			desired.add(new double[]{d[5]});
 		}
+		
+		String vNames = "";
+		for( int i = 0; i < vars.length; i++) {
+			vNames += sdf.names.get(vars[i]);
+			if( i < vars.length-1 )
+				vNames += ";";
+		}
+				
+		Map<double[],Map<double[],Double>> dMap = GeoUtils.getRowNormedMatrix( GeoUtils.listsToWeights(GeoUtils.getContiguityMap(samples, sdf.geoms, false, false)));
 						
-		final int[] fa = new int[samples.get(0).length-2]; // omit geo-vars
+		final int[] fa = new int[samples.get(0).length];
 		for( int i = 0; i < fa.length; i++ )
 			fa[i] = i;
-		final int[] ga = new int[] { 13, 14 };
-				
-		final Dist<double[]> gDist = new EuclideanDist(ga);
+										
 		final Dist<double[]> fDist = new EuclideanDist(fa);
-		
-		DataUtils.zScoreColumns(samples, fa);
-		DataUtils.zScoreColumn(desired, 0);
-		
-			String fn = "output/resultBostonTest_"+sdf.names+"_"+maxRun+".csv";
-			fn = fn.replaceAll(" ","");
-			try {
-				Files.write(Paths.get(fn), ("dmMode,model,t_max,nrNeurons,nbInit,nbFinal,lr1Init,lr1Final,lr2Init,lr2Final,alpha,beta,gamma,l,rmse,rmseVar\n").getBytes());
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
 				
-		class HousepriceData {
-			List<double[]> samplesTrain;
-			List<double[]> desiredTrain;
-			Map<double[],Map<double[],Double>> dMapTrain;
-			List<double[]> samplesVal;
-			List<double[]> desiredVal;
-			Map<double[],Map<double[],Double>> dMapVal;
-			
-			public HousepriceData(List<double[]> samples, List<double[]>  desired ) {
-				samplesTrain = new ArrayList<double[]>(samples);
-				desiredTrain = new ArrayList<double[]>(desired);
-				
-				samplesVal = new ArrayList<double[]>();
-				desiredVal = new ArrayList<double[]>();
-				
-				while( samplesVal.size() < samples.size()/3 ) {
-					int idx = r.nextInt(samplesTrain.size());
-					samplesVal.add(samplesTrain.remove(idx));
-					desiredVal.add(desiredTrain.remove(idx));
-				}			
-			}
-			
-			public void setDistanceMatrices( int mode ) {
-				switch(mode) {
-					case 0:
-						dMapVal = GeoUtils.getRowNormedMatrix( GeoUtils.listsToWeights( GeoUtils.getKNNs( samplesVal, gDist, 4, false ) ) );
-						dMapTrain = GeoUtils.getRowNormedMatrix( GeoUtils.listsToWeights( GeoUtils.getKNNs( samplesTrain, gDist, 4, false ) ) );
-						break;
-					case 1:
-						dMapVal = GeoUtils.getRowNormedMatrix( GeoUtils.listsToWeights( GeoUtils.getKNNs( samplesVal, gDist, 6, false ) ) );
-						dMapTrain = GeoUtils.getRowNormedMatrix( GeoUtils.listsToWeights( GeoUtils.getKNNs( samplesTrain, gDist, 6, false ) ) );
-						break;
-					case 2:
-						dMapVal = GeoUtils.getRowNormedMatrix( GeoUtils.listsToWeights( GeoUtils.getKNNs( samplesVal, gDist, 8, false ) ) );
-						dMapTrain = GeoUtils.getRowNormedMatrix( GeoUtils.listsToWeights( GeoUtils.getKNNs( samplesTrain, gDist, 8, false ) ) );
-						break;
-					case 3:
-						dMapVal = GeoUtils.getRowNormedMatrix( GeoUtils.listsToWeights( GeoUtils.getKNNs( samplesVal, gDist, 12, false ) ) );
-						dMapTrain = GeoUtils.getRowNormedMatrix( GeoUtils.listsToWeights( GeoUtils.getKNNs( samplesTrain, gDist, 12, false ) ) );
-						break;
-					default:	
-				}
-				System.gc();
-			}
-		}
+		final TrainingData hd = new TrainingData( samples, desired, dMap );
 		
-		final List<HousepriceData> data = new ArrayList<HousepriceData>();
-		for( int i = 0; i < maxRun; i++ )
-			data.add( new HousepriceData( samples, desired ) );
-		
-		for( final int dmMode : new int[]{2} ) {
-		for( HousepriceData hd : data )
-			hd.setDistanceMatrices(dmMode);
-		for( final int T_MAX : new int[]{ 80000 } )	
-		for( final int nrNeurons : new int[]{ 8 } ) 		
+		for( final int T_MAX : new int[]{ 120000 } )	
+		//for( final int nrNeurons : new int[]{ 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36 } ) 		
+		for( final int nrNeurons : new int[]{ 16 } ) 
 		for( final double nbInit : new double[]{ (double)nrNeurons*2.0/3.0 })
 		for( final double nbFinal : new double[]{ 1.0 })	
 		for( final double lr1Init : new double[]{ 0.6 }) 
@@ -143,28 +149,28 @@ public class BostonTest {
 		for( final double lr2Final : new double[]{ 0.001 })
 		{			
 			List<Object[]> models = new ArrayList<Object[]>();
-			for( int l = 1; l <= nrNeurons; l++ )
-				models.add( new Object[]{model.CNG,null,null,null,l} );
+			//models.add( new Object[]{model.LM,null,null} );
+			//models.add( new Object[]{model.NG,null,null} );
+			models.add( new Object[]{model.NG_LAG,null,null,} );
 			
-			for( final double alpha : new double[]{ 0.0, 0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, /*0.6, 0.7, 0.8, 0.9*/ } )
-			for( final double beta :  new double[]{ 0.0, 0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, /*0.6, 0.7, 0.8, 0.9*/ } )
-			for( final double gamma : new double[]{ 0.0, 0.01, 0.05, 0.1, 0.2, 0.3, /*0.4, /*0.5, 0.6, 0.7, 0.8, 0.9*/ } )
-				models.add( new Object[]{model.WMNG, alpha, beta,gamma,null} );
+			for (double alpha = 0.0; alpha <= 1; alpha = (double)Math.round( (alpha+0.05) * 100000) / 100000 )
+			for (double beta = 0; beta <= 1; beta = (double)Math.round( (beta+0.05) * 100000) / 100000 )
+				models.add( new Object[]{model.WMNG, alpha, beta} );
+
+			//models.add( new Object[]{model.WMNG, 0.65, 0.25} ); // best 16n, 1v
+			log.debug("models: "+models.size());
 			
-			/*models.add( new Object[]{model.WMNG, 0.4, 0.1,0.1,null} );
-			models.add( new Object[]{model.WMNG, 0.3, 0.01,0.1,null} );
-			models.add( new Object[]{model.WMNG, 0.2, 0.0,0.1,null} );*/
-			models.add( new Object[]{model.LM, null, null, null, null} );
-							
+			Map<Object[],List<Double>> meanResiMap = new HashMap<Object[],List<Double>>();
+									
 			for( final Object[] m : models ) {
 			long time = System.currentTimeMillis();
 			
-			ExecutorService es = Executors.newFixedThreadPool(4);
-			Map<HousepriceData,Future<List<double[]>>> futures = new HashMap<HousepriceData,Future<List<double[]>>>();
-			
-			for ( final HousepriceData hd : data ) {
+			ExecutorService es = Executors.newFixedThreadPool(threads);
+			List<Future<List<double[]>>> futures = new ArrayList<Future<List<double[]>>>();
+						
+			for ( int run = 0; run < maxRun; run++ ) {
 				
-				futures.put( hd, es.submit(new Callable<List<double[]>>() {
+				futures.add( es.submit(new Callable<List<double[]>>() {
 
 					@Override
 					public List<double[]> call() throws Exception {
@@ -179,7 +185,6 @@ public class BostonTest {
 						if( m[0] == model.WMNG ) { // WMNG + LLM
 							double alpha = (double)m[1];
 							double beta = (double)m[2];
-							double gamma = (double)m[3];
 												
 							List<double[]> neurons = new ArrayList<double[]>();
 							for (int i = 0; i < nrNeurons; i++) {
@@ -198,80 +203,68 @@ public class BostonTest {
 							SorterWMC sorter = new SorterWMC(bmuHist, dMapTrain, fDist, alpha, beta);
 								
 							ContextNG_LLM ng = new ContextNG_LLM(neurons, nbRate, lrRate1, nbRate, lrRate2, sorter, fa, 1);
+							ng.useCtx = true;
 							for (int t = 0; t < T_MAX; t++) {
 								int j = r.nextInt(samplesTrain.size());
 								ng.train((double) t / T_MAX, samplesTrain.get(j), desiredTrain.get(j));
-							}
-														
-							//ng.gamma = gamma;
-							
-							// ------------------------------------------
-							
-							final List<double[]> samplesVal = hd.samplesVal;
-							
-							Map<double[], Map<double[], Double>> dMapVal = hd.dMapVal;
-							sorter.setWeightMatrix(dMapVal); // new weight-matrix
-							
-							bmuHist.clear();
-							for (double[] d : samplesVal)
-								bmuHist.put(d, neurons.get(r.nextInt(neurons.size())));
-							for( int i = 0; i < 60; i++ ) // train histMap
-								for( double[] x : samplesVal )
-									sorter.getBMU(x, neurons);
-																						
+							}														
+																					
 							List<double[]> responseVal = new ArrayList<double[]>();
-							for (double[] x : samplesVal)
+							for (double[] x : hd.samplesVal )
 								responseVal.add(ng.present(x));				
 																										
 							return responseVal;
-						} else if( m[0] == model.CNG ) { // CNG+LLM
-							int l = (int)m[4];
+						} else if( m[0] == model.NG_LAG ){
+							List<double[]> lagedSamplesTrain = GeoUtils.getLagedSamples(samplesTrain, hd.dMapTrain);
+							
 							List<double[]> neurons = new ArrayList<double[]>();
 							for (int i = 0; i < nrNeurons; i++) {
-								double[] d = samplesTrain.get(r.nextInt(samplesTrain.size()));
+								double[] d = lagedSamplesTrain.get(r.nextInt(lagedSamplesTrain.size()));
 								neurons.add(Arrays.copyOf(d, d.length));
 							}
-
-							Sorter<double[]> secSorter = new DefaultSorter<>(fDist);
-							DefaultSorter<double[]> gSorter = new DefaultSorter<>(gDist);
-							Sorter<double[]> sorter = new KangasSorter<>(gSorter, secSorter, l );
 							
-							LLMNG ng = new LLMNG(neurons, 
-									nbRate, lrRate1, 
-									nbRate, lrRate2, 
-									sorter, fa, 1 );
-							
-							for (int t = 0; t < T_MAX; t++) {
-								int j = r.nextInt(samplesTrain.size());
-								ng.train((double) t / T_MAX, samplesTrain.get(j), desiredTrain.get(j));
+							int[] nfa = new int[fa.length*2];
+							for( int i = 0; i < fa.length; i++ ) {
+								nfa[i] = fa[i];
+								nfa[fa.length + i] = samplesTrain.get(0).length + fa[i];
 							}
-							
+														
+							Sorter<double[]> sorter = new DefaultSorter<>( new EuclideanDist(nfa));
+
+							LLMNG ng = new LLMNG(neurons, nbRate, lrRate1, nbRate, lrRate2, sorter, nfa, 1);
+
+							for (int t = 0; t < T_MAX; t++) {
+								int j = r.nextInt(lagedSamplesTrain.size());
+								ng.train((double) t / T_MAX, lagedSamplesTrain.get(j), desiredTrain.get(j));
+							}
+
+							List<double[]> lagedSamplesVal = GeoUtils.getLagedSamples(hd.samplesVal, hd.dMapVal);
 							List<double[]> responseVal = new ArrayList<double[]>();
-							for (double[] x : hd.samplesVal)
-								responseVal.add(ng.present(x));	
+							for ( double[] x : lagedSamplesVal )
+								responseVal.add(ng.present(x));
 							return responseVal;
-						} else { // Linear model
-							
+						} else if( m[0] == model.LM ){ // Linear model
+
 							double[] y = new double[desiredTrain.size()];
 							for (int i = 0; i < desiredTrain.size(); i++)
 								y[i] = desiredTrain.get(i)[0];
 
 							double[][] x = new double[samplesTrain.size()][];
-							for (int i = 0; i < samplesTrain.size(); i++) 
-								x[i] = getStripped(samplesTrain.get(i), fa);
+							for (int i = 0; i < samplesTrain.size(); i++)
+								x[i] = DoubleGridTest.getStripped(samplesTrain.get(i), fa);
 							try {
 								// training
 								OLSMultipleLinearRegression ols = new OLSMultipleLinearRegression();
 								ols.setNoIntercept(false);
 								ols.newSampleData(y, x);
 								double[] beta = ols.estimateRegressionParameters();
-
+								
 								// testing
 								List<double[]> samplesVal = hd.samplesVal;
 								List<double[]> response = new ArrayList<double[]>();
 								for (int i = 0; i < samplesVal.size(); i++) {
-									double[] xi = getStripped(samplesVal.get(i), fa);
-									
+									double[] xi = DoubleGridTest.getStripped(samplesVal.get(i), fa);
+
 									double p = beta[0]; // intercept at beta[0]
 									for (int j = 1; j < beta.length; j++)
 										p += beta[j] * xi[j - 1];
@@ -282,8 +275,30 @@ public class BostonTest {
 							} catch (SingularMatrixException e) {
 								log.debug(e.getMessage());
 								System.exit(1);
-							}						
-						return null;
+							}
+							return null;
+						} else if( m[0] == model.NG ) {
+							List<double[]> neurons = new ArrayList<double[]>();
+							for (int i = 0; i < nrNeurons; i++) {
+								double[] d = samplesTrain.get(r.nextInt(samplesTrain.size()));
+								neurons.add(Arrays.copyOf(d, d.length));
+							}
+													
+							Sorter<double[]> sorter = new DefaultSorter<>( new EuclideanDist(fa));
+
+							LLMNG ng = new LLMNG(neurons, nbRate, lrRate1, nbRate, lrRate2, sorter, fa, 1);
+
+							for (int t = 0; t < T_MAX; t++) {
+								int j = r.nextInt(samplesTrain.size());
+								ng.train((double) t / T_MAX, samplesTrain.get(j), desiredTrain.get(j));
+							}
+
+							List<double[]> responseVal = new ArrayList<double[]>();
+							for ( double[] x : hd.samplesVal )
+								responseVal.add(ng.present(x));
+							return responseVal;
+						} else {
+							return null;
 						}
 					}
 				}));
@@ -291,12 +306,14 @@ public class BostonTest {
 			es.shutdown();
 			
 			try {
+				List<Double> meanResiduals = null;
 				DescriptiveStatistics ds[] = null;
-				for (Entry<HousepriceData, Future<List<double[]>>> ff : futures.entrySet() ) {
+				for (Future<List<double[]>> ff : futures ) {
 				
-						List<double[]> response = ff.getValue().get();
-						List<double[]> desiredVal = ff.getKey().desiredVal;
-						double[] ee = new double[]{ Meuse.getRMSE(response, desiredVal) };
+						List<double[]> responseVal = ff.get();
+						List<double[]> desiredVal = hd.desiredVal;
+												
+						double[] ee = new double[]{ Meuse.getRMSE(responseVal, desiredVal)	};
 						
 						if (ds == null) {
 							ds = new DescriptiveStatistics[ee.length];
@@ -305,11 +322,22 @@ public class BostonTest {
 						}
 						for (int i = 0; i < ee.length; i++)
 							ds[i].addValue(ee[i]);
-					
+						
+						List<Double> residuals = new ArrayList<Double>();
+						for( int i = 0; i < responseVal.size(); i++ )
+							residuals.add( (responseVal.get(i)[0] - desiredVal.get(i)[0])/maxRun );
+						
+						if( meanResiduals == null )
+							meanResiduals = residuals;
+						else {
+							for( int i = 0; i < residuals.size(); i++ )
+								meanResiduals.set( i, meanResiduals.get(i)+residuals.get(i) );
+						}	
 				}
-				String s = dmMode+","+(model)m[0]+","+T_MAX+","+nrNeurons+","+nbInit+","+nbFinal+","+lr1Init+","+lr1Final+","+lr2Init+","+lr2Final+","+(m[1]==null ? "" : (double)m[1])+","+(m[2]==null ? "" : (double)m[2])+","+(m[3]==null ? "" : (double)m[3])+","+(m[4]==null ? "" : (int)m[4]);
+				meanResiMap.put(m, meanResiduals);
+				String s = vNames+","+vars.length+","+T_MAX+","+nrNeurons+","+nbInit+","+nbFinal+","+lr1Init+","+lr1Final+","+lr2Init+","+lr2Final+","+Arrays.toString(m).replaceAll("\\[", "").replaceAll("\\]", "");
 				for (int i = 0; i < ds.length; i++)
-					s += ","+ds[i].getMean()+","+ds[i].getVariance();
+					s += ","+ds[i].getMean();
 				s += "\n";
 				Files.write(Paths.get(fn), s.getBytes(), StandardOpenOption.APPEND);
 				System.out.print(s);
@@ -320,17 +348,91 @@ public class BostonTest {
 			} catch (ExecutionException e) {
 				e.printStackTrace();
 			}
-			log.debug("model took: "+(System.currentTimeMillis()-time)/1000.0+"s");
+			//log.debug("model took: "+(System.currentTimeMillis()-time)/1000.0+"s");
 		}
+		
+		/*
+		double minResi = Double.MAX_VALUE, max = Double.MIN_VALUE;
+		double minResiSquared = Double.MAX_VALUE, maxResiSquared = Double.MIN_VALUE;
+		for( List<Double> l : meanResiMap.values() ) {
+			for( double d : l ) {
+				minResi = Math.min(minResi, d);
+				max = Math.max(max, d);
+				
+				minResiSquared = Math.min(minResiSquared, Math.pow(d,2));
+				maxResiSquared = Math.max(maxResiSquared, Math.pow(d,2));
+			}
 		}
-		log.debug("took: "+(System.currentTimeMillis()-timeAll)/1000.0/60.0+"m");
+		
+		if( models.size() < 3 )
+		for( Entry<Object[], List<Double>> e : meanResiMap.entrySet() ) {
+			
+			List<Double> resiSquared = new ArrayList<Double>();
+			for( double d : e.getValue() )
+				resiSquared.add( Math.pow( d, 2));
+			geoDrawValues(sdf.geoms, resiSquared, minResiSquared, maxResiSquared, sdf.crs, ColorMode.Reds, "output/residualsSquared_"+(model)e.getKey()[0]+"_"+maxRun+".png");
+			
+			double m = Math.max(max, Math.abs(minResi));
+			geoDrawValues(sdf.geoms, e.getValue(), -m, m, sdf.crs, ColorMode.RdBu, "output/residuals_"+(model)e.getKey()[0]+"_"+maxRun+"_centered.png");
+						
+			List<double[]> l = new ArrayList<double[]>();
+			for( double d : e.getValue() )
+				l.add(new double[]{d});
+			DataUtils.writeCSV( "output/residuals_"+(model)e.getKey()[0]+"_"+maxRun+".csv", l, null);
+		}
+						
+		if( models.size() < 3 )
+		for( int i = 0; i < models.size(); i++  )
+			for( int j = i+1; j < models.size(); j++ ) {
+				
+				List<Double> resiA = meanResiMap.get(models.get(i));
+				List<Double> resiB = meanResiMap.get(models.get(j));
+				
+				List<Double> diff = new ArrayList<Double>();
+				for( int k = 0; k < resiA.size(); k++ )
+					diff.add( resiA.get(k)-resiB.get(k) );
+				
+				double range = Math.abs(Collections.min(diff));
+				range = Math.max(range, Math.abs(Collections.max(diff)));
+								
+				geoDrawValues(sdf.geoms, diff, -range, range, sdf.crs, ColorMode.RdBu, "output/diff_"+maxRun+"_centered.png" );
+								
+				List<Double> l = new ArrayList<Double>();
+				for( int k = 0; k < resiA.size(); k++ ) {
+					if( Math.abs(resiA.get(k)) < Math.abs(resiB.get(k)) )
+						l.add( Math.abs(resiA.get(k)) );
+					else
+						l.add( -Math.abs(resiB.get(k)) );		
+				}
+				geoDrawValues(sdf.geoms, l, -range, range, sdf.crs, ColorMode.RdBu, "output/better_"+maxRun+"_centered.png" );			
+			}
+			*/			
+		}
+		log.debug("var took: "+(System.currentTimeMillis()-timeVar)/1000.0/60.0+"m");
+		}
+		log.debug("all took: "+(System.currentTimeMillis()-timeAll)/1000.0/60.0+"m");
+		log.debug(fn+" written.");
 	}
-	}
+	
 
-public static double[] getStripped(double[] d, int[] fa) {
-	double[] nd = new double[fa.length];
-	for (int i = 0; i < fa.length; i++)
-		nd[i] = d[fa[i]];
-	return nd;
-}
+	public static void geoDrawValues(List<Geometry> geoms, List<Double> values, double min, double max, CoordinateReferenceSystem crs, ColorMode cm, String fn) {
+		Map<Geometry, Double> doubleMap = new HashMap<Geometry, Double>();
+		for (int i = 0; i < geoms.size(); i++)
+			doubleMap.put(geoms.get(i), values.get(i));
+		
+		GeometryFactory gf = new GeometryFactory();
+		Geometry minGeom = gf.createPoint(new Coordinate(0.01123153, 0.1024324));
+		Geometry maxGeom = gf.createPoint(new Coordinate(0.03123412, 0.10442321));
+		
+		if( geoms.contains(minGeom) || geoms.contains(maxGeom))
+			throw new RuntimeException("Cannot determine colors!");
+		
+		doubleMap.put(minGeom, min);
+		doubleMap.put(maxGeom, max);
+		
+		Map<Geometry,Color> m = ColorUtils.getColorMap(doubleMap, cm,24,false);
+		m.remove(minGeom);
+		m.remove(maxGeom);
+		Drawer.geoDraw( m, crs, fn);
+	}
 }

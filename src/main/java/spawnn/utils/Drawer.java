@@ -1,8 +1,6 @@
 package spawnn.utils;
 
-import java.awt.BasicStroke;
 import java.awt.Color;
-import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.RenderingHints;
@@ -11,7 +9,6 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -20,6 +17,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
 
@@ -45,7 +43,7 @@ import org.geotools.swing.JMapPane;
 import org.opengis.feature.type.GeometryType;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
-import spawnn.utils.ColorBrewerUtil.ColorMode;
+import spawnn.utils.ColorUtils.ColorMode;
 
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.MultiPoint;
@@ -100,7 +98,7 @@ public class Drawer {
 			nonEmpty++;
 		}
 
-		Map<double[], Color> colorMap = ColorBrewerUtil.valuesToColors(valueMap, ColorBrewerUtil.ColorMode.Set3);
+		Map<double[], Color> colorMap = ColorUtils.getColorMap(valueMap, ColorUtils.ColorMode.Set3);
 
 		// draw
 		try {
@@ -161,7 +159,7 @@ public class Drawer {
 			RenderingHints hints = new RenderingHints(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 			hints.put(RenderingHints.KEY_ALPHA_INTERPOLATION, RenderingHints.VALUE_ALPHA_INTERPOLATION_QUALITY);
 			hints.put(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_SPEED);
-			//renderer.setRendererHints(hints);
+			// renderer.setRendererHints(hints);
 			renderer.setMapContent(map);
 
 			Rectangle imageBounds = null;
@@ -178,7 +176,7 @@ public class Drawer {
 				Graphics2D gr = image.createGraphics();
 				gr.setPaint(Color.WHITE);
 				gr.fill(imageBounds);
-				
+
 				renderer.paint(gr, imageBounds, maxBounds);
 
 				ImageIO.write(image, "png", os);
@@ -191,7 +189,7 @@ public class Drawer {
 			e.printStackTrace();
 		}
 	}
-	
+
 	public static void geoDrawClusterEPS(Collection<Set<double[]>> cluster, List<double[]> samples, List<Geometry> geoms, String fn, boolean border) {
 
 		int offset = (int) Math.ceil((1.0 + 3) / 2);
@@ -206,7 +204,7 @@ public class Drawer {
 			nonEmpty++;
 		}
 
-		Map<double[], Color> colorMap = ColorBrewerUtil.valuesToColors(valueMap, ColorBrewerUtil.ColorMode.Set3);
+		Map<double[], Color> colorMap = ColorUtils.getColorMap(valueMap, ColorUtils.ColorMode.Set3);
 
 		// draw
 		try {
@@ -228,7 +226,7 @@ public class Drawer {
 			StyleBuilder sb = new StyleBuilder();
 			MapContent mc = new MapContent();
 			ReferencedEnvelope maxBounds = null;
-			
+
 			int clusterIndex = 0;
 			for (Collection<double[]> l : cluster) {
 				if (l.isEmpty())
@@ -241,7 +239,7 @@ public class Drawer {
 					featureBuilder.add(geoms.get(idx));
 					fc.add(featureBuilder.buildFeature("" + fc.size()));
 				}
-				
+
 				if (maxBounds == null)
 					maxBounds = fc.getBounds();
 				else
@@ -260,52 +258,48 @@ public class Drawer {
 					throw new RuntimeException("No layer for geometry type added");
 				clusterIndex++;
 			}
-			
+
 			JMapPane mp = new JMapPane();
 			mp.setDoubleBuffered(true);
 			mp.setMapContent(mc);
 			mp.setSize(1024, 1024);
 			mc.setViewport(new MapViewport(maxBounds));
-														
+
 			GTRenderer renderer = new StreamingRenderer();
 			RenderingHints hints = new RenderingHints(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
 			hints.put(RenderingHints.KEY_ALPHA_INTERPOLATION, RenderingHints.VALUE_ALPHA_INTERPOLATION_QUALITY);
 			hints.put(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_SPEED);
 			mp.setRenderer(renderer);
-												
+
 			Rectangle imageBounds = null;
 			try {
 				double heightToWidth = maxBounds.getSpan(1) / maxBounds.getSpan(0);
 				imageBounds = new Rectangle(offset, offset, mp.getWidth() + offset, (int) Math.round(mp.getWidth() * heightToWidth) + offset);
 				{
-					/*FileOutputStream stream = new FileOutputStream("output/test.png");
-					BufferedImage bufImage = new BufferedImage(imageBounds.width, imageBounds.height, BufferedImage.TYPE_INT_RGB);
-					Graphics2D g = bufImage.createGraphics();
-					g.drawImage(bufImage, 0, 0, imageBounds.width + 2 * offset, imageBounds.height + 2 * offset, null);
-					renderer.paint(g, imageBounds, maxBounds);
-
-					ImageIO.write(bufImage, "PNG", stream);
-					stream.flush();
-					stream.close();*/
+					/*
+					 * FileOutputStream stream = new FileOutputStream("output/test.png"); BufferedImage bufImage = new BufferedImage(imageBounds.width, imageBounds.height, BufferedImage.TYPE_INT_RGB); Graphics2D g = bufImage.createGraphics(); g.drawImage(bufImage, 0, 0, imageBounds.width + 2 * offset, imageBounds.height + 2 * offset, null); renderer.paint(g, imageBounds, maxBounds);
+					 * 
+					 * ImageIO.write(bufImage, "PNG", stream); stream.flush(); stream.close();
+					 */
 				}
-				
+
 				FileOutputStream stream = new FileOutputStream(fn);
 				EPSDocumentGraphics2D g = new EPSDocumentGraphics2D(false);
-				g.setGraphicContext(new org.apache.xmlgraphics.java2d.GraphicContext() );
+				g.setGraphicContext(new org.apache.xmlgraphics.java2d.GraphicContext());
 				g.setupDocument(stream, imageBounds.width + 2 * offset, imageBounds.height + 2 * offset);
 				try {
 					renderer.paint(g, imageBounds, maxBounds);
-				} catch( IllegalArgumentException iae ) {
-					log.warn("Ignoring "+iae.getMessage());
+				} catch (IllegalArgumentException iae) {
+					log.warn("Ignoring " + iae.getMessage());
 				}
 				g.finish();
-				
+
 				stream.flush();
 				stream.close();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
-			//mc.dispose();
+			// mc.dispose();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -322,59 +316,64 @@ public class Drawer {
 			System.out.println(getColor(i));
 		}
 	}
-	
+
 	public static void geoDrawValues(SpatialDataFrame sdf, int column, ColorMode cm, String fn) {
 		List<Double> values = new ArrayList<Double>();
-		for( double[] d : sdf.samples )
-			values.add( d[column] );
+		for (double[] d : sdf.samples)
+			values.add(d[column]);
 		geoDrawValues(sdf.geoms, values, sdf.crs, cm, fn);
 	}
-		
+
 	public static void geoDrawValues(List<Geometry> geoms, List<double[]> values, int fa, CoordinateReferenceSystem crs, ColorMode cm, String fn) {
 		List<Double> l = new ArrayList<Double>();
-		for( double[] d : values )
+		for (double[] d : values)
 			l.add(d[fa]);
 		geoDrawValues(geoms, l, crs, cm, fn);
 	}
-	
+
 	public static void geoDrawValues(List<Geometry> geoms, List<Double> values, CoordinateReferenceSystem crs, ColorMode cm, String fn) {
+		Map<Geometry, Double> valueMap = new HashMap<Geometry, Double>();
+		for (int i = 0; i < geoms.size(); i++)
+			valueMap.put(geoms.get(i), values.get(i));
+		geoDraw( ColorUtils.getColorMap(valueMap, cm), crs, fn);
+	}
+	
+	public static void geoDraw(Map<Geometry,Color> m, CoordinateReferenceSystem crs, String fn) {
 		SimpleFeatureTypeBuilder typeBuilder = new SimpleFeatureTypeBuilder();
 		typeBuilder.setName("data");
 		typeBuilder.setCRS(crs);
-		typeBuilder.add("the_geom", geoms.get(0).getClass());
-	
+		typeBuilder.add("the_geom", m.keySet().iterator().next().getClass());
+
 		SimpleFeatureBuilder featureBuilder = new SimpleFeatureBuilder(typeBuilder.buildFeatureType());
-		Map<Geometry, Double> m = new HashMap<Geometry, Double>();
-		for (int i = 0; i < geoms.size(); i++)
-			m.put(geoms.get(i), values.get(i));
-	
-		Map<Geometry, Color> colMap = ColorBrewerUtil.valuesToColors(m, cm);
-		List<Color> cols = new ArrayList<Color>(new HashSet<Color>(colMap.values()));
-		Collections.sort(cols, new Comparator<Color>() {
-			@Override
-			public int compare(Color o1, Color o2) {
-				return Integer.compare(o1.hashCode(), o2.hashCode());
-			}
-		});
-	
 		try {
 			StyleBuilder sb = new StyleBuilder();
 			MapContent mc = new MapContent();
-	
+
 			ReferencedEnvelope mapBounds = mc.getMaxBounds();
-			for (Color c : cols) {
+			
+			// because we want always the same order of layers
+			List<Color> cols = new ArrayList<Color>(new HashSet<Color>(m.values()));
+			Collections.sort(cols, new Comparator<Color>() {
+				@Override
+				public int compare(Color o1, Color o2) {
+					return Integer.compare(o1.hashCode(), o2.hashCode());
+				}
+			});
+			
+			for (Color c : cols ) { // a layer for each color
 				DefaultFeatureCollection features = new DefaultFeatureCollection();
-				for (Geometry g : colMap.keySet()) {
-					if (!c.equals(colMap.get(g)))
+				
+				for( Entry<Geometry,Color> e : m.entrySet() ) {
+					if (!c.equals(e.getValue()))
 						continue;
-					featureBuilder.set("the_geom", g);
+					featureBuilder.set("the_geom", e.getKey());
 					features.add(featureBuilder.buildFeature("" + features.size()));
 				}
-				
+
 				Style style = null;
 				GeometryType gt = features.getSchema().getGeometryDescriptor().getType();
 				if (gt.getBinding() == Polygon.class || gt.getBinding() == MultiPolygon.class) {
-					Symbolizer sym = sb.createPolygonSymbolizer(sb.createStroke(),sb.createFill(c));
+					Symbolizer sym = sb.createPolygonSymbolizer(sb.createStroke(), sb.createFill(c));
 					style = SLD.wrapSymbolizers(sym);
 				} else if (gt.getBinding() == Point.class || gt.getBinding() == MultiPoint.class) {
 					Mark mark = sb.createMark(StyleBuilder.MARK_CIRCLE, sb.createFill(c), sb.createStroke());
@@ -383,24 +382,24 @@ public class Drawer {
 				} else {
 					log.warn("GeomType not supported: " + gt.getBinding());
 				}
-				FeatureLayer fl = new FeatureLayer(features, style );
+				FeatureLayer fl = new FeatureLayer(features, style);
 				mc.addLayer(fl);
 				mapBounds.expandToInclude(fl.getBounds());
 			}
-	
+
 			GTRenderer renderer = new StreamingRenderer();
 			renderer.setMapContent(mc);
-	
+
 			Rectangle imageBounds = null;
-			
+
 			double heightToWidth = mapBounds.getSpan(1) / mapBounds.getSpan(0);
 			int imageWidth = 2000;
 			imageBounds = new Rectangle(0, 0, imageWidth, (int) Math.round(imageWidth * heightToWidth));
-	
+
 			BufferedImage image = new BufferedImage(imageBounds.width, imageBounds.height, BufferedImage.TYPE_INT_ARGB);
 			Graphics2D gr = image.createGraphics();
 			renderer.paint(gr, imageBounds, mapBounds);
-	
+
 			ImageIO.write(image, "png", new FileOutputStream(fn));
 			image.flush();
 			mc.dispose();

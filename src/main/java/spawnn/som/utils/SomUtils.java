@@ -67,8 +67,8 @@ import spawnn.som.grid.Grid2DHex;
 import spawnn.som.grid.Grid2DHexToroid;
 import spawnn.som.grid.Grid2DToroid;
 import spawnn.som.grid.GridPos;
-import spawnn.utils.ColorBrewerUtil;
-import spawnn.utils.ColorBrewerUtil.ColorMode;
+import spawnn.utils.ColorUtils;
+import spawnn.utils.ColorUtils.ColorMode;
 import spawnn.utils.DataUtils;
 import spawnn.utils.Drawer;
 import watershedflooding.Watershed;
@@ -646,7 +646,7 @@ public class SomUtils {
 		for (int i = 0; i < matrix.length; i++)
 			for (int j = 0; j < matrix[i].length; j++)
 				mMap.put(new GridPos(i, j), matrix[i][j]);
-		Map<GridPos, Color> cMap = ColorBrewerUtil.valuesToColors(mMap, colorScale);
+		Map<GridPos, Color> cMap = ColorUtils.getColorMap(mMap, colorScale);
 
 		for (GridPos p : cMap.keySet()) {
 			int i = p.getPos(0);
@@ -702,7 +702,7 @@ public class SomUtils {
 				shapes.put(sp, matrix[i][j]);
 			}
 		}
-		Map<Shape, Color> colors = ColorBrewerUtil.valuesToColors(shapes, colorScale);
+		Map<Shape, Color> colors = ColorUtils.getColorMap(shapes, colorScale);
 
 		// fill hexagons
 		DecimalFormat df = new DecimalFormat("#.#####");
@@ -768,7 +768,7 @@ public class SomUtils {
 			Shape sp = at.createTransformedShape(p);
 			shapes.put(sp, grid.getPrototypeAt(gp)[idx]);
 		}
-		Map<Shape, Color> colors = ColorBrewerUtil.valuesToColors(shapes, colorScale);
+		Map<Shape, Color> colors = ColorUtils.getColorMap(shapes, colorScale);
 
 		// fill hexagons
 		DecimalFormat df = new DecimalFormat("#.#####");

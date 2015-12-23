@@ -57,7 +57,7 @@ import spawnn.som.utils.SomToolboxUtils;
 import spawnn.som.utils.SomUtils;
 import spawnn.utils.ClusterValidation;
 import spawnn.utils.Clustering;
-import spawnn.utils.ColorBrewerUtil;
+import spawnn.utils.ColorUtils;
 import spawnn.utils.DataUtils;
 import spawnn.utils.SpatialDataFrame;
 import spawnn.utils.Clustering.TreeNode;
@@ -144,7 +144,7 @@ public class SOMResultPanel extends ResultPanel<GridPos> implements ActionListen
 		gridComboBox.addActionListener(this);
 
 		colorComboBox = new JComboBox();
-		colorComboBox.setModel(new DefaultComboBoxModel(ColorBrewerUtil.ColorMode.values()));
+		colorComboBox.setModel(new DefaultComboBoxModel(ColorUtils.ColorMode.values()));
 		colorComboBox.addActionListener(this);
 
 		gridModeComboBox = new JComboBox();
@@ -213,7 +213,7 @@ public class SOMResultPanel extends ResultPanel<GridPos> implements ActionListen
 				else
 					selectedColors.put(gp, selectedColor);
 
-				Map<GridPos, Color> colorMap = ColorBrewerUtil.valuesToColors(neuronValues, (ColorBrewerUtil.ColorMode) colorComboBox.getSelectedItem());
+				Map<GridPos, Color> colorMap = ColorUtils.getColorMap(neuronValues, (ColorUtils.ColorMode) colorComboBox.getSelectedItem());
 				pnlGrid.setGridColors(colorMap, selectedColors, neuronValues);
 				mapPanel.setGridColors(colorMap, selectedColors, neuronValues);
 				pnlGraph.setGridColors(toDoubleArrayMap(colorMap), toDoubleArrayMap(selectedColors), toDoubleArrayMap(neuronValues));
@@ -222,7 +222,7 @@ public class SOMResultPanel extends ResultPanel<GridPos> implements ActionListen
 		pnlGraph.addNeuronSelectedListener(new NSL(grid));
 
 		actionPerformed(new ActionEvent(gridComboBox, 0, DISTANCE));
-		Map<GridPos, Color> colorMap = ColorBrewerUtil.valuesToColors(neuronValues, (ColorBrewerUtil.ColorMode) colorComboBox.getSelectedItem());
+		Map<GridPos, Color> colorMap = ColorUtils.getColorMap(neuronValues, (ColorUtils.ColorMode) colorComboBox.getSelectedItem());
 
 		pnlGrid.setGridColors(colorMap, selectedColors, neuronValues);
 		pnlGrid.addMouseListener(pnlGrid);
@@ -247,7 +247,7 @@ public class SOMResultPanel extends ResultPanel<GridPos> implements ActionListen
 		add( cards, "w 50%, pushy, grow");
 		add( mapPanel, "grow");
 		
-		colorComboBox.setSelectedItem(ColorBrewerUtil.ColorMode.Blues);
+		colorComboBox.setSelectedItem(ColorUtils.ColorMode.Blues);
 	}
 
 	private Color selectedColor = Color.RED;
@@ -422,14 +422,14 @@ public class SOMResultPanel extends ResultPanel<GridPos> implements ActionListen
 				}
 			}
 
-			Map<GridPos, Color> colorMap = ColorBrewerUtil.valuesToColors(neuronValues, (ColorBrewerUtil.ColorMode) colorComboBox.getSelectedItem());
+			Map<GridPos, Color> colorMap = ColorUtils.getColorMap(neuronValues, (ColorUtils.ColorMode) colorComboBox.getSelectedItem());
 			pnlGrid.setGridColors(colorMap, selectedColors, neuronValues);
 			mapPanel.setGridColors(colorMap, selectedColors, neuronValues);
 			pnlGraph.setGridColors(toDoubleArrayMap(colorMap), toDoubleArrayMap(selectedColors), toDoubleArrayMap(neuronValues));
 			// selected.clear(); // reset selected if other vis8
 
 		} else if (e.getSource() == colorComboBox) { // color-mode-change
-			Map<GridPos, Color> colorMap = ColorBrewerUtil.valuesToColors(neuronValues, (ColorBrewerUtil.ColorMode) colorComboBox.getSelectedItem());
+			Map<GridPos, Color> colorMap = ColorUtils.getColorMap(neuronValues, (ColorUtils.ColorMode) colorComboBox.getSelectedItem());
 			pnlGrid.setGridColors(colorMap, selectedColors, neuronValues);
 			mapPanel.setGridColors(colorMap, selectedColors, neuronValues);
 			pnlGraph.setGridColors(toDoubleArrayMap(colorMap), toDoubleArrayMap(selectedColors), toDoubleArrayMap(neuronValues));
@@ -540,7 +540,7 @@ public class SOMResultPanel extends ResultPanel<GridPos> implements ActionListen
 		else
 			selectedColors.put(gp, selectedColor);
 
-		Map<GridPos, Color> colorMap = ColorBrewerUtil.valuesToColors(neuronValues, (ColorBrewerUtil.ColorMode) colorComboBox.getSelectedItem());
+		Map<GridPos, Color> colorMap = ColorUtils.getColorMap(neuronValues, (ColorUtils.ColorMode) colorComboBox.getSelectedItem());
 		pnlGrid.setGridColors(colorMap, selectedColors, neuronValues);
 		mapPanel.setGridColors(colorMap, selectedColors, neuronValues);
 		pnlGraph.setGridColors(toDoubleArrayMap(colorMap), toDoubleArrayMap(selectedColors), toDoubleArrayMap(neuronValues));

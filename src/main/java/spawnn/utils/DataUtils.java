@@ -28,6 +28,7 @@ import java.util.Set;
 import org.apache.commons.math3.linear.Array2DRowRealMatrix;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.SingularValueDecomposition;
+import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 import org.apache.log4j.Logger;
 import org.geotools.data.DataStore;
@@ -1062,12 +1063,14 @@ public class DataUtils {
 		return sd;
 	}
 
+	@Deprecated
 	public static void normalize(List<double[]> samples) {
 		int length = samples.get(0).length;
 		for (int i = 0; i < length; i++)
 			normalizeColumn(samples, i);
 	}
 
+	@Deprecated
 	public static void normalizeColumn(List<double[]> samples, int idx) {
 		SummaryStatistics ss = new SummaryStatistics();
 		for (double[] d : samples)
@@ -1077,6 +1080,7 @@ public class DataUtils {
 			d[idx] = (d[idx] - ss.getMin()) / (ss.getMax() - ss.getMin()); // 0...1
 	}
 
+	@Deprecated
 	public static void normalizeColumns(List<double[]> samples, int[] idx) {
 		for (int i : idx)
 			normalizeColumn(samples, i);
@@ -1105,12 +1109,14 @@ public class DataUtils {
 				d[idx[i]] = (d[idx[i]] - min[i]) / l;
 	}
 
+	@Deprecated
 	public static void zScore(List<double[]> samples) {
 		int length = samples.get(0).length;
 		for (int i = 0; i < length; i++)
 			zScoreColumn(samples, i);
 	}
 
+	@Deprecated
 	public static void zScoreColumn(List<double[]> samples, int idx) {
 		SummaryStatistics ss = new SummaryStatistics();
 		for (double[] d : samples)
@@ -1120,15 +1126,50 @@ public class DataUtils {
 			d[idx] = (d[idx] - ss.getMean()) / ss.getStandardDeviation();
 	}
 
+	@Deprecated
 	public static void zScoreColumns(List<double[]> samples) {
 		int length = samples.get(0).length;
 		for (int i = 0; i < length; i++)
 			zScoreColumn(samples, i);
 	}
 
+	@Deprecated
 	public static void zScoreColumns(List<double[]> samples, int[] idx) {
 		for (int i : idx)
 			zScoreColumn(samples, i);
+	}
+	
+	public enum transform { pow2, log, sqrt, div, zScore, scale01 };
+	public static void transform(List<double[]> samples, int[] fa, transform t ) {
+		DescriptiveStatistics[] ds = new DescriptiveStatistics[fa.length];
+		for( int i = 0; i < fa.length; i++ )
+			ds[i] = new DescriptiveStatistics();
+		for( double[] d : samples )
+			for( int i = 0; i < fa.length; i++ )
+				ds[i].addValue(d[fa[i]]);
+		
+		for( double[] d : samples )
+			for( int i = 0; i < fa.length; i++ ) {
+				if( t == transform.log )
+					d[fa[i]] = Math.log(d[fa[i]]);
+				else if( t == transform.pow2 )
+					d[fa[i]] = Math.pow(d[fa[i]],2);
+				else if( t == transform.sqrt )
+					d[fa[i]] = Math.sqrt(d[fa[i]]);
+				else if( t == transform.div )
+					d[fa[i]] = 1.0/d[fa[i]];
+				else if( t == transform.zScore )
+					d[fa[i]] =  (d[fa[i]] - ds[i].getMean()) / ds[i].getStandardDeviation();
+				else if( t == transform.scale01 )
+					d[fa[i]] = (d[fa[i]] - ds[i].getMin()) / (ds[i].getMax() - ds[i].getMin());
+			}	
+	}
+	
+	public static void transform(List<double[]> samples, transform t ) {
+		int[] fa = new int[samples.get(0).length];
+		for( int i = 0; i < fa.length; i++ )
+			fa[i] = i;
+		transform(samples,fa,t);
 	}
 
 	public static void zScoreGeoColumns(List<double[]> samples, int[] idx, Dist<double[]> dist) {

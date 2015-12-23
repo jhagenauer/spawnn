@@ -7,6 +7,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -26,7 +27,6 @@ import org.apache.log4j.Logger;
 
 import com.vividsolutions.jts.geom.Geometry;
 
-import cern.colt.Arrays;
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
 import spawnn.som.grid.Grid;
@@ -35,6 +35,25 @@ import spawnn.som.grid.GridPos;
 public class GeoUtils {
 
 	private static Logger log = Logger.getLogger(GeoUtils.class);
+	
+	public static List<double[]> getLagedSamples(List<double[]> samples, Map<double[],Map<double[],Double>> dMap ) {
+		List<double[]> ns = new ArrayList<double[]>();
+		for( double[] d : samples ) {
+			double[] lag = new double[d.length];
+			for( Entry<double[],Double> nb : dMap.get(d).entrySet() )
+				for( int i = 0; i < lag.length; i++ )
+					lag[i] += nb.getValue() * nb.getKey()[i];
+			
+			// append
+			double[] nd = new double[d.length*2];
+			for( int i = 0; i < d.length; i++ ) {
+				nd[i] = d[i];
+				nd[i+d.length] = lag[i];
+			}
+			ns.add(nd);
+		}
+		return ns;
+	}
 	
 	public static Map<double[],List<double[]>> getNeighborsFromGrid(Grid<double[]> grid) {
 		Map<double[],List<double[]>> m = new HashMap<double[],List<double[]>>();
@@ -332,7 +351,7 @@ public class GeoUtils {
 				ds.getMean(),
 				ds.getVariance(),
 				zScore, // standard deviate
-				2*new TDistribution(n-1).density(zScore), // p-Value???
+				//2*new TDistribution(n-1).density(zScore), // p-Value???
 				(double)i/reps, // p-Value!
 			};
 	}

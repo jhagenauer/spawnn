@@ -58,7 +58,7 @@ public class ContextNG_LLM extends NG implements SupervisedNet {
 		return getResponse(x, ((SorterContext)sorter).getContext(x), w);
 	}
 	
-	public double[] getResponse(double[] x, double[] context, double[] w) {
+	private double[] getResponse(double[] x, double[] context, double[] w) {
 		double[][] m = matrix.get(w);
 		double[] r = new double[m.length]; // calculate product m*diff
 						
@@ -86,8 +86,6 @@ public class ContextNG_LLM extends NG implements SupervisedNet {
 			((SorterWMC)sorter).sort(x, neurons, context);
 		else
 			sorter.sort(x, neurons);
-		//TODO update context after sort?
-		//context = ((SorterContext)sorter).getContext(x);
 		
 		double l = neighborhoodRange.getValue(t);
 		double e = adaptationRate.getValue(t);
@@ -123,4 +121,17 @@ public class ContextNG_LLM extends NG implements SupervisedNet {
 				}	
 		}
 	}
+	
+	// just for debug
+	public void contextNGLLMtoString() {
+		System.out.println("Prototypes: ");
+		for (double[] n : neurons)
+			System.out.println("w: " + n[2] + ", wc: " + n[6]);
+		System.out.println("m:");
+		for (double[] n : neurons) {
+			double[] m = matrix.get(n)[0];
+			System.out.println("m: " + m[2] + ", mc:" + m[6]);
+		}
+	}
+
 }

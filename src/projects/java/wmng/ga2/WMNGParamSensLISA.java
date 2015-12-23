@@ -35,7 +35,7 @@ import spawnn.ng.sorter.SorterWMC;
 import spawnn.ng.utils.NGUtils;
 import spawnn.som.decay.DecayFunction;
 import spawnn.som.decay.PowerDecay;
-import spawnn.utils.ColorBrewerUtil;
+import spawnn.utils.ColorUtils;
 import spawnn.utils.DataUtils;
 import spawnn.utils.GeoUtils;
 import spawnn.utils.SpatialDataFrame;
@@ -257,7 +257,7 @@ public class WMNGParamSensLISA {
 								break;
 							}
 					}
-					Map<double[],Color> colorMap = ColorBrewerUtil.valuesToColors(neuronValues, ColorBrewerUtil.ColorMode.Set3 );
+					Map<double[],Color> colorMap = ColorUtils.getColorMap(neuronValues, ColorUtils.ColorMode.Set3 );
 					NGResultPanel.saveLegend(colorMap, neuronValues, new File("output/wmng_legend.eps"), "EPS", false, 4 );
 				}
 				
