@@ -405,15 +405,11 @@ public class DataUtils {
 	}
 
 	public static <T> double getMeanQuantizationError(Map<T, Set<T>> clusters, Dist<T> dist) {
-		double sum = 0;
+		DescriptiveStatistics ds = new DescriptiveStatistics();
 		for (Entry<T, Set<T>> e : clusters.entrySet())
 			for (T d : e.getValue())
-				sum += dist.dist(e.getKey(), d);
-
-		long n = 0;
-		for (Set<T> l : clusters.values())
-			n += l.size();
-		return sum / n;
+				ds.addValue( dist.dist(e.getKey(), d) );
+		return ds.getMean();
 	}
 
 	public static <T> double getQuantizationError(T centroid, Collection<T> data, Dist<T> dist) {

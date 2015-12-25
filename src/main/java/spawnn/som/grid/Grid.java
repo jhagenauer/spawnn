@@ -32,14 +32,20 @@ public abstract class Grid<T> {
 	public int getNumDimensions() {
 		return grid.keySet().iterator().next().length();
 	}
-
+	
+	// cache of sizes
+	private Map<Integer,Integer> m = new HashMap<Integer,Integer>();
+	
 	public int getSizeOfDim( int n ) {
-		int min = Integer.MAX_VALUE, max = Integer.MIN_VALUE;
-		for( GridPos p : getPositions() ) {
-			max = Math.max( max, p.getPos(n) );
-			min = Math.min( min, p.getPos(n) );
-		}
-		return max - min + 1;
+		if( !m.containsKey(n) ) {	
+			int min = Integer.MAX_VALUE, max = Integer.MIN_VALUE;
+			for( GridPos p : getPositions() ) {
+				max = Math.max( max, p.getPos(n) );
+				min = Math.min( min, p.getPos(n) );
+			}
+			m.put(n, max - min + 1);
+		}		
+		return m.get(n);
 	}
 	
 	public Set<GridPos> getPositions() {
@@ -63,6 +69,7 @@ public abstract class Grid<T> {
 	}
 		
 	public T setPrototypeAt( GridPos pos, T v ) {
+		m.clear(); 
 		return grid.put( pos, v);
 	}
 		

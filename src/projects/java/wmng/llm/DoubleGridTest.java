@@ -1,9 +1,5 @@
 package wmng.llm;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -12,22 +8,21 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.zip.GZIPInputStream;
 
 import llm.LLMNG;
 
-import org.apache.commons.math3.linear.SingularMatrixException;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
-import org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression;
 import org.apache.log4j.Logger;
 
 import rbf.Meuse;
@@ -36,26 +31,22 @@ import spawnn.dist.EuclideanDist;
 import spawnn.ng.sorter.DefaultSorter;
 import spawnn.ng.sorter.Sorter;
 import spawnn.ng.sorter.SorterWMC;
+import spawnn.ng.utils.NGUtils;
 import spawnn.som.decay.DecayFunction;
 import spawnn.som.decay.PowerDecay;
 import spawnn.som.grid.Grid2D;
-import spawnn.som.utils.SomUtils;
+import spawnn.som.grid.GridPos;
 import spawnn.utils.GeoUtils;
 
 public class DoubleGridTest {
 
 	private static Logger log = Logger.getLogger(DoubleGridTest.class);
 	
-	/*TODO 
-	 * - modify spBuild (noise), more non-linear, * instead of +, etc
-	 * - rerun with 18 neurons?
-	**/
-
 	enum model {
-		WMNG, LM, NG_LAG, NG
+		WMNG, NG_LAG, NG
 	};
 
-	public static void main(String[] args) {
+	public static void main(String[] args) {		
 		long timeAll = System.currentTimeMillis();
 
 		final Random r = new Random();
@@ -69,39 +60,28 @@ public class DoubleGridTest {
 		
 		final int[] fa = new int[] { 2 };
 		final Dist<double[]> fDist = new EuclideanDist(fa);
-
-		class GridData {
-			Map<double[], Map<double[], Double>> dMapTrain, dMapVal;
-			List<double[]> samplesTrain = new ArrayList<double[]>();
-			List<double[]> desiredTrain = new ArrayList<double[]>();
-			List<double[]> samplesVal = new ArrayList<double[]>();
-			List<double[]> desiredVal = new ArrayList<double[]>();
-
-			public GridData(Grid2D<double[]> gridTrain, Grid2D<double[]> gridVal) {
-				dMapTrain = GeoUtils.getRowNormedMatrix(GeoUtils.listsToWeights(GeoUtils.getNeighborsFromGrid(gridTrain)));
-				for (double[] d : gridTrain.getPrototypes()) {
-					samplesTrain.add(d);
-					desiredTrain.add(new double[] { d[3] });
-				}
-				
-				dMapVal = GeoUtils.getRowNormedMatrix(GeoUtils.listsToWeights(GeoUtils.getNeighborsFromGrid(gridVal)));
-				for (double[] d : gridVal.getPrototypes()) {
-					samplesVal.add(d);
-					desiredVal.add(new double[] { d[d.length - 1] });
-				}
-			}
-		}
 		
 		String fn = "output/resultDoubleTest_" + maxRun + "_"+nr.length+".csv";
 		try {
-			Files.write(Paths.get(fn), ("t_max,nrNeurons,nbInit,nbFinal,lr1Init,lr1Final,lr2Init,lr2Final,model,alpha,beta,rmse,nrmse\n").getBytes());
+			Files.write(Paths.get(fn), ("t_max,nrNeurons,nbInit,nbFinal,lr1Init,lr1Final,lr2Init,lr2Final,model,alpha,beta,rmse,nrmse,r2,qe_0,qe_1,qe_2\n").getBytes());
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+		
+		class Result {
+			Map<double[],Set<double[]>> bmusVal;
+			List<double[]> responseVal;
+		};
 
 		// load grid data
 		final List<GridData> gridData = new ArrayList<GridData>();
-		Grid2D<double[]> gridTrain = null;
+		for( int i = 0; i < maxRun; i++ )
+			gridData.add( new GridData(
+					DoubleGrid2DUtils.createSpDepGrid(50, 50, true), 
+					DoubleGrid2DUtils.createSpDepGrid(50, 50, true)
+				) );
+		
+		/*Grid2D<double[]> gridTrain = null;
 		for (File fileEntry : new File("/home/julian/publications/geollm/data/grid").listFiles(new FilenameFilter() {
 		    public boolean accept(File dir, String name) {
 		        return name.toLowerCase().endsWith(".gz");
@@ -125,7 +105,7 @@ public class DoubleGridTest {
 			}
 			if( gridData.size() == maxRun )
 				break;
-		}
+		}*/
 		log.debug("GridData: "+gridData.size());
 
 		for( final int T_MAX : new int[]{ 120000 } )
@@ -137,13 +117,12 @@ public class DoubleGridTest {
 		for( final double lr2Init : new double[]{ 0.6 })
 		for (final double lr2Final : new double[] { 0.01 }) {
 			List<Object[]> models = new ArrayList<Object[]>();
-			//models.add(new Object[] { model.LM, null, null });
 			models.add(new Object[] { model.NG_LAG, null, null });
-			//models.add(new Object[] { model.NG, null, null });
+			models.add(new Object[] { model.NG, null, null });
 			
-			for (double alpha = 0; alpha <= 1; alpha = (double)Math.round( (alpha+0.05) * 100000) / 100000 )
+			for (double alpha = 0.0; alpha <= 1; alpha = (double)Math.round( (alpha+0.05) * 100000) / 100000 )
 			for (double beta = 0; beta <= 1; beta = (double)Math.round( (beta+0.05) * 100000) / 100000 )
-				models.add(new Object[] { model.WMNG, alpha, beta });
+				;//models.add(new Object[] { model.WMNG, alpha, beta });
 			
 			//models.add(new Object[] { model.WMNG, 0.65, 0.65 }); // best 16n
 			log.debug("models: "+models.size());
@@ -152,20 +131,20 @@ public class DoubleGridTest {
 
 				long time = System.currentTimeMillis();
 				ExecutorService es = Executors.newFixedThreadPool(threads);
-				Map<GridData, Future<List<double[]>>> futures = new HashMap<GridData, Future<List<double[]>>>();
+				Map<GridData, Future<Result>> futures = new HashMap<GridData, Future<Result>>();
 
 				for (final GridData data : gridData) {
 
-					futures.put(data, es.submit(new Callable<List<double[]>>() {
+					futures.put(data, es.submit(new Callable<Result>() {
 
 						@Override
-						public List<double[]> call() throws Exception {
+						public Result call() throws Exception {
 
 							List<double[]> samplesTrain = data.samplesTrain;
 							List<double[]> desiredTrain = data.desiredTrain;
 							
 							List<double[]> samplesVal = data.samplesVal;
-							List<double[]> desiredVal = data.desiredVal;
+							//List<double[]> desiredVal = data.desiredVal;
 							Map<double[], Map<double[], Double>> dMapVal = data.dMapVal;
 							
 							DecayFunction nbRate = new PowerDecay(nbInit, nbFinal);
@@ -212,45 +191,16 @@ public class DoubleGridTest {
 									for (double[] x : rSamplesVal)
 										sorter.sort(x, neurons);
 								}
-
+								
 								List<double[]> responseVal = new ArrayList<double[]>();
 								for (double[] x : samplesVal)
 									responseVal.add(ng.present(x));
-
-								return responseVal;
-							} else if( m[0] == model.LM ){ // Linear model
-
-								double[] y = new double[desiredTrain.size()];
-								for (int i = 0; i < desiredTrain.size(); i++)
-									y[i] = desiredTrain.get(i)[0];
-
-								double[][] x = new double[samplesTrain.size()][];
-								for (int i = 0; i < samplesTrain.size(); i++)
-									x[i] = getStripped(samplesTrain.get(i), fa);
-								try {
-									// training
-									OLSMultipleLinearRegression ols = new OLSMultipleLinearRegression();
-									ols.setNoIntercept(false);
-									ols.newSampleData(y, x);
-									double[] beta = ols.estimateRegressionParameters();
-
-									// testing
-									List<double[]> responseVal = new ArrayList<double[]>();
-									for (int i = 0; i < samplesVal.size(); i++) {
-										double[] xi = getStripped(samplesVal.get(i), fa);
-
-										double p = beta[0]; // intercept at beta[0]
-										for (int j = 1; j < beta.length; j++)
-											p += beta[j] * xi[j - 1];
-
-										responseVal.add(new double[] { p });
-									}
-									return responseVal;
-								} catch (SingularMatrixException e) {
-									log.debug(e.getMessage());
-									System.exit(1);
-								}
-								return null;
+								
+								Result r = new Result();
+								r.bmusVal = NGUtils.getBmuMapping(samplesVal, neurons, sorter);
+								r.responseVal = responseVal;
+								return r;
+								
 							} else if( m[0] == model.NG_LAG ){
 								List<double[]> lagedSamplesTrain = GeoUtils.getLagedSamples(samplesTrain, data.dMapTrain);
 								
@@ -279,10 +229,26 @@ public class DoubleGridTest {
 								List<double[]> responseVal = new ArrayList<double[]>();
 								for ( double[] x : lagedSamplesVal )
 									responseVal.add(ng.present(x));
-								return responseVal;
+								
+								Map<double[],Set<double[]>> bmusLagged = NGUtils.getBmuMapping(lagedSamplesVal, neurons, sorter);
+								Map<double[],Set<double[]>> bmus = new HashMap<double[],Set<double[]>>();
+								
+								for( Entry<double[],Set<double[]>> e : bmusLagged.entrySet() ) {
+									Set<double[]> s = new HashSet<double[]>();
+									for( double[] d : bmusLagged.get(e.getKey() ) ) {
+										int idx = lagedSamplesVal.indexOf(d);
+										s.add(samplesVal.get(idx));
+									}
+									bmus.put(e.getKey(), s);
+								}
+								
+								Result r = new Result();
+								r.bmusVal = bmus;
+								r.responseVal = responseVal;
+								return r;
 								
 							} else {
-							List<double[]> neurons = new ArrayList<double[]>();
+								List<double[]> neurons = new ArrayList<double[]>();
 								for (int i = 0; i < nrNeurons; i++) {
 									double[] d = samplesTrain.get(r.nextInt(samplesTrain.size()));
 									neurons.add(Arrays.copyOf(d, d.length));
@@ -299,7 +265,11 @@ public class DoubleGridTest {
 								List<double[]> responseVal = new ArrayList<double[]>();
 								for ( double[] x : samplesVal )
 									responseVal.add(ng.present(x));
-								return responseVal;
+								
+								Result r = new Result();
+								r.bmusVal = NGUtils.getBmuMapping(samplesVal, neurons, sorter);
+								r.responseVal = responseVal;
+								return r;
 								
 							}
 						}
@@ -310,25 +280,25 @@ public class DoubleGridTest {
 				// get statistics
 				try {
 					DescriptiveStatistics ds[] = null;
-					for (Entry<GridData, Future<List<double[]>>> ff : futures.entrySet()) {
-						List<double[]> responseVal = ff.getValue().get();
-						List<double[]> samplesVal = ff.getKey().samplesVal;
+					for (Entry<GridData, Future<Result>> ff : futures.entrySet()) {
+						Result re = ff.getValue().get();
+						List<double[]> responseVal = re.responseVal;
+						//List<double[]> samplesVal = ff.getKey().samplesVal;
 						List<double[]> desiredVal = ff.getKey().desiredVal;
 
-						// moran
-						/*Map<double[], Map<double[], Double>> dMap = ff.getKey().dMapVal;
-						Map<double[], Double> values = new HashMap<double[], Double>();
-						for (int i = 0; i < samplesVal.size(); i++)
-							values.put(samplesVal.get(i), responseVal.get(i)[0] - desiredVal.get(i)[0]);
-						double[] moran = GeoUtils.getMoransIStatistics(dMap, values);*/
-						//double[] moran = GeoUtils.getMoransIStatisticsMonteCarlo(dMap, values, 999);
-						
 						DescriptiveStatistics ds2 = new DescriptiveStatistics();
 						for( double[] d : desiredVal )
 							ds2.addValue(d[0]);
 
 						double rmse = Meuse.getRMSE(responseVal, desiredVal);
-						double[] ee = new double[] { rmse, rmse/ds2.getStandardDeviation() };
+						double[] ee = new double[] { 
+								rmse, 
+								rmse/ds2.getStandardDeviation(),
+								Meuse.getR2(responseVal,desiredVal),
+								getDistError(re.bmusVal, ff.getKey().gridVal, 0, fa[0]),
+								getDistError(re.bmusVal, ff.getKey().gridVal, 1, fa[0]),
+								getDistError(re.bmusVal, ff.getKey().gridVal, 2, fa[0]),
+							};
 
 						if (ds == null) {
 							ds = new DescriptiveStatistics[ee.length];
@@ -365,5 +335,75 @@ public class DoubleGridTest {
 		for (int i = 0; i < fa.length; i++)
 			nd[i] = d[fa[i]];
 		return nd;
+	}
+	
+	public static Grid2D<double[]> getSurrounding( GridPos c, Grid2D<double[]> grid, int dist, boolean center ) {
+		Set<GridPos> done = new HashSet<GridPos>();
+		List<GridPos> openList = new ArrayList<GridPos>();
+		openList.add(c);
+		while( !openList.isEmpty() ) {
+			GridPos cur = openList.remove(0);
+			done.add(cur);
+						
+			for( GridPos nb : grid.getNeighbours(cur) ) 
+				if( !done.contains(nb) && grid.dist(c, nb) <= dist )
+					openList.add(nb);	
+		}
+		
+		int xSize = grid.getSizeOfDim(0);
+		int ySize = grid.getSizeOfDim(1);
+		
+		Grid2D<double[]> g = new Grid2D<double[]>(0,0);
+		for( GridPos p : done ) {
+			if( grid.dist(p, c) != dist )
+				continue;
+			if( center ) {
+				int x = p.getPos(0)- c.getPos(0);
+				int y = p.getPos(1) - c.getPos(1);
+		
+				if (x > dist)
+					x -= xSize;
+				if (y > dist)
+					y -= ySize;
+				
+				if (x < -dist)
+					x += xSize;
+				if (y < -dist)
+					y += ySize;
+				
+				g.setPrototypeAt(new GridPos(x, y),grid.getPrototypeAt(p));
+			} else
+				g.setPrototypeAt(p,grid.getPrototypeAt(p));
+		}
+		return g;
+	}
+			
+	public static <T> double getDistError(Map<T, Set<double[]>> bmus, Grid2D<double[]> grid, int dist, int fa ) {
+		DescriptiveStatistics ds = new DescriptiveStatistics();
+		for( Entry<T,Set<double[]>> e : bmus.entrySet() ) {
+			
+			// get receptive fields
+			Set<Grid2D<double[]>> rfs = new HashSet<Grid2D<double[]>>();
+			for( double[] d : e.getValue() )
+				rfs.add( getSurrounding( grid.getPositionOf(d), grid, dist, true));
+			
+			// mean receptive fields
+			Grid2D<double[]> mrf = new Grid2D<double[]>(0,0);
+			for( GridPos p : rfs.iterator().next().getPositions() ) {
+				double[] m = new double[rfs.iterator().next().getPrototypeAt(p).length];
+				for( Grid2D<double[]> g : rfs ) {
+					double[] pt = g.getPrototypeAt(p);
+					for( int i = 0; i < pt.length; i++ )
+						m[i] += pt[i]/rfs.size();
+				}
+				mrf.setPrototypeAt(p, m);
+			}
+			
+			// get mean diff
+			for( Grid2D<double[]> rf : rfs ) 
+				for( GridPos p : rf.getPositions() )
+					ds.addValue( Math.pow( rf.getPrototypeAt(p)[fa] - mrf.getPrototypeAt(p)[fa],2 ) );			
+		}	
+		return Math.sqrt(ds.getMean());
 	}
 }

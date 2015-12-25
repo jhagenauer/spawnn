@@ -8,6 +8,10 @@ public class DataFrame {
 	};
 
 	public List<double[]> samples;
-	public List<String> names;
+	public List<String> names; // is String[] better?!
 	public List<binding> bindings;
+	
+	public String[] getNames() {
+		return names.toArray(new String[]{});
+	}
 }

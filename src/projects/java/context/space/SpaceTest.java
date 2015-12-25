@@ -324,14 +324,14 @@ public class SpaceTest {
 		}
 	}
 	
-	// if bmu does not map any data, it has not receptive field
-	public static <T> Map<T, Set<List<double[]>>> getRFs(  Map<double[], List<double[]>> knns, Map<T, Set<double[]>> bmus ) {
+	// if bmu does not map any data, it has not a receptive field
+	public static <T> Map<T, Set<List<double[]>>> getRFs(  Map<double[], List<double[]>> knn, Map<T, Set<double[]>> bmuMapping ) {
 		Map<T, Set<List<double[]>>> bmuSeqs = new HashMap<T, Set<List<double[]>>>(); 
-		for( T bmu : bmus.keySet() ) {
-			for( double[] x : bmus.get(bmu) ) {
+		for( T bmu : bmuMapping.keySet() ) {
+			for( double[] x : bmuMapping.get(bmu) ) {
 				if (!bmuSeqs.containsKey(bmu))
 					bmuSeqs.put(bmu, new HashSet<List<double[]>>());
-				bmuSeqs.get(bmu).add(knns.get(x));
+				bmuSeqs.get(bmu).add(knn.get(x));
 			}
 		}
 		return bmuSeqs;
@@ -384,8 +384,8 @@ public class SpaceTest {
 		return qe;
 	}
 	
-	public static <T> double[] getQuantizationError(List<double[]> samples, Map<T, Set<double[]>> bmus, Dist<double[]> fDist, int rcpFieldSize, Map<double[], List<double[]>> knns) {
-		Map<T, Set<List<double[]>>> bmuSeqs = getRFs(knns, bmus);
+	public static <T> double[] getQuantizationError(List<double[]> samples, Map<T, Set<double[]>> bmuMapping, Dist<double[]> fDist, int rcpFieldSize, Map<double[], List<double[]>> knns) {
+		Map<T, Set<List<double[]>>> bmuSeqs = getRFs(knns, bmuMapping);
 		Map<T, List<double[]>> meanRFs = getMeanRF(bmuSeqs);
 		
 		double[] qe = new double[rcpFieldSize];
@@ -393,7 +393,7 @@ public class SpaceTest {
 			double sum = 0;				
 			for( T bmu : meanRFs.keySet() ) {
 				double[] mrf = meanRFs.get(bmu).get(k);
-				for( double[] x : bmus.get(bmu) )
+				for( double[] x : bmuMapping.get(bmu) )
 					sum += Math.pow( fDist.dist( knns.get(x).get(k), mrf ), 2);
 			}
 			qe[k] = sum; 

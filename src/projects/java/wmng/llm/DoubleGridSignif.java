@@ -27,7 +27,6 @@ import spawnn.ng.sorter.Sorter;
 import spawnn.ng.sorter.SorterWMC;
 import spawnn.som.decay.DecayFunction;
 import spawnn.som.decay.PowerDecay;
-import spawnn.som.grid.Grid2D;
 import spawnn.utils.GeoUtils;
 
 public class DoubleGridSignif {
@@ -41,28 +40,6 @@ public class DoubleGridSignif {
 		int threads = 4;
 		final int[] fa = new int[] { 2 };
 		final Dist<double[]> fDist = new EuclideanDist(fa);
-
-		class GridData {
-			Map<double[], Map<double[], Double>> dMapTrain, dMapVal;
-			List<double[]> samplesTrain = new ArrayList<double[]>();
-			List<double[]> desiredTrain = new ArrayList<double[]>();
-			List<double[]> samplesVal = new ArrayList<double[]>();
-			List<double[]> desiredVal = new ArrayList<double[]>();
-
-			public GridData(Grid2D<double[]> gridTrain, Grid2D<double[]> gridVal) {
-				dMapTrain = GeoUtils.getRowNormedMatrix(GeoUtils.listsToWeights(GeoUtils.getNeighborsFromGrid(gridTrain)));
-				for (double[] d : gridTrain.getPrototypes()) {
-					samplesTrain.add(d);
-					desiredTrain.add(new double[] { d[3] });
-				}
-
-				dMapVal = GeoUtils.getRowNormedMatrix(GeoUtils.listsToWeights(GeoUtils.getNeighborsFromGrid(gridVal)));
-				for (double[] d : gridVal.getPrototypes()) {
-					samplesVal.add(d);
-					desiredVal.add(new double[] { d[d.length - 1] });
-				}
-			}
-		}
 
 		final int T_MAX = 120000;
 		final int nrNeurons = 16; // je mehr neuronen, desto größer der unterschied?
@@ -82,8 +59,8 @@ public class DoubleGridSignif {
 				@Override
 				public double[] call() throws Exception {
 					GridData data = new GridData(
-							DoubleGrid2DUtils.createSpDepGrid(50, 50, 3, true), 
-							DoubleGrid2DUtils.createSpDepGrid(50, 50, 3, true)
+							DoubleGrid2DUtils.createSpDepGrid(50, 50, true), 
+							DoubleGrid2DUtils.createSpDepGrid(50, 50, true)
 						);
 
 					List<double[]> samplesTrain = data.samplesTrain;
@@ -221,10 +198,5 @@ public class DoubleGridSignif {
 	
 	public static double getError(List<double[]> response, List<double[]> desired ) {
 		return Meuse.getRMSE(response, desired);
-		// 500r, both noise, 0.0: mean rmseA: 0.07396364930166037, mean rmseB: 0.07484993894176394
-		// 500r, both noise, 0.2: mean rmseA: 0.1096355592335704, mean rmseB: 0.11072314612655175
-		// 500r, 0.2,0.0 noise  : mean rmseA: 0.09299520263407791, mean rmseB: 0.09421174020856908
-		// 200r, 0.4,0.0 noise  : mean rmseA: 0.13364262120516127, mean rmseB: 0.13471352086484978
-		// 200r, 0.1,0.0 noise  : mean rmseA: 0.0796244730151908, mean rmseB: 0.08066274352853152
 	}
 }
