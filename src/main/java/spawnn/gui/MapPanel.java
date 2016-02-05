@@ -37,6 +37,7 @@ import org.geotools.renderer.GTRenderer;
 import org.geotools.renderer.lite.StreamingRenderer;
 import org.geotools.styling.Mark;
 import org.geotools.styling.SLD;
+import org.geotools.styling.Stroke;
 import org.geotools.styling.Style;
 import org.geotools.styling.StyleBuilder;
 import org.geotools.styling.Symbolizer;
@@ -188,12 +189,14 @@ public class MapPanel<T> extends NeuronVisPanel<T> implements MapPaneListener, C
 		ReferencedEnvelope bounds = new ReferencedEnvelope();		
 				
 		{
+			Stroke stroke = sb.createStroke();
+			stroke = null;
 			Style style = null;
 			if (gt.getBinding() == Polygon.class || gt.getBinding() == MultiPolygon.class) {
-				Symbolizer sym = sb.createPolygonSymbolizer(sb.createStroke(),sb.createFill(ff.property("color")));
+				Symbolizer sym = sb.createPolygonSymbolizer(stroke,sb.createFill(ff.property("color")));
 				style = SLD.wrapSymbolizers(sym);
 			} else if (gt.getBinding() == Point.class || gt.getBinding() == MultiPoint.class) {
-				Mark mark = sb.createMark(StyleBuilder.MARK_CIRCLE, sb.createFill(ff.property("color")), sb.createStroke());
+				Mark mark = sb.createMark(StyleBuilder.MARK_CIRCLE, sb.createFill(ff.property("color")), stroke);
 				Symbolizer sym = sb.createPointSymbolizer(sb.createGraphic(null, mark, null));
 				style = SLD.wrapSymbolizers(sym);
 			} else {

@@ -19,7 +19,9 @@ import spawnn.som.grid.Grid2D;
 import spawnn.som.grid.Grid2DToroid;
 import spawnn.som.grid.GridPos;
 import spawnn.som.utils.SomUtils;
+import spawnn.utils.ColorUtils.ColorMode;
 import spawnn.utils.DataUtils;
+import spawnn.utils.Drawer;
 import spawnn.utils.GeoUtils;
 import spawnn.utils.SpatialDataFrame;
 
@@ -30,10 +32,7 @@ import com.vividsolutions.jts.geom.GeometryFactory;
 public class DoubleGrid2DUtils {
 	
 	private static Logger log = Logger.getLogger(DoubleGrid2DUtils.class);
-	
-	public static double lim = 0.5;
-	public static double noise = 0.2;
-	
+		
 	public static Grid2D<double[]> createSpDepGrid(int xDim, int yDim, boolean toroid ) {
 		
 		Random r = new Random();
@@ -53,45 +52,70 @@ public class DoubleGrid2DUtils {
 			grid.setPrototypeAt(p, new double[]{ i, j, 0, 0 });
 			n.put(p, r.nextDouble() );
 		}
-		
-		// two-time avg?! randomly repeatring this might do the trick!!!!!!!!!!!!
-		/*Map<GridPos,Double> n2 = new HashMap<GridPos,Double>();
-		for( GridPos p : pos ) {
-			DescriptiveStatistics dsN = new DescriptiveStatistics();
-			dsN.addValue(n.get(p));
-			for(GridPos nb : grid.getNeighbours(p) )
-				dsN.addValue( n.get(nb));
-			n2.put(p, dsN.getMean() );
-		}
-		n = n2;*/
-
-		for( GridPos p : pos ) {
 			
+		/*for( GridPos p : pos ) {
 			DescriptiveStatistics dsN = new DescriptiveStatistics();
 			dsN.addValue(n.get(p));
 			for(GridPos nb : grid.getNeighbours(p) )
 				dsN.addValue( n.get(nb) );
-			
-			// set x_i
-			grid.getPrototypeAt(p)[2] = Math.pow( dsN.getMean(), 2) + noise * r.nextDouble(); 
+			grid.getPrototypeAt(p)[2] = dsN.getMean();
 		}
+		for( GridPos p : pos ) {
+			DescriptiveStatistics dsA = new DescriptiveStatistics();
+			for( GridPos nb : grid.getNeighbours(p) )
+				dsA.addValue( grid.getPrototypeAt(nb)[2] );
+			grid.getPrototypeAt(p)[3] = grid.getPrototypeAt(p)[2] + dsA.getMean() + 0.5 * r.nextDouble();
+		}*/
+			
+		// works
+		/*for( GridPos p : pos ) 
+			grid.getPrototypeAt(p)[2] = n.get(p);
 		
 		for( GridPos p : pos ) {
-			
-			DescriptiveStatistics dsX_NBs = new DescriptiveStatistics();
-			for(GridPos nb : grid.getNeighbours(p) ) {
-				//dsX_NBs.addValue( grid.getPrototypeAt(nb)[2] );
-				if( r.nextDouble() < lim) // works
-					dsX_NBs.addValue(grid.getPrototypeAt(nb)[2]); 
-				else 
-					dsX_NBs.addValue(n.get(nb)); // random or n?, n!
+			DescriptiveStatistics dsA = new DescriptiveStatistics();
+			for( GridPos nb : grid.getNeighbours(p) ) {
+				DescriptiveStatistics dsB = new DescriptiveStatistics();
+				
+				for( GridPos nb2 : grid.getNeighbours(nb) )
+					if( nb2 != p )
+						dsB.addValue( grid.getPrototypeAt(nb2)[2] );
+				dsA.addValue( Math.pow( grid.getPrototypeAt(nb)[2] * dsB.getMean(), 2) );
 			}
+			grid.getPrototypeAt(p)[3] = Math.sqrt( Math.pow(grid.getPrototypeAt(p)[2],2) + dsA.getMean());
+			// grid.getPrototypeAt(p)[3] = grid.getPrototypeAt(p)[2] + dsA.getMean();
+		}*/
+		
+		/*for( GridPos p : pos ) {
+			DescriptiveStatistics dsA = new DescriptiveStatistics();
+			DescriptiveStatistics dsB = new DescriptiveStatistics();
 			
-			grid.getPrototypeAt(p)[3] = Math.pow(grid.getPrototypeAt(p)[2],2) + Math.pow(dsX_NBs.getMean(),2) + noise * r.nextDouble();
+			for( GridPos nb : grid.getNeighbours(p) ) {
+				dsA.addValue( grid.getPrototypeAt(nb)[2] );
+				for( GridPos nb2 : grid.getNeighbours(nb) )
+					if( nb2 != p )
+						dsB.addValue( grid.getPrototypeAt(nb2)[2] );
+			}
+			grid.getPrototypeAt(p)[3] = Math.sqrt(Math.pow(grid.getPrototypeAt(p)[2],2) + Math.pow(dsA.getMean(),2) * Math.pow(dsB.getMean(),2) );
+			//grid.getPrototypeAt(p)[3] = grid.getPrototypeAt(p)[2] + dsA.getMean();
+		}*/
+		
+		for( GridPos p : pos ) 
+			grid.getPrototypeAt(p)[2] = n.get(p);
+		for( int k = 0; k < 2500; k++ ) {
+			GridPos p = pos.get(r.nextInt(pos.size()));
+			DescriptiveStatistics ds = new DescriptiveStatistics();
+			ds.addValue( grid.getPrototypeAt(p)[2] );
+			for( GridPos nb : grid.getNeighbours(p) )
+				ds.addValue( grid.getPrototypeAt(nb)[2] );
+			//grid.getPrototypeAt(p)[3] = grid.getPrototypeAt(p)[2];
+			grid.getPrototypeAt(p)[2] = ds.getMean();
 		}
+		for( GridPos p : pos ) 
+			grid.getPrototypeAt(p)[3] = n.get(p);
+			
 		return grid;
 	}
-	
+
 	public static List<Geometry> getGeoms(List<GridPos> positions ) {
 		GeometryFactory gf = new GeometryFactory();
 		List<Geometry> geoms = new ArrayList<Geometry>();
@@ -140,11 +164,12 @@ public class DoubleGrid2DUtils {
 	}
 		
 	public static void main(String[] args) {
-		DecimalFormat df = new DecimalFormat("000");
+		DecimalFormat df = new DecimalFormat("0000");
 		
 		for( int i = 0; i < 1; i++ ){
 			log.debug(i);
 			Grid2D<double[]> grid = createSpDepGrid(50,50,true);
+						
 			try {
 				GZIPOutputStream gzos = new GZIPOutputStream(new FileOutputStream("output/grid_"+df.format(i)+".xml.gz"));
 				SomUtils.saveGrid(grid,  gzos );
@@ -159,6 +184,8 @@ public class DoubleGrid2DUtils {
 			if( i == 0 ) {
 				SpatialDataFrame sdf = gridToSDF(grid);
 				DataUtils.writeShape(sdf.samples, sdf.geoms, sdf.getNames(), "output/grid.shp");
+				Drawer.geoDrawValues(sdf, 2, ColorMode.Blues, "output/x1.png");
+				Drawer.geoDrawValues(sdf, 3, ColorMode.Blues, "output/y.png");
 				
 				Map<double[],Map<double[],Double>> dMap = GeoUtils.getRowNormedMatrix(GeoUtils.listsToWeights(GeoUtils.getNeighborsFromGrid(grid)));
 				for( int j = 2; j <= 3; j++ ) {

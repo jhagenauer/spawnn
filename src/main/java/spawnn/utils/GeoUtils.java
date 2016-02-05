@@ -55,6 +55,40 @@ public class GeoUtils {
 		return ns;
 	}
 	
+	public static List<double[]> getLagedSamples(List<double[]> samples, Map<double[],Map<double[],Double>> dMap, int lag ) {
+		List<double[]> ns = new ArrayList<double[]>();
+		for( double[] d : samples ) {
+			double[] nd = new double[d.length*(lag+1)];
+			for( int i = 0; i < d.length; i++ )
+				nd[i] = d[i];
+			
+			for( int j = 1; j <= lag; j++ ) {
+				double[] l = getLagedSample(d, dMap, j);
+				for( int i = 0; i < d.length; i++ )
+					nd[i+j*d.length] = l[i];
+			}			
+			ns.add(nd);
+		}
+		return ns;
+	}
+		
+	public static double[] getLagedSample( double[] x, Map<double[],Map<double[],Double>> dMap, int lag ) {
+		double[] l = new double[x.length];
+		if( lag == 1 ) {
+			for( Entry<double[],Double> e : dMap.get(x).entrySet() )
+				for( int i = 0; i < l.length; i++ )
+					l[i] += e.getKey()[i] * e.getValue();
+		} else if( lag == 2 ) {
+			for( Entry<double[],Double> e1 : dMap.get(x).entrySet() )
+				for( Entry<double[],Double> e2 : dMap.get(e1.getKey() ).entrySet() )
+					for( int i = 0; i < l.length; i++ )
+						l[i] += e2.getKey()[i] * e1.getValue() * e2.getValue();
+		} else {
+			throw new RuntimeException("Not implemented yet!");
+		}
+		return l;
+	}
+		
 	public static Map<double[],List<double[]>> getNeighborsFromGrid(Grid<double[]> grid) {
 		Map<double[],List<double[]>> m = new HashMap<double[],List<double[]>>();
 		for( GridPos p : grid.getPositions() ) {

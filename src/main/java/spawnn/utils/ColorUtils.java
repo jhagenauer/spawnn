@@ -10,24 +10,37 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 public class ColorUtils {
-	
-	public static enum ColorMode { Reds, Blues, Greys, RdBu, Spectral, Set1, Set2, Set3, Paired };
+		
+	public static ColorBrewer[] colors = new ColorBrewer[]{ 
+		ColorBrewer.Blues, ColorBrewer.Reds, ColorBrewer.Greys, ColorBrewer.RdBu, 
+		ColorBrewer.Spectral, ColorBrewer.Set1, ColorBrewer.Set2, ColorBrewer.Set3, ColorBrewer.Paired 
+		};
+		
+	public static enum ColorMode { Blues, Reds, Greys, RdBu, Spectral, Set1, Set2, Set3, Paired };
 	
 	/* TODO FIXME The dynamic number of colors and quantile-mode are NECESSARY 
 	 * so that cluster visualization of the GUI works correctly.
-	 * This needs to solved in a better way. 
+	 * This needs to solved in a better way.
+	 * 
+	 * quantil = each color same number/size, bad for clustering
+	 * interva = linear color spread
 	 */
 	@Deprecated
 	public static <T> Map<T, Color> getColorMap(Map<T, Double> valueMap, ColorMode cm ) {
-		return getColorMap(valueMap, cm,  new HashSet<Double>(valueMap.values()).size(), true);
+		return getColorMap(valueMap, cm,  new HashSet<Double>(valueMap.values()).size(), false);
 	}
+	
+	public static <T> Map<T, Color> getColorMap(Map<T, Double> valueMap, ColorMode cm, boolean quantile ) {
+		return getColorMap(valueMap, cm,  new HashSet<Double>(valueMap.values()).size(), quantile);
+	}
+	
 	public static <T> Map<T, Color> getColorMap( List<T> elems, List<Double> values, ColorMode cm, int nrColors, boolean quantil ) {
 		Map<T,Double> vMap = new HashMap<T,Double>();
 		for( int i = 0; i < elems.size(); i++ )
 			vMap.put(elems.get(i), values.get(i));
 		return getColorMap(vMap, cm, nrColors, quantil);
 	}
-	
+		
 	public static <T> Map<T, Color> getColorMap(Map<T, Double> valueMap, ColorMode cm, int nrColors, boolean quantil ) {
 		Color[] cols = null;
 		if( cm == ColorMode.Reds ) {

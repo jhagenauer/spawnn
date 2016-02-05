@@ -7,8 +7,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
 
@@ -23,17 +25,19 @@ import org.jfree.data.xy.XYSeriesCollection;
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
 import spawnn.ng.ContextNG;
+import spawnn.ng.NG;
+import spawnn.ng.sorter.DefaultSorter;
+import spawnn.ng.sorter.Sorter;
 import spawnn.ng.sorter.SorterMNG;
 import spawnn.ng.utils.NGUtils;
-import spawnn.som.bmu.BmuGetterTimeMSOM;
-import spawnn.som.bmu.BmuGetterTimeSD;
 import spawnn.som.bmu.DefaultBmuGetter;
+import spawnn.som.decay.DecayFunction;
 import spawnn.som.decay.LinearDecay;
+import spawnn.som.decay.PowerDecay;
 import spawnn.som.grid.Grid2D;
 import spawnn.som.grid.GridPos;
 import spawnn.som.kernel.GaussKernel;
 import spawnn.som.net.SOM;
-import spawnn.som.net.ContextSOM;
 import spawnn.som.utils.SomUtils;
 import spawnn.utils.DataUtils;
 
@@ -43,7 +47,10 @@ public class TimeSeries {
 	
 	public static void main(String[] args) {
 				
-		Dist<double[]> fDist = new EuclideanDist( new int[]{1} );
+
+		Random r = new Random();
+		final int[] fa = new int[]{1};
+		Dist<double[]> fDist = new EuclideanDist( fa );
 		//Dist tDist = new SubDist(eDist, new int[]{0});
 		
 		List<double[]> samples = null;
@@ -55,11 +62,11 @@ public class TimeSeries {
 		
 		int T_MAX = samples.size();
 				
-		int rcpFieldSize = 30;
+		int rcpFieldSize = 60;
 		
 		XYSeriesCollection dataset = new XYSeriesCollection();
 						
-		{ // SOM
+		/*{ // SOM
 			log.debug("som");
 			spawnn.som.bmu.BmuGetter<double[]> bg = new DefaultBmuGetter<double[]>(fDist);
 			Grid2D<double[]> grid = new Grid2D<double[]>(10,10);
@@ -82,6 +89,43 @@ public class TimeSeries {
 			log.debug("entr: "+SomUtils.getEntropy(samples, bmus));
 			
 			XYSeries error = new XYSeries("som");		
+			for( int size = 0; size < tqe.length; size ++ )
+				error.add(size,tqe[size]);
+			dataset.addSeries(error);
+			
+			log.debug("--------------");
+		}*/
+		
+		{ // NG
+			log.debug("ng");
+			List<double[]> neurons = new ArrayList<double[]>();
+			for (int i = 0; i < 100; i++) {
+				double[] d = samples.get(r.nextInt(samples.size()));
+				neurons.add(Arrays.copyOf(d, d.length));
+			}
+									
+			Sorter<double[]> sorter = new DefaultSorter<>( fDist );
+			DecayFunction nbRate = new PowerDecay(50.0, 0.01);
+			DecayFunction lrRate = new PowerDecay(0.5, 0.005);
+			
+			NG ng = new NG(neurons, nbRate, lrRate, sorter );
+
+			for (int t = 0; t < T_MAX; t++) {
+				int j = r.nextInt(samples.size());
+				ng.train((double) t / T_MAX, samples.get(j) );
+			}
+					
+			Map<double[],Set<double[]>> bmus = NGUtils.getBmuMapping(samples, ng.getNeurons(), sorter);
+			double[] tqe = getTemporalQuantizationError( samples, bmus, fDist, rcpFieldSize );
+			
+			double sum = 0;
+			for( double d : tqe )
+				sum += d;
+			log.debug("sum: "+sum);
+			
+			log.debug("entr: "+SomUtils.getEntropy(samples, bmus));
+			
+			XYSeries error = new XYSeries("ng");		
 			for( int size = 0; size < tqe.length; size ++ )
 				error.add(size,tqe[size]);
 			dataset.addSeries(error);
@@ -242,14 +286,13 @@ public class TimeSeries {
 			dataset.addSeries(error);*/
 		}
 		
-		{ // SOMSD 
+		/*{ // SOMSD 
 			
 			log.debug("somsd");
 			double alpha = 0.06;
 			Grid2D<double[]> grid = new Grid2D<double[]>(10,10);
 			
 			// init grid
-			Random r = new Random();
 			for( GridPos gp : grid.getPositions() ) {
 				double[] rs = samples.get( r.nextInt(samples.size() ) );
 				double[] d = Arrays.copyOf(rs, rs.length+grid.getNumDimensions() );
@@ -282,7 +325,7 @@ public class TimeSeries {
 			dataset.addSeries(error);
 			
 			log.debug("--------------");
-		}
+		}*/
 		
 		{ // SOMSD 
 			/*for( double alpha = 1; alpha >= 0.90; alpha -= 0.01 ) {
@@ -389,13 +432,12 @@ public class TimeSeries {
 		}
 		
 		// MSOM
-		{
+		/*{
 			log.debug("msom");
 			double alpha = 0.73;
 			Grid2D<double[]> grid = new Grid2D<double[]>(10,10);
 			
 			// init grid
-			Random r = new Random();
 			for( GridPos gp : grid.getPositions() ) {
 				double[] rs = samples.get( r.nextInt(samples.size() ) );
 				double[] d = Arrays.copyOf(rs, rs.length*2 );
@@ -406,7 +448,6 @@ public class TimeSeries {
 
 			SOM som = new ContextSOM(new GaussKernel( new LinearDecay(10, 1)), new LinearDecay(1.0, 0.0), grid, bg, samples.get(0).length);
 			for (int t = 0; t < T_MAX; t++) {
-
 				double[] x = samples.get( t % samples.size() );
 				som.train((double) t / T_MAX, x);
 			}
@@ -428,21 +469,29 @@ public class TimeSeries {
 			dataset.addSeries(error);
 			
 			log.debug("--------------");
-		}
+		}*/
 		
 		// MNG
-		{
-			log.debug("mng ");
-			double alpha = 0.94;
-			SorterMNG bg = new SorterMNG(fDist, alpha, 0.75);
-			ContextNG ng = new ContextNG(100, 50.0, 0.01, 0.5, 0.005, 4, bg );
-						
+		for( double[] p : new double[][]{ new double[]{0.94,0.75}, new double[]{0.85,0.65}, } ){
+			log.debug("mng "+p[0]+" "+p[1]);
+			
+			List<double[]> neurons = new ArrayList<double[]>();
+			for( int i = 0; i < 100; i++ ) {
+				double[] rs = samples.get( r.nextInt(samples.size() ) );
+				neurons.add( Arrays.copyOf(rs, rs.length*2 ) );
+			}
+			
+			SorterMNG bg = new SorterMNG(fDist, p[0], p[1]);
+			bg.setLastBmu(neurons.get(0));
+			
+			DecayFunction nbRate = new PowerDecay(50.0, 0.01);
+			DecayFunction lrRate = new PowerDecay(0.5, 0.005);
+			ContextNG ng = new ContextNG(neurons, nbRate, lrRate, bg );
+
 			for (int t = 0; t < T_MAX; t++) {
 				double[] x = samples.get( t % samples.size() );
 				ng.train((double) t / T_MAX, x);
 			}
-			
-			bg.setLastBmu(null);
 			
 			Map<double[],Set<double[]>> bmus = NGUtils.getBmuMapping(samples, ng.getNeurons(), bg);
 			double[] tqe = TimeSeries.getTemporalQuantizationError( samples, bmus, fDist, rcpFieldSize );
@@ -454,10 +503,65 @@ public class TimeSeries {
 			
 			log.debug("entr: "+SomUtils.getEntropy(samples, bmus));
 			
-			XYSeries error = new XYSeries("mng "+alpha);		
+			XYSeries error = new XYSeries("mng "+p[0]+" "+p[1]);		
 			for( int size = 0; size < tqe.length; size++ )
 				error.add(size,tqe[size]);
 			dataset.addSeries(error);
+			log.debug("--------------------");
+		}
+		
+		// LAG
+		for( int lag : new int[]{ 1, 2, 3, 4, 5, 6, 7 } ){
+			log.debug("lag "+lag);
+			
+			List<double[]> neurons = new ArrayList<double[]>();
+			for( int i = 0; i < 100; i++ ) {
+				double[] rs = samples.get( r.nextInt(samples.size() ) );
+				neurons.add( Arrays.copyOf(rs, rs.length+lag*rs.length ) );
+			}
+			
+			int[] nfa = new int[fa.length+lag*fa.length];
+			for( int i = 0; i < fa.length; i++ )
+				for( int j = 0; j <= lag; j++ )
+					nfa[i+j*fa.length] = fa[i]+j*samples.get(0).length;
+			//log.debug("nfa: "+Arrays.toString(nfa));
+													
+			DecayFunction nbRate = new PowerDecay(50.0, 0.01);
+			DecayFunction lrRate = new PowerDecay(0.5, 0.005);
+			Sorter<double[]> sorter = new DefaultSorter<>( new EuclideanDist(nfa) );
+
+			List<double[]> lagedSamples = getLagedSamples(samples, lag);
+			NG ng = new NG(neurons, nbRate, lrRate, sorter );
+			for (int t = 0; t < T_MAX; t++) {
+				int j = r.nextInt(lagedSamples.size());
+				ng.train((double) t / T_MAX, lagedSamples.get(j) );
+			}
+			
+			Map<double[],Set<double[]>> lagedBmus = NGUtils.getBmuMapping(lagedSamples, ng.getNeurons(), sorter);
+			
+			// lagged bmus to normal
+			Map<double[],Set<double[]>> bmus = new HashMap<double[],Set<double[]>>();
+			for( Entry<double[],Set<double[]>> e : lagedBmus.entrySet() ) {
+				Set<double[]> s = new HashSet<double[]>();
+				for( double[] d : e.getValue() )
+					s.add( samples.get( lagedSamples.indexOf(d) ) );
+				bmus.put(e.getKey(), s);
+			}
+			
+			double[] tqe = TimeSeries.getTemporalQuantizationError( samples, bmus, fDist, rcpFieldSize );
+					
+			double sum = 0;
+			for( double d : tqe )
+				sum += d;
+			log.debug("sum: "+sum);
+			
+			log.debug("entr: "+SomUtils.getEntropy(samples, bmus));
+			
+			XYSeries error = new XYSeries("lag "+lag);		
+			for( int size = 0; size < tqe.length; size++ )
+				error.add(size,tqe[size]);
+			dataset.addSeries(error);
+			log.debug("-------------");
 			
 		}
 		
@@ -562,5 +666,26 @@ public class TimeSeries {
 			tqe[i] = Math.sqrt( sum/k );	
 		}
 		return tqe;
+	}
+	
+	public static List<double[]> getLagedSamples(List<double[]> samples, int lag ) {
+		List<double[]> ns = new ArrayList<double[]>();
+		
+		for( int i = 0; i < samples.size(); i++ ) {
+			double[] d = samples.get(i);
+			double[] nd = new double[d.length+d.length*lag];
+			for( int j = 0; j < d.length; j++ )
+				nd[j] = d[j];
+			
+			for( int j = 1; j <= lag; j++ ) {
+				if( i -j < 0 )
+					continue;
+				double[] l = samples.get(i - j);
+				for( int k = 0; k < d.length; k++ )
+					nd[k+j*d.length] = l[k];
+			}			
+			ns.add(nd);
+		}
+		return ns;
 	}
 }

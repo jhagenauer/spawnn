@@ -7,7 +7,8 @@ public class GridPos implements Comparable<GridPos> {
 	private final int[] p;
 	
 	public GridPos( int ... x ) {
-		this.p = x;
+		//this.p = x;
+		this.p = Arrays.copyOf(x, x.length); // Pos of GridPos should be immutable
 	}
 	
 	@Deprecated // use getPos()

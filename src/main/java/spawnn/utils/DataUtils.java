@@ -416,7 +416,6 @@ public class DataUtils {
 		double sum = 0;
 		for (T d : data)
 			sum += dist.dist(centroid, d);
-
 		return sum / data.size();
 	}
 

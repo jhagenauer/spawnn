@@ -115,6 +115,10 @@ public class GridPanel extends NeuronVisPanel<GridPos> implements MouseListener 
 		for( GridPos p : scaledCells.keySet() ) {
 			g2.setColor( Color.BLACK );
 			g2.draw( scaledCells.get(p));
+			
+			/*int x = (int)scaledCells.get(p).getBounds().getCenterX();
+			int y = (int)scaledCells.get(p).getBounds().getCenterY();
+			g2.drawString(p.toString(), x, y);*/
 		}
 		
 		// draw selected

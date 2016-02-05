@@ -3,8 +3,11 @@ package spawnn.gui;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Font;
+import java.awt.Frame;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -17,19 +20,37 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import javax.imageio.ImageIO;
+import javax.swing.DefaultComboBoxModel;
+import javax.swing.JButton;
+import javax.swing.JColorChooser;
+import javax.swing.JComboBox;
+import javax.swing.JFileChooser;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JTextField;
+import javax.swing.JToggleButton;
 
 import org.apache.xmlgraphics.java2d.ps.EPSDocumentGraphics2D;
+import org.geotools.data.DataStore;
+import org.geotools.data.FeatureStore;
+import org.geotools.data.FileDataStoreFactorySpi;
+import org.geotools.data.shapefile.ShapefileDataStoreFactory;
 import org.geotools.feature.DefaultFeatureCollection;
 import org.geotools.feature.FeatureCollection;
+import org.geotools.feature.FeatureIterator;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
+import org.opengis.feature.type.Name;
 
+import spawnn.dist.Dist;
+import spawnn.utils.ClusterValidation;
+import spawnn.utils.ColorUtils;
 import spawnn.utils.DataUtils;
 import spawnn.utils.SpatialDataFrame;
 
@@ -40,9 +61,70 @@ import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.geom.Polygon;
 
 //TODO Probably a lot of code from the result panels can/should be placed here
-public abstract class ResultPanel<T> extends JPanel {
+public abstract class ResultPanel<T> extends JPanel implements ActionListener, NeuronSelectedListener<T> {
 
 	private static final long serialVersionUID = 1686748469941486349L;
+	
+	protected JButton btnExpMap, colorChooser, clearSelect;
+	protected JComboBox colorModeBox;
+	protected JToggleButton selectSingle, quantileButton;
+	protected JTextField infoField;
+	protected JTextField nrNeurons;
+
+	protected MapPanel<T> mapPanel;
+	
+	protected List<T> pos;
+	protected Map<T, Set<double[]>> bmus;
+	
+	protected Map<T, Double> neuronValues;
+	protected Map<T, Color> selectedColors = new HashMap<T, Color>();
+	
+	protected FeatureCollection<SimpleFeatureType, SimpleFeature> fc;
+	protected List<String> names;
+	
+	protected Dist<double[]> fDist, gDist;
+	
+	protected Color selectedColor = Color.RED;
+	
+	protected Frame parent;
+
+	public ResultPanel(Frame parent, SpatialDataFrame orig, List<double[]> samples, Map<T, Set<double[]>> bmus, ArrayList<T> pos, Dist<double[]> fDist, Dist<double[]> gDist) {
+		this.parent = parent;
+		this.names = orig.names;
+		this.bmus = bmus;
+		this.fDist = fDist;
+		this.gDist = gDist;
+		this.pos = pos;
+		this.fc = buildClusterFeatures(orig, samples, bmus, pos);
+		
+		mapPanel = new MapPanel<T>(fc, pos);
+		
+		colorModeBox = new JComboBox();
+		colorModeBox.setModel(new DefaultComboBoxModel(ColorUtils.ColorMode.values()));
+		colorModeBox.addActionListener(this);
+		
+		quantileButton = new JToggleButton("Quantile");
+		quantileButton.setSelected(true);
+		quantileButton.addActionListener(this);
+		
+		colorChooser = new JButton("Select color...");
+		colorChooser.setBackground(selectedColor);
+		colorChooser.addActionListener(this);
+		
+		selectSingle = new JToggleButton("Select single");
+		selectSingle.addActionListener(this);
+		
+		nrNeurons = new JTextField("1", 3);
+		
+		clearSelect = new JButton("Clear");
+		clearSelect.addActionListener(this);
+
+		btnExpMap = new JButton("Export map...");
+		btnExpMap.addActionListener(this);
+		
+		infoField = new JTextField("");
+		infoField.setEditable(false);
+	}
 
 	public static Map<double[], Set<double[]>> prototypeClusterToDataCluster(Map<double[], Set<double[]>> nBmus, List<Set<double[]>> clusters) {
 		Map<double[], Set<double[]>> ll = new HashMap<double[], Set<double[]>>();
@@ -335,5 +417,111 @@ public abstract class ResultPanel<T> extends JPanel {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+	}
+	
+	public void showClusterSummary(Frame parent, Map<double[], Set<double[]>> ll, Dist<double[]> fDist, Dist<double[]> gDist) {
+		String s = "";
+		s += "#Cluster:\t" + ll.size()+ "\n";
+		s += "Within cluster sum of squares:\t" + ClusterValidation.getWithinClusterSumOfSuqares(ll.values(), fDist)+"\n";
+		s += "Between cluster sum of squares:\t" + ClusterValidation.getBetweenClusterSumOfSuqares(ll.values(), fDist)+"\n";
+		// log.debug("Connectivity: " + ClusterValidation.getConnectivity(ll, fDist, 10));
+		s += "Dunn Index:\t" + ClusterValidation.getDunnIndex(ll.values(), fDist)+"\n";
+
+		s += "Quantization error:\t" + DataUtils.getMeanQuantizationError(ll, fDist)+"\n";
+		if( gDist != null )
+			s += "Spatial quantization error:\t" + DataUtils.getMeanQuantizationError(ll, gDist)+"\n";
+		s += "Davies-Bouldin Index:\t" + ClusterValidation.getDaviesBouldinIndex(ll, fDist)+"\n";
+		s += "Silhouette Coefficient:\t" + ClusterValidation.getSilhouetteCoefficient(ll, fDist)+"\n";
+
+		JOptionPane.showMessageDialog(parent, s);
+	}
+
+	@Override
+	public void actionPerformed(ActionEvent e) {
+		if (e.getSource() == selectSingle) {
+			if (!mapPanel.selectSingle)
+				mapPanel.selectSingle = true;
+			else
+				mapPanel.selectSingle = false;
+		} else if (e.getSource() == btnExpMap) {
+			JFileChooser fChoser = new JFileChooser("output");
+
+			fChoser.setFileFilter(FFilter.pngFilter);
+			fChoser.setFileFilter(FFilter.epsFilter);
+			fChoser.setFileFilter(FFilter.shpFilter);
+
+			int state = fChoser.showSaveDialog(this);
+			if (state == JFileChooser.APPROVE_OPTION) {
+				File fn = fChoser.getSelectedFile();
+				if (fChoser.getFileFilter() == FFilter.pngFilter) {
+					mapPanel.saveImage(fn, "PNG");
+				} else if(fChoser.getFileFilter() == FFilter.epsFilter) {
+					mapPanel.saveImage(fn, "EPS");
+				} else if (fChoser.getFileFilter() == FFilter.shpFilter) {
+					try {
+						// ugly but works
+						FeatureIterator<SimpleFeature> fit = fc.features();
+						while (fit.hasNext()) {
+							SimpleFeature sf = fit.next();
+							T gp = pos.get((Integer) (sf.getAttribute("neuron")));
+							sf.setAttribute("nValue", neuronValues.get(gp));
+							if (selectedColors.containsKey(gp))
+								sf.setAttribute("selColor", selectedColors.get(gp) );
+						}
+						fit.close();
+
+						Map map = Collections.singletonMap("url", fn.toURI().toURL());
+						FileDataStoreFactorySpi factory = new ShapefileDataStoreFactory();
+						DataStore myData = factory.createNewDataStore(map);
+						myData.createSchema(fc.getSchema());
+						Name name = myData.getNames().get(0);
+						FeatureStore<SimpleFeatureType, SimpleFeature> store = (FeatureStore<SimpleFeatureType, SimpleFeature>) myData.getFeatureSource(name);
+
+						store.addFeatures(fc);
+					} catch (Exception ex) {
+						ex.printStackTrace();
+					}
+				}
+			}
+		} else if (e.getSource() == colorChooser) {
+			selectedColor = JColorChooser.showDialog(this, "Select selection color", selectedColor);
+			colorChooser.setBackground(selectedColor);
+			infoField.setText("");
+		} else if( e.getSource() == clearSelect ) {
+			selectedColors.clear();
+			infoField.setText("");
+			updatePanels();
+		} else if (e.getSource() == colorModeBox) {
+			//colorModeBox.getSelectedItem();
+			updatePanels();
+		} else if( e.getSource() == quantileButton ) {
+			updatePanels();
+		}
+	}
+
+	protected Map<T, Color> updatePanels() {
+		Map<T, Color> colorMap = ColorUtils.getColorMap(neuronValues, (ColorUtils.ColorMode) colorModeBox.getSelectedItem(), quantileButton.isSelected() );
+		mapPanel.setGridColors(colorMap, selectedColors, neuronValues);
+		return colorMap;
+	}
+
+	@Override
+	public void neuronSelectedOccured(NeuronSelectedEvent<T> evt) {
+		T gp = evt.getNeuron();
+		
+		// remove from cluster if click one already same-colored neuron
+		if (selectedColors.containsKey(gp) && selectedColors.get(gp) == selectedColor)
+			selectedColors.remove(gp);
+		else 
+			selectedColors.put(gp, selectedColor);	
+									
+		// calculate ss for color
+		int nr = 0;
+		for( Entry<T,Color> e : selectedColors.entrySet() ) 
+			if( e.getValue() == selectedColor )
+				nr++;
+				
+		infoField.setText(nr+" neurons");
+		updatePanels();
 	}
 }

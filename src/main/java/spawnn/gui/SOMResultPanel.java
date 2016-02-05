@@ -5,46 +5,29 @@ import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.Frame;
 import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.beans.FeatureDescriptor;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
-import javax.swing.DefaultComboBoxModel;
 import javax.swing.JButton;
-import javax.swing.JColorChooser;
 import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
 import javax.swing.JList;
 import javax.swing.JPanel;
-import javax.swing.JToggleButton;
 import javax.swing.ListCellRenderer;
 
 import net.miginfocom.swing.MigLayout;
 
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.log4j.Logger;
-import org.geotools.data.DataStore;
-import org.geotools.data.FeatureStore;
-import org.geotools.data.FileDataStoreFactorySpi;
-import org.geotools.data.shapefile.ShapefileDataStoreFactory;
-import org.geotools.feature.FeatureCollection;
-import org.geotools.feature.FeatureIterator;
-import org.opengis.feature.simple.SimpleFeature;
-import org.opengis.feature.simple.SimpleFeatureType;
-import org.opengis.feature.type.Name;
 
 import spawnn.dist.Dist;
 import spawnn.gui.ClusterDialogGrid.ClusterAlgorithm;
@@ -55,60 +38,37 @@ import spawnn.som.grid.Grid2DHex;
 import spawnn.som.grid.GridPos;
 import spawnn.som.utils.SomToolboxUtils;
 import spawnn.som.utils.SomUtils;
-import spawnn.utils.ClusterValidation;
 import spawnn.utils.Clustering;
-import spawnn.utils.ColorUtils;
+import spawnn.utils.Clustering.TreeNode;
+import spawnn.utils.ColorUtils.ColorMode;
 import spawnn.utils.DataUtils;
 import spawnn.utils.SpatialDataFrame;
-import spawnn.utils.Clustering.TreeNode;
 import edu.uci.ics.jung.graph.Graph;
 import edu.uci.ics.jung.graph.UndirectedSparseGraph;
 
-public class SOMResultPanel extends ResultPanel<GridPos> implements ActionListener, NeuronSelectedListener<GridPos> {
+public class SOMResultPanel extends ResultPanel<GridPos> {
 
 	private static Logger log = Logger.getLogger(SOMResultPanel.class);
 	private static final long serialVersionUID = -4518072006960672609L;
 
 	private JComboBox<String> gridComboBox;
-	private JComboBox colorComboBox, gridModeComboBox;
-	private JButton btnExpGrid, btnExpMap, colorChooser;
+	private JComboBox gridModeComboBox;
+	private JButton btnExpGrid;
 	private GridPanel pnlGrid;
 	private GraphPanel pnlGraph;
 	private JPanel cards;
-	MapPanel<GridPos> mapPanel;
-
-	private JToggleButton selectSingle;
 
 	private Grid2D<double[]> grid;
 	private Graph<double[], double[]> graph;
 
-	private List<GridPos> pos;
 	private List<double[]> samples;
-	private Map<GridPos, Set<double[]>> bmus;
-	private Dist<double[]> fDist, gDist;
-
-	private Map<GridPos, Double> neuronValues;
-	private Map<GridPos, Color> selectedColors = new HashMap<GridPos, Color>();
-
-	private FeatureCollection<SimpleFeatureType, SimpleFeature> fc;
-	private List<String> names;
-
+	
 	private static final String RANDOM = "Random", DISTANCE = "Distance...", CLUSTER = "Cluster...";
 	private static final String GRID = "SOM", GRAPH = "Neurons (Geo)";
 
-	private Frame parent;
-
 	public SOMResultPanel(Frame parent, SpatialDataFrame orig, List<double[]> samples, Map<GridPos, Set<double[]>> bmus, Grid2D<double[]> grid, Dist<double[]> fDist, Dist<double[]> gDist, int[] fa, int[] ga, boolean wmc) {
-		super();
-
-		this.pos = new ArrayList<GridPos>(grid.getPositions()); // fixed order for indexing/coloring
-		this.fc = buildClusterFeatures(orig, samples, bmus, pos);
+		super(parent,orig,samples,bmus,new ArrayList<GridPos>(grid.getPositions()),fDist,gDist);
 		this.grid = grid;
-		this.bmus = bmus;
-		this.fDist = fDist;
-		this.gDist = gDist;
-		this.names = orig.names;
-		this.parent = parent;
 
 		setLayout(new MigLayout(""));
 		
@@ -143,10 +103,6 @@ public class SOMResultPanel extends ResultPanel<GridPos> implements ActionListen
 			}
 		gridComboBox.addActionListener(this);
 
-		colorComboBox = new JComboBox();
-		colorComboBox.setModel(new DefaultComboBoxModel(ColorUtils.ColorMode.values()));
-		colorComboBox.addActionListener(this);
-
 		gridModeComboBox = new JComboBox();
 		gridModeComboBox.addItem(GRID);
 		if (ga != null && ga.length == 2) {
@@ -159,16 +115,6 @@ public class SOMResultPanel extends ResultPanel<GridPos> implements ActionListen
 
 		btnExpGrid = new JButton("Export grid...");
 		btnExpGrid.addActionListener(this);
-
-		colorChooser = new JButton("Select color...");
-		colorChooser.setBackground(selectedColor);
-		colorChooser.addActionListener(this);
-
-		selectSingle = new JToggleButton("Select single");
-		selectSingle.addActionListener(this);
-
-		btnExpMap = new JButton("Export map...");
-		btnExpMap.addActionListener(this);
 
 		graph = new UndirectedSparseGraph<double[], double[]>();
 		for (GridPos gp : grid.getPositions()) {
@@ -189,7 +135,6 @@ public class SOMResultPanel extends ResultPanel<GridPos> implements ActionListen
 		}
 
 		pnlGrid = new GridPanel(grid, fDist);
-		mapPanel = new MapPanel<GridPos>(fc, pos);
 		pnlGraph = new GraphPanel(graph, ga);
 
 		if (ga != null && ga.length == 2) {
@@ -212,49 +157,47 @@ public class SOMResultPanel extends ResultPanel<GridPos> implements ActionListen
 					selectedColors.remove(gp);
 				else
 					selectedColors.put(gp, selectedColor);
-
-				Map<GridPos, Color> colorMap = ColorUtils.getColorMap(neuronValues, (ColorUtils.ColorMode) colorComboBox.getSelectedItem());
-				pnlGrid.setGridColors(colorMap, selectedColors, neuronValues);
-				mapPanel.setGridColors(colorMap, selectedColors, neuronValues);
-				pnlGraph.setGridColors(toDoubleArrayMap(colorMap), toDoubleArrayMap(selectedColors), toDoubleArrayMap(neuronValues));
+				
+				updatePanels();
 			}
 		}
 		pnlGraph.addNeuronSelectedListener(new NSL(grid));
 
 		actionPerformed(new ActionEvent(gridComboBox, 0, DISTANCE));
-		Map<GridPos, Color> colorMap = ColorUtils.getColorMap(neuronValues, (ColorUtils.ColorMode) colorComboBox.getSelectedItem());
-
-		pnlGrid.setGridColors(colorMap, selectedColors, neuronValues);
+		updatePanels();
+		
 		pnlGrid.addMouseListener(pnlGrid);
 		pnlGrid.addNeuronSelectedListener(this);
-
-		mapPanel.setGridColors(colorMap, selectedColors, neuronValues);
 		mapPanel.addNeuronSelectedListener(this);
 
 		cards = new JPanel(new CardLayout());
 		cards.add(pnlGrid, GRID);
 		cards.add(pnlGraph, GRAPH);
 
-		add(gridComboBox, "split 4");
-		add(colorComboBox, "");
+		add(gridComboBox, "split 5");
+		add(colorModeBox, "");
+		add(quantileButton,"");
 		add(gridModeComboBox, "");
 		add(btnExpGrid, "");
 				
-		add(colorChooser, "split 3");
+		add(colorChooser, "split 4");
+		//add(nrNeurons,"");
 		add(selectSingle, "");
+		add(clearSelect, "");
 		add(btnExpMap, "pushx, wrap");
 		
 		add( cards, "w 50%, pushy, grow");
-		add( mapPanel, "grow");
-		
-		colorComboBox.setSelectedItem(ColorUtils.ColorMode.Blues);
+		add( mapPanel, "grow, wrap");
+		add( infoField,"span 2, growx");
 	}
-
-	private Color selectedColor = Color.RED;
 
 	@Override
 	public void actionPerformed(ActionEvent e) {
+		super.actionPerformed(e);
 		if (e.getSource() == gridComboBox) { // som-visualization-change
+			if( !quantileButton.isEnabled() )
+				quantileButton.setEnabled(true);
+			
 			if (gridComboBox.getSelectedItem() == DISTANCE) { // dmatrix
 
 				DistanceDialog dd = new DistanceDialog(parent, "Distance...", true, gDist != null);
@@ -310,7 +253,7 @@ public class SOMResultPanel extends ResultPanel<GridPos> implements ActionListen
 							cm.put(v, s);
 						}
 					}
-
+					
 					if (cd.getAlgorithm() == ClusterDialogGrid.ClusterAlgorithm.kMeans)
 						clusters = new ArrayList<Set<double[]>>(Clustering.kMeans(prototypes, cd.getNumCluster(), fDist).values());
 					else if (cd.getAlgorithm() == ClusterDialogGrid.ClusterAlgorithm.SKATER) {
@@ -353,7 +296,7 @@ public class SOMResultPanel extends ResultPanel<GridPos> implements ActionListen
 					}
 
 					// prototypes to samples
-					Map<double[], Set<double[]>> nBmus = new HashMap<double[], Set<double[]>>();
+					/*Map<double[], Set<double[]>> nBmus = new HashMap<double[], Set<double[]>>();
 					for (double d[] : prototypes) {
 						GridPos p = grid.getPositionOf(d);
 						if (bmus.containsKey(p))
@@ -361,58 +304,14 @@ public class SOMResultPanel extends ResultPanel<GridPos> implements ActionListen
 						else
 							nBmus.put(d, new HashSet<double[]>());
 					}
-
-					Map<double[], Set<double[]>> ll = ResultPanel.prototypeClusterToDataCluster(nBmus, clusters);
-					log.debug("#Cluster: " + ll.size());
-					log.debug("Within clusters sum of squares: " + ClusterValidation.getWithinClusterSumOfSuqares(ll.values(), fDist));
-					log.debug("Between clusters sum of squares: " + ClusterValidation.getBetweenClusterSumOfSuqares(ll.values(), fDist));
-					// log.debug("Connectivity: " + ClusterValidation.getConnectivity(ll, fDist, 10));
-					log.debug("Dunn Index: " + ClusterValidation.getDunnIndex(ll.values(), fDist));
-
-					log.debug("quantization error: " + DataUtils.getMeanQuantizationError(ll, fDist));
-					if( gDist != null )
-					log.debug("spatial quantization error: " + DataUtils.getMeanQuantizationError(ll, gDist));
-					log.debug("Davies-Bouldin Index: " + ClusterValidation.getDaviesBouldinIndex(ll, fDist));
-					log.debug("Silhouette Coefficient: " + ClusterValidation.getSilhouetteCoefficient(ll, fDist));
-
-					// means, because cluster summarize multiple prototypes
-					List<double[]> means = new ArrayList<double[]>(ll.keySet());
-					if( gDist != null )
-					Collections.sort(means, new Comparator<double[]>() {
-						@Override
-						public int compare(double[] o1, double[] o2) {
-							double[] d = new double[o1.length];
-							if (gDist.dist(o1, d) < gDist.dist(o2, d))
-								return -1;
-							else if (gDist.dist(o1, d) > gDist.dist(o2, d))
-								return 1;
-							else
-								return 0;
-						}
-					});
-																		
-					neuronValues = new HashMap<GridPos, Double>();
-			
-					for( Set<double[]> s : clusters ) {
-						// get data mapped by all prototypes in s
-						Set<double[]> data = new HashSet<double[]>();
-						for( double[] proto : s )
-							data.addAll( nBmus.get(proto) );
-							
-						// search mean by data
-						double[] mean = null;
-						for( Entry<double[],Set<double[]>> en : ll.entrySet()  )
-							if( en.getValue().containsAll(data) && data.containsAll(en.getValue())) {
-								mean = en.getKey();
-								break;
-							}
-													
-						// color protos of s
-						double v = means.indexOf(mean);
-						for( double[] proto : s ) 
-							neuronValues.put(grid.getPositionOf(proto), v);				
-					}
+					showClusterSummary(parent, ResultPanel.prototypeClusterToDataCluster(nBmus, clusters), fDist, gDist);*/
+								
+					for( int i = 0; i < clusters.size(); i++ ) 
+						for( double[] pt : clusters.get(i) ) 
+							neuronValues.put( grid.getPositionOf(pt), (double)i);
 					
+					quantileButton.setEnabled(false);
+					quantileButton.setSelected(false);
 					parent.setCursor(Cursor.getDefaultCursor());
 				}
 			} else { // components
@@ -421,18 +320,8 @@ public class SOMResultPanel extends ResultPanel<GridPos> implements ActionListen
 					neuronValues.put(p, v[gridComboBox.getSelectedIndex() - 3]); // RANDOM, DISTANCE, CLUSTER
 				}
 			}
+			updatePanels();
 
-			Map<GridPos, Color> colorMap = ColorUtils.getColorMap(neuronValues, (ColorUtils.ColorMode) colorComboBox.getSelectedItem());
-			pnlGrid.setGridColors(colorMap, selectedColors, neuronValues);
-			mapPanel.setGridColors(colorMap, selectedColors, neuronValues);
-			pnlGraph.setGridColors(toDoubleArrayMap(colorMap), toDoubleArrayMap(selectedColors), toDoubleArrayMap(neuronValues));
-			// selected.clear(); // reset selected if other vis8
-
-		} else if (e.getSource() == colorComboBox) { // color-mode-change
-			Map<GridPos, Color> colorMap = ColorUtils.getColorMap(neuronValues, (ColorUtils.ColorMode) colorComboBox.getSelectedItem());
-			pnlGrid.setGridColors(colorMap, selectedColors, neuronValues);
-			mapPanel.setGridColors(colorMap, selectedColors, neuronValues);
-			pnlGraph.setGridColors(toDoubleArrayMap(colorMap), toDoubleArrayMap(selectedColors), toDoubleArrayMap(neuronValues));
 		} else if (e.getSource() == gridModeComboBox) {
 			CardLayout cl = (CardLayout) (cards.getLayout());
 			cl.show(cards, (String) gridModeComboBox.getSelectedItem());
@@ -480,70 +369,15 @@ public class SOMResultPanel extends ResultPanel<GridPos> implements ActionListen
 					e1.printStackTrace();
 				}
 			}
-		} else if (e.getSource() == colorChooser) {
-			selectedColor = JColorChooser.showDialog(this, "Select selection color", selectedColor);
-			colorChooser.setBackground(selectedColor);		
-		} else if (e.getSource() == btnExpMap) {
-			JFileChooser fChoser = new JFileChooser("output");
-
-			fChoser.setFileFilter(FFilter.shpFilter);
-			fChoser.setFileFilter(FFilter.epsFilter);
-			fChoser.setFileFilter(FFilter.pngFilter);
-
-			int state = fChoser.showSaveDialog(this);
-			if (state == JFileChooser.APPROVE_OPTION) {
-				File fn = fChoser.getSelectedFile();
-				if (fChoser.getFileFilter() == FFilter.pngFilter) {
-					mapPanel.saveImage(fn, "PNG");
-				} else if (fChoser.getFileFilter() == FFilter.epsFilter) {
-					mapPanel.saveImage(fn, "EPS");
-				} else if (fChoser.getFileFilter() == FFilter.shpFilter) {
-					try {
-						// ugly but works
-						FeatureIterator<SimpleFeature> fit = fc.features();
-						while (fit.hasNext()) {
-							SimpleFeature sf = (SimpleFeature) fit.next();
-							GridPos gp = pos.get((Integer) (sf.getAttribute("neuron")));
-							sf.setAttribute("nValue", neuronValues.get(gp));
-							if (selectedColors.containsKey(gp))
-								sf.setAttribute("selColor", selectedColors.get(gp) );
-						}
-						fit.close();
-						
-						Map map = Collections.singletonMap("url", fn.toURI().toURL());
-						FileDataStoreFactorySpi factory = new ShapefileDataStoreFactory();
-						DataStore myData = factory.createNewDataStore(map);
-						myData.createSchema(fc.getSchema());
-						Name name = myData.getNames().get(0);
-						FeatureStore<SimpleFeatureType, SimpleFeature> store = (FeatureStore<SimpleFeatureType, SimpleFeature>) myData.getFeatureSource(name);
-						store.addFeatures(fc);
-					} catch (Exception ex) {
-						ex.printStackTrace();
-					}
-				}
-
-			}
-		} else if (e.getSource() == selectSingle) {
-			if (!mapPanel.selectSingle)
-				mapPanel.selectSingle = true;
-			else
-				mapPanel.selectSingle = false;
-		}
+		} 
 	}
-
-	@Override
-	public void neuronSelectedOccured(NeuronSelectedEvent<GridPos> evt) {
-		GridPos gp = evt.getNeuron();
-
-		if (selectedColors.containsKey(gp) && selectedColors.get(gp) == selectedColor)
-			selectedColors.remove(gp);
-		else
-			selectedColors.put(gp, selectedColor);
-
-		Map<GridPos, Color> colorMap = ColorUtils.getColorMap(neuronValues, (ColorUtils.ColorMode) colorComboBox.getSelectedItem());
+	
+	@Override 
+	protected Map<GridPos, Color> updatePanels() {
+		Map<GridPos,Color> colorMap = super.updatePanels();
 		pnlGrid.setGridColors(colorMap, selectedColors, neuronValues);
-		mapPanel.setGridColors(colorMap, selectedColors, neuronValues);
 		pnlGraph.setGridColors(toDoubleArrayMap(colorMap), toDoubleArrayMap(selectedColors), toDoubleArrayMap(neuronValues));
+		return colorMap;
 	}
 
 	private <T> Map<double[], T> toDoubleArrayMap(Map<GridPos, T> cm) {
@@ -551,5 +385,70 @@ public class SOMResultPanel extends ResultPanel<GridPos> implements ActionListen
 		for (GridPos gp : cm.keySet())
 			nm.put(grid.getPrototypeAt(gp), cm.get(gp));
 		return nm;
+	}
+	
+	@Override
+	public void neuronSelectedOccured(NeuronSelectedEvent<GridPos> evt) {
+		GridPos gp = evt.getNeuron();
+		
+		// remove from cluster if click one already same-colored neuron
+		if (selectedColors.containsKey(gp) && selectedColors.get(gp) == selectedColor)
+			selectedColors.remove(gp);
+		else { // color n neurons
+			int n = Integer.parseInt( nrNeurons.getText() );
+			
+			Set<GridPos> curNeurons = new HashSet<GridPos>();
+			curNeurons.add(gp);
+			
+			/*while( curNeurons.size() < n ) {
+				// get all neighbors
+				Set<GridPos> validNbs = new HashSet<GridPos>();
+				for( GridPos t : curNeurons )
+					if( !selectedColors.containsKey(t) || selectedColors.get(t) != selectedColor )
+						validNbs.addAll( grid.getNeighbours(t) );
+				validNbs.removeAll(curNeurons);
+							
+				if( validNbs.isEmpty() )
+					break;
+												
+				// find best
+				GridPos bestNb = null;
+				double bestSS = 0;
+				for( GridPos nb : validNbs ) {
+					
+					// sum of squares
+					curNeurons.add(nb);
+					Set<double[]> s = new HashSet<double[]>();
+					for( GridPos p : curNeurons )
+						s.add(grid.getPrototypeAt(p));
+					double ss = DataUtils.getSumOfSquares(s, fDist);
+					curNeurons.remove(nb);
+					
+					// dist to dp
+					//double ss = fDist.dist( grid.getPrototypeAt(gp), grid.getPrototypeAt(nb));
+					
+					if( bestNb == null || ss < bestSS ) {
+						bestNb = nb;
+						bestSS = ss;
+					}
+				}
+				curNeurons.add(bestNb);
+			}*/
+			
+			// color neurons
+			for( GridPos t : curNeurons )
+				selectedColors.put(t, selectedColor);
+		}
+		
+		int nr = 0;
+		Set<double[]> s = new HashSet<double[]>();
+		for( GridPos p : grid.getPositions() )
+			if( selectedColors.get(p) == selectedColor ) {
+				s.add(grid.getPrototypeAt(p));
+				nr++;
+			}
+		double ss = DataUtils.getSumOfSquares(s, fDist);
+		infoField.setText(nr+" neurons, "+ss+" sum of squares");
+		updatePanels();
 	}
 }

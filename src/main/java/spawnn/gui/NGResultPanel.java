@@ -4,7 +4,6 @@ import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.Frame;
 import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -18,17 +17,14 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JButton;
-import javax.swing.JColorChooser;
 import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
 import javax.swing.JList;
 import javax.swing.JOptionPane;
-import javax.swing.JToggleButton;
 import javax.swing.ListCellRenderer;
 import javax.xml.stream.XMLOutputFactory;
 import javax.xml.stream.XMLStreamException;
@@ -38,71 +34,37 @@ import net.miginfocom.swing.MigLayout;
 
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.log4j.Logger;
-import org.geotools.data.DataStore;
-import org.geotools.data.FeatureStore;
-import org.geotools.data.FileDataStoreFactorySpi;
-import org.geotools.data.shapefile.ShapefileDataStoreFactory;
-import org.geotools.feature.FeatureCollection;
-import org.geotools.feature.FeatureIterator;
-import org.opengis.feature.simple.SimpleFeature;
-import org.opengis.feature.simple.SimpleFeatureType;
-import org.opengis.feature.type.Name;
 
 import spawnn.dist.Dist;
 import spawnn.gui.ClusterDialogGraph.ClusterAlgorithm;
 import spawnn.gui.DistanceDialog.DistMode;
 import spawnn.gui.DistanceDialog.StatMode;
 import spawnn.ng.utils.NGUtils;
-import spawnn.utils.ClusterValidation;
 import spawnn.utils.Clustering;
-import spawnn.utils.ColorUtils;
-import spawnn.utils.DataUtils;
 import spawnn.utils.GraphClustering;
 import spawnn.utils.SpatialDataFrame;
 import edu.uci.ics.jung.algorithms.cluster.EdgeBetweennessClusterer;
 import edu.uci.ics.jung.algorithms.cluster.VoltageClusterer;
 import edu.uci.ics.jung.graph.Graph;
 
-public class NGResultPanel extends ResultPanel<double[]> implements ActionListener, NeuronSelectedListener<double[]> {
+public class NGResultPanel extends ResultPanel<double[]> {
 
 	private static Logger log = Logger.getLogger(NGResultPanel.class);
 	private static final long serialVersionUID = -4518072006960672609L;
 
 	private JComboBox<String> vertexComboBox;
-	private JComboBox edgeComboBox, colorComboBox, layoutComboBox;
-	private JButton btnExpGraph, btnExpMap, colorChooser;
-	private JToggleButton selectSingle;
+	private JComboBox edgeComboBox, layoutComboBox;
+	private JButton btnExpGraph;
 	private GraphPanel pnlGraph;
-	MapPanel<double[]> mapPanel;
-
-	private Map<double[], Double> neuronValues;
-	private Map<double[], Color> selectedColors = new HashMap<double[], Color>();
 
 	private Graph<double[], double[]> g;
-	private Dist<double[]> fDist, gDist;
-
-	private List<double[]> pos;
-	private Map<double[], Set<double[]>> bmus;
-	private FeatureCollection<SimpleFeatureType, SimpleFeature> fc;
-	private List<String> names;
 
 	private static final String RANDOM = "Random", DISTANCE = "Distance...", CLUSTER = "Cluster...", CLUSTER_GRAPH = "Cluster (Graph)...";
-	private Frame parent;
-
-	private Color selectedColor = Color.RED;
-
+	
 	public NGResultPanel(Frame parent, SpatialDataFrame orig, List<double[]> samples, Map<double[], Set<double[]>> bmus, Graph<double[], double[]> g, Dist<double[]> fDist, Dist<double[]> gDist, int[] fa, int[] ga, boolean wmc) {
-		super();
-		
-		this.parent = parent;
+		super(parent,orig,samples,bmus,new ArrayList<double[]>(g.getVertices()),fDist,gDist);
 		this.g = g;
-		this.bmus = bmus;
-		this.fDist = fDist;
-		this.gDist = gDist;
-		this.pos = new ArrayList<double[]>(g.getVertices()); // bmus might not have non-mapping neurons in it
-		this.fc = buildClusterFeatures(orig, samples, bmus, pos);
-		this.names = orig.names;
-
+		
 		setLayout(new MigLayout(""));
 
 		vertexComboBox = new JComboBox<String>();
@@ -146,10 +108,6 @@ public class NGResultPanel extends ResultPanel<double[]> implements ActionListen
 			edgeComboBox.addItem(GraphPanel.DIST_GEO);
 		edgeComboBox.addActionListener(this);
 
-		colorComboBox = new JComboBox();
-		colorComboBox.setModel(new DefaultComboBoxModel(ColorUtils.ColorMode.values()));
-		colorComboBox.addActionListener(this);
-
 		layoutComboBox = new JComboBox();
 		layoutComboBox.setModel(new DefaultComboBoxModel(GraphPanel.Layout.values()));
 		if (ga == null || ga.length != 2) {
@@ -162,51 +120,36 @@ public class NGResultPanel extends ResultPanel<double[]> implements ActionListen
 		btnExpGraph = new JButton("Export gas...");
 		btnExpGraph.addActionListener(this);
 
-		colorChooser = new JButton("Select color...");
-		colorChooser.setBackground(selectedColor);
-		colorChooser.addActionListener(this);
-		
-		selectSingle = new JToggleButton("Select single");
-		selectSingle.addActionListener(this);
-
-		btnExpMap = new JButton("Export map...");
-		btnExpMap.addActionListener(this);
-
 		pnlGraph = new GraphPanel(g, ga);
-		mapPanel = new MapPanel<double[]>(fc, pos);
-
-		actionPerformed(new ActionEvent(vertexComboBox, 0, DISTANCE));
-		Map<double[], Color> colorMap = ColorUtils.getColorMap(neuronValues, (ColorUtils.ColorMode)colorComboBox.getSelectedItem());
-
-		pnlGraph.setGridColors(colorMap, selectedColors, neuronValues);
 		pnlGraph.addNeuronSelectedListener(this);
 
-		add(vertexComboBox, "split 5");
-		add(colorComboBox, "");
+		actionPerformed(new ActionEvent(vertexComboBox, 0, DISTANCE));
+		Map<double[], Color> colorMap = updatePanels();
+
+		add(vertexComboBox, "split 6");
+		add(colorModeBox, "");
+		add(quantileButton);
 		add(edgeComboBox,"");
 		add(layoutComboBox, "");
 		add(btnExpGraph, "");
 				
-		add(colorChooser, "split 3");		
+		add(colorChooser, "split 4");
 		add(selectSingle, "");
+		add(clearSelect, "");
 		add(btnExpMap, "pushx, wrap");
 		
 		add(pnlGraph, "w 50%, pushy, grow");
-		add(mapPanel, "grow");
+		add(mapPanel, "grow,wrap");
+		add( infoField,"span 2, growx");
 		
+		// are the following lines necessary?
 		mapPanel.setGridColors(colorMap, selectedColors, neuronValues);
 		mapPanel.addNeuronSelectedListener(this);
-		
-		colorComboBox.setSelectedItem(ColorUtils.ColorMode.Blues);
 	}
 
 	@Override
 	public void actionPerformed(ActionEvent e) {
-		if (e.getSource() == colorComboBox) {
-			Map<double[], Color> colorMap = ColorUtils.getColorMap(neuronValues, (ColorUtils.ColorMode)colorComboBox.getSelectedItem());
-			pnlGraph.setGridColors(colorMap, selectedColors, neuronValues);
-			mapPanel.setGridColors(colorMap, selectedColors, neuronValues);
-		} else if (e.getSource() == layoutComboBox) {
+		if (e.getSource() == layoutComboBox) {
 			pnlGraph.setGraphLayout((GraphPanel.Layout) layoutComboBox.getSelectedItem());
 		} else if (e.getSource() == btnExpGraph) {
 			JFileChooser fc = new JFileChooser("output");
@@ -241,50 +184,10 @@ public class NGResultPanel extends ResultPanel<double[]> implements ActionListen
 					}
 				}
 			}
-		} else if (e.getSource() == colorChooser) {
-			selectedColor = JColorChooser.showDialog(this, "Select selection color", selectedColor);
-			colorChooser.setBackground(selectedColor);
-		} else if (e.getSource() == btnExpMap) {
-			JFileChooser fChoser = new JFileChooser("output");
-
-			fChoser.setFileFilter(FFilter.pngFilter);
-			fChoser.setFileFilter(FFilter.epsFilter);
-			fChoser.setFileFilter(FFilter.shpFilter);
-
-			int state = fChoser.showSaveDialog(this);
-			if (state == JFileChooser.APPROVE_OPTION) {
-				File fn = fChoser.getSelectedFile();
-				if (fChoser.getFileFilter() == FFilter.pngFilter) {
-					mapPanel.saveImage(fn, "PNG");
-				} else if(fChoser.getFileFilter() == FFilter.epsFilter) {
-					mapPanel.saveImage(fn, "EPS");
-				} else if (fChoser.getFileFilter() == FFilter.shpFilter) {
-					try {
-						// ugly but works
-						FeatureIterator<SimpleFeature> fit = fc.features();
-						while (fit.hasNext()) {
-							SimpleFeature sf = fit.next();
-							double[] gp = pos.get((Integer) (sf.getAttribute("neuron")));
-							sf.setAttribute("nValue", neuronValues.get(gp));
-							if (selectedColors.containsKey(gp))
-								sf.setAttribute("selColor", selectedColors.get(gp) );
-						}
-						fit.close();
-
-						Map map = Collections.singletonMap("url", fn.toURI().toURL());
-						FileDataStoreFactorySpi factory = new ShapefileDataStoreFactory();
-						DataStore myData = factory.createNewDataStore(map);
-						myData.createSchema(fc.getSchema());
-						Name name = myData.getNames().get(0);
-						FeatureStore<SimpleFeatureType, SimpleFeature> store = (FeatureStore<SimpleFeatureType, SimpleFeature>) myData.getFeatureSource(name);
-
-						store.addFeatures(fc);
-					} catch (Exception ex) {
-						ex.printStackTrace();
-					}
-				}
-			}
 		} else if (e.getSource() == vertexComboBox) {
+			if( !quantileButton.isEnabled() )
+				quantileButton.setEnabled(true);
+			
 			if (vertexComboBox.getSelectedItem() == RANDOM) {
 				List<double[]> rndPos = new ArrayList<double[]>(pos);
 				Collections.shuffle(rndPos);
@@ -372,57 +275,14 @@ public class NGResultPanel extends ResultPanel<double[]> implements ActionListen
 						else
 							clusters = Clustering.cutTree( Clustering.getHierarchicalClusterTree(ns, fDist, type), cd.getNumCluster());
 					}
+					//showClusterSummary(parent, ResultPanel.prototypeClusterToDataCluster(bmus, clusters), fDist, gDist);
 					
-					Map<double[],Set<double[]>> ll = ResultPanel.prototypeClusterToDataCluster(bmus, clusters);
-					log.debug("#Cluster: "+ll.size());
-					double wcss = ClusterValidation.getWithinClusterSumOfSuqares(ll.values(), fDist);
-					double bcss = ClusterValidation.getBetweenClusterSumOfSuqares(ll.values(), fDist);
-					log.debug("Within clusters sum of squares: "+wcss);
-					log.debug("Between clusters sum of squares: "+bcss);
-					//log.debug("Connectivity: "+ClusterValidation.getConnectivity(ll, fDist, 10));
-					log.debug("Dunn Index: "+ClusterValidation.getDunnIndex(ll.values(), fDist));
-										
-					log.debug("quantization error: "+DataUtils.getMeanQuantizationError(ll, fDist));
-					if( gDist != null )
-						log.debug("spatial quantization error: "+DataUtils.getMeanQuantizationError(ll, gDist));
-					log.debug("Davies-Bouldin Index: "+ClusterValidation.getDaviesBouldinIndex(ll, fDist));
-					log.debug("Silhouette Coefficient: "+ClusterValidation.getSilhouetteCoefficient(ll, fDist));
+					for( int i = 0; i < clusters.size(); i++ ) 
+					for( double[] pt : clusters.get(i) )
+						neuronValues.put( pt, (double)i);
 					
-					List<double[]> means = new ArrayList<double[]>(ll.keySet());
-					if( gDist != null )
-					Collections.sort(means, new Comparator<double[]>() {
-						@Override
-						public int compare(double[] o1, double[] o2) {
-							double[] d = new double[o1.length];
-							if (gDist.dist(o1, d) < gDist.dist(o2, d))
-								return -1;
-							else if (gDist.dist(o1, d) > gDist.dist(o2, d))
-								return 1;
-							else
-								return 0;
-						}
-					});
-					
-					for( Set<double[]> s : clusters ) {
-						// get data mapped by all prototypes in s
-						Set<double[]> data = new HashSet<double[]>();
-						for( double[] proto : s )
-							data.addAll( bmus.get(proto) );
-							
-						// search mean by data
-						double[] mean = null;
-						for( Entry<double[],Set<double[]>> en : ll.entrySet()  )
-							if( en.getValue().containsAll(data) && data.containsAll(en.getValue())) {
-								mean = en.getKey();
-								break;
-							}
-													
-						// color protos of s
-						double v = means.indexOf(mean);
-						for( double[] proto : s ) 
-							neuronValues.put(proto, v);				
-					}
-					
+					quantileButton.setEnabled(false);
+					quantileButton.setSelected(false);
 					parent.setCursor(Cursor.getDefaultCursor());
 				}
 			} else if (vertexComboBox.getSelectedItem() == CLUSTER_GRAPH) {
@@ -497,17 +357,7 @@ public class NGResultPanel extends ResultPanel<double[]> implements ActionListen
 					}
 					
 					Map<double[],Set<double[]>> ll = ResultPanel.prototypeClusterToDataCluster(bmus, clusters);
-					log.debug("#Cluster: "+ll.size());
-					log.debug("Within clusters sum of squares: "+ClusterValidation.getWithinClusterSumOfSuqares(ll.values(), fDist));
-					log.debug("Between clusters sum of squares: "+ClusterValidation.getBetweenClusterSumOfSuqares(ll.values(), fDist));
-					//log.debug("Connectivity: "+ClusterValidation.getConnectivity(ll, fDist, 10));
-					log.debug("Dunn Index: "+ClusterValidation.getDunnIndex(ll.values(), fDist));
-										
-					log.debug("quantization error: "+DataUtils.getMeanQuantizationError(ll, fDist));
-					if( gDist != null )
-					log.debug("spatial quantization error: "+DataUtils.getMeanQuantizationError(ll, gDist));
-					log.debug("Davies-Bouldin Index: "+ClusterValidation.getDaviesBouldinIndex(ll, fDist));
-					log.debug("Silhouette Coefficient: "+ClusterValidation.getSilhouetteCoefficient(ll, fDist));
+					//showClusterSummary(parent, ll, fDist, gDist);
 					
 					List<double[]> means = new ArrayList<double[]>(ll.keySet());
 					if( gDist != null )
@@ -533,9 +383,9 @@ public class NGResultPanel extends ResultPanel<double[]> implements ActionListen
 						for( int i = 0; i < means.size(); i++ ) {
 							if( bmus.containsKey(p) && ll.get(means.get(i)).containsAll(bmus.get(p) ) ) {
 								// color all positions
-								for( Set<double[]> s : clusters ) 
-									if( s.contains(p ) )
-										for( double[] d : s )
+								for( Set<double[]> set : clusters ) 
+									if( set.contains(p ) )
+										for( double[] d : set )
 											neuronValues.put(d, (double)i);
 								
 								break;
@@ -543,37 +393,28 @@ public class NGResultPanel extends ResultPanel<double[]> implements ActionListen
 						}							
 					}
 
+					quantileButton.setEnabled(false);
+					quantileButton.setSelected(false);
 					parent.setCursor(Cursor.getDefaultCursor());
 				}
 			} else { // components
 				for (double[] v : pos)
 					neuronValues.put(v, v[vertexComboBox.getSelectedIndex() - 4]); // RANDOM, DISTANCE, CLUSTER, CLUSTER ( GRAPH)
 			}
-			Map<double[], Color> colorMap = ColorUtils.getColorMap(neuronValues, (ColorUtils.ColorMode)colorComboBox.getSelectedItem());
-			pnlGraph.setGridColors(colorMap, selectedColors, neuronValues);
-			mapPanel.setGridColors(colorMap, selectedColors, neuronValues);
+			updatePanels();
+			
 		} else if( e.getSource() == edgeComboBox ) {
 			pnlGraph.setEdgeStyle( (String)edgeComboBox.getSelectedItem());
-		} else if (e.getSource() == selectSingle) {
-			if (!mapPanel.selectSingle)
-				mapPanel.selectSingle = true;
-			else
-				mapPanel.selectSingle = false;
+		} else {
+			super.actionPerformed(e);
 		}
 	}
-
-	@Override
-	public void neuronSelectedOccured(NeuronSelectedEvent<double[]> evt) {
-		double[] d = evt.getNeuron();
-
-		if (selectedColors.containsKey(d) && selectedColors.get(d) == selectedColor)
-			selectedColors.remove(d);
-		else
-			selectedColors.put(d, selectedColor);
-
-		Map<double[], Color> colorMap = ColorUtils.getColorMap(neuronValues, (ColorUtils.ColorMode)colorComboBox.getSelectedItem());
+	
+	@Override 
+	protected Map<double[], Color> updatePanels() {
+		Map<double[],Color> colorMap = super.updatePanels();
 		pnlGraph.setGridColors(colorMap, selectedColors, neuronValues);
-		mapPanel.setGridColors(colorMap, selectedColors, neuronValues);
+		return colorMap;
 	}
 
 	public static void writeGraphToGraphML(List<String> names, Graph<double[], double[]> g, Map<double[], Double> neuronValues, Map<double[], Color> selected, File fn) {

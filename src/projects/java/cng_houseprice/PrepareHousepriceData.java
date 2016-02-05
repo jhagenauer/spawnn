@@ -40,13 +40,12 @@ public class PrepareHousepriceData {
 		vars.add("bath_3"); //0.9797904046427245,0.13907101093325486,1.4477674393280417E-76
 		vars.add("garage_3"); //0.9913299816404059,0.14288683534484026,1.688154732952732E-80
 		vars.add("terr_dum"); //0.9840335531704287,0.1319615754198577,9.568249344699974E-69
-
 		vars.add("age_num"); //0.9474322059466647,0.13867248951877562,2.1134350740490176E-76					
-		*/
+		
 		//vars.add("time_index"); //0.9998715224265088,0.13845002844913828,2.9411508335018544E-76
 		
 		// Bivand: No contextual variables about the neighbourhood of the houses are available, so one would expect a strong spatial autocorrelation reflecting this misspecification.
-		/*vars.add("zsp_alq_09");
+		vars.add("zsp_alq_09");
 		vars.add("gem_kauf_i");
 		vars.add("gem_abi");
 		vars.add("gem_alter_");
@@ -62,6 +61,6 @@ public class PrepareHousepriceData {
 			ns.add(nd);
 		}
 		
-		DataUtils.writeCSV("output/houseprice_single.csv", ns, vars.toArray(new String[]{}));	
+		DataUtils.writeCSV("output/houseprice.csv", ns, vars.toArray(new String[]{}));	
 	}
 }

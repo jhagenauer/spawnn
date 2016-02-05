@@ -65,14 +65,15 @@ public class BostonTest_FWSelect {
 		DataUtils.transform(sdf.samples, new int[]{9,10}, transform.pow2);
 		DataUtils.transform(sdf.samples, transform.zScore);
 		
-		int[] allVars = new int[]{6,7,8,9,11,12,13,14,15,16,18,/*10,17*/};
+		int[] allVars = new int[]{7,8,9,11,12,13,14,15,16,18,/*17,10,6*/};
 				
 		Set<Integer> unusedVars = new HashSet<Integer>();
 		for( int i : allVars )
 			unusedVars.add(i);
 		List<Integer> curVars = new ArrayList<Integer>();
-		curVars.add(10);
 		curVars.add(17);
+		curVars.add(10);
+		curVars.add(6);
 				
 		while( !unusedVars.isEmpty() ) {
 					
@@ -234,8 +235,7 @@ public class BostonTest_FWSelect {
 					for (Future<List<double[]>> ff : futures ) {
 							List<double[]> responseVal = ff.get();
 							List<double[]> desiredVal = hd.desiredVal;
-							ds.addValue(Meuse.getRMSE(responseVal, desiredVal));
-							
+							ds.addValue(Meuse.getRMSE(responseVal, desiredVal));	
 					}
 					rmseMap.put(m, ds.getMean());
 				} catch (InterruptedException e) {

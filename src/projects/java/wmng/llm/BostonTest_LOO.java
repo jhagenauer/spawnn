@@ -26,6 +26,7 @@ import org.apache.log4j.Logger;
 import rbf.Meuse;
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
+import spawnn.dist.WeightedDist;
 import spawnn.ng.sorter.DefaultSorter;
 import spawnn.ng.sorter.Sorter;
 import spawnn.ng.sorter.SorterWMC;
@@ -40,7 +41,7 @@ public class BostonTest_LOO {
 	
 	private static Logger log = Logger.getLogger(BostonTest_LOO.class);
 	
-	enum model {WMNG, NG, NG_LAG, LM};
+	enum model {WMNG, NG, NG_LAG, WNG_LAG, LM};
 		
 	public static void main(String[] args) {
 		long timeAll = System.currentTimeMillis();
@@ -107,14 +108,7 @@ public class BostonTest_LOO {
 		final List<TrainingDataLOO> data = new ArrayList<TrainingDataLOO>();
 		for( int i = 0; i < samples.size(); i++ ) // full
 			data.add( new TrainingDataLOO( i, samples, desired, dMap ) );
-		
-		/*List<Integer> is = new ArrayList<Integer>();
-		for( int i = 0; i < samples.size(); i++ )
-			is.add(i);
-		Collections.shuffle(is);
-		for( int i : is.subList(0, 256) ) // sub
-			data.add( new LOOTrainingData( i, samples, desired, dMap ) );*/
-			
+					
 		for( final int T_MAX : new int[]{ 120000 } )	
 		for( final int nrNeurons : new int[]{ 16 } ) 		
 		for( final double nbInit : new double[]{ (double)nrNeurons*2.0/3.0 })
@@ -125,23 +119,17 @@ public class BostonTest_LOO {
 		for( final double lr2Final : new double[]{ 0.001 })
 		{			
 			List<Object[]> models = new ArrayList<Object[]>();
-			models.add( new Object[]{model.NG_LAG,null,null,null,null} );
+			//models.add( new Object[]{model.NG_LAG,null,null,null,null} );
+			models.add(new Object[] { model.NG_LAG, 1, null });
+			models.add(new Object[] { model.NG_LAG, 2, null });
 			
-			for (double alpha = 0.6; alpha <= 0.8; alpha = (double)Math.round( (alpha+0.05) * 100000) / 100000 )
+			/*for (double alpha = 0.0; alpha <= 1.0; alpha = (double)Math.round( (alpha+0.05) * 100000) / 100000 )
+				models.add(new Object[] { model.WNG_LAG, alpha, null });*/
+			
+			for (double alpha = 0.0; alpha <= 1.0; alpha = (double)Math.round( (alpha+0.05) * 100000) / 100000 )
 			for (double beta = 0; beta <= 1.0; beta = (double)Math.round( (beta+0.05) * 100000) / 100000 )
-				;//models.add( new Object[]{model.WMNG, alpha, beta} );
-			
-			models.add( new Object[]{model.WMNG, 0.7, 0.6} );
-			models.add( new Object[]{model.WMNG, 0.65, 0.25} );
-			models.add( new Object[]{model.WMNG, 0.7, 0.65} );
-			models.add( new Object[]{model.WMNG, 0.7, 0.7} );
-			models.add( new Object[]{model.WMNG, 0.65, 0.4} );
-			models.add( new Object[]{model.WMNG, 0.65, 0.55} );
-			models.add( new Object[]{model.WMNG, 0.65, 0.6} );
-			models.add( new Object[]{model.WMNG, 0.65, 0.35} );
-			models.add( new Object[]{model.WMNG, 0.75, 0.85} );
-			models.add( new Object[]{model.WMNG, 0.7, 0.75} );
-												
+				models.add( new Object[]{model.WMNG, alpha, beta} );
+																		
 			log.debug("models: "+models.size());
 									
 			for( final Object[] m : models ) {
@@ -171,7 +159,6 @@ public class BostonTest_LOO {
 						if( m[0] == model.WMNG ) { // WMNG + LLM
 							double alpha = (double)m[1];
 							double beta = (double)m[2];
-							boolean useCtx = (boolean)m[3];
 												
 							List<double[]> neurons = new ArrayList<double[]>();
 							for (int i = 0; i < nrNeurons; i++) {
@@ -188,7 +175,6 @@ public class BostonTest_LOO {
 								
 							SorterWMC sorter = new SorterWMC(bmuHist, dMapTrain, fDist, alpha, beta);
 							ContextNG_LLM ng = new ContextNG_LLM(neurons, nbRate, lrRate1, nbRate, lrRate2, sorter, fa, 1);
-							ng.useCtx = useCtx;
 							for (int t = 0; t < T_MAX; t++) {
 								int j = r.nextInt(samplesTrain.size());
 								ng.train((double) t / T_MAX, samplesTrain.get(j), desiredTrain.get(j));
@@ -197,7 +183,9 @@ public class BostonTest_LOO {
 							sorter.setWeightMatrix(hd.dMapVal); // full weight-matrix
 							return ng.present(hd.sampleVal);	
 						} else if( m[0] == model.NG_LAG ){
-							List<double[]> lagedSamplesTrain = GeoUtils.getLagedSamples(samplesTrain, dMapTrain);
+							int lag = (int) m[1];
+							
+							List<double[]> lagedSamplesTrain = GeoUtils.getLagedSamples(samplesTrain, dMapTrain, lag);
 							
 							List<double[]> neurons = new ArrayList<double[]>();
 							for (int i = 0; i < nrNeurons; i++) {
@@ -205,11 +193,21 @@ public class BostonTest_LOO {
 								neurons.add(Arrays.copyOf(d, d.length));
 							}
 							
-							int[] nfa = new int[fa.length*2];
-							for( int i = 0; i < fa.length; i++ ) {
-								nfa[i] = fa[i];
-								nfa[fa.length + i] = samplesTrain.get(0).length + fa[i];
-							}
+							int[] nfa = null;
+							if( lag == 1 ) {
+								nfa = new int[fa.length*2];
+								for( int i = 0; i < fa.length; i++ ) {
+									nfa[i] = fa[i];
+									nfa[i+fa.length] = fa[i]+samplesTrain.get(0).length;
+								}
+							} else if( lag == 2 ) {
+								nfa = new int[fa.length*3];
+								for( int i = 0; i < fa.length; i++ ) {
+									nfa[i] = fa[i];
+									nfa[i+fa.length] = fa[i]+samplesTrain.get(0).length;
+									nfa[i+2*fa.length] = fa[i]+2*samplesTrain.get(0).length;
+								}
+							} 
 														
 							Sorter<double[]> sorter = new DefaultSorter<>( new EuclideanDist(nfa));
 							LLMNG ng = new LLMNG(neurons, nbRate, lrRate1, nbRate, lrRate2, sorter, nfa, 1);
@@ -221,7 +219,7 @@ public class BostonTest_LOO {
 
 							List<double[]> l = new ArrayList<double[]>();
 							l.add(hd.sampleVal);
-							List<double[]> lagedSamplesVal = GeoUtils.getLagedSamples(l, hd.dMapVal);
+							List<double[]> lagedSamplesVal = GeoUtils.getLagedSamples(l, hd.dMapVal,lag);
 							return ng.present(lagedSamplesVal.get(0));
 						} else if( m[0] == model.NG ) {
 							List<double[]> neurons = new ArrayList<double[]>();
@@ -239,6 +237,45 @@ public class BostonTest_LOO {
 								ng.train((double) t / T_MAX, samplesTrain.get(j), desiredTrain.get(j));
 							}
 							return ng.present(hd.sampleVal);
+						} else if( m[0] == model.WNG_LAG ) { 
+							double alpha = (double)m[1];
+							
+							List<double[]> lagedSamplesTrain = GeoUtils.getLagedSamples(samplesTrain, dMapTrain);
+							
+							List<double[]> neurons = new ArrayList<double[]>();
+							for (int i = 0; i < nrNeurons; i++) {
+								double[] d = lagedSamplesTrain.get(r.nextInt(lagedSamplesTrain.size()));
+								neurons.add(Arrays.copyOf(d, d.length));
+							}
+							
+							int[] faLag = new int[fa.length];
+							for( int i = 0; i < fa.length; i++ )
+								faLag[i] = samplesTrain.get(0).length + fa[i];
+							
+							int[] nfa = new int[fa.length*2];
+							for( int i = 0; i < fa.length; i++ ) {
+								nfa[i] = fa[i];
+								nfa[fa.length + i] = faLag[i];
+							}
+							
+							Map<Dist<double[]>,Double> m = new HashMap<Dist<double[]>,Double>();
+							m.put(fDist, 1.0-alpha);
+							m.put(new EuclideanDist(faLag), alpha);
+							
+							Sorter<double[]> sorter = new DefaultSorter<>( new WeightedDist<>(m));
+
+							LLMNG ng = new LLMNG(neurons, nbRate, lrRate1, nbRate, lrRate2, sorter, nfa, 1);
+
+							for (int t = 0; t < T_MAX; t++) {
+								int j = r.nextInt(lagedSamplesTrain.size());
+								ng.train((double) t / T_MAX, lagedSamplesTrain.get(j), desiredTrain.get(j));
+							}
+
+							List<double[]> l = new ArrayList<double[]>();
+							l.add(hd.sampleVal);
+							List<double[]> lagedSamplesVal = GeoUtils.getLagedSamples(l, hd.dMapVal);
+							return ng.present(lagedSamplesVal.get(0));
+							
 						} else {
 							return null;
 						}
@@ -273,7 +310,7 @@ public class BostonTest_LOO {
 		log.debug("model took: "+(System.currentTimeMillis()-time)/1000.0+"s");
 		try {
 			String s = vNames+","+T_MAX+","+nrNeurons+","+nbInit+","+nbFinal+","+lr1Init+","+lr1Final+","+lr2Init+","+lr2Final+","+Arrays.toString(m).replaceAll("\\[", "").replaceAll("\\]", "");
-			s += ds.getMean()+"\n";
+			s += ","+ds.getMean()+"\n";
 			Files.write(Paths.get(fn), s.getBytes(), StandardOpenOption.APPEND);
 			System.out.print(s);
 		} catch (IOException e) {

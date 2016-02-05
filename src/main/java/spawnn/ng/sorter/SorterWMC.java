@@ -38,9 +38,8 @@ public class SorterWMC extends SorterContext {
 		Collections.sort(neurons, getComparator(x, context ) );
 		// update hist
 		double[] bmu = neurons.get(0);
-		if( bmuHistMutable && bmuHist.get(x) != bmu ) {
+		if( bmuHistMutable && bmuHist.get(x) != bmu )
 			bmuHist.put(x, bmu );
-		}
 	}
 	
 	@Override
@@ -48,18 +47,16 @@ public class SorterWMC extends SorterContext {
 		Collections.sort(neurons, getComparator(x, getContext(x)) );
 		// update hist
 		double[] bmu = neurons.get(0);
-		if( bmuHistMutable && bmuHist.get(x) != bmu ) {
+		if( bmuHistMutable && bmuHist.get(x) != bmu )
 			bmuHist.put(x, bmu );
-		}
 	}
 	
 	@Override
 	public double[] getBMU( final double[] x, List<double[]> neurons ) {
 		double[] bmu = Collections.min(neurons, getComparator(x, getContext(x)) );
 		// update hist
-		if( bmuHistMutable && bmuHist.get(x) != bmu ) {
+		if( bmuHistMutable && bmuHist.get(x) != bmu )
 			bmuHist.put(x, bmu );
-		}
 		return bmu;
 	}
 	

@@ -11,7 +11,7 @@ public class SorterMNG extends SorterContext {
 	
 	protected Dist<double[]> dist;
 	protected double alpha, beta;
-	protected double[] last, context;
+	protected double[] last;
 
 	public SorterMNG(Dist<double[]> dist, double alpha, double beta) {
 		this.dist = dist;
@@ -19,7 +19,36 @@ public class SorterMNG extends SorterContext {
 		this.beta = beta;	
 	}
 
+	public void sort(final double[] x, List<double[]> neurons, double[] context) {
+		Collections.sort(neurons, getComparator(x, context ) );
+		last = neurons.get(0);
+	}
+	
 	@Override
+	public void sort(final double[] x, List<double[]> neurons) {
+		Collections.sort(neurons, getComparator(x, getContext(x)) );
+		last = neurons.get(0);
+	}
+	
+	@Override
+	public double[] getBMU( final double[] x, List<double[]> neurons ) {
+		double[] bmu = Collections.min(neurons, getComparator(x, getContext(x)) );
+		last = bmu;
+		return bmu;
+	}
+	
+	private Comparator<double[]> getComparator( final double[] x, final double[] context ) {
+		return new Comparator<double[]>() {
+			@Override
+			public int compare(double[] n1, double[] n2) {	
+				double d1 = (1-alpha) * dist.dist( n1, x ) + alpha * ((EuclideanDist)dist).dist( n1, x.length, context, 0 );
+				double d2 = (1-alpha) * dist.dist( n2, x ) + alpha * ((EuclideanDist)dist).dist( n2, x.length, context, 0 );
+				return Double.compare(d1, d2);
+			}
+		};
+	}
+	
+	/*@Override
 	public void sort(final double[] x, List<double[]> neurons) {	
 		
 		if( last != null ) { 
@@ -47,9 +76,15 @@ public class SorterMNG extends SorterContext {
 		});
 				
 		last = neurons.get(0);
-	}
+	}*/
 	
 	public double[] getContext(double[] x) { 
+		double[] context = new double[x.length];
+		for( int i = 0; i < x.length; i++ )
+			context[i] += (1 - beta) * last[i];
+				
+		for( int i = 0; i < x.length; i++ )
+			context[i] += beta * last[i+x.length]; 
 		return context;
 	}
 	
@@ -63,11 +98,5 @@ public class SorterMNG extends SorterContext {
 	
 	public void setBeta(double beta) {
 		this.beta = beta;
-	}
-	
-	@Override
-	public double[] getBMU(double[] x, List<double[]> neurons) {
-		sort(x,neurons);
-		return neurons.get(0);
 	}
 }
