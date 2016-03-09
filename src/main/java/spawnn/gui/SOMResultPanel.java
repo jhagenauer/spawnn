@@ -40,7 +40,6 @@ import spawnn.som.utils.SomToolboxUtils;
 import spawnn.som.utils.SomUtils;
 import spawnn.utils.Clustering;
 import spawnn.utils.Clustering.TreeNode;
-import spawnn.utils.ColorUtils.ColorMode;
 import spawnn.utils.DataUtils;
 import spawnn.utils.SpatialDataFrame;
 import edu.uci.ics.jung.graph.Graph;
@@ -65,6 +64,8 @@ public class SOMResultPanel extends ResultPanel<GridPos> {
 	
 	private static final String RANDOM = "Random", DISTANCE = "Distance...", CLUSTER = "Cluster...";
 	private static final String GRID = "SOM", GRAPH = "Neurons (Geo)";
+		
+	private Object currentGridComboBoxItem;
 
 	public SOMResultPanel(Frame parent, SpatialDataFrame orig, List<double[]> samples, Map<GridPos, Set<double[]>> bmus, Grid2D<double[]> grid, Dist<double[]> fDist, Dist<double[]> gDist, int[] fa, int[] ga, boolean wmc) {
 		super(parent,orig,samples,bmus,new ArrayList<GridPos>(grid.getPositions()),fDist,gDist);
@@ -77,7 +78,7 @@ public class SOMResultPanel extends ResultPanel<GridPos> {
 		gridComboBox.addItem(DISTANCE);
 		gridComboBox.addItem(CLUSTER);
 		
-		gridComboBox.setRenderer(new ComboSeparatorsRenderer((ListCellRenderer<String>)gridComboBox.getRenderer()){        
+		gridComboBox.setRenderer(new ComboSeparatorsRendererString((ListCellRenderer<String>)gridComboBox.getRenderer()){        
 		    @Override
 			protected boolean addSeparatorAfter(JList list, String value, int index) {
 		    	return CLUSTER.equals(value);
@@ -102,6 +103,7 @@ public class SOMResultPanel extends ResultPanel<GridPos> {
 				gridComboBox.addItem(s);
 			}
 		gridComboBox.addActionListener(this);
+		currentGridComboBoxItem = gridComboBox.getSelectedItem();
 
 		gridModeComboBox = new JComboBox();
 		gridModeComboBox.addItem(GRID);
@@ -112,6 +114,7 @@ public class SOMResultPanel extends ResultPanel<GridPos> {
 		} else {
 			gridModeComboBox.setEnabled(false);
 		}
+		gridModeComboBox.setToolTipText("Set neural layout.");
 
 		btnExpGrid = new JButton("Export grid...");
 		btnExpGrid.addActionListener(this);
@@ -180,9 +183,8 @@ public class SOMResultPanel extends ResultPanel<GridPos> {
 		add(gridModeComboBox, "");
 		add(btnExpGrid, "");
 				
-		add(colorChooser, "split 4");
-		//add(nrNeurons,"");
-		add(selectSingle, "");
+		add(colorChooser, "split 3");
+		//add(selectSingle, "");
 		add(clearSelect, "");
 		add(btnExpMap, "pushx, wrap");
 		
@@ -197,34 +199,37 @@ public class SOMResultPanel extends ResultPanel<GridPos> {
 		if (e.getSource() == gridComboBox) { // som-visualization-change
 			if( !quantileButton.isEnabled() )
 				quantileButton.setEnabled(true);
-			
 			if (gridComboBox.getSelectedItem() == DISTANCE) { // dmatrix
 
 				DistanceDialog dd = new DistanceDialog(parent, "Distance...", true, gDist != null);
-				DistMode dm = dd.getDistMode();
-				StatMode sm = dd.getStatMode();
-
-				neuronValues = new HashMap<GridPos, Double>();
-				for (GridPos p : grid.getPositions()) {
-					double[] v = grid.getPrototypeAt(p);
-
-					DescriptiveStatistics ds = new DescriptiveStatistics();
-					for (GridPos np : grid.getNeighbours(p)) {
-						if (dm == DistMode.Normal)
-							ds.addValue(fDist.dist(v, grid.getPrototypeAt(np)));
-						else
-							ds.addValue(gDist.dist(v, grid.getPrototypeAt(np)));
+				if( dd.okPressed ) {
+					DistMode dm = dd.getDistMode();
+					StatMode sm = dd.getStatMode();
+	
+					neuronValues = new HashMap<GridPos, Double>();
+					for (GridPos p : grid.getPositions()) {
+						double[] v = grid.getPrototypeAt(p);
+	
+						DescriptiveStatistics ds = new DescriptiveStatistics();
+						for (GridPos np : grid.getNeighbours(p)) {
+							if (dm == DistMode.Normal)
+								ds.addValue(fDist.dist(v, grid.getPrototypeAt(np)));
+							else
+								ds.addValue(gDist.dist(v, grid.getPrototypeAt(np)));
+						}
+						if (sm == StatMode.Mean)
+							neuronValues.put(p, ds.getMean());
+						else if (sm == StatMode.Median)
+							neuronValues.put(p, ds.getPercentile(0.5));
+						else if (sm == StatMode.Variance)
+							neuronValues.put(p, ds.getVariance());
+						else if (sm == StatMode.Min)
+							neuronValues.put(p, ds.getMin());
+						else if (sm == StatMode.Max)
+							neuronValues.put(p, ds.getMax());
 					}
-					if (sm == StatMode.Mean)
-						neuronValues.put(p, ds.getMean());
-					else if (sm == StatMode.Median)
-						neuronValues.put(p, ds.getPercentile(0.5));
-					else if (sm == StatMode.Variance)
-						neuronValues.put(p, ds.getVariance());
-					else if (sm == StatMode.Min)
-						neuronValues.put(p, ds.getMin());
-					else if (sm == StatMode.Max)
-						neuronValues.put(p, ds.getMax());
+				} else {
+					gridComboBox.setSelectedItem(currentGridComboBoxItem);
 				}
 			} else if (gridComboBox.getSelectedItem() == RANDOM) { // random
 				int k = 0;
@@ -313,6 +318,8 @@ public class SOMResultPanel extends ResultPanel<GridPos> {
 					quantileButton.setEnabled(false);
 					quantileButton.setSelected(false);
 					parent.setCursor(Cursor.getDefaultCursor());
+				} else { // ok not pressed
+					gridComboBox.setSelectedItem(currentGridComboBoxItem);
 				}
 			} else { // components
 				for (GridPos p : grid.getPositions()) {
@@ -321,6 +328,7 @@ public class SOMResultPanel extends ResultPanel<GridPos> {
 				}
 			}
 			updatePanels();
+			currentGridComboBoxItem = gridComboBox.getSelectedItem();
 
 		} else if (e.getSource() == gridModeComboBox) {
 			CardLayout cl = (CardLayout) (cards.getLayout());
@@ -395,45 +403,8 @@ public class SOMResultPanel extends ResultPanel<GridPos> {
 		if (selectedColors.containsKey(gp) && selectedColors.get(gp) == selectedColor)
 			selectedColors.remove(gp);
 		else { // color n neurons
-			int n = Integer.parseInt( nrNeurons.getText() );
-			
 			Set<GridPos> curNeurons = new HashSet<GridPos>();
 			curNeurons.add(gp);
-			
-			/*while( curNeurons.size() < n ) {
-				// get all neighbors
-				Set<GridPos> validNbs = new HashSet<GridPos>();
-				for( GridPos t : curNeurons )
-					if( !selectedColors.containsKey(t) || selectedColors.get(t) != selectedColor )
-						validNbs.addAll( grid.getNeighbours(t) );
-				validNbs.removeAll(curNeurons);
-							
-				if( validNbs.isEmpty() )
-					break;
-												
-				// find best
-				GridPos bestNb = null;
-				double bestSS = 0;
-				for( GridPos nb : validNbs ) {
-					
-					// sum of squares
-					curNeurons.add(nb);
-					Set<double[]> s = new HashSet<double[]>();
-					for( GridPos p : curNeurons )
-						s.add(grid.getPrototypeAt(p));
-					double ss = DataUtils.getSumOfSquares(s, fDist);
-					curNeurons.remove(nb);
-					
-					// dist to dp
-					//double ss = fDist.dist( grid.getPrototypeAt(gp), grid.getPrototypeAt(nb));
-					
-					if( bestNb == null || ss < bestSS ) {
-						bestNb = nb;
-						bestSS = ss;
-					}
-				}
-				curNeurons.add(bestNb);
-			}*/
 			
 			// color neurons
 			for( GridPos t : curNeurons )
@@ -450,5 +421,10 @@ public class SOMResultPanel extends ResultPanel<GridPos> {
 		double ss = DataUtils.getSumOfSquares(s, fDist);
 		infoField.setText(nr+" neurons, "+ss+" sum of squares");
 		updatePanels();
+	}
+
+	@Override
+	public boolean isClusterVis() {
+		return (String)gridComboBox.getSelectedItem() == CLUSTER;
 	}
 }

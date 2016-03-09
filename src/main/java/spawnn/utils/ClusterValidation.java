@@ -97,7 +97,7 @@ public class ClusterValidation {
 		
 		int numSamples = 0;
 		for( Set<double[]> s : c ) {
-			double[] m = DataUtils.getMeanClusterElement(s);
+			double[] m = DataUtils.getMean(s);
 			for( int i = 0; i < m.length; i++ )
 				meanOfMeans[i] += m[i]/c.size();
 			numSamples += s.size();
@@ -105,7 +105,7 @@ public class ClusterValidation {
 		
 		double v = 0;
 		for( Set<double[]> s : c ) 
-			v += ((double)s.size()/numSamples) * Math.pow( dist.dist( DataUtils.getMeanClusterElement(s), meanOfMeans), 2);
+			v += ((double)s.size()/numSamples) * Math.pow( dist.dist( DataUtils.getMean(s), meanOfMeans), 2);
 		return v;
 	}
 

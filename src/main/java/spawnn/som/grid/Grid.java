@@ -1,8 +1,10 @@
 package spawnn.som.grid;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -124,5 +126,17 @@ public abstract class Grid<T> {
 				return false;
 		
 		return true;
+	}
+	
+	// contiguity map of prototypes
+	public Map<T,List<T>> getContiguityMap() {
+		Map<T,List<T>> m = new HashMap<T,List<T>>();
+		for( GridPos gp : grid.keySet() ) {
+			List<T> l = new ArrayList<T>();
+			for( GridPos nb : getNeighbours(gp))
+				l.add(grid.get(nb));
+			m.put(grid.get(gp), l);
+		}
+		return m;
 	}
 }

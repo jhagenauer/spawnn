@@ -67,8 +67,8 @@ import spawnn.som.grid.Grid2DHex;
 import spawnn.som.grid.Grid2DHexToroid;
 import spawnn.som.grid.Grid2DToroid;
 import spawnn.som.grid.GridPos;
+import spawnn.utils.ColorBrewer;
 import spawnn.utils.ColorUtils;
-import spawnn.utils.ColorUtils.ColorMode;
 import spawnn.utils.DataUtils;
 import spawnn.utils.Drawer;
 import watershedflooding.Watershed;
@@ -539,16 +539,16 @@ public class SomUtils {
 		}
 	}
 
-	public static void printDMatrix(Grid2D<double[]> grid, Dist<double[]> d, ColorMode colorScale, OutputStream os) {
+	public static void printDMatrix(Grid2D<double[]> grid, Dist<double[]> d, ColorBrewer cm, OutputStream os) {
 		double[][] dmatrix = getDMatrix(grid, d);
 		if (grid instanceof Grid2DHex)
-			printImage(getHexMatrixImage(dmatrix, 5, colorScale, HEX_NORMAL), os);
+			printImage(getHexMatrixImage(dmatrix, 5, cm, HEX_NORMAL), os);
 		else
-			printImage(getRectMatrixImage(dmatrix, 50, colorScale), os);
+			printImage(getRectMatrixImage(dmatrix, 50, cm), os);
 	}
 
 	public static void printDMatrix(Grid2D<double[]> grid, Dist<double[]> d, OutputStream os) {
-		printDMatrix(grid, d, ColorMode.Greys, os);
+		printDMatrix(grid, d, ColorBrewer.Greys, os);
 	}
 
 	// Only used by watershed clustering... do we need it anyways?
@@ -578,7 +578,7 @@ public class SomUtils {
 		}
 	}
 
-	public static void printComponentPlane(Grid2D<double[]> grid, int idx, ColorMode colorMode, OutputStream os) {
+	public static void printComponentPlane(Grid2D<double[]> grid, int idx, ColorBrewer colorMode, OutputStream os) {
 		if (grid instanceof Grid2DHex)
 			printImage(getHexMatrixImage((Grid2DHex<double[]>) grid, 5, colorMode, HEX_NORMAL, idx), os);
 		else {
@@ -588,7 +588,7 @@ public class SomUtils {
 	}
 
 	public static void printComponentPlane(Grid2D<double[]> grid, int idx, OutputStream os) {
-		printComponentPlane(grid, idx, ColorMode.Greys, os);
+		printComponentPlane(grid, idx, ColorBrewer.Greys, os);
 	}
 
 	public static void printUMatrix(Grid2D<double[]> grid, Dist<double[]> d, String file) {
@@ -603,27 +603,27 @@ public class SomUtils {
 		double[][] umatrix = getUMatrix(grid, d);
 
 		if (grid instanceof Grid2DHex)
-			printImage(getHexMatrixImage(umatrix, 5, ColorMode.Greys, HEX_UMAT), os);
+			printImage(getHexMatrixImage(umatrix, 5, ColorBrewer.Greys, HEX_UMAT), os);
 		else
-			printImage(getRectMatrixImage(umatrix, (int) (100 * grid.size() / (grid.size() * 2)), ColorMode.Greys), os);
+			printImage(getRectMatrixImage(umatrix, (int) (100 * grid.size() / (grid.size() * 2)), ColorBrewer.Greys), os);
 	}
 
-	public static void printHexUMat(Grid2D<double[]> grid, Dist<double[]> d, ColorMode colorScale, OutputStream os) {
+	public static void printHexUMat(Grid2D<double[]> grid, Dist<double[]> d, ColorBrewer colorScale, OutputStream os) {
 		double[][] umatrix = getUMatrix(grid, d);
 		printImage(getHexMatrixImage(umatrix, 5, colorScale, HEX_UMAT), os);
 	}
 
-	public static void printUMatrix(Grid2D<double[]> grid, Dist<double[]> d, ColorMode colorScale, boolean rectType, String fn) {
+	public static void printUMatrix(Grid2D<double[]> grid, Dist<double[]> d, ColorBrewer cm, boolean rectType, String fn) {
 		double[][] umatrix = getUMatrix(grid, d);
 
 		try {
 			FileOutputStream os = new FileOutputStream(fn);
 
 			if (grid instanceof Grid2DHex)
-				printImage(getHexMatrixImage(umatrix, 5, colorScale, rectType), os);
+				printImage(getHexMatrixImage(umatrix, 5, cm, rectType), os);
 			else
 				// type ignored for other grids
-				printImage(getRectMatrixImage(umatrix, (int) (100 * grid.size() / (grid.size() * 2)), colorScale), os);
+				printImage(getRectMatrixImage(umatrix, (int) (100 * grid.size() / (grid.size() * 2)), cm), os);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -637,7 +637,7 @@ public class SomUtils {
 		}
 	}
 
-	public static BufferedImage getRectMatrixImage(double[][] matrix, int cellSize, ColorMode colorScale) {
+	public static BufferedImage getRectMatrixImage(double[][] matrix, int cellSize, ColorBrewer colorScale) {
 		BufferedImage bufImg = new BufferedImage(cellSize * matrix.length, cellSize * matrix[0].length, BufferedImage.TYPE_INT_ARGB);
 		Graphics2D g2 = bufImg.createGraphics();
 		g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
@@ -662,7 +662,7 @@ public class SomUtils {
 	public static boolean HEX_UMAT = true, HEX_NORMAL = false;
 
 	@Deprecated
-	public static BufferedImage getHexMatrixImage(double[][] matrix, int scale, ColorMode colorScale, boolean umat) {
+	public static BufferedImage getHexMatrixImage(double[][] matrix, int scale, ColorBrewer colorScale, boolean umat) {
 		int xDiff = 12;
 		int yDiff = 14;
 
@@ -725,7 +725,8 @@ public class SomUtils {
 		return bufImg;
 	}
 
-	public static BufferedImage getHexMatrixImage(Grid2DHex<double[]> grid, int scale, ColorMode colorScale, boolean type, int idx) {
+	// FIXME not good, better: getShapes(rect/hex) and then combine with colors
+	public static BufferedImage getHexMatrixImage(Grid2DHex<double[]> grid, int scale, ColorBrewer cm, boolean type, int idx) {
 		int xDiff = 12;
 		int yDiff = 14;
 
@@ -768,7 +769,7 @@ public class SomUtils {
 			Shape sp = at.createTransformedShape(p);
 			shapes.put(sp, grid.getPrototypeAt(gp)[idx]);
 		}
-		Map<Shape, Color> colors = ColorUtils.getColorMap(shapes, colorScale);
+		Map<Shape, Color> colors = ColorUtils.getColorMap(shapes, cm, false);
 
 		// fill hexagons
 		DecimalFormat df = new DecimalFormat("#.#####");

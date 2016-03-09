@@ -1,4 +1,4 @@
-package cng_houseprice;
+package houseprice;
 
 import java.io.File;
 import java.io.IOException;

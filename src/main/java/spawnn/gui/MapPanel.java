@@ -190,7 +190,7 @@ public class MapPanel<T> extends NeuronVisPanel<T> implements MapPaneListener, C
 				
 		{
 			Stroke stroke = sb.createStroke();
-			stroke = null;
+			// stroke = null; // draw border?
 			Style style = null;
 			if (gt.getBinding() == Polygon.class || gt.getBinding() == MultiPolygon.class) {
 				Symbolizer sym = sb.createPolygonSymbolizer(stroke,sb.createFill(ff.property("color")));
@@ -271,7 +271,6 @@ public class MapPanel<T> extends NeuronVisPanel<T> implements MapPaneListener, C
 		Filter filter = ff.intersects(ff.property("the_geom"), ff.literal(p));
 		try {
 			FeatureCollection<SimpleFeatureType, SimpleFeature> sub = fc.subCollection(filter);
-			//log.debug("Sub-size: "+sub.size());
 			FeatureIterator<SimpleFeature> iter = sub.features();
 			try {
 				while (iter.hasNext()) {
@@ -282,7 +281,6 @@ public class MapPanel<T> extends NeuronVisPanel<T> implements MapPaneListener, C
 
 					fireNeuronSelectedEvent(new NeuronSelectedEvent<T>(this, pos.get((Integer) feature.getAttribute("neuron"))));
 				}
-
 			} finally {
 				iter.close();
 			}

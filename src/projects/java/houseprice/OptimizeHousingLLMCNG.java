@@ -1,4 +1,4 @@
-package cng_houseprice;
+package houseprice;
 
 import java.awt.Color;
 import java.awt.Graphics2D;
@@ -51,8 +51,8 @@ import spawnn.ng.sorter.KangasSorter;
 import spawnn.ng.sorter.Sorter;
 import spawnn.ng.utils.NGUtils;
 import spawnn.rbf.RBF;
+import spawnn.utils.ColorBrewer;
 import spawnn.utils.ColorUtils;
-import spawnn.utils.ColorUtils.ColorMode;
 import spawnn.utils.DataUtils;
 import spawnn.utils.SpatialDataFrame;
 
@@ -334,7 +334,7 @@ public class OptimizeHousingLLMCNG {
 		for (int i = 0; i < geoms.size(); i++)
 			m.put(geoms.get(i), values.get(i));
 
-		Map<Geometry, Color> colMap = ColorUtils.getColorMap(m, ColorMode.Blues);
+		Map<Geometry, Color> colMap = ColorUtils.getColorMap(m, ColorBrewer.Blues);
 		Set<Color> cols = new HashSet<Color>(colMap.values());
 
 		try {

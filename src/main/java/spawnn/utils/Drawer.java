@@ -43,8 +43,6 @@ import org.geotools.swing.JMapPane;
 import org.opengis.feature.type.GeometryType;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
-import spawnn.utils.ColorUtils.ColorMode;
-
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.MultiPoint;
 import com.vividsolutions.jts.geom.MultiPolygon;
@@ -84,7 +82,7 @@ public class Drawer {
 			e.printStackTrace();
 		}
 	}
-
+	
 	public static void geoDrawCluster(Collection<Set<double[]>> cluster, List<double[]> samples, List<Geometry> geoms, OutputStream os, boolean label) {
 
 		int nonEmpty = 0;
@@ -98,7 +96,7 @@ public class Drawer {
 			nonEmpty++;
 		}
 
-		Map<double[], Color> colorMap = ColorUtils.getColorMap(valueMap, ColorUtils.ColorMode.Set3);
+		Map<double[], Color> colorMap = ColorUtils.getColorMap(valueMap, ColorBrewer.Set3,false);
 
 		// draw
 		try {
@@ -204,7 +202,7 @@ public class Drawer {
 			nonEmpty++;
 		}
 
-		Map<double[], Color> colorMap = ColorUtils.getColorMap(valueMap, ColorUtils.ColorMode.Set3);
+		Map<double[], Color> colorMap = ColorUtils.getColorMap(valueMap, ColorBrewer.Set3);
 
 		// draw
 		try {
@@ -317,21 +315,21 @@ public class Drawer {
 		}
 	}
 
-	public static void geoDrawValues(SpatialDataFrame sdf, int column, ColorMode cm, String fn) {
+	public static void geoDrawValues(SpatialDataFrame sdf, int column, ColorBrewer cm, String fn) {
 		List<Double> values = new ArrayList<Double>();
 		for (double[] d : sdf.samples)
 			values.add(d[column]);
 		geoDrawValues(sdf.geoms, values, sdf.crs, cm, fn);
 	}
 
-	public static void geoDrawValues(List<Geometry> geoms, List<double[]> values, int fa, CoordinateReferenceSystem crs, ColorMode cm, String fn) {
+	public static void geoDrawValues(List<Geometry> geoms, List<double[]> values, int fa, CoordinateReferenceSystem crs, ColorBrewer cm, String fn) {
 		List<Double> l = new ArrayList<Double>();
 		for (double[] d : values)
 			l.add(d[fa]);
 		geoDrawValues(geoms, l, crs, cm, fn);
 	}
 
-	public static void geoDrawValues(List<Geometry> geoms, List<Double> values, CoordinateReferenceSystem crs, ColorMode cm, String fn) {
+	public static void geoDrawValues(List<Geometry> geoms, List<Double> values, CoordinateReferenceSystem crs, ColorBrewer cm, String fn) {
 		Map<Geometry, Double> valueMap = new HashMap<Geometry, Double>();
 		for (int i = 0; i < geoms.size(); i++)
 			valueMap.put(geoms.get(i), values.get(i));

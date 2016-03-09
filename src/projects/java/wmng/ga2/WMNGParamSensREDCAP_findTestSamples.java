@@ -74,13 +74,13 @@ public class WMNGParamSensREDCAP_findTestSamples {
 			if (a[fips] == 0)
 				continue;
 
-			double[] ma = DataUtils.getMeanClusterElement(ctg.get(a));
+			double[] ma = DataUtils.getMean(ctg.get(a));
 			for (int j = i + 1; j < samples.size() - 1; j++) {
 				double[] b = samples.get(j);
 
 				if (a == b || b[fips] == 0)
 					continue;
-				double[] mb = DataUtils.getMeanClusterElement(ctg.get(b));
+				double[] mb = DataUtils.getMean(ctg.get(b));
 
 				double ctxD = fDist.dist(ma, mb);
 				

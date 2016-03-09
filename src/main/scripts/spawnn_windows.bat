@@ -62,7 +62,7 @@ set COMPLETE_CLASSPATH=%SPAWNN_LIBRARIES%
 echo Starting Spawnn from '%SPAWNN_HOME%'
 rem echo The complete classpath is '%COMPLETE_CLASSPATH%'
 
-"%JAVA%" -classpath "%COMPLETE_CLASSPATH%" spawnn.gui.SpawnnGui
+"%JAVA%" -classpath "%COMPLETE_CLASSPATH%" -Xmx1g spawnn.gui.SpawnnGui
 
 goto end
 

@@ -1,7 +1,6 @@
 package cng_llm;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -21,9 +20,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import llm.ErrorSorter;
 import llm.LLMNG;
-import llm.LLMSOM;
 
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.log4j.Logger;
@@ -35,24 +32,13 @@ import spawnn.ng.sorter.DefaultSorter;
 import spawnn.ng.sorter.KangasSorter;
 import spawnn.ng.sorter.Sorter;
 import spawnn.ng.utils.NGUtils;
-import spawnn.som.bmu.BmuGetter;
-import spawnn.som.bmu.DefaultBmuGetter;
-import spawnn.som.bmu.KangasBmuGetter;
 import spawnn.som.decay.DecayFunction;
-import spawnn.som.decay.LinearDecay;
 import spawnn.som.decay.PowerDecay;
-import spawnn.som.grid.Grid2DHex;
-import spawnn.som.grid.GridPos;
-import spawnn.som.kernel.GaussKernel;
-import spawnn.som.kernel.KernelFunction;
-import spawnn.som.utils.SomUtils;
 import spawnn.utils.ClusterValidation;
 import spawnn.utils.Clustering;
 import spawnn.utils.Clustering.TreeNode;
-import spawnn.utils.ColorUtils.ColorMode;
 import spawnn.utils.DataUtils;
 import spawnn.utils.GeoUtils;
-import spawnn.utils.GraphClustering;
 import spawnn.utils.SpatialDataFrame;
 
 import com.vividsolutions.jts.geom.Geometry;

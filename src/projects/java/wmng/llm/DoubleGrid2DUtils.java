@@ -19,7 +19,7 @@ import spawnn.som.grid.Grid2D;
 import spawnn.som.grid.Grid2DToroid;
 import spawnn.som.grid.GridPos;
 import spawnn.som.utils.SomUtils;
-import spawnn.utils.ColorUtils.ColorMode;
+import spawnn.utils.ColorBrewer;
 import spawnn.utils.DataUtils;
 import spawnn.utils.Drawer;
 import spawnn.utils.GeoUtils;
@@ -184,8 +184,8 @@ public class DoubleGrid2DUtils {
 			if( i == 0 ) {
 				SpatialDataFrame sdf = gridToSDF(grid);
 				DataUtils.writeShape(sdf.samples, sdf.geoms, sdf.getNames(), "output/grid.shp");
-				Drawer.geoDrawValues(sdf, 2, ColorMode.Blues, "output/x1.png");
-				Drawer.geoDrawValues(sdf, 3, ColorMode.Blues, "output/y.png");
+				Drawer.geoDrawValues(sdf, 2, ColorBrewer.Blues, "output/x1.png");
+				Drawer.geoDrawValues(sdf, 3, ColorBrewer.Blues, "output/y.png");
 				
 				Map<double[],Map<double[],Double>> dMap = GeoUtils.getRowNormedMatrix(GeoUtils.listsToWeights(GeoUtils.getNeighborsFromGrid(grid)));
 				for( int j = 2; j <= 3; j++ ) {

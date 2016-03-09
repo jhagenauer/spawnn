@@ -1,4 +1,4 @@
-package cng_houseprice;
+package houseprice;
 
 import java.io.File;
 import java.io.IOException;
@@ -48,28 +48,21 @@ public class HousepriceOptimize_CV {
 		boolean firstWrite = true;
 		final Random r = new Random();
 
-		List<double[]> samples = new ArrayList<double[]>();
-		List<double[]> desired = new ArrayList<double[]>();
-		
-		final SpatialDataFrame sdf = DataUtils.readSpatialDataFrameFromCSV(new File("data/econ_toolbox/house.csv"), new int[] { 0, 1 }, new int[] {}, true);
+		final List<double[]> samples = new ArrayList<double[]>();
+		final List<double[]> desired = new ArrayList<double[]>();
+		final SpatialDataFrame sdf = DataUtils.readSpatialDataFrameFromCSV(new File("output/houseprice.csv"), new int[] { 0,1 }, new int[] {}, true);
 		for (double[] d : sdf.samples) {
-			samples.add(new double[]{d[16],d[17],Math.log(3)});
-			desired.add(new double[] { Math.log(d[0]) });
-		}
-		
-		/*final SpatialDataFrame sdf = DataUtils.readSpatialDataFrameFromCSV(new File("output/houseprice.csv"), new int[] { 0, 1 }, new int[] {}, true);
-		for (double[] d : sdf.samples) {
-			double[] nd = Arrays.copyOf(d, d.length - 1);
-
+			double[] nd = Arrays.copyOf(d, d.length-1);
+					
 			samples.add(nd);
-			desired.add(new double[] { d[d.length - 1] });
-		}*/
-
-		final int[] fa = new int[samples.get(0).length - 2]; // omit geo-vars
-		for (int i = 0; i < fa.length; i++)
-			fa[i] = i + 2;
+			desired.add(new double[]{d[d.length-1]});
+		}
+						
+		final int[] fa = new int[samples.get(0).length-2]; // omit geo-vars
+		for( int i = 0; i < fa.length; i++ )
+			fa[i] = i+2;
 		final int[] ga = new int[] { 0, 1 };
-
+		
 		final Dist<double[]> gDist = new EuclideanDist(ga);
 		final Dist<double[]> fDist = new EuclideanDist(fa);
 
@@ -81,22 +74,22 @@ public class HousepriceOptimize_CV {
 		for( final int T_MAX : new int[]{ 120000 } )	
 			//for( final int nrNeurons : new int[]{ 5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64 } ) 		
 			//for( final int nrNeurons : new int[]{ 16,48,512,1024,2048,4096 } )
-			for( final int nrNeurons : new int[]{ 24 } )
+			for( final int nrNeurons : new int[]{ 64 } )
 			for( final double nbInit : new double[]{ (double)nrNeurons*2.0/3.0 })
 			for( final double nbFinal : new double[]{ 1.0 })	
 			for( final double lr1Init : new double[]{ 0.4 }) 
-			for( final double lr1Final : new double[]{ 0.05, 0.01, 0.005, 0.001, 0.0005, 0.0001 })
+			for( final double lr1Final : new double[]{ 0.005 })
 			for( final double lr2Init : new double[]{ 0.2 })
 			for( final double lr2Final : new double[]{ lr1Final })
-			for( int l : new int[]{1} )
-			//for( int l = 1; l <= nrNeurons; l++ )
+			//for( int l : new int[]{1,(int)(nrNeurons/3.0),nrNeurons} )
+			for( int l = 1; l <= nrNeurons/2.0; l++ )
 			{	
 				final int L = l;
 				
 				ExecutorService es = Executors.newFixedThreadPool(4);
 				List<Future<double[]>> futures = new ArrayList<Future<double[]>>();
 
-				for (int run = 0; run < 36; run++) {
+				for (int run = 0; run < 32; run++) {
 					
 					int samplesSize = samples.size();
 					final List<double[]> samplesTrain = new ArrayList<double[]>(samples);

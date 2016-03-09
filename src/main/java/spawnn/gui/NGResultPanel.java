@@ -61,6 +61,8 @@ public class NGResultPanel extends ResultPanel<double[]> {
 
 	private static final String RANDOM = "Random", DISTANCE = "Distance...", CLUSTER = "Cluster...", CLUSTER_GRAPH = "Cluster (Graph)...";
 	
+	private Object currentVertexComboBox;
+	
 	public NGResultPanel(Frame parent, SpatialDataFrame orig, List<double[]> samples, Map<double[], Set<double[]>> bmus, Graph<double[], double[]> g, Dist<double[]> fDist, Dist<double[]> gDist, int[] fa, int[] ga, boolean wmc) {
 		super(parent,orig,samples,bmus,new ArrayList<double[]>(g.getVertices()),fDist,gDist);
 		this.g = g;
@@ -73,7 +75,7 @@ public class NGResultPanel extends ResultPanel<double[]> {
 		vertexComboBox.addItem(CLUSTER);
 		vertexComboBox.addItem(CLUSTER_GRAPH);
 		
-		vertexComboBox.setRenderer(new ComboSeparatorsRenderer((ListCellRenderer<String>)vertexComboBox.getRenderer()){        
+		vertexComboBox.setRenderer(new ComboSeparatorsRendererString((ListCellRenderer<String>)vertexComboBox.getRenderer()){        
 		    @Override
 			protected boolean addSeparatorAfter(JList list, String value, int index) {
 		    	return CLUSTER_GRAPH.equals(value);
@@ -98,6 +100,7 @@ public class NGResultPanel extends ResultPanel<double[]> {
 				vertexComboBox.addItem(s);
 			}
 		vertexComboBox.addActionListener(this);
+		currentVertexComboBox = vertexComboBox.getSelectedItem();
 		
 		edgeComboBox = new JComboBox<String>();
 		edgeComboBox.addItem(GraphPanel.NONE);
@@ -106,6 +109,7 @@ public class NGResultPanel extends ResultPanel<double[]> {
 		log.debug(Arrays.toString(ga));
 		if( ga != null && ga.length > 0 )
 			edgeComboBox.addItem(GraphPanel.DIST_GEO);
+		edgeComboBox.setToolTipText("Set edge style.");
 		edgeComboBox.addActionListener(this);
 
 		layoutComboBox = new JComboBox();
@@ -114,7 +118,7 @@ public class NGResultPanel extends ResultPanel<double[]> {
 			layoutComboBox.removeItem(GraphPanel.Layout.Geo);
 		}
 		layoutComboBox.setSelectedItem(GraphPanel.Layout.KamadaKawai);
-
+		layoutComboBox.setToolTipText("Select graph layout.");
 		layoutComboBox.addActionListener(this);
 
 		btnExpGraph = new JButton("Export gas...");
@@ -133,8 +137,8 @@ public class NGResultPanel extends ResultPanel<double[]> {
 		add(layoutComboBox, "");
 		add(btnExpGraph, "");
 				
-		add(colorChooser, "split 4");
-		add(selectSingle, "");
+		add(colorChooser, "split 3");
+		//add(selectSingle, "");
 		add(clearSelect, "");
 		add(btnExpMap, "pushx, wrap");
 		
@@ -200,31 +204,34 @@ public class NGResultPanel extends ResultPanel<double[]> {
 			} else if (vertexComboBox.getSelectedItem() == DISTANCE ) {
 				
 				DistanceDialog dd = new DistanceDialog(parent, "Distance...", true, gDist != null );
-				DistMode dm = dd.getDistMode();
-				StatMode sm = dd.getStatMode();
-								
-				neuronValues = new HashMap<double[], Double>();
-				for (double[] v : g.getVertices() ) {
-					
-					DescriptiveStatistics ds = new DescriptiveStatistics();
-					for (double[] nb : g.getNeighbors(v) ) {
-						if (dm == DistMode.Normal )
-							ds.addValue( fDist.dist(v, nb ) );
-						else
-							ds.addValue( gDist.dist(v, nb ) );
+				if( dd.isOkPressed() ) {
+					DistMode dm = dd.getDistMode();
+					StatMode sm = dd.getStatMode();
+									
+					neuronValues = new HashMap<double[], Double>();
+					for (double[] v : g.getVertices() ) {
+						
+						DescriptiveStatistics ds = new DescriptiveStatistics();
+						for (double[] nb : g.getNeighbors(v) ) {
+							if (dm == DistMode.Normal )
+								ds.addValue( fDist.dist(v, nb ) );
+							else
+								ds.addValue( gDist.dist(v, nb ) );
+						}
+						if( sm == StatMode.Mean )
+							neuronValues.put(v, ds.getMean() );
+						else if( sm == StatMode.Median )
+							neuronValues.put(v, ds.getPercentile(0.5) );
+						else if( sm == StatMode.Variance )
+							neuronValues.put(v, ds.getVariance() );
+						else if( sm == StatMode.Min )
+							neuronValues.put(v, ds.getMin() );
+						else if( sm == StatMode.Max )
+							neuronValues.put(v, ds.getMax() );
 					}
-					if( sm == StatMode.Mean )
-						neuronValues.put(v, ds.getMean() );
-					else if( sm == StatMode.Median )
-						neuronValues.put(v, ds.getPercentile(0.5) );
-					else if( sm == StatMode.Variance )
-						neuronValues.put(v, ds.getVariance() );
-					else if( sm == StatMode.Min )
-						neuronValues.put(v, ds.getMin() );
-					else if( sm == StatMode.Max )
-						neuronValues.put(v, ds.getMax() );
+				} else {
+					vertexComboBox.setSelectedItem(currentVertexComboBox);
 				}
-				
 			} else if (vertexComboBox.getSelectedItem() == CLUSTER) {
 				ClusterDialogGrid cd = new ClusterDialogGrid(parent, CLUSTER, true, false);
 
@@ -281,9 +288,9 @@ public class NGResultPanel extends ResultPanel<double[]> {
 					for( double[] pt : clusters.get(i) )
 						neuronValues.put( pt, (double)i);
 					
-					quantileButton.setEnabled(false);
-					quantileButton.setSelected(false);
 					parent.setCursor(Cursor.getDefaultCursor());
+				} else { // ok not pressed
+					vertexComboBox.setSelectedItem(currentVertexComboBox);
 				}
 			} else if (vertexComboBox.getSelectedItem() == CLUSTER_GRAPH) {
 				ClusterDialogGraph cd = new ClusterDialogGraph(parent, CLUSTER_GRAPH, true);
@@ -393,15 +400,16 @@ public class NGResultPanel extends ResultPanel<double[]> {
 						}							
 					}
 
-					quantileButton.setEnabled(false);
-					quantileButton.setSelected(false);
 					parent.setCursor(Cursor.getDefaultCursor());
+				} else {
+					vertexComboBox.setSelectedItem(currentVertexComboBox);
 				}
 			} else { // components
 				for (double[] v : pos)
 					neuronValues.put(v, v[vertexComboBox.getSelectedIndex() - 4]); // RANDOM, DISTANCE, CLUSTER, CLUSTER ( GRAPH)
 			}
 			updatePanels();
+			currentVertexComboBox = vertexComboBox.getSelectedItem();
 			
 		} else if( e.getSource() == edgeComboBox ) {
 			pnlGraph.setEdgeStyle( (String)edgeComboBox.getSelectedItem());
@@ -536,5 +544,10 @@ public class NGResultPanel extends ResultPanel<double[]> {
 		} catch (IOException ex) {
 			ex.printStackTrace();
 		}
+	}
+
+	@Override
+	public boolean isClusterVis() {
+		return (String)vertexComboBox.getSelectedItem() == CLUSTER || (String)vertexComboBox.getSelectedItem() == CLUSTER_GRAPH;
 	}
 }

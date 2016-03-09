@@ -49,6 +49,7 @@ import spawnn.gui.NGResultPanel;
 import spawnn.ng.ContextNG;
 import spawnn.ng.sorter.SorterWMC;
 import spawnn.ng.utils.NGUtils;
+import spawnn.utils.ColorBrewer;
 import spawnn.utils.ColorUtils;
 import spawnn.utils.DataUtils;
 import spawnn.utils.GeoUtils;
@@ -337,7 +338,7 @@ public class WMNGParamSensREDCAP {
 								break;
 							}
 					}
-					Map<double[],Color> colorMap = ColorUtils.getColorMap(neuronValues, ColorUtils.ColorMode.Set3 );
+					Map<double[],Color> colorMap = ColorUtils.getColorMap(neuronValues, ColorBrewer.Set3 );
 					NGResultPanel.saveLegend(colorMap, neuronValues, new File("output/wmng_legend.eps"), "EPS", false, 4 );
 				}
 				
@@ -360,7 +361,7 @@ public class WMNGParamSensREDCAP {
 			nonEmpty++;
 		}
 
-		Map<double[], Color> colorMap = ColorUtils.getColorMap(valueMap, ColorUtils.ColorMode.Set3);
+		Map<double[], Color> colorMap = ColorUtils.getColorMap(valueMap, ColorBrewer.Set3);
 
 		// draw
 		try {

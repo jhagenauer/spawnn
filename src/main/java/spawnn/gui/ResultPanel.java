@@ -15,6 +15,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -29,10 +30,12 @@ import javax.swing.JButton;
 import javax.swing.JColorChooser;
 import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
+import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.JToggleButton;
+import javax.swing.ListCellRenderer;
 
 import org.apache.xmlgraphics.java2d.ps.EPSDocumentGraphics2D;
 import org.geotools.data.DataStore;
@@ -50,6 +53,7 @@ import org.opengis.feature.type.Name;
 
 import spawnn.dist.Dist;
 import spawnn.utils.ClusterValidation;
+import spawnn.utils.ColorBrewer;
 import spawnn.utils.ColorUtils;
 import spawnn.utils.DataUtils;
 import spawnn.utils.SpatialDataFrame;
@@ -60,7 +64,6 @@ import com.vividsolutions.jts.geom.MultiPolygon;
 import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.geom.Polygon;
 
-//TODO Probably a lot of code from the result panels can/should be placed here
 public abstract class ResultPanel<T> extends JPanel implements ActionListener, NeuronSelectedListener<T> {
 
 	private static final long serialVersionUID = 1686748469941486349L;
@@ -100,23 +103,41 @@ public abstract class ResultPanel<T> extends JPanel implements ActionListener, N
 		mapPanel = new MapPanel<T>(fc, pos);
 		
 		colorModeBox = new JComboBox();
-		colorModeBox.setModel(new DefaultComboBoxModel(ColorUtils.ColorMode.values()));
-		colorModeBox.addActionListener(this);
 		
+		List<ColorBrewer> cl = new ArrayList<ColorBrewer>();
+		cl.addAll( Arrays.asList( ColorBrewer.getSequentialColorPalettes(false) ) );
+		final ColorBrewer l1 = cl.get(cl.size()-1);
+		cl.addAll( Arrays.asList( ColorBrewer.getDivergingColorPalettes(false) ) );
+		final ColorBrewer l2 = cl.get(cl.size()-1);
+		cl.addAll( Arrays.asList( ColorBrewer.getQualitativeColorPalettes(false) ) );
+		
+		colorModeBox.setModel(new DefaultComboBoxModel(cl.toArray( new ColorBrewer[]{} )));
+		colorModeBox.setSelectedItem(ColorBrewer.Blues);
+		colorModeBox.setRenderer(new ComboSeparatorsRendererColorBrewer((ListCellRenderer<ColorBrewer>)colorModeBox.getRenderer()){        
+		    @Override
+			protected boolean addSeparatorAfter(JList list, ColorBrewer value, int index) {
+		    	return l1.equals(value) || l2.equals(value);
+			}                                                                            
+		}); 
+		colorModeBox.addActionListener(this);
+		colorModeBox.setToolTipText("Select color scheme.");
+				
 		quantileButton = new JToggleButton("Quantile");
+		quantileButton.setToolTipText("Use quantile color scale.");
 		quantileButton.setSelected(true);
 		quantileButton.addActionListener(this);
 		
-		colorChooser = new JButton("Select color...");
+		colorChooser = new JButton("Color...");
 		colorChooser.setBackground(selectedColor);
+		colorChooser.setToolTipText("Select highlight color.");
 		colorChooser.addActionListener(this);
 		
-		selectSingle = new JToggleButton("Select single");
+		selectSingle = new JToggleButton("Single");
+		selectSingle.setToolTipText("Select single shapes on map.");
 		selectSingle.addActionListener(this);
 		
-		nrNeurons = new JTextField("1", 3);
-		
 		clearSelect = new JButton("Clear");
+		clearSelect.setToolTipText("Clear selection.");
 		clearSelect.addActionListener(this);
 
 		btnExpMap = new JButton("Export map...");
@@ -134,7 +155,7 @@ public abstract class ResultPanel<T> extends JPanel implements ActionListener, N
 				if (nBmus.containsKey(p))
 					l.addAll(nBmus.get(p));
 			if (!l.isEmpty())
-				ll.put(DataUtils.getMeanClusterElement(l), l);
+				ll.put(DataUtils.getMean(l), l);
 		}
 		return ll;
 	}
@@ -484,7 +505,9 @@ public abstract class ResultPanel<T> extends JPanel implements ActionListener, N
 				}
 			}
 		} else if (e.getSource() == colorChooser) {
-			selectedColor = JColorChooser.showDialog(this, "Select selection color", selectedColor);
+			Color c = JColorChooser.showDialog(this, "Select selection color", selectedColor);
+			if( c != null )
+				selectedColor = c; 
 			colorChooser.setBackground(selectedColor);
 			infoField.setText("");
 		} else if( e.getSource() == clearSelect ) {
@@ -492,7 +515,6 @@ public abstract class ResultPanel<T> extends JPanel implements ActionListener, N
 			infoField.setText("");
 			updatePanels();
 		} else if (e.getSource() == colorModeBox) {
-			//colorModeBox.getSelectedItem();
 			updatePanels();
 		} else if( e.getSource() == quantileButton ) {
 			updatePanels();
@@ -500,7 +522,15 @@ public abstract class ResultPanel<T> extends JPanel implements ActionListener, N
 	}
 
 	protected Map<T, Color> updatePanels() {
-		Map<T, Color> colorMap = ColorUtils.getColorMap(neuronValues, (ColorUtils.ColorMode) colorModeBox.getSelectedItem(), quantileButton.isSelected() );
+		ColorBrewer cb = (ColorBrewer)colorModeBox.getSelectedItem();
+		if( /*cb.paletteType() == 2 ||*/ isClusterVis() ) { //TODO || Cluster-is enabled 
+			quantileButton.setSelected(false);
+			quantileButton.setEnabled(false);
+		} else {
+			quantileButton.setEnabled(true);
+		}
+		
+		Map<T, Color> colorMap = ColorUtils.getColorMap(neuronValues, cb, quantileButton.isSelected() );
 		mapPanel.setGridColors(colorMap, selectedColors, neuronValues);
 		return colorMap;
 	}
@@ -524,4 +554,6 @@ public abstract class ResultPanel<T> extends JPanel implements ActionListener, N
 		infoField.setText(nr+" neurons");
 		updatePanels();
 	}
+	
+	public abstract boolean isClusterVis();
 }

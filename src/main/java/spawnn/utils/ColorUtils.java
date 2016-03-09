@@ -10,13 +10,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 public class ColorUtils {
-		
-	public static ColorBrewer[] colors = new ColorBrewer[]{ 
-		ColorBrewer.Blues, ColorBrewer.Reds, ColorBrewer.Greys, ColorBrewer.RdBu, 
-		ColorBrewer.Spectral, ColorBrewer.Set1, ColorBrewer.Set2, ColorBrewer.Set3, ColorBrewer.Paired 
-		};
-		
-	public static enum ColorMode { Blues, Reds, Greys, RdBu, Spectral, Set1, Set2, Set3, Paired };
 	
 	/* TODO FIXME The dynamic number of colors and quantile-mode are NECESSARY 
 	 * so that cluster visualization of the GUI works correctly.
@@ -26,45 +19,23 @@ public class ColorUtils {
 	 * interva = linear color spread
 	 */
 	@Deprecated
-	public static <T> Map<T, Color> getColorMap(Map<T, Double> valueMap, ColorMode cm ) {
+	public static <T> Map<T, Color> getColorMap(Map<T, Double> valueMap, ColorBrewer cm ) {
 		return getColorMap(valueMap, cm,  new HashSet<Double>(valueMap.values()).size(), false);
 	}
 	
-	public static <T> Map<T, Color> getColorMap(Map<T, Double> valueMap, ColorMode cm, boolean quantile ) {
+	public static <T> Map<T, Color> getColorMap(Map<T, Double> valueMap, ColorBrewer cm, boolean quantile ) {
 		return getColorMap(valueMap, cm,  new HashSet<Double>(valueMap.values()).size(), quantile);
 	}
 	
-	public static <T> Map<T, Color> getColorMap( List<T> elems, List<Double> values, ColorMode cm, int nrColors, boolean quantil ) {
+	public static <T> Map<T, Color> getColorMap( List<T> elems, List<Double> values, ColorBrewer cm, int nrColors, boolean quantil ) {
 		Map<T,Double> vMap = new HashMap<T,Double>();
 		for( int i = 0; i < elems.size(); i++ )
 			vMap.put(elems.get(i), values.get(i));
 		return getColorMap(vMap, cm, nrColors, quantil);
 	}
 		
-	public static <T> Map<T, Color> getColorMap(Map<T, Double> valueMap, ColorMode cm, int nrColors, boolean quantil ) {
-		Color[] cols = null;
-		if( cm == ColorMode.Reds ) {
-			cols = ColorBrewer.Reds.getColorPalette(nrColors);
-		}  else if( cm == ColorMode.Set1 ) {
-			cols = ColorBrewer.Set1.getColorPalette(nrColors);
-		}  else if( cm == ColorMode.Set2 ) {
-			cols = ColorBrewer.Set2.getColorPalette(nrColors);
-		} else if( cm == ColorMode.Set3 ) {
-			cols = ColorBrewer.Set3.getColorPalette(nrColors);
-		} else if( cm == ColorMode.Paired ) {
-			cols = ColorBrewer.Paired.getColorPalette(nrColors);
-		} else if( cm == ColorMode.Spectral ) {
-			cols = ColorBrewer.Spectral.getColorPalette(nrColors);
-		} else if( cm == ColorMode.Greys ) {
-			cols = ColorBrewer.Greys.getColorPalette(nrColors);
-		} else if( cm == ColorMode.Blues ) {
-			cols = ColorBrewer.Blues.getColorPalette(nrColors);
-		} else if( cm == ColorMode.RdBu ) {
-			cols = ColorBrewer.RdBu.getColorPalette(nrColors);
-		} else {
-			throw new RuntimeException("Unknown ColorMode");
-		}
-		
+	public static <T> Map<T, Color> getColorMap(Map<T, Double> valueMap, ColorBrewer cm, int nrColors, boolean quantil ) {
+		Color[] cols = cm.getColorPalette(nrColors);	
 		Map<T, Color> colMap = new HashMap<T, Color>();
 		
 		List<Double> values = new ArrayList<Double>(valueMap.values());
@@ -100,7 +71,6 @@ public class ColorUtils {
 					System.out.println(valueMap.get(d)+" nicht drin!");
 			throw new RuntimeException("Not all elements got a color! "+colMap.size()+","+valueMap.size());
 		}
-		
 		return colMap;
 	}
 }

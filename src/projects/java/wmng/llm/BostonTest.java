@@ -33,8 +33,8 @@ import spawnn.ng.sorter.Sorter;
 import spawnn.ng.sorter.SorterWMC;
 import spawnn.som.decay.DecayFunction;
 import spawnn.som.decay.PowerDecay;
+import spawnn.utils.ColorBrewer;
 import spawnn.utils.ColorUtils;
-import spawnn.utils.ColorUtils.ColorMode;
 import spawnn.utils.DataUtils;
 import spawnn.utils.DataUtils.transform;
 import spawnn.utils.Drawer;
@@ -415,7 +415,7 @@ public class BostonTest {
 	}
 	
 
-	public static void geoDrawValues(List<Geometry> geoms, List<Double> values, double min, double max, CoordinateReferenceSystem crs, ColorMode cm, String fn) {
+	public static void geoDrawValues(List<Geometry> geoms, List<Double> values, double min, double max, CoordinateReferenceSystem crs, ColorBrewer cm, String fn) {
 		Map<Geometry, Double> doubleMap = new HashMap<Geometry, Double>();
 		for (int i = 0; i < geoms.size(); i++)
 			doubleMap.put(geoms.get(i), values.get(i));

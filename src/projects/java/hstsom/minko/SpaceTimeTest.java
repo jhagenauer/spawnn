@@ -29,8 +29,8 @@ import spawnn.som.grid.GridPos;
 import spawnn.som.kernel.GaussKernel;
 import spawnn.som.net.SOM;
 import spawnn.som.utils.SomUtils;
+import spawnn.utils.ColorBrewer;
 import spawnn.utils.DataUtils;
-import spawnn.utils.ColorUtils.ColorMode;
 
 public class SpaceTimeTest {
 		
@@ -109,7 +109,7 @@ public class SpaceTimeTest {
 																	
 			try {
 				Map<GridPos,Set<double[]>> bmus = SomUtils.getBmuMapping(samples, grid, bmuGetter );
-				SomUtils.printUMatrix(grid, fDist, ColorMode.Greys, SomUtils.HEX_UMAT, "output/minkoUmat.png");
+				SomUtils.printUMatrix(grid, fDist, ColorBrewer.Greys, SomUtils.HEX_UMAT, "output/minkoUmat.png");
 				SomUtils.printClassDist( classes, bmus, grid, new FileOutputStream("output/minkoClass.png") );
 												
 				int[][] nImg = SomUtils.getWatershed( 45, 255, 0.1, grid, fDist, false);
@@ -175,7 +175,7 @@ public class SpaceTimeTest {
 														
 			try {
 				Map<GridPos,Set<double[]>> bmus = SomUtils.getBmuMapping(samples, grid, bmuGetter );
-				SomUtils.printUMatrix(grid, fDist, ColorMode.Greys, SomUtils.HEX_NORMAL, "output/gsomUmat.png");
+				SomUtils.printUMatrix(grid, fDist, ColorBrewer.Greys, SomUtils.HEX_NORMAL, "output/gsomUmat.png");
 				SomUtils.printClassDist( classes, bmus, grid, new FileOutputStream("output/gsomClass.png") );	
 				//SomUtils.printTopologyGeo( ga, grid, new FileOutputStream("output/gtopo.png") );
 			} catch (FileNotFoundException e) {
@@ -249,7 +249,7 @@ public class SpaceTimeTest {
 			
 			try {
 				Map<GridPos,Set<double[]>> bmus = SomUtils.getBmuMapping(samples, grid, bmuGetter );
-				SomUtils.printUMatrix(grid, fDist, ColorMode.Greys, SomUtils.HEX_NORMAL, "output/tsomUmat.png");
+				SomUtils.printUMatrix(grid, fDist, ColorBrewer.Greys, SomUtils.HEX_NORMAL, "output/tsomUmat.png");
 				SomUtils.printClassDist( classes, bmus, grid, new FileOutputStream("output/tsomClass.png") );				
 			} catch (FileNotFoundException e) {
 				e.printStackTrace();
@@ -340,7 +340,7 @@ public class SpaceTimeTest {
 												
 			try {
 				Map<GridPos,Set<double[]>> bmus = SomUtils.getBmuMapping(l, grid, bmuGetter );
-				SomUtils.printUMatrix(grid, eDist, ColorMode.Greys, SomUtils.HEX_UMAT, "output/hsomUmat.png");
+				SomUtils.printUMatrix(grid, eDist, ColorBrewer.Greys, SomUtils.HEX_UMAT, "output/hsomUmat.png");
 				SomUtils.printClassDist( classes, bmus, grid, new FileOutputStream("output/hsomClass.png") );
 				
 				int[][] nImg = SomUtils.getWatershed( 45, 255, 1.0, grid, eDist, false);

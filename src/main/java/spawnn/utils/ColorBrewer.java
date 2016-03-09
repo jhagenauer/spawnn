@@ -512,6 +512,10 @@ public enum ColorBrewer {
 	 public boolean isColorBlindSave() {
 		 return colorBlindSave;
 	 }
+	 
+	 public int paletteType() {
+		 return paletteType;
+	 }
 	 	 
 	 public Color[] getColorPalette(int colorCount) {
 		 if (colorCount < getMaximumColorCount()) {

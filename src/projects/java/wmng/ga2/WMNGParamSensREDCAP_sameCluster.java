@@ -88,7 +88,7 @@ public class WMNGParamSensREDCAP_sameCluster {
 		
 		log.debug("fDist: "+fDist.dist(a, b));
 		log.debug("gDist: "+gDist.dist(a,b));
-		log.debug("ctgDist: "+fDist.dist(DataUtils.getMeanClusterElement(ctg.get(a)), DataUtils.getMeanClusterElement(ctg.get(b))));
+		log.debug("ctgDist: "+fDist.dist(DataUtils.getMean(ctg.get(a)), DataUtils.getMean(ctg.get(b))));
 		
 		long time = System.currentTimeMillis();
 		try {

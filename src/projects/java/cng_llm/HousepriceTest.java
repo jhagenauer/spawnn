@@ -50,11 +50,9 @@ import spawnn.ng.sorter.Sorter;
 import spawnn.ng.utils.NGUtils;
 import spawnn.som.decay.DecayFunction;
 import spawnn.som.decay.PowerDecay;
+import spawnn.utils.ColorBrewer;
 import spawnn.utils.ColorUtils;
-import spawnn.utils.ColorUtils.ColorMode;
 import spawnn.utils.DataUtils;
-import spawnn.utils.Drawer;
-import spawnn.utils.GraphClustering;
 import spawnn.utils.SpatialDataFrame;
 
 import com.vividsolutions.jts.geom.Coordinate;
@@ -285,7 +283,7 @@ public class HousepriceTest {
 			}
 	}
 
-	public static void geoDrawValues(List<Geometry> geoms, List<Double> values, CoordinateReferenceSystem crs, ColorMode cm, String fn) {
+	public static void geoDrawValues(List<Geometry> geoms, List<Double> values, CoordinateReferenceSystem crs, ColorBrewer cm, String fn) {
 		SimpleFeatureTypeBuilder typeBuilder = new SimpleFeatureTypeBuilder();
 		typeBuilder.setName("data");
 		typeBuilder.setCRS(crs);
@@ -347,7 +345,7 @@ public class HousepriceTest {
 		Map<double[], Double> values = new HashMap<double[], Double>();
 		for (double[] d : neurons)
 			values.put(d, (double) neurons.indexOf(d));
-		Map<double[], Color> col = ColorUtils.getColorMap(values, ColorMode.Spectral);
+		Map<double[], Color> col = ColorUtils.getColorMap(values, ColorBrewer.Spectral);
 
 		StyleBuilder sb = new StyleBuilder();
 		MapContent mc = new MapContent();

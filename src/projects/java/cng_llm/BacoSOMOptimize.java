@@ -40,7 +40,7 @@ import spawnn.som.utils.SomUtils;
 import spawnn.utils.ClusterValidation;
 import spawnn.utils.Clustering;
 import spawnn.utils.Clustering.TreeNode;
-import spawnn.utils.ColorUtils.ColorMode;
+import spawnn.utils.ColorBrewer;
 import spawnn.utils.DataUtils;
 import spawnn.utils.GeoUtils;
 import spawnn.utils.SpatialDataFrame;
@@ -165,14 +165,14 @@ public class BacoSOMOptimize {
 						double nmi = ClusterValidation.getNormalizedMutualInformation(cluster, ref.values());
 						
 						for( int i : fa ) 
-							SomUtils.printComponentPlane(grid, i, ColorMode.Blues, new FileOutputStream("output/grid_"+df.format(L)+"_comp_"+sdf.names.get(i)+".png"));
+							SomUtils.printComponentPlane(grid, i, ColorBrewer.Blues, new FileOutputStream("output/grid_"+df.format(L)+"_comp_"+sdf.names.get(i)+".png"));
 						
 						Grid2DHex<double[]> gridCoefs = new Grid2DHex<>(12,8);
 						for( GridPos p : grid.getPositions() ) 
 							gridCoefs.setPrototypeAt(p, som.matrix.get(p)[0]);
 						
 						for( int i = 0; i < gridCoefs.getPrototypes().iterator().next().length; i++ ) 
-							SomUtils.printComponentPlane(gridCoefs, i, ColorMode.Reds, new FileOutputStream("output/grid_"+df.format(L)+"_coef_"+i+".png"));
+							SomUtils.printComponentPlane(gridCoefs, i, ColorBrewer.Reds, new FileOutputStream("output/grid_"+df.format(L)+"_coef_"+i+".png"));
 																													
 						return new double[] {
 								rmse,

@@ -20,13 +20,12 @@ import spawnn.som.bmu.BmuGetter;
 import spawnn.som.bmu.DefaultBmuGetter;
 import spawnn.som.decay.LinearDecay;
 import spawnn.som.grid.Grid2D;
-import spawnn.som.grid.Grid2DHex;
 import spawnn.som.grid.Grid2DHexToroid;
 import spawnn.som.grid.GridPos;
 import spawnn.som.kernel.GaussKernel;
 import spawnn.som.net.SOM;
 import spawnn.som.utils.SomUtils;
-import spawnn.utils.ColorUtils.ColorMode;
+import spawnn.utils.ColorBrewer;
 import spawnn.utils.DataFrame;
 import spawnn.utils.DataUtils;
 
@@ -71,8 +70,8 @@ public class IrisTest {
 		
 		try {
 			Map<GridPos,Set<double[]>> bmus = SomUtils.getBmuMapping(samples, grid, bmuGetter );
-			SomUtils.printUMatrix( grid, eDist, ColorMode.Greys, SomUtils.HEX_UMAT, "output/irisUMatrix.png" );	
-			SomUtils.printDMatrix(grid,eDist, ColorMode.Greys, new FileOutputStream("output/irisDMatrix.png"));
+			SomUtils.printUMatrix( grid, eDist, ColorBrewer.Greys, SomUtils.HEX_UMAT, "output/irisUMatrix.png" );	
+			SomUtils.printDMatrix(grid,eDist, ColorBrewer.Greys, new FileOutputStream("output/irisDMatrix.png"));
 			
 			SomUtils.printClassDist(cMap,bmus,grid,new FileOutputStream("output/class.png"));
 			

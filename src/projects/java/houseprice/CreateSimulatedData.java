@@ -1,4 +1,4 @@
-package cng_houseprice;
+package houseprice;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,7 +21,6 @@ public class CreateSimulatedData {
 		vars.add("yco");
 		vars.add("x1");
 		vars.add("lnp");
-
 		
 		List<double[]> ns = new ArrayList<double[]>();
 		while( ns.size() < 1000 ) {

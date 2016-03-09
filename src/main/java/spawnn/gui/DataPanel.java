@@ -1,5 +1,6 @@
 package spawnn.gui;
 
+import java.awt.Cursor;
 import java.awt.Frame;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -15,6 +16,7 @@ import javax.swing.DefaultCellEditor;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
@@ -128,8 +130,8 @@ public class DataPanel extends JPanel implements ActionListener, TableModelListe
 		
 		add(btnLoadData, "split 5");
 		add(addCCoords, "");
-		add(useAll,"");
-		add(btnDistMat,"wrap");
+		add(btnDistMat,"");
+		add(useAll,"wrap");
 		
 		add( new JScrollPane(table), "w 50%, grow" );
 		add( boxPlotPnl, "w 50%, push, grow,wrap");
@@ -156,18 +158,26 @@ public class DataPanel extends JPanel implements ActionListener, TableModelListe
 				
 				File fn = fc.getSelectedFile(); 
 				
+
+				parent.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 				if( fc.getFileFilter() == FFilter.shpFilter ) {
-			      sdf = DataUtils.readSpatialDataFrameFromShapefile(fn, false);     
+			      sdf = DataUtils.readSpatialDataFrameFromShapefile(fn, true); 
 			      addCCoords.setEnabled(true);
-				} else if( fc.getFileFilter() == FFilter.csvFilter ) {				
+				} else if( fc.getFileFilter() == FFilter.csvFilter ) {		
 					DataFrame df = DataUtils.readDataFrameFromCSV(fn, new int[]{}, true ); 
 					sdf = new SpatialDataFrame();				
 					sdf.samples = df.samples;
 					sdf.names = df.names;
 					sdf.bindings = df.bindings;
 				}
-				useAll.setEnabled(true);
+				parent.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
 				
+				if( sdf.samples.isEmpty() ) {
+					JOptionPane.showMessageDialog(this, "No rows in data file.");
+					return;
+				}
+									
+				useAll.setEnabled(true);
 				dataTable.setRowCount(0);
 								
 				for( String s : sdf.names )

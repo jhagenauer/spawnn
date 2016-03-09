@@ -26,7 +26,7 @@ import spawnn.som.grid.GridPos;
 import spawnn.som.kernel.GaussKernel;
 import spawnn.som.net.SOM;
 import spawnn.som.utils.SomUtils;
-import spawnn.utils.ColorUtils.ColorMode;
+import spawnn.utils.ColorBrewer;
 import spawnn.utils.DataUtils;
 import spawnn.utils.SpatialDataFrame;
 
@@ -148,7 +148,7 @@ public class GeoTopoErrorTest {
 				m[pos[0]][pos[1]] = (double)(tErrors.get(p))/hits.get(p);
 				//log.debug( m[pos[0]][pos[1]]+","+tErrors.get(p)+","+hits.get(p) );
 			}		
-			SomUtils.printImage( SomUtils.getHexMatrixImage( m, 5, ColorMode.Blues, SomUtils.HEX_NORMAL ), new FileOutputStream("output/terror.png") );
+			SomUtils.printImage( SomUtils.getHexMatrixImage( m, 5, ColorBrewer.Blues, SomUtils.HEX_NORMAL ), new FileOutputStream("output/terror.png") );
 	
 			
 		} catch (FileNotFoundException e) {

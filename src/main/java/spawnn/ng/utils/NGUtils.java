@@ -26,8 +26,8 @@ import org.jdom.output.XMLOutputter;
 
 import spawnn.ng.Connection;
 import spawnn.ng.sorter.Sorter;
+import spawnn.utils.ColorBrewer;
 import spawnn.utils.ColorUtils;
-import spawnn.utils.ColorUtils.ColorMode;
 
 public class NGUtils {
 	
@@ -149,7 +149,7 @@ public class NGUtils {
 			g2.drawLine(x1,y1,x2,y2);
 		}
 
-		Map<double[],Color> cMap = ColorUtils.getColorMap(neurons, ColorMode.Blues);
+		Map<double[],Color> cMap = ColorUtils.getColorMap(neurons, ColorBrewer.Blues);
 		for( double[] n : neurons.keySet() ) {
 			int x1 = (int)(xScale * (n[ga[0]] - minX)/(maxX-minX));
 			int y1 = (int)(yScale * (n[ga[1]] - minY)/(maxY-minY));

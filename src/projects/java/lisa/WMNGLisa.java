@@ -1,4 +1,4 @@
-package wmng.lisa;
+package lisa;
 
 import java.io.File;
 import java.io.IOException;
@@ -12,13 +12,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.Random;
-import java.util.Set;
 
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.log4j.Logger;
@@ -30,7 +30,7 @@ import spawnn.ng.sorter.SorterWMC;
 import spawnn.som.decay.DecayFunction;
 import spawnn.som.decay.PowerDecay;
 import spawnn.utils.ClusterValidation;
-import spawnn.utils.ColorUtils.ColorMode;
+import spawnn.utils.ColorBrewer;
 import spawnn.utils.DataUtils;
 import spawnn.utils.Drawer;
 import spawnn.utils.GeoUtils;
@@ -64,7 +64,7 @@ public class WMNGLisa {
 		for( double[] d : samples )
 			v.put(d, d[fa]);
 		List<double[]> lisa = GeoUtils.getLocalMoransIMonteCarlo( samples, v, dMap, reps);
-		Drawer.geoDrawValues(geoms, lisa, 0, sdf.crs, ColorMode.Blues, "output/lisa_mc.png");
+		Drawer.geoDrawValues(geoms, lisa, 0, sdf.crs, ColorBrewer.Blues, "output/lisa_mc.png");
 
 		List<Double> values = new ArrayList<Double>();
 		for (double[] d : lisa)
@@ -78,7 +78,7 @@ public class WMNGLisa {
 				values.add(3.0);
 			else
 				values.add(4.0);
-		Drawer.geoDrawValues(geoms, values, sdf.crs, ColorMode.Spectral, "output/lisa_mc_signf.png");
+		Drawer.geoDrawValues(geoms, values, sdf.crs, ColorBrewer.Spectral, "output/lisa_mc_signf.png");
 
 		DescriptiveStatistics ds = new DescriptiveStatistics();
 		for (double[] d : samples)

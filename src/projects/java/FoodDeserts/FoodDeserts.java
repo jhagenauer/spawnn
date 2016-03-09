@@ -7,8 +7,6 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -31,13 +29,10 @@ import spawnn.ng.sorter.Sorter;
 import spawnn.ng.utils.NGUtils;
 import spawnn.som.decay.DecayFunction;
 import spawnn.som.decay.PowerDecay;
-import spawnn.utils.Clustering;
-import spawnn.utils.ColorUtils.ColorMode;
-import spawnn.utils.Drawer;
-import spawnn.utils.Clustering.HierarchicalClusteringType;
-import spawnn.utils.Clustering.TreeNode;
+import spawnn.utils.ColorBrewer;
 import spawnn.utils.DataUtils;
 import spawnn.utils.DataUtils.transform;
+import spawnn.utils.Drawer;
 import spawnn.utils.SpatialDataFrame;
 
 import com.vividsolutions.jts.geom.Point;
@@ -50,7 +45,7 @@ public class FoodDeserts {
 		final Random r = new Random();
 		final SpatialDataFrame sdf = DataUtils.readSpatialDataFrameFromShapefile(new File("/home/julian/tmp/results/results.shp"), true);
 
-		final int[] fa = new int[] { 7, 6, 5, 4, 3 };
+		final int[] fa = new int[] { 4,5,18,19,23 };
 		final int[] ga = new int[] { 0, 1 };
 
 		final Dist<double[]> fDist = new EuclideanDist(fa);
@@ -118,14 +113,14 @@ public class FoodDeserts {
 								double[] nd = Arrays.copyOf(d, d.length+1);
 								for( double[] n : neurons )
 									if( bmus.get(n).contains(d) )
-										nd[nd.length-1] = neurons.indexOf(n);
+										nd[nd.length-1] = neurons.indexOf(n)+1;
 								nSamples.add(nd);
 							}
 							List<String> nNames = new ArrayList<String>(sdf.names);
 							nNames.add("cngCluster");
 							
 							DataUtils.writeShape(nSamples, sdf.geoms, nNames.toArray(new String[]{} ), sdf.crs, "output/cng_results_"+L+".shp");
-							Drawer.geoDrawValues(sdf.geoms, nSamples, 9, sdf.crs, ColorMode.Set3, "output/cng_cluster_"+L+".png");
+							Drawer.geoDrawValues(sdf.geoms, nSamples, sdf.samples.get(0).length, sdf.crs, ColorBrewer.Set3, "output/cng_cluster_"+L+".png");
 						}
 						
 						return new double[] { DataUtils.getWithinClusterSumOfSuqares(bmus.values(), fDist), DataUtils.getWithinClusterSumOfSuqares(bmus.values(), gDist) };

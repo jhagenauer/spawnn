@@ -275,7 +275,7 @@ public class AustriaMunicipalities {
         	// print sse
         	Map<double[],Set<double[]>> sseMap = new HashMap<double[],Set<double[]>>();
 	        for( Set<double[]> s :mapping.values() )
-	        	sseMap.put( DataUtils.getMeanClusterElement(s), s);
+	        	sseMap.put( DataUtils.getMean(s), s);
 	        
 	        double qed = DataUtils.getMeanQuantizationError(sseMap, fDist);
 	        double qeg = DataUtils.getMeanQuantizationError(sseMap, gDist);

@@ -350,14 +350,14 @@ public class DataUtils {
 			if (c1.isEmpty())
 				continue;
 
-			double[] c1Center = getMeanClusterElement(c1);
+			double[] c1Center = getMean(c1);
 
 			double max = Double.MIN_VALUE;
 			for (Set<double[]> c2 : clusters) {
 				if (c2.isEmpty())
 					continue;
 
-				double[] c2Center = getMeanClusterElement(c2);
+				double[] c2Center = getMean(c2);
 
 				if (c1.equals(c2))
 					continue;
@@ -382,7 +382,7 @@ public class DataUtils {
 		return sum / clusters.size();
 	}
 
-	public static double[] getMeanClusterElement(Collection<double[]> cluster) {
+	public static double[] getMean(Collection<double[]> cluster) {
 		int l = cluster.iterator().next().length;
 		double[] r = new double[l];
 		for (double[] d : cluster)
@@ -1265,7 +1265,7 @@ public class DataUtils {
 		if (s.isEmpty())
 			return ssq;
 
-		double[] mean = getMeanClusterElement(s);
+		double[] mean = getMean(s);
 		for (double[] d : s) {
 			double di = dist.dist(mean, d);
 			ssq += di * di;

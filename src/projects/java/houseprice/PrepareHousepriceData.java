@@ -1,4 +1,4 @@
-package cng_houseprice;
+package houseprice;
 
 import java.io.File;
 import java.text.DecimalFormat;
@@ -32,7 +32,7 @@ public class PrepareHousepriceData {
 		//0.842800042346674,0.13755004180349054,1.3265852052352125E-74
 		vars.add("lnarea_tot"); //0.913923245395007,0.14380591197252182,1.79615169870852E-81
 		
-		/*vars.add("lnarea_plo"); //0.9997901553930167,0.13909227915923866,3.9895058992366924E-76
+		vars.add("lnarea_plo"); //0.9997901553930167,0.13909227915923866,3.9895058992366924E-76
 		vars.add("attic_dum"); //0.996167146077074,0.14143660897664934,3.123858411374094E-79
 		vars.add("cellar_dum"); //0.9851226796055021,0.13581156736405078,6.022218800523935E-73
 		vars.add("cond_house_3"); //0.9944282636883391,0.14051955925189347,2.7422167483332165E-78
@@ -45,7 +45,7 @@ public class PrepareHousepriceData {
 		//vars.add("time_index"); //0.9998715224265088,0.13845002844913828,2.9411508335018544E-76
 		
 		// Bivand: No contextual variables about the neighbourhood of the houses are available, so one would expect a strong spatial autocorrelation reflecting this misspecification.
-		vars.add("zsp_alq_09");
+		/*vars.add("zsp_alq_09");
 		vars.add("gem_kauf_i");
 		vars.add("gem_abi");
 		vars.add("gem_alter_");

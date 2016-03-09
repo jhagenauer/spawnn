@@ -37,7 +37,7 @@ import spawnn.ng.sorter.Sorter;
 import spawnn.ng.utils.NGUtils;
 import spawnn.som.decay.DecayFunction;
 import spawnn.som.decay.PowerDecay;
-import spawnn.utils.ColorUtils.ColorMode;
+import spawnn.utils.ColorBrewer;
 import spawnn.utils.DataUtils;
 import spawnn.utils.Drawer;
 import spawnn.utils.GeoUtils;
@@ -90,8 +90,8 @@ public class HousepriceOptimize {
 		// ------------------------------------------------------------------------
 
 		final SpatialDataFrame gwrResults = DataUtils.readSpatialDataFrameFromShapefile(new File("output/gwr.shp"), true);
-		Drawer.geoDrawValues(gwrResults, 0, ColorMode.Blues, "output/intercept_gwr.png");
-		Drawer.geoDrawValues(gwrResults, 1, ColorMode.Blues, "output/coef_gwr.png");
+		Drawer.geoDrawValues(gwrResults, 0, ColorBrewer.Blues, "output/intercept_gwr.png");
+		Drawer.geoDrawValues(gwrResults, 1, ColorBrewer.Blues, "output/coef_gwr.png");
 		
 		final Map<double[],Geometry> gMap = new HashMap<double[],Geometry>();
 		for( int i = 0; i < gwrResults.samples.size(); i++ ) 
