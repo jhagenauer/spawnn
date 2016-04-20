@@ -20,12 +20,13 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import llm.ErrorSorter;
-import llm.LLMNG;
-
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.log4j.Logger;
 
+import com.vividsolutions.jts.geom.Geometry;
+
+import llm.ErrorSorter;
+import llm.LLMNG;
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
 import spawnn.ng.NG;
@@ -38,8 +39,6 @@ import spawnn.som.decay.PowerDecay;
 import spawnn.utils.ClusterValidation;
 import spawnn.utils.DataUtils;
 import spawnn.utils.SpatialDataFrame;
-
-import com.vividsolutions.jts.geom.Geometry;
 
 public class NonstatClusterTest {
 

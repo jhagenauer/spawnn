@@ -21,9 +21,6 @@ import java.util.Set;
 
 import javax.imageio.ImageIO;
 
-import llm.ErrorSorter;
-import llm.LLMNG;
-
 import org.apache.log4j.Logger;
 import org.geotools.factory.CommonFactoryFinder;
 import org.geotools.feature.DefaultFeatureCollection;
@@ -40,6 +37,14 @@ import org.geotools.styling.StyleBuilder;
 import org.opengis.filter.FilterFactory2;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
+import com.vividsolutions.jts.geom.Coordinate;
+import com.vividsolutions.jts.geom.Geometry;
+import com.vividsolutions.jts.geom.GeometryFactory;
+import com.vividsolutions.jts.geom.LineString;
+import com.vividsolutions.jts.geom.Point;
+
+import llm.ErrorSorter;
+import llm.LLMNG;
 import rbf.Meuse;
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
@@ -54,12 +59,6 @@ import spawnn.utils.ColorBrewer;
 import spawnn.utils.ColorUtils;
 import spawnn.utils.DataUtils;
 import spawnn.utils.SpatialDataFrame;
-
-import com.vividsolutions.jts.geom.Coordinate;
-import com.vividsolutions.jts.geom.Geometry;
-import com.vividsolutions.jts.geom.GeometryFactory;
-import com.vividsolutions.jts.geom.LineString;
-import com.vividsolutions.jts.geom.Point;
 
 public class HousepriceTest {
 

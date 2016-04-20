@@ -13,11 +13,11 @@ import java.util.Set;
 
 import org.apache.log4j.Logger;
 
+import com.vividsolutions.jts.geom.Geometry;
+
 import spawnn.utils.DataUtils;
 import spawnn.utils.Drawer;
 import spawnn.utils.RegionUtils;
-
-import com.vividsolutions.jts.geom.Geometry;
 
 public class GreedyRegionalization {
 	

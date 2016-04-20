@@ -6,8 +6,6 @@ import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.charset.Charset;
-import java.nio.charset.CharsetEncoder;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -17,8 +15,6 @@ import java.util.Random;
 import java.util.Set;
 
 import javax.imageio.ImageIO;
-
-import org.apache.commons.lang3.StringUtils;
 
 import spawnn.dist.Dist;
 import spawnn.ng.Connection;

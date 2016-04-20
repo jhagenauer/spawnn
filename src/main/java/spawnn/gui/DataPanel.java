@@ -25,18 +25,17 @@ import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.DefaultTableModel;
 
-import net.miginfocom.swing.MigLayout;
-
 import org.apache.log4j.Logger;
-
-import spawnn.dist.EuclideanDist;
-import spawnn.utils.DataFrame;
-import spawnn.utils.DataUtils;
-import spawnn.utils.SpatialDataFrame;
 
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
+
+import net.miginfocom.swing.MigLayout;
+import spawnn.dist.EuclideanDist;
+import spawnn.utils.DataFrame;
+import spawnn.utils.DataUtils;
+import spawnn.utils.SpatialDataFrame;
 
 public class DataPanel extends JPanel implements ActionListener, TableModelListener {
 	

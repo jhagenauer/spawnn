@@ -21,9 +21,6 @@ import org.apache.commons.math3.random.GaussianRandomGenerator;
 import org.apache.commons.math3.random.JDKRandomGenerator;
 import org.apache.log4j.Logger;
 
-import spawnn.dist.Dist;
-import spawnn.dist.EuclideanDist;
-
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.Geometry;
@@ -31,6 +28,9 @@ import com.vividsolutions.jts.geom.GeometryCollection;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.triangulate.VoronoiDiagramBuilder;
+
+import spawnn.dist.Dist;
+import spawnn.dist.EuclideanDist;
 
 public class SampleBuilder {
 
@@ -1248,7 +1248,7 @@ public class SampleBuilder {
 		// buildNDiffDensSquares(15, 1000, 0.025, 0.5, 2, 1, "data/cng_var_test/diffsqr1.shp");
 		// buildNDiffDensSquares(15, 1000, 0.025, 0.1, 2, 1, "data/cng_var_test/diffsqr2.shp");
 
-		// buildRandomRegions(100, 5000, 0.1, 6, "data/cng_var_test/100regions.shp");
+		buildRandomRegions(100, 5000, 0.1, 6, "data/cng_var_test/100regions.shp");
 
 		/*
 		 * try { List<double[]> samples = SampleBuilder.readSamplesFromFcps("data/fcps/Chainlink.lrn", "data/fcps/Chainlink.cls"); DataUtil.writeCSV(new FileOutputStream("output/chainlink.csv"), samples); } catch (FileNotFoundException e) { e.printStackTrace(); }

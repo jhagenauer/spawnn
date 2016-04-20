@@ -24,7 +24,6 @@ import spawnn.som.bmu.KangasBmuGetter;
 import spawnn.som.decay.LinearDecay;
 import spawnn.som.grid.Grid2D;
 import spawnn.som.grid.Grid2DHex;
-import spawnn.som.grid.Grid2DToroid;
 import spawnn.som.grid.GridPos;
 import spawnn.som.kernel.GaussKernel;
 import spawnn.som.net.SOM;

@@ -1,8 +1,5 @@
 package inc_llm.ga;
 
-import inc_llm.IncLLM;
-import inc_llm.OptimizeIncLLM_CV.parNames;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -18,6 +15,8 @@ import java.util.concurrent.Future;
 
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 
+import inc_llm.IncLLM;
+import inc_llm.OptimizeIncLLM_CV.parNames;
 import rbf.Meuse;
 import regionalization.ga.GAIndividual;
 import spawnn.dist.Dist;

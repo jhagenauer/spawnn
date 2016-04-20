@@ -51,18 +51,18 @@ import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.feature.type.Name;
 
+import com.vividsolutions.jts.geom.Geometry;
+import com.vividsolutions.jts.geom.MultiPoint;
+import com.vividsolutions.jts.geom.MultiPolygon;
+import com.vividsolutions.jts.geom.Point;
+import com.vividsolutions.jts.geom.Polygon;
+
 import spawnn.dist.Dist;
 import spawnn.utils.ClusterValidation;
 import spawnn.utils.ColorBrewer;
 import spawnn.utils.ColorUtils;
 import spawnn.utils.DataUtils;
 import spawnn.utils.SpatialDataFrame;
-
-import com.vividsolutions.jts.geom.Geometry;
-import com.vividsolutions.jts.geom.MultiPoint;
-import com.vividsolutions.jts.geom.MultiPolygon;
-import com.vividsolutions.jts.geom.Point;
-import com.vividsolutions.jts.geom.Polygon;
 
 public abstract class ResultPanel<T> extends JPanel implements ActionListener, NeuronSelectedListener<T> {
 

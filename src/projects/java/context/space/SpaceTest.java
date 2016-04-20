@@ -21,11 +21,14 @@ import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 
+import com.vividsolutions.jts.geom.Geometry;
+import com.vividsolutions.jts.geom.Point;
+
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
 import spawnn.dist.WeightedDist;
-import spawnn.ng.NG;
 import spawnn.ng.ContextNG;
+import spawnn.ng.NG;
 import spawnn.ng.sorter.DefaultSorter;
 import spawnn.ng.sorter.KangasSorter;
 import spawnn.ng.sorter.SorterWMC;
@@ -40,9 +43,6 @@ import spawnn.som.utils.SomUtils;
 import spawnn.utils.DataUtils;
 import spawnn.utils.Drawer;
 import spawnn.utils.RegionUtils;
-
-import com.vividsolutions.jts.geom.Geometry;
-import com.vividsolutions.jts.geom.Point;
 
 public class SpaceTest {
 

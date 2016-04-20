@@ -30,14 +30,8 @@ import spawnn.ng.sorter.DefaultSorter;
 import spawnn.ng.sorter.Sorter;
 import spawnn.ng.sorter.SorterMNG;
 import spawnn.ng.utils.NGUtils;
-import spawnn.som.bmu.DefaultBmuGetter;
 import spawnn.som.decay.DecayFunction;
-import spawnn.som.decay.LinearDecay;
 import spawnn.som.decay.PowerDecay;
-import spawnn.som.grid.Grid2D;
-import spawnn.som.grid.GridPos;
-import spawnn.som.kernel.GaussKernel;
-import spawnn.som.net.SOM;
 import spawnn.som.utils.SomUtils;
 import spawnn.utils.DataUtils;
 

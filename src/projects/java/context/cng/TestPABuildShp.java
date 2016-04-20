@@ -1,8 +1,6 @@
 package context.cng;
 
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -14,6 +12,8 @@ import java.util.Random;
 import java.util.Set;
 
 import org.apache.log4j.Logger;
+
+import com.vividsolutions.jts.geom.Geometry;
 
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
@@ -27,10 +27,7 @@ import spawnn.som.kernel.GaussKernel;
 import spawnn.som.net.SOM;
 import spawnn.som.utils.SomUtils;
 import spawnn.utils.DataUtils;
-import spawnn.utils.Drawer;
 import spawnn.utils.SpatialDataFrame;
-
-import com.vividsolutions.jts.geom.Geometry;
 
 public class TestPABuildShp {
 

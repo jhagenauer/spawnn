@@ -24,8 +24,8 @@ import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 
+import cern.colt.bitvector.BitVector;
 import context.time.TimeSeries;
-
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
 import spawnn.som.bmu.BmuGetterTimeMSOM;
@@ -35,11 +35,10 @@ import spawnn.som.grid.Grid2D;
 import spawnn.som.grid.GridPos;
 import spawnn.som.kernel.GaussKernel;
 import spawnn.som.kernel.KernelFunction;
-import spawnn.som.net.SOM;
 import spawnn.som.net.ContextSOM;
+import spawnn.som.net.SOM;
 import spawnn.som.utils.SomUtils;
 import spawnn.utils.DataUtils;
-import cern.colt.bitvector.BitVector;
 
 public class TimeSeriesDiscrete {
 

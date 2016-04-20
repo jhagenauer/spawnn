@@ -13,6 +13,8 @@ import java.util.Set;
 
 import org.apache.log4j.Logger;
 
+import com.vividsolutions.jts.geom.Geometry;
+
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
 import spawnn.ng.Connection;
@@ -20,8 +22,6 @@ import spawnn.utils.DataUtils;
 import spawnn.utils.Drawer;
 import spawnn.utils.RegionUtils;
 import spawnn.utils.SpatialDataFrame;
-
-import com.vividsolutions.jts.geom.Geometry;
 
 /* Just an experiment, connections are created based on contiguity
  * Presumable result: Resulting topology reflects conectivity of cluster.

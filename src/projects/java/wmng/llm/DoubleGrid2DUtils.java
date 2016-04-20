@@ -15,6 +15,10 @@ import java.util.zip.GZIPOutputStream;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.log4j.Logger;
 
+import com.vividsolutions.jts.geom.Coordinate;
+import com.vividsolutions.jts.geom.Geometry;
+import com.vividsolutions.jts.geom.GeometryFactory;
+
 import spawnn.som.grid.Grid2D;
 import spawnn.som.grid.Grid2DToroid;
 import spawnn.som.grid.GridPos;
@@ -24,10 +28,6 @@ import spawnn.utils.DataUtils;
 import spawnn.utils.Drawer;
 import spawnn.utils.GeoUtils;
 import spawnn.utils.SpatialDataFrame;
-
-import com.vividsolutions.jts.geom.Coordinate;
-import com.vividsolutions.jts.geom.Geometry;
-import com.vividsolutions.jts.geom.GeometryFactory;
 
 public class DoubleGrid2DUtils {
 	

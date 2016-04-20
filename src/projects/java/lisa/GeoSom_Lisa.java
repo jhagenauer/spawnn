@@ -8,16 +8,17 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
 
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.log4j.Logger;
 
+import com.vividsolutions.jts.geom.Geometry;
+
+import cern.colt.Arrays;
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
-import spawnn.gui.ResultPanel;
 import spawnn.som.bmu.KangasBmuGetter;
 import spawnn.som.decay.LinearDecay;
 import spawnn.som.grid.Grid2D;
@@ -32,10 +33,6 @@ import spawnn.utils.DataUtils.transform;
 import spawnn.utils.Drawer;
 import spawnn.utils.GeoUtils;
 import spawnn.utils.SpatialDataFrame;
-import cern.colt.Arrays;
-
-import com.vividsolutions.jts.geom.Geometry;
-import com.vividsolutions.jts.geom.Point;
 
 public class GeoSom_Lisa {
 

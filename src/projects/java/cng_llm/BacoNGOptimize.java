@@ -20,11 +20,12 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import llm.LLMNG;
-
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.log4j.Logger;
 
+import com.vividsolutions.jts.geom.Geometry;
+
+import llm.LLMNG;
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
 import spawnn.ng.Connection;
@@ -40,8 +41,6 @@ import spawnn.utils.Clustering.TreeNode;
 import spawnn.utils.DataUtils;
 import spawnn.utils.GeoUtils;
 import spawnn.utils.SpatialDataFrame;
-
-import com.vividsolutions.jts.geom.Geometry;
 
 public class BacoNGOptimize {
 

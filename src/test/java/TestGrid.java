@@ -3,12 +3,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
-import spawnn.som.grid.Grid2D;
-import spawnn.som.grid.Grid2DHex;
-import spawnn.som.grid.Grid2DHexToroid;
-import spawnn.som.grid.GridPos;
 import edu.uci.ics.jung.algorithms.shortestpath.DijkstraShortestPath;
 import edu.uci.ics.jung.graph.DirectedSparseGraph;
+import spawnn.som.grid.Grid2D;
+import spawnn.som.grid.Grid2DHex;
+import spawnn.som.grid.GridPos;
 
 public class TestGrid {
 

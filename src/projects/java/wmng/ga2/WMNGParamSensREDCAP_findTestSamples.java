@@ -6,13 +6,15 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
 import org.apache.log4j.Logger;
+
+import com.vividsolutions.jts.geom.Geometry;
+import com.vividsolutions.jts.geom.Point;
 
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
@@ -22,9 +24,6 @@ import spawnn.ng.sorter.Sorter;
 import spawnn.ng.utils.NGUtils;
 import spawnn.utils.DataUtils;
 import spawnn.utils.RegionUtils;
-
-import com.vividsolutions.jts.geom.Geometry;
-import com.vividsolutions.jts.geom.Point;
 
 public class WMNGParamSensREDCAP_findTestSamples {
 

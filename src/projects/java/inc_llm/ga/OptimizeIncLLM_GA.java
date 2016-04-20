@@ -1,7 +1,5 @@
 package inc_llm.ga;
 
-import inc_llm.IncLLM;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -22,6 +20,7 @@ import java.util.concurrent.Future;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.log4j.Logger;
 
+import inc_llm.IncLLM;
 import rbf.Meuse;
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;

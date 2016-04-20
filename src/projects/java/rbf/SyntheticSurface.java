@@ -24,7 +24,6 @@ import spawnn.dist.EuclideanDist;
 import spawnn.rbf.AdaptIncRBF;
 import spawnn.utils.DataFrame;
 import spawnn.utils.DataUtils;
-import spawnn.utils.SampleBuilder;
 
 public class SyntheticSurface {
 

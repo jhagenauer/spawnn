@@ -11,15 +11,14 @@ import java.util.Set;
 
 import org.apache.log4j.Logger;
 
+import cern.colt.bitvector.BitVector;
 import context.time.TimeSeries;
-
 import spawnn.dist.EuclideanDist;
 import spawnn.ng.ContextNG;
 import spawnn.ng.sorter.SorterMNG;
 import spawnn.ng.utils.NGUtils;
 import spawnn.som.utils.SomUtils;
 import spawnn.utils.DataUtils;
-import cern.colt.bitvector.BitVector;
 
 public class TimeSeriesDiscreteMNG {
 

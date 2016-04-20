@@ -14,6 +14,9 @@ import java.util.Set;
 
 import org.apache.log4j.Logger;
 
+import com.vividsolutions.jts.geom.Geometry;
+import com.vividsolutions.jts.geom.Point;
+
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
 import spawnn.dist.WeightedDist;
@@ -29,9 +32,6 @@ import spawnn.som.utils.SomUtils;
 import spawnn.utils.ColorBrewer;
 import spawnn.utils.DataUtils;
 import spawnn.utils.SpatialDataFrame;
-
-import com.vividsolutions.jts.geom.Geometry;
-import com.vividsolutions.jts.geom.Point;
 
 public class GeoTopoErrorTest {
 

@@ -30,11 +30,13 @@ import javax.xml.stream.XMLOutputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamWriter;
 
-import net.miginfocom.swing.MigLayout;
-
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.log4j.Logger;
 
+import edu.uci.ics.jung.algorithms.cluster.EdgeBetweennessClusterer;
+import edu.uci.ics.jung.algorithms.cluster.VoltageClusterer;
+import edu.uci.ics.jung.graph.Graph;
+import net.miginfocom.swing.MigLayout;
 import spawnn.dist.Dist;
 import spawnn.gui.ClusterDialogGraph.ClusterAlgorithm;
 import spawnn.gui.DistanceDialog.DistMode;
@@ -43,9 +45,6 @@ import spawnn.ng.utils.NGUtils;
 import spawnn.utils.Clustering;
 import spawnn.utils.GraphClustering;
 import spawnn.utils.SpatialDataFrame;
-import edu.uci.ics.jung.algorithms.cluster.EdgeBetweennessClusterer;
-import edu.uci.ics.jung.algorithms.cluster.VoltageClusterer;
-import edu.uci.ics.jung.graph.Graph;
 
 public class NGResultPanel extends ResultPanel<double[]> {
 

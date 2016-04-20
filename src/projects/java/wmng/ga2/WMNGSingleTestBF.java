@@ -19,6 +19,8 @@ import java.util.concurrent.Future;
 
 import org.apache.log4j.Logger;
 
+import context.space.binary_field.SpaceTestDiscrete;
+import context.space.binary_field.SpaceTestDiscrete2;
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
 import spawnn.ng.ContextNG;
@@ -26,8 +28,6 @@ import spawnn.ng.sorter.SorterWMC;
 import spawnn.ng.utils.NGUtils;
 import spawnn.som.grid.Grid2D;
 import spawnn.utils.DataUtils;
-import context.space.binary_field.SpaceTestDiscrete;
-import context.space.binary_field.SpaceTestDiscrete2;
 
 public class WMNGSingleTestBF {
 

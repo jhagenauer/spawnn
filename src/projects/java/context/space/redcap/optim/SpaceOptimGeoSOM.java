@@ -13,6 +13,10 @@ import java.util.concurrent.Executors;
 
 import org.apache.log4j.Logger;
 
+import com.vividsolutions.jts.geom.Geometry;
+import com.vividsolutions.jts.geom.Point;
+
+import context.space.SpaceTest;
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
 import spawnn.som.decay.LinearDecay;
@@ -24,11 +28,6 @@ import spawnn.som.net.SOM;
 import spawnn.som.utils.SomUtils;
 import spawnn.utils.DataUtils;
 import spawnn.utils.RegionUtils;
-
-import com.vividsolutions.jts.geom.Geometry;
-import com.vividsolutions.jts.geom.Point;
-
-import context.space.SpaceTest;
 
 public class SpaceOptimGeoSOM {
 

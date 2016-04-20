@@ -21,9 +21,9 @@ import javax.xml.stream.XMLStreamWriter;
 
 import org.apache.log4j.Logger;
 
-import spawnn.dist.Dist;
-
 import com.vividsolutions.jts.geom.Geometry;
+
+import spawnn.dist.Dist;
 
 public class RegionUtils {
 	
@@ -332,23 +332,5 @@ public class RegionUtils {
 		} catch( IOException e ) {
 			e.printStackTrace();
 		}	
-	}
-	
-	public static void main( String[] args ) {
-		List<double[]> samples = DataUtils.readSamplesFromShapeFile(new File("output/100rand.shp"), new int[] {}, true);
-		
-		System.out.println("samples: "+samples.size());
-		
-		//int[] fa = new int[] { 7 };
-		int[] fa = new int[] {  2,3,4,5,6 };
-		
-		for (int i : fa) {
-			DataUtils.zScoreColumn(samples, i);
-			//DataUtil.normalizeColumn(samples, i);
-		}
-			
-		Collection<Set<double[]>> cluster = readRedcapResults(samples, 5, "/home/julian/redcap_results.csv");
-					
-		System.out.println( "Heterogenity: "+RegionUtils.getHeterogenity(cluster, fa) );
 	}
 }

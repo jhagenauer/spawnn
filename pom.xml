@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>spawnn</groupId>
   <artifactId>spawnn</artifactId>
-  <version>0.1.6</version>
+  <version>0.1.7</version>
   <name>spawnn</name>
   <description>Spatial Analysis with Neural Networks (SPAWNN)</description>
   <properties>
@@ -17,6 +17,7 @@
 <groupId>org.codehaus.mojo</groupId>
 <artifactId>build-helper-maven-plugin</artifactId>
 <version>1.1</version>
+
 <!--<executions>
 <execution>
 <id>add-source</id>
@@ -30,11 +31,9 @@
 </sources>
 </configuration>
 </execution>
-</executions> -->
+</executions>-->
 
 </plugin>
-
-
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
         <version>3.3</version>
@@ -133,13 +132,11 @@
       <artifactId>commons-math3</artifactId>
       <version>3.2</version>
     </dependency>
-
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>
       <version>3.2</version>
     </dependency>
-
     <dependency>
       <groupId>org.geotools</groupId>
       <artifactId>gt-shapefile</artifactId>
@@ -155,11 +152,6 @@
       <artifactId>gt-swing</artifactId>
       <version>${geotools.version}</version>
     </dependency>
-    <dependency>
-  		<groupId>org.geotools</groupId>
- 	 	<artifactId>gt-grid</artifactId>
-  		<version>${geotools.version}</version>
-	</dependency>
     <!--<dependency>
       <groupId>com.miglayout</groupId>
       <artifactId>miglayout-swing</artifactId>
@@ -190,6 +182,13 @@
       <artifactId>xmlgraphics-commons</artifactId>
       <version>1.5</version>
     </dependency>
+    
+  <!-- <dependency>
+  	<groupId>org.jblas</groupId>
+  	<artifactId>jblas</artifactId>
+  	<version>1.2.4</version>
+  </dependency> -->
+
   </dependencies>
   <repositories>
     <repository>

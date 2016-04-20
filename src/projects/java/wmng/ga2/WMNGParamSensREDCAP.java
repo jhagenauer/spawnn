@@ -43,6 +43,10 @@ import org.geotools.styling.SLD;
 import org.geotools.styling.StyleBuilder;
 import org.geotools.swing.JMapPane;
 
+import com.vividsolutions.jts.geom.Geometry;
+import com.vividsolutions.jts.geom.Point;
+import com.vividsolutions.jts.geom.Polygon;
+
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
 import spawnn.gui.NGResultPanel;
@@ -55,13 +59,6 @@ import spawnn.utils.DataUtils;
 import spawnn.utils.GeoUtils;
 import spawnn.utils.RegionUtils;
 import spawnn.utils.SpatialDataFrame;
-
-import com.vividsolutions.jts.geom.Geometry;
-import com.vividsolutions.jts.geom.Point;
-import com.vividsolutions.jts.geom.Polygon;
-
-import edu.uci.ics.jung.graph.Graph;
-import edu.uci.ics.jung.graph.UndirectedSparseGraph;
 
 public class WMNGParamSensREDCAP {
 

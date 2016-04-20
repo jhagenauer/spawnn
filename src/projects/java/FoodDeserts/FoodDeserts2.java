@@ -22,6 +22,8 @@ import java.util.concurrent.Future;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.log4j.Logger;
 
+import com.vividsolutions.jts.geom.Point;
+
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
 import spawnn.ng.NG;
@@ -37,8 +39,6 @@ import spawnn.utils.Clustering.TreeNode;
 import spawnn.utils.DataUtils;
 import spawnn.utils.DataUtils.transform;
 import spawnn.utils.SpatialDataFrame;
-
-import com.vividsolutions.jts.geom.Point;
 
 public class FoodDeserts2 {
 	

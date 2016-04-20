@@ -84,7 +84,7 @@ public class SOMvsNG {
 		log.debug("som:");
 		log.debug("qe: "+DataUtils.getMeanQuantizationError( cluster, fDist ) );
 		log.debug("te: "+SomUtils.getTopoError(grid, bmuGetter, samples) );
-		log.debug("sse: "+DataUtils.getSumOfSquaresError(cluster, fDist));
+		log.debug("sse: "+DataUtils.getSumOfSquares(cluster, fDist));
 		}
 		
 		// cng
@@ -109,7 +109,7 @@ public class SOMvsNG {
 							
 		log.debug("cng:");
 		log.debug("qe: "+DataUtils.getMeanQuantizationError( cluster, fDist ) );	
-		log.debug("ss: "+DataUtils.getSumOfSquaresError(cluster, fDist));
+		log.debug("ss: "+DataUtils.getSumOfSquares(cluster, fDist));
 		}
 	}
 }

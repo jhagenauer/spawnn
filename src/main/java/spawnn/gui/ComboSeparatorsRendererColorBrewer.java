@@ -1,5 +1,8 @@
 package spawnn.gui;
 
+import java.awt.BorderLayout;
+import java.awt.Component;
+
 /**
  * MySwing: Advanced Swing Utilites
  * Copyright (C) 2005  Santhosh Kumar T
@@ -14,12 +17,12 @@ package spawnn.gui;
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
  */
-
-import javax.swing.*;
+import javax.swing.JList;
+import javax.swing.JPanel;
+import javax.swing.JSeparator;
+import javax.swing.ListCellRenderer;
 
 import spawnn.utils.ColorBrewer;
-
-import java.awt.*;
 
 /**
  * @author Santhosh Kumar T

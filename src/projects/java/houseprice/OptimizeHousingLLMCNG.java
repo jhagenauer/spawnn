@@ -26,8 +26,6 @@ import java.util.concurrent.Future;
 
 import javax.imageio.ImageIO;
 
-import llm.LLMNG;
-
 import org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression;
 import org.apache.log4j.Logger;
 import org.geotools.feature.DefaultFeatureCollection;
@@ -43,6 +41,9 @@ import org.geotools.styling.SLD;
 import org.geotools.styling.StyleBuilder;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
+import com.vividsolutions.jts.geom.Geometry;
+
+import llm.LLMNG;
 import rbf.Meuse;
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
@@ -55,8 +56,6 @@ import spawnn.utils.ColorBrewer;
 import spawnn.utils.ColorUtils;
 import spawnn.utils.DataUtils;
 import spawnn.utils.SpatialDataFrame;
-
-import com.vividsolutions.jts.geom.Geometry;
 
 public class OptimizeHousingLLMCNG {
 

@@ -103,6 +103,7 @@ public class Drawer {
 			SimpleFeatureTypeBuilder typeBuilder = new SimpleFeatureTypeBuilder();
 			typeBuilder.setName("cluster");
 			typeBuilder.add("cluster", Integer.class);
+			typeBuilder.setCRS(null);
 
 			if (geoms.get(0) instanceof Polygon)
 				typeBuilder.add("the_geom", Polygon.class);
@@ -163,7 +164,7 @@ public class Drawer {
 			Rectangle imageBounds = null;
 			try {
 				double heightToWidth = maxBounds.getSpan(1) / maxBounds.getSpan(0);
-				int imageWidth = 1024;
+				int imageWidth = 2*1024;
 
 				imageBounds = new Rectangle(0, 0, imageWidth, (int) Math.round(imageWidth * heightToWidth));
 				// imageBounds = new Rectangle( 0, 0, mp.getWidth(), (int) Math.round(mp.getWidth() * heightToWidth));

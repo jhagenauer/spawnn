@@ -8,7 +8,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.Set;
 
 import org.apache.log4j.Logger;
 import org.jfree.chart.ChartFactory;
@@ -22,8 +21,6 @@ import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
 import spawnn.rbf.AdaptIncRBF;
 import spawnn.rbf.RBF;
-import spawnn.utils.Clustering;
-import spawnn.utils.DataUtils;
 
 public class TestRBF {
 

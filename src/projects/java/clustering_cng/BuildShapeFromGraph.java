@@ -6,10 +6,6 @@ import java.io.Reader;
 
 import org.apache.commons.collections15.Transformer;
 
-import spawnn.ng.NG;
-import spawnn.ng.sorter.KangasSorter;
-import spawnn.ng.sorter.Sorter;
-
 import edu.uci.ics.jung.graph.UndirectedSparseGraph;
 import edu.uci.ics.jung.io.GraphIOException;
 import edu.uci.ics.jung.io.graphml.EdgeMetadata;

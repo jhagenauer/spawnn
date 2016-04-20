@@ -45,11 +45,11 @@ public class PrepareHousepriceData {
 		//vars.add("time_index"); //0.9998715224265088,0.13845002844913828,2.9411508335018544E-76
 		
 		// Bivand: No contextual variables about the neighbourhood of the houses are available, so one would expect a strong spatial autocorrelation reflecting this misspecification.
-		/*vars.add("zsp_alq_09");
+		vars.add("zsp_alq_09");
 		vars.add("gem_kauf_i");
 		vars.add("gem_abi");
 		vars.add("gem_alter_");
-		vars.add("ln_gem_dic");*/
+		vars.add("ln_gem_dic");
 		
 		vars.add("lnp");
 		

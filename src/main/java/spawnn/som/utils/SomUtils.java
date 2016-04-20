@@ -1,12 +1,5 @@
 package spawnn.som.utils;
 
-import ij.ImagePlus;
-import ij.process.ByteProcessor;
-import ij.process.ImageProcessor;
-import imageware.Builder;
-import imageware.ImageWare;
-import jRenderer3D.JRenderer3D;
-
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Font;
@@ -58,6 +51,19 @@ import org.jdom.input.SAXBuilder;
 import org.jdom.output.Format;
 import org.jdom.output.XMLOutputter;
 
+import com.vividsolutions.jts.geom.Coordinate;
+import com.vividsolutions.jts.geom.Geometry;
+import com.vividsolutions.jts.geom.GeometryCollection;
+import com.vividsolutions.jts.geom.GeometryFactory;
+import com.vividsolutions.jts.geom.LineString;
+import com.vividsolutions.jts.triangulate.VoronoiDiagramBuilder;
+
+import ij.ImagePlus;
+import ij.process.ByteProcessor;
+import ij.process.ImageProcessor;
+import imageware.Builder;
+import imageware.ImageWare;
+import jRenderer3D.JRenderer3D;
 import spawnn.dist.Dist;
 import spawnn.som.bmu.BmuGetter;
 import spawnn.som.bmu.KangasBmuGetter;
@@ -73,13 +79,6 @@ import spawnn.utils.DataUtils;
 import spawnn.utils.Drawer;
 import watershedflooding.Watershed;
 import watershedflooding.WatershedMeasurements;
-
-import com.vividsolutions.jts.geom.Coordinate;
-import com.vividsolutions.jts.geom.Geometry;
-import com.vividsolutions.jts.geom.GeometryCollection;
-import com.vividsolutions.jts.geom.GeometryFactory;
-import com.vividsolutions.jts.geom.LineString;
-import com.vividsolutions.jts.triangulate.VoronoiDiagramBuilder;
 
 // TODO: lot/some of methods here can be maded generic (e.g. for use with SOM and NG), especially bmu-related stuff
 // TODO replace all this double[][]-stuff by grid<>
@@ -1147,7 +1146,7 @@ public class SomUtils {
 		Map<double[], Set<double[]>> clusters = new HashMap<double[], Set<double[]>>();
 		for (GridPos k : mapping.keySet())
 			clusters.put(grid.getPrototypeAt(k), mapping.get(k));
-		return DataUtils.getSumOfSquaresError(clusters, d);
+		return DataUtils.getSumOfSquares(clusters, d);
 	}
 
 	// how often are first and second nearest units in input space neighbours in output space

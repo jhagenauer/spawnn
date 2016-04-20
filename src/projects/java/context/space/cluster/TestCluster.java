@@ -2,8 +2,6 @@ package context.space.cluster;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -21,10 +19,8 @@ import org.apache.log4j.Logger;
 
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
-import spawnn.dist.WeightedDist;
 import spawnn.ng.ContextNG;
 import spawnn.ng.NG;
-import spawnn.ng.sorter.DefaultSorter;
 import spawnn.ng.sorter.KangasSorter;
 import spawnn.ng.sorter.Sorter;
 import spawnn.ng.sorter.SorterWMC;

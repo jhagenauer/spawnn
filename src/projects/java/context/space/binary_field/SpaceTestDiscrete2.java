@@ -38,7 +38,6 @@ import spawnn.som.kernel.GaussKernel;
 import spawnn.som.net.SOM;
 import spawnn.som.utils.SomUtils;
 import spawnn.utils.DataUtils;
-import wmng.llm.DoubleGrid2DUtils;
 
 public class SpaceTestDiscrete2 {
 

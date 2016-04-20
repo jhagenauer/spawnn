@@ -24,11 +24,12 @@ import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.ListCellRenderer;
 
-import net.miginfocom.swing.MigLayout;
-
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.log4j.Logger;
 
+import edu.uci.ics.jung.graph.Graph;
+import edu.uci.ics.jung.graph.UndirectedSparseGraph;
+import net.miginfocom.swing.MigLayout;
 import spawnn.dist.Dist;
 import spawnn.gui.ClusterDialogGrid.ClusterAlgorithm;
 import spawnn.gui.DistanceDialog.DistMode;
@@ -42,8 +43,6 @@ import spawnn.utils.Clustering;
 import spawnn.utils.Clustering.TreeNode;
 import spawnn.utils.DataUtils;
 import spawnn.utils.SpatialDataFrame;
-import edu.uci.ics.jung.graph.Graph;
-import edu.uci.ics.jung.graph.UndirectedSparseGraph;
 
 public class SOMResultPanel extends ResultPanel<GridPos> {
 

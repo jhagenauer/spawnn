@@ -22,6 +22,8 @@ import javax.swing.JTextField;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
+import edu.uci.ics.jung.graph.Graph;
+import edu.uci.ics.jung.graph.UndirectedSparseGraph;
 import net.miginfocom.swing.MigLayout;
 import spawnn.dist.AugmentedDist;
 import spawnn.dist.Dist;
@@ -46,8 +48,6 @@ import spawnn.som.net.ContextSOM;
 import spawnn.som.net.SOM;
 import spawnn.som.utils.SomUtils;
 import spawnn.utils.SpatialDataFrame;
-import edu.uci.ics.jung.graph.Graph;
-import edu.uci.ics.jung.graph.UndirectedSparseGraph;
 
 public class AnnPanel extends JPanel implements ChangeListener, ActionListener {
 	

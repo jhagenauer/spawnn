@@ -1,10 +1,6 @@
 package regionalization.ga;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -12,13 +8,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
-
-import spawnn.dist.EuclideanDist;
-import spawnn.utils.DataUtils;
-import spawnn.utils.Drawer;
-import spawnn.utils.RegionUtils;
-
-import com.vividsolutions.jts.geom.Geometry;
 
 public class RegioGAIndividual implements GAIndividual {
 

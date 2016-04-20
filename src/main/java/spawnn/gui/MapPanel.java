@@ -21,8 +21,6 @@ import java.util.Map;
 
 import javax.imageio.ImageIO;
 
-import net.miginfocom.swing.MigLayout;
-
 import org.apache.log4j.Logger;
 import org.apache.xmlgraphics.java2d.ps.EPSDocumentGraphics2D;
 import org.geotools.factory.CommonFactoryFinder;
@@ -57,6 +55,8 @@ import com.vividsolutions.jts.geom.MultiPoint;
 import com.vividsolutions.jts.geom.MultiPolygon;
 import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.geom.Polygon;
+
+import net.miginfocom.swing.MigLayout;
 
 public class MapPanel<T> extends NeuronVisPanel<T> implements MapPaneListener, ComponentListener, MouseListener {
 

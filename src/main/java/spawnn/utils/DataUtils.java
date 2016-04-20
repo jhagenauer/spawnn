@@ -49,9 +49,6 @@ import org.opengis.feature.type.AttributeDescriptor;
 import org.opengis.feature.type.Name;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
-import spawnn.dist.Dist;
-import spawnn.utils.DataFrame.binding;
-
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryCollection;
@@ -62,6 +59,9 @@ import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.geom.Polygon;
 import com.vividsolutions.jts.io.ParseException;
 import com.vividsolutions.jts.io.WKTReader;
+
+import spawnn.dist.Dist;
+import spawnn.utils.DataFrame.binding;
 
 public class DataUtils {
 
@@ -393,15 +393,18 @@ public class DataUtils {
 		return r;
 	}
 
-	public static double getSumOfSquaresError(Map<double[], Set<double[]>> clusters, Dist<double[]> dist) {
+	public static double getSumOfSquares(Map<double[], Set<double[]>> clusters, Dist<double[]> dist) {
 		double totalSum = 0;
-		for (double[] center : clusters.keySet()) {
-			double sum = 0;
-			for (double[] s : clusters.get(center))
-				sum += Math.pow(dist.dist(center, s), 2);
-			totalSum += sum;
-		}
+		for( Entry<double[],Set<double[]>> e : clusters.entrySet() )
+			totalSum += getSumOfSquares(e.getKey(), e.getValue(), dist);
 		return totalSum;
+	}
+	
+	public static <T> double getSumOfSquares(T center, Set<T> s, Dist<T> dist) {
+			double sum = 0;
+			for (T d : s)
+				sum += Math.pow(dist.dist(d, center), 2);
+		return sum/s.size();
 	}
 
 	public static <T> double getMeanQuantizationError(Map<T, Set<T>> clusters, Dist<T> dist) {
@@ -417,37 +420,6 @@ public class DataUtils {
 		for (T d : data)
 			sum += dist.dist(centroid, d);
 		return sum / data.size();
-	}
-
-	public static Collection<Set<double[]>> getBestkMeansClustering(Collection<double[]> samples, Dist<double[]> dist) {
-		Collection<Set<double[]>> bestClusters = null;
-		double bestDbi = Double.MAX_VALUE;
-		for (int i = 2; i <= 12; i++) { // max clusters
-			int k = 0;
-			while (k <= 25) { // number of no impro iterations
-				Map<double[], Set<double[]>> clusters = Clustering.kMeans(new ArrayList<double[]>(samples), i, dist);
-
-				boolean emptyCluster = false;
-				for (Collection<double[]> c : clusters.values())
-					if (c.size() == 0)
-						emptyCluster = true;
-
-				if (emptyCluster)
-					k++;
-				else {
-					double dbi = DataUtils.getDaviesBouldinIndex(clusters.values(), dist);
-
-					if (dbi < bestDbi) {
-						log.debug(i + ": " + dbi);
-						bestDbi = dbi;
-						bestClusters = clusters.values();
-						k = 0;
-					} else
-						k++;
-				}
-			}
-		}
-		return bestClusters;
 	}
 
 	public static void writeShape(List<double[]> samples, List<Geometry> geoms, String fn) {

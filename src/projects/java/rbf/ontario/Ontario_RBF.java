@@ -4,7 +4,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -27,7 +26,6 @@ import spawnn.ng.sorter.Sorter;
 import spawnn.ng.utils.NGUtils;
 import spawnn.rbf.RBF;
 import spawnn.utils.DataUtils;
-import spawnn.utils.GeoUtils;
 import spawnn.utils.SpatialDataFrame;
 
 public class Ontario_RBF {

@@ -11,11 +11,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.PriorityQueue;
 import java.util.Random;
 import java.util.Set;
 
@@ -33,116 +35,89 @@ import org.geotools.renderer.lite.StreamingRenderer;
 import org.geotools.styling.SLD;
 import org.geotools.styling.StyleBuilder;
 
-import spawnn.dist.Dist;
-import spawnn.dist.EuclideanDist;
-
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineString;
 
+import spawnn.dist.Dist;
+import spawnn.dist.EuclideanDist;
+
 public class Clustering {
 
 	private static Logger log = Logger.getLogger(Clustering.class);
 
-	// TODO: Sucks big time, why?
+	// Actually, this is NOT PAM, but works nevertheless
 	public static Map<double[], Set<double[]>> kMedoidsPAM(Collection<double[]> samples, int num, Dist<double[]> dist) {
 		Random r = new Random();
 
 		Map<double[], Set<double[]>> medoidMap = new HashMap<double[], Set<double[]>>();
-
 		// 1. random init
-		while (medoidMap.size() < num) {// random init centroids
+		while (medoidMap.size() < num) {
 			for (double[] s : samples)
-				if (r.nextDouble() < 1.0 / samples.size() && !medoidMap.containsKey(s)) {
+				if (r.nextDouble() < 1.0 / samples.size() ) {
 					medoidMap.put(s, new HashSet<double[]>());
 					break;
 				}
 		}
-
-		double actualCost = Double.MAX_VALUE;
-		while (true) {
-
-			// 2. clear, and add closest samples to medoids
-			for (Set<double[]> s : medoidMap.values())
-				s.clear();
-
+		List<double[]> bestMedoids = null;
+		double bestSum = 0;
+		int noImpro = 0;
+	
+		while( true ) {			
+			// 2. Assignment step
+			for( double[] m : medoidMap.keySet() ) 
+				medoidMap.get(m).add(m);
+			
 			for (double[] s : samples) {
-				double bestDist = Double.MAX_VALUE;
-				double[] bestMedoid = null;
-
-				if (medoidMap.containsKey(s)) // if s is medoid
+				if( medoidMap.keySet().contains(s) )
 					continue;
-
-				for (double[] medoid : medoidMap.keySet()) {
-					if (bestMedoid == null || dist.dist(s, medoid) < bestDist) {
-						bestMedoid = medoid;
-						bestDist = dist.dist(s, medoid);
-					}
-				}
-				medoidMap.get(bestMedoid).add(s);
+				
+				double[] closest = null;
+				for (double[] medoid : medoidMap.keySet()) 
+					if (closest == null || dist.dist(s, medoid) < dist.dist(s, closest)) 
+						closest = medoid;
+				medoidMap.get(closest).add(s);
 			}
-
-			// 4. for each
-			Map<double[], Set<double[]>> workingCopy = new HashMap<double[], Set<double[]>>();
-			for (Entry<double[], Set<double[]>> e : medoidMap.entrySet())
-				workingCopy.put(e.getKey(), new HashSet<double[]>(e.getValue()));
-
-			double bestCost = Double.MAX_VALUE;
-			double[] bestMedoid = null, bestSwap = null, bestSwapSetMedoid = null;
-
-			for (double[] medoid : medoidMap.keySet()) { // all medoids
-				for (double[] swapSetMedoid : medoidMap.keySet()) {
-					for (double[] s : medoidMap.get(swapSetMedoid)) { // all
-																		// data
-
-						// swap
-						workingCopy.get(swapSetMedoid).remove(s);
-						workingCopy.get(swapSetMedoid).add(medoid);
-						Set<double[]> old = workingCopy.remove(medoid);
-						workingCopy.put(s, old);
-
-						double cost = DataUtils.getMeanQuantizationError(workingCopy, dist);
-						if (cost < bestCost) {
-							bestMedoid = medoid;
-							bestSwap = s;
-							bestSwapSetMedoid = swapSetMedoid;
-							bestCost = cost;
-						}
-
-						// swap back
-						workingCopy.remove(s);
-						workingCopy.put(medoid, old);
-						workingCopy.get(swapSetMedoid).remove(medoid);
-						workingCopy.get(swapSetMedoid).add(s);
-
-					}
+			
+			// 3. update step, get better medoid
+			double sumCost = 0;
+			List<double[]> newMedoids = new ArrayList<double[]>();
+			for (Entry<double[],Set<double[]>> e : medoidMap.entrySet() ) {
+				
+				double bestCost = Double.MAX_VALUE;
+				double[] bestMedoid = null;
+				for( double[] d : e.getValue() ) {
+					
+					double cost = 0;
+					for( double[] dd : e.getValue() )
+						cost += dist.dist(dd, d);
+					
+					if( bestMedoid == null || cost < bestCost ) {
+						bestMedoid = d;
+						bestCost = cost;
+					} 
 				}
+				newMedoids.add(bestMedoid);
+				sumCost += bestCost;
 			}
-
-			if (bestCost < actualCost) {
-				// System.out.println(bestCost);
-				// swap
-				medoidMap.get(bestSwapSetMedoid).remove(bestSwap);
-				medoidMap.get(bestSwapSetMedoid).add(bestMedoid);
-				Set<double[]> old = medoidMap.remove(bestMedoid);
-				medoidMap.put(bestSwap, old);
-
-				actualCost = bestCost;
-			} else {
-				// System.out.println("break");
+			
+			if( bestMedoids == null || sumCost < bestSum ) {
+				bestSum = sumCost;
+				bestMedoids = newMedoids;
+				noImpro = 0;
+			}
+			
+			if( noImpro++ == 100 )
 				break;
-			}
-
+		
+			medoidMap.clear();
+			for( double[] m : newMedoids )
+				medoidMap.put(m, new HashSet<double[]>() );	
 		}
-
-		// add medoids to form clusters
-		for (double[] d : medoidMap.keySet())
-			medoidMap.get(d).add(d);
-
 		return medoidMap;
 	}
-
+	
 	public static Map<double[], Set<double[]>> kMeans(List<double[]> samples, int num, Dist<double[]> dist) {
 		int length = samples.iterator().next().length;
 		Random r = new Random();
@@ -214,61 +189,36 @@ public class Clustering {
 	public enum HierarchicalClusteringType {
 		single_linkage, complete_linkage, average_linkage, ward
 	};
-
-	public static List<Set<double[]>> cutTree( Map<Set<double[]>,TreeNode> tree, int numCluster ) {
-		Set<TreeNode> done = new HashSet<TreeNode>();
-		Map<TreeNode,Set<double[]>> cutTree = new HashMap<TreeNode,Set<double[]>>();
+	
+	public static <T> List<Set<T>> cutTree( Map<Set<T>,TreeNode> tree, int numCluster ) {
+		Comparator<TreeNode> comp = new Comparator<TreeNode>() {
+			@Override
+			public int compare(TreeNode o1, TreeNode o2) {
+				return -Integer.compare(o1.age, o2.age);
+			}
+		};
 		
-		// init with leafs
-		for( Map.Entry<Set<double[]>, TreeNode> e : tree.entrySet() ) {
-			if( e.getValue().children == null ) {
-				cutTree.put(e.getValue(),e.getKey());
-				done.add(e.getValue());
-			}
-		}
-					
-		while( cutTree.size() > numCluster ) {
-			
-			Map.Entry<Set<double[]>, TreeNode> bestEntry = null;
-			for( Map.Entry<Set<double[]>, TreeNode> e : tree.entrySet() ) {
-				if( done.contains(e.getValue()) ) // already merged
-					continue;
-				
-				// children present in tree
-				boolean childrenInCutTree = true;
-				for( TreeNode child : e.getValue().children )
-					if( !cutTree.containsKey(child) )
-						childrenInCutTree = false;
-								
-				if( childrenInCutTree 
-						&& !Double.isNaN(e.getValue().sumOfSquares) 
-						&& ( bestEntry == null || e.getValue().sumOfSquares < bestEntry.getValue().sumOfSquares ) ) 
-					bestEntry = e;	
-			}
-			
-			if( bestEntry == null ) {				
-				log.warn("Cannot cut tree any further.");
-				break;
-			}
-									
-			for( TreeNode child : bestEntry.getValue().children ) {
-				cutTree.remove(child);
-				done.add(child);
-			}			
-			cutTree.put(bestEntry.getValue(), bestEntry.getKey() );
+		PriorityQueue<TreeNode> pq = new PriorityQueue<TreeNode>(1, comp);
+		pq.add( Collections.min(tree.values(), comp));
+		while( pq.size() < numCluster ) {
+			for( TreeNode child : pq.poll().children )
+				if( child != null )
+					pq.add(child);
 		}
 		
-		// tree to cluster
-		List<Set<double[]>> clusters = new ArrayList<Set<double[]>>();
-		for( Set<double[]> s : cutTree.values() )
-			clusters.add(s);
+		List<Set<T>> clusters = new ArrayList<Set<T>>();
+		for( Entry<Set<T>,TreeNode> e : tree.entrySet() )
+			if( pq.contains(e.getValue()))
+				clusters.add(e.getKey());
 		
 		return clusters;
 	}
 	
 	public static class TreeNode {
-		double sumOfSquares = 0;
-		TreeNode children[] = null;
+		public int age = 0;
+		public double cost = 0; // sum of squares
+		public TreeNode children[] = null;
+		public String toString() { return age+", "+cost; }
 	}
 	
 	// not connected
@@ -302,10 +252,9 @@ public class Clustering {
 				return super.add(t);
 			}
 			
-			@SuppressWarnings("unchecked")
 			@Override
 			public boolean addAll( Collection<? extends T> c ) {
-				hashCode += ((FlatSet<double[]>)c).hashCode;
+				hashCode += c.hashCode();
 				return super.addAll(c);
 			}
 			
@@ -314,35 +263,35 @@ public class Clustering {
 				return hashCode;
 			}
 		}
-						
+				
 		Map<Set<double[]>,TreeNode> tree = new HashMap<Set<double[]>,TreeNode>();
 		List<Set<double[]>> leafLayer = new ArrayList<Set<double[]>>();
 		
 		Map<Set<double[]>, Double> ssCache = new HashMap<Set<double[]>, Double>();
 		Map<Set<double[]>, Map<Set<double[]>, Double>> unionCache = new HashMap<Set<double[]>, Map<Set<double[]>, Double>>();
 						
-		// init
+		int age = 0;
 		for (double[] d : samples) {
 			Set<double[]> l = new FlatSet<double[]>();
 			l.add(d);
 			
 			TreeNode cn = new TreeNode();
-			cn.sumOfSquares = 0;
+			cn.age = age;
+			cn.cost = 0;
 			tree.put(l,cn);
 			
 			leafLayer.add(l);
 			ssCache.put(l, 0.0);
 		}
 		
+				
 		// init connected map
 		Map<Set<double[]>, Set<Set<double[]>>> connected = null;
 		if (cm != null) {
 			connected = new HashMap<Set<double[]>, Set<Set<double[]>>>();
 			for (Set<double[]> a : leafLayer) {
 				for (Set<double[]> b : leafLayer) {
-					if (a == b)
-						continue;
-					if (cm.get(a.iterator().next()).contains(b.iterator().next())) {
+					if ( a != b && cm.get(a.iterator().next()).contains(b.iterator().next())) {
 						if (!connected.containsKey(a))
 							connected.put(a, new HashSet<Set<double[]>>());
 						connected.get(a).add(b);
@@ -354,7 +303,7 @@ public class Clustering {
 		while (leafLayer.size() > 1 ) {
 			Set<double[]> c1 = null, c2 = null;
 			double sMin = Double.MAX_VALUE;
-
+			
 			for (int i = 0; i < leafLayer.size() - 1; i++) {
 				Set<double[]> l1 = leafLayer.get(i);
 
@@ -495,7 +444,8 @@ public class Clustering {
 			}
 						
 			TreeNode cn = new TreeNode();
-			cn.sumOfSquares = ss;
+			cn.cost = ss;
+			cn.age = ++age;
 			cn.children = new TreeNode[]{ tree.get(c1), tree.get(c2) };
 			tree.put(union, cn);
 			
@@ -524,7 +474,7 @@ public class Clustering {
 		return cm;
 	}
 
-	// assumes that cm is not directed and connected! Prim's algorithm
+	// assumes that cm is directed and is fully connected! Prim's algorithm
 	public static Map<double[], Set<double[]>> getMinimumSpanningTree(Map<double[], Set<double[]>> cm, Dist<double[]> dist) {
 		Map<double[], Set<double[]>> mst = new HashMap<double[], Set<double[]>>();
 
@@ -535,7 +485,6 @@ public class Clustering {
 
 			double[] bestA = null, bestB = null;
 			double minDist = Double.MAX_VALUE;
-
 			for (double[] a : added) {
 				for (double[] b : cm.get(a)) {
 					if (added.contains(b))
@@ -561,7 +510,6 @@ public class Clustering {
 
 			added.add(bestB);
 		}
-
 		return mst;
 	}
 
@@ -864,26 +812,7 @@ public class Clustering {
 		final Dist<double[]> dist = new EuclideanDist(fa);
 		
 		int nrCluster = 7;
-		{
-		System.out.println("skater:");
-		long time = System.currentTimeMillis();
-		Map<double[], Set<double[]>> mst = getMinimumSpanningTree(cm, dist);
-		System.out.println("mst took: " + (System.currentTimeMillis() - time) / 1000.0);
-		time = System.currentTimeMillis();
-		List<Set<double[]>> cluster = skater(mst, nrCluster - 1, dist, 1);
-		System.out.println("skater took: " + (System.currentTimeMillis() - time) / 1000.0);
-		System.out.println("WCSS: " + DataUtils.getWithinClusterSumOfSuqares(cluster, dist));
-		}
-		
-		{
-		System.out.println("ward:");
-		long time = System.currentTimeMillis();
 		Map<Set<double[]>,TreeNode> tree = Clustering.getHierarchicalClusterTree(samples, cm, dist, HierarchicalClusteringType.ward);
-		System.out.println("tree took: " + (System.currentTimeMillis() - time) / 1000.0);
-		time = System.currentTimeMillis();
-		List<Set<double[]>> cluster = Clustering.cutTree( tree, nrCluster);
-		System.out.println("cut took: " + (System.currentTimeMillis() - time) / 1000.0);
-		System.out.println("WCSS: " + DataUtils.getWithinClusterSumOfSuqares(cluster, dist));
-		}	
+		System.out.println("WCSS1: " + DataUtils.getWithinClusterSumOfSuqares(Clustering.cutTree( tree, nrCluster), dist));		
 	}
 }

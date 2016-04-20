@@ -11,9 +11,6 @@ import java.util.Set;
 
 import org.apache.log4j.Logger;
 
-import spawnn.utils.DataUtils;
-import spawnn.utils.SampleBuilder;
-
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.Geometry;
@@ -21,6 +18,9 @@ import com.vividsolutions.jts.geom.GeometryCollection;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.triangulate.VoronoiDiagramBuilder;
+
+import spawnn.utils.DataUtils;
+import spawnn.utils.SampleBuilder;
 
 public class CreateNonstatCluster {
 	

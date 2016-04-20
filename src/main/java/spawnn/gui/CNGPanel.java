@@ -1,9 +1,10 @@
 package spawnn.gui;
 
-import javax.swing.JPanel;
 import javax.swing.JLabel;
-import net.miginfocom.swing.MigLayout;
+import javax.swing.JPanel;
 import javax.swing.JTextField;
+
+import net.miginfocom.swing.MigLayout;
 
 public class CNGPanel extends JPanel {
 

@@ -26,8 +26,8 @@ import spawnn.som.grid.Grid2D;
 import spawnn.som.grid.GridPos;
 import spawnn.som.kernel.GaussKernel;
 import spawnn.som.kernel.KernelFunction;
-import spawnn.som.net.SOM;
 import spawnn.som.net.ContextSOM;
+import spawnn.som.net.SOM;
 import spawnn.som.utils.SomUtils;
 import spawnn.utils.DataUtils;
 

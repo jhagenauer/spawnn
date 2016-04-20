@@ -11,7 +11,6 @@ import java.util.concurrent.Executors;
 import org.apache.log4j.Logger;
 
 import context.time.TimeSeries;
-
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
 import spawnn.ng.ContextNG;

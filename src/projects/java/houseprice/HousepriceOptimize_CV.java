@@ -19,13 +19,12 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import llm.LLMNG;
-
 import org.apache.commons.math3.linear.SingularMatrixException;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression;
 import org.apache.log4j.Logger;
 
+import llm.LLMNG;
 import rbf.Meuse;
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
@@ -74,7 +73,7 @@ public class HousepriceOptimize_CV {
 		for( final int T_MAX : new int[]{ 120000 } )	
 			//for( final int nrNeurons : new int[]{ 5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64 } ) 		
 			//for( final int nrNeurons : new int[]{ 16,48,512,1024,2048,4096 } )
-			for( final int nrNeurons : new int[]{ 64 } )
+			for( final int nrNeurons : new int[]{ 32 } )
 			for( final double nbInit : new double[]{ (double)nrNeurons*2.0/3.0 })
 			for( final double nbFinal : new double[]{ 1.0 })	
 			for( final double lr1Init : new double[]{ 0.4 }) 
@@ -89,7 +88,7 @@ public class HousepriceOptimize_CV {
 				ExecutorService es = Executors.newFixedThreadPool(4);
 				List<Future<double[]>> futures = new ArrayList<Future<double[]>>();
 
-				for (int run = 0; run < 32; run++) {
+				for (int run = 0; run < 8; run++) {
 					
 					int samplesSize = samples.size();
 					final List<double[]> samplesTrain = new ArrayList<double[]>(samples);

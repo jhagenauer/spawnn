@@ -2,20 +2,15 @@ package rbf.twoplanes;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Random;
 
 import org.apache.log4j.Logger;
 
+import cern.colt.Arrays;
 import rbf.Meuse;
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
-import spawnn.rbf.IncRBF;
-import spawnn.rbf.RBF;
 import spawnn.utils.DataUtils;
-import cern.colt.Arrays;
 
 public class TwoPlanes_NoCV_FixedNeurons {
 

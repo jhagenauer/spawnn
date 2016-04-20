@@ -1,8 +1,6 @@
 package context.cng;
 
 
-import static spawnn.ng.Connection.writeGraphML;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -20,6 +18,8 @@ import org.jdom.Element;
 import org.jdom.Namespace;
 import org.jdom.input.SAXBuilder;
 
+import com.vividsolutions.jts.geom.Geometry;
+
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
 import spawnn.ng.Connection;
@@ -28,8 +28,6 @@ import spawnn.ng.sorter.KangasSorter;
 import spawnn.ng.sorter.Sorter;
 import spawnn.utils.DataUtils;
 import spawnn.utils.Drawer;
-
-import com.vividsolutions.jts.geom.Geometry;
 
 // Topology representing network
 public class NeuralGasCHL {

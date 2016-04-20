@@ -2,7 +2,6 @@ package context.space.binary_field;
 
 import spawnn.som.grid.Grid2D;
 import spawnn.som.grid.GridPos;
-import wmng.llm.DoubleGrid2DUtils;
 
 public class CreateExampleField {
 

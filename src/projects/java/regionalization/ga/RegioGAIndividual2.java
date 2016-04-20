@@ -11,12 +11,12 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
+import com.vividsolutions.jts.geom.Geometry;
+
 import spawnn.dist.EuclideanDist;
 import spawnn.utils.DataUtils;
 import spawnn.utils.Drawer;
 import spawnn.utils.RegionUtils;
-
-import com.vividsolutions.jts.geom.Geometry;
 
 public class RegioGAIndividual2 implements GAIndividual {
 		

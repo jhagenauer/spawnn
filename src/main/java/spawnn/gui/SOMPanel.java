@@ -6,6 +6,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 
+import net.miginfocom.swing.MigLayout;
 import spawnn.som.decay.DecayFunction;
 import spawnn.som.decay.LinearDecay;
 import spawnn.som.decay.PowerDecay;
@@ -14,7 +15,6 @@ import spawnn.som.grid.Grid2DHex;
 import spawnn.som.kernel.BubbleKernel;
 import spawnn.som.kernel.GaussKernel;
 import spawnn.som.kernel.KernelFunction;
-import net.miginfocom.swing.MigLayout;
 
 public class SOMPanel extends JPanel {
 	

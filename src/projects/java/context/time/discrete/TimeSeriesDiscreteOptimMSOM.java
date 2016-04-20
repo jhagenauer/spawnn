@@ -12,7 +12,6 @@ import java.util.concurrent.Executors;
 import org.apache.log4j.Logger;
 
 import context.time.TimeSeries;
-
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
 import spawnn.som.bmu.BmuGetterTimeMSOM;
@@ -20,8 +19,8 @@ import spawnn.som.decay.LinearDecay;
 import spawnn.som.grid.Grid2DHex;
 import spawnn.som.grid.GridPos;
 import spawnn.som.kernel.GaussKernel;
-import spawnn.som.net.SOM;
 import spawnn.som.net.ContextSOM;
+import spawnn.som.net.SOM;
 import spawnn.som.utils.SomUtils;
 import spawnn.utils.DataUtils;
 

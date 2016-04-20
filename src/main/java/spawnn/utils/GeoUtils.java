@@ -24,12 +24,12 @@ import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.log4j.Logger;
 
+import com.vividsolutions.jts.geom.Geometry;
+
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
 import spawnn.som.grid.Grid;
 import spawnn.som.grid.GridPos;
-
-import com.vividsolutions.jts.geom.Geometry;
 
 public class GeoUtils {
 
