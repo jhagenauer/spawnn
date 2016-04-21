@@ -8,7 +8,7 @@ import java.util.Random;
 import myga.GAIndividual;
 
 // genetic operators maintain constant sum of ones
-public class MaintainSumIndividual extends GAIndividual {
+public class MaintainSumIndividual extends GAIndividual<MaintainSumIndividual> {
 	
 	private boolean[] a;
 	private Random r = new Random();
@@ -39,7 +39,7 @@ public class MaintainSumIndividual extends GAIndividual {
 	}
 
 	@Override
-	public GAIndividual recombine(GAIndividual mother) {
+	public MaintainSumIndividual recombine(MaintainSumIndividual mother) {
 		int ca = 0, cb = 0;
 		boolean[] b = ((MaintainSumIndividual)mother).getChromosome();
 		List<Integer> p = new ArrayList<Integer>();

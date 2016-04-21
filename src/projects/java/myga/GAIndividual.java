@@ -1,10 +1,10 @@
 package myga;
 
-public abstract class GAIndividual implements Comparable<GAIndividual>{
+public abstract class GAIndividual<T> implements Comparable<T>{
 	private double value = 0;
 	
 	public abstract void mutate();
-	public abstract GAIndividual recombine( GAIndividual mother );
+	public abstract T recombine( T mother );
 	
 	public void setValue(double value) {
 		this.value = value;
@@ -15,7 +15,7 @@ public abstract class GAIndividual implements Comparable<GAIndividual>{
 	}
 	
 	@Override
-	public int compareTo(GAIndividual o) {
-		return Double.compare(value, o.getValue());
+	public int compareTo(T o) {
+		return Double.compare(value, ((GAIndividual<T>) o).getValue());
 	}
 }

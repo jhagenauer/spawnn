@@ -145,7 +145,7 @@ public class WMNGParamSensLISA {
 							}
 							
 							r.m.put("QE", DataUtils.getMeanQuantizationError(bmus, fDist));
-							r.m.put("WSS", DataUtils.getWithinClusterSumOfSuqares(bmus.values(), fDist ) );
+							r.m.put("WSS", DataUtils.getWithinSumOfSuqares(bmus.values(), fDist ) );
 							r.m.put("ptvMean",ds1.getMean() );
 							r.m.put("ptvVar", ds1.getVariance() );
 							r.m.put("ctxMean", ds2.getMean() );

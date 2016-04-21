@@ -423,7 +423,7 @@ public class Clustering {
 			
 				unionCache.remove(c1);
 			} else
-				ss = DataUtils.getWithinClusterSumOfSuqares(leafLayer, dist); // expensive
+				ss = DataUtils.getWithinSumOfSuqares(leafLayer, dist); // expensive
 			
 			// update connected map, non-connected cluster are ALSO merged in order to return a single tree. These merges have ss=NAN
 			// 1. merge values of c1 and c2 and put union
@@ -813,6 +813,6 @@ public class Clustering {
 		
 		int nrCluster = 7;
 		Map<Set<double[]>,TreeNode> tree = Clustering.getHierarchicalClusterTree(samples, cm, dist, HierarchicalClusteringType.ward);
-		System.out.println("WCSS1: " + DataUtils.getWithinClusterSumOfSuqares(Clustering.cutTree( tree, nrCluster), dist));		
+		System.out.println("WCSS1: " + DataUtils.getWithinSumOfSuqares(Clustering.cutTree( tree, nrCluster), dist));		
 	}
 }

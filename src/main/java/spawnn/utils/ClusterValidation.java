@@ -87,7 +87,7 @@ public class ClusterValidation {
 
 	// aka compactness
 	public static double getWithinClusterSumOfSuqares(Collection<Set<double[]>> c, Dist<double[]> dist) {
-		return DataUtils.getWithinClusterSumOfSuqares(c, dist);
+		return DataUtils.getWithinSumOfSuqares(c, dist);
 	}
 
 	// separation

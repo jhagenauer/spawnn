@@ -1246,7 +1246,7 @@ public class DataUtils {
 		return ssq;
 	}
 
-	public static double getWithinClusterSumOfSuqares(Collection<Set<double[]>> c, Dist<double[]> dist) {
+	public static double getWithinSumOfSuqares(Collection<Set<double[]>> c, Dist<double[]> dist) {
 		double ssq = 0;
 		for (Set<double[]> s : c)
 			ssq += getSumOfSquares(s, dist);

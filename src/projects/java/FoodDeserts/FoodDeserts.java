@@ -123,7 +123,7 @@ public class FoodDeserts {
 							Drawer.geoDrawValues(sdf.geoms, nSamples, sdf.samples.get(0).length, sdf.crs, ColorBrewer.Set3, "output/cng_cluster_"+L+".png");
 						}
 						
-						return new double[] { DataUtils.getWithinClusterSumOfSuqares(bmus.values(), fDist), DataUtils.getWithinClusterSumOfSuqares(bmus.values(), gDist) };
+						return new double[] { DataUtils.getWithinSumOfSuqares(bmus.values(), fDist), DataUtils.getWithinSumOfSuqares(bmus.values(), gDist) };
 					}
 				}));
 

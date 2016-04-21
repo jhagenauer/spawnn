@@ -8,7 +8,7 @@ import java.util.Random;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.log4j.Logger;
 
-public class GeneticAlgorithm<T extends GAIndividual> {
+public class GeneticAlgorithm<T extends GAIndividual<T>> {
 	
 	private static Logger log = Logger.getLogger(GeneticAlgorithm.class);
 	
@@ -16,10 +16,11 @@ public class GeneticAlgorithm<T extends GAIndividual> {
 	
 	Evaluator<T> evaluator;
 			
-	public int tournamentSize = 2;
-	public double recombProb = 0.9;
+	static public int tournamentSize = 4;
+	static public double recombProb = 0.8;
 	
 	public int evaluations = 0;
+	public static boolean debug = true;
 				
 	public GeneticAlgorithm(Evaluator<T> evaluator) {
 		this.evaluator = evaluator;
@@ -40,7 +41,7 @@ public class GeneticAlgorithm<T extends GAIndividual> {
 			i.setValue(evaluator.evaluate(i));
 							
 		int k = 0;
-		while( noImpro < 400  /*&& evaluations < 400000*/  ) {
+		while( noImpro < 200 /*&& evaluations < 10000*/ ) {
 						
 			// check best and increase noImpro
 			noImpro++;
@@ -49,12 +50,12 @@ public class GeneticAlgorithm<T extends GAIndividual> {
 				if( best == null || cur.getValue() < best.getValue()  ) { 
 					best = cur;
 					noImpro = 0;
-					log.debug("found best: "+cur.getValue()+", "+cur+", k: "+k);
+					if( debug ) log.debug("found best: "+cur.getValue()+", "+cur+", k: "+k);
 				}
 				ds.addValue( cur.getValue() );
 			}
 			if( noImpro == 0 || k % 100 == 0 || false ) {		
-				log.debug(k+","+noImpro+","+evaluations+","+ds.getMin()+","+ds.getMean()+","+ds.getMax()+","+ds.getStandardDeviation() );
+				if( debug ) log.debug(k+","+noImpro+","+evaluations+","+ds.getMin()+","+ds.getMean()+","+ds.getMax()+","+ds.getStandardDeviation() );
 			}
 															
 			// SELECT NEW GEN/POTENTIAL PARENTS
@@ -63,10 +64,13 @@ public class GeneticAlgorithm<T extends GAIndividual> {
 			List<T> elite = new ArrayList<T>(gen.subList(0, Math.max( 1, (int)( 0.05*gen.size() ) ) ));
 			gen.removeAll(elite);																		
 			
-			List<T> selected = new ArrayList<T>(elite);
+			List<T> selected = new ArrayList<T>();
+			selected.addAll(elite);
 			while( selected.size() < parentSize ) {
 				// TOURNAMENT SELECTION
-				T i = tournament( gen, tournamentSize ); 			
+				T i = tournament( gen, tournamentSize ); 
+				//T i = rouletteWheelSelect( gen ); 
+				
 				selected.add( i );
 			}		
 			gen = selected;	
@@ -80,9 +84,9 @@ public class GeneticAlgorithm<T extends GAIndividual> {
 				T child;
 				
 				if( r.nextDouble() < recombProb )
-					child = (T)a.recombine( b );
+					child = a.recombine( b );
 				else 
-					child = (T)a.recombine( a ); // clone
+					child = a.recombine( a ); // clone
 																		
 				child.mutate();
 				child.setValue(evaluator.evaluate( child ));
