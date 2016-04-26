@@ -16,7 +16,7 @@ public class GeneticAlgorithm<T extends GAIndividual<T>> {
 	
 	Evaluator<T> evaluator;
 			
-	static public int tournamentSize = 4;
+	static public int tournamentSize = 2;
 	static public double recombProb = 0.8;
 	
 	public int evaluations = 0;

@@ -27,17 +27,6 @@ public class GraphClustering {
 
 	private static Logger log = Logger.getLogger(GraphClustering.class);
 	
-	public static Map<double[],Map<double[],Double>> toWeightedGraph( Map<double[],Set<double[]>> graph ) {
-		Map<double[],Map<double[],Double>> ng = new HashMap<double[],Map<double[],Double>>();
-		for( double[] a : graph.keySet() ) {
-			Map<double[],Double> m = new HashMap<double[],Double>();
-			for( double[] b : graph.get(a) )
-				m.put(b, 1.0);
-			ng.put(a, m);
-		}
-		return ng;
-	}
-		
 	public static <V,E> double modularity ( Map<double[],Map<double[],Double>> graph, Map<double[],Integer> membership ) {
         double sum = 0;
         double m2 = 0;

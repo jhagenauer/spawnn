@@ -27,7 +27,7 @@ import spawnn.utils.Clustering;
 import spawnn.utils.Clustering.HierarchicalClusteringType;
 import spawnn.utils.Clustering.TreeNode;
 import spawnn.utils.DataUtils;
-import spawnn.utils.Drawer;
+import spawnn.utils.GraphUtils;
 
 public class GA_Regionalization {
 	private static Logger log = Logger.getLogger(GA_Regionalization.class);
@@ -83,23 +83,23 @@ public class GA_Regionalization {
 
 		{
 			DescriptiveStatistics ds = new DescriptiveStatistics();
-			for( int i = 0; i < 100; i++ ) {
-				Map<double[], Set<double[]>> mst = Clustering.getMinimumSpanningTree(cm, fDist);
+			for( int i = 0; i < 25; i++ ) {
+				Map<double[], Set<double[]>> mst = GraphUtils.getMinimumSpanningTree(cm, fDist);
 				List<Set<double[]>> skaterClusters = Clustering.skater(mst, numCluster - 1, fDist, 0);
 				ds.addValue( DataUtils.getWithinSumOfSuqares(skaterClusters, fDist));
 			}
 			log.debug("skater :"+ds.getMean()+","+ds.getMin());
 		}
 
-		GeneticAlgorithm.debug = true;
+		GeneticAlgorithm.debug = false;
+		TreeIndividual.xorMutate = true;
 		Evaluator<TreeIndividual> evaluator = new WSSEvaluator(fDist);
 		{
 			DescriptiveStatistics ds = new DescriptiveStatistics();
-			for (int i = 0; i < 1; i++) {
+			for (int i = 0; i < 4; i++) {
 				List<TreeIndividual> init = new ArrayList<TreeIndividual>();
 				while (init.size() < 50) {
-					Map<double[], Set<double[]>> tree = Clustering.getMinimumSpanningTree(cm, fDist);
-					//Map<double[],Set<double[]>> tree = Clustering.getMinimumSpanningTree(cm, rDist);
+					Map<double[], Set<double[]>> tree = GraphUtils.getMinimumSpanningTree(cm, fDist);
 					Map<double[], Set<double[]>> cuts = new HashMap<double[], Set<double[]>>();
 					int numCuts = 0;
 					while (numCuts < numCluster - 1) {
@@ -122,18 +122,16 @@ public class GA_Regionalization {
 				GeneticAlgorithm<TreeIndividual> ga = new GeneticAlgorithm<>(evaluator);
 				TreeIndividual bestGA = ga.search(init);
 				ds.addValue(evaluator.evaluate(bestGA));
-				Drawer.geoDrawCluster(bestGA.toCluster(), samples, voroGeoms, "output/ga1.png", true);
 			}
-			log.debug("best ga_a: " + ds.getMean() + "," + ds.getMin());
+			log.debug("best ga_fDist: " + ds.getMean() + "," + ds.getMin());
 		}
 		
 		{
 			DescriptiveStatistics ds = new DescriptiveStatistics();
-			for (int i = 0; i < 1; i++) {
+			for (int i = 0; i < 4; i++) {
 				List<TreeIndividual> init = new ArrayList<TreeIndividual>();
 				while (init.size() < 50) {
-					//Map<double[], Set<double[]>> tree = Clustering.getMinimumSpanningTree(cm, fDist);
-					Map<double[],Set<double[]>> tree = Clustering.getMinimumSpanningTree(cm, rDist);
+					Map<double[], Set<double[]>> tree = GraphUtils.getMinimumSpanningTree(cm, rDist);
 					Map<double[], Set<double[]>> cuts = new HashMap<double[], Set<double[]>>();
 					int numCuts = 0;
 					while (numCuts < numCluster - 1) {
@@ -156,9 +154,8 @@ public class GA_Regionalization {
 				GeneticAlgorithm<TreeIndividual> ga = new GeneticAlgorithm<>(evaluator);
 				TreeIndividual bestGA = ga.search(init);
 				ds.addValue(evaluator.evaluate(bestGA));
-				Drawer.geoDrawCluster(bestGA.toCluster(), samples, voroGeoms, "output/ga2.png", true);
 			}
-			log.debug("best ga: " + ds.getMean() + "," + ds.getMin());
+			log.debug("best ga_rDist: " + ds.getMean() + "," + ds.getMin());
 		}
 	}
 }

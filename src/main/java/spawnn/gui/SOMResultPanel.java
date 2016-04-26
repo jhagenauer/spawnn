@@ -42,6 +42,7 @@ import spawnn.som.utils.SomUtils;
 import spawnn.utils.Clustering;
 import spawnn.utils.Clustering.TreeNode;
 import spawnn.utils.DataUtils;
+import spawnn.utils.GraphUtils;
 import spawnn.utils.SpatialDataFrame;
 
 public class SOMResultPanel extends ResultPanel<GridPos> {
@@ -261,7 +262,7 @@ public class SOMResultPanel extends ResultPanel<GridPos> {
 					if (cd.getAlgorithm() == ClusterDialogGrid.ClusterAlgorithm.kMeans)
 						clusters = new ArrayList<Set<double[]>>(Clustering.kMeans(prototypes, cd.getNumCluster(), fDist).values());
 					else if (cd.getAlgorithm() == ClusterDialogGrid.ClusterAlgorithm.SKATER) {
-						Map<double[], Set<double[]>> mst = Clustering.getMinimumSpanningTree(cm, fDist);
+						Map<double[], Set<double[]>> mst = GraphUtils.getMinimumSpanningTree(cm, fDist);
 						clusters = Clustering.skater(mst, cd.getNumCluster() - 1, fDist, 1);
 					} else if (cd.getAlgorithm() == ClusterAlgorithm.Watershed) {
 						Collection<Set<GridPos>> wsc;

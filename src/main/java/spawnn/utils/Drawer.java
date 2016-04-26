@@ -5,6 +5,7 @@ import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -413,7 +414,7 @@ public class Drawer {
 		}
 	}
 
-	public static void geoDrawConnections(Map<double[], Set<double[]>> mst, Map<double[],double[]> hl, int[] ga, CoordinateReferenceSystem crs, String fn) {
+	public static void geoDrawConnections(Map<double[], Set<double[]>> mst, Map<double[],Set<double[]>> hl, int[] ga, CoordinateReferenceSystem crs, String fn) {
 		FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
 		GeometryFactory gf = new GeometryFactory();
 		try {
@@ -441,20 +442,27 @@ public class Drawer {
 						featureBuilder.set("the_geom", ls);
 						features.add(featureBuilder.buildFeature("" + features.size()));
 					}
+				{
 				Stroke stroke = sb.createStroke(ff.property("color"), ff.literal("2.0"));
 				Style style = SLD.wrapSymbolizers(sb.createLineSymbolizer(stroke));	
 				mc.addLayer(new FeatureLayer(features, style));
+				}
 				
 				// highlights
 				DefaultFeatureCollection hlFeatures = new DefaultFeatureCollection();
 				
-				if( hl != null ) {
-					for(Entry<double[],double[]> e : hl.entrySet() ) {
-						LineString ls = gf.createLineString(new Coordinate[] { new Coordinate(e.getKey()[ga[0]], e.getKey()[ga[1]]), new Coordinate(e.getValue()[ga[0]], e.getValue()[ga[1]]) });
-						featureBuilder.set("the_geom", ls);
-						hlFeatures.add(featureBuilder.buildFeature("" + features.size()));
+				if( hl != null && !hl.isEmpty() ) {
+					for(double[] a : hl.keySet() ) {
+							for( double[] b : hl.get(a) ) {
+								LineString ls = gf.createLineString(new Coordinate[] { new Coordinate(a[ga[0]], a[ga[1]]), new Coordinate(b[ga[0]], b[ga[1]]) });
+								featureBuilder.set("color",  Color.RED );
+								featureBuilder.set("the_geom", ls);
+								hlFeatures.add(featureBuilder.buildFeature("" + hlFeatures.size()));
+						}
 					}
-					mc.addLayer(new FeatureLayer(hlFeatures, SLD.wrapSymbolizers(sb.createLineSymbolizer(Color.RED,2.0))));
+					Stroke stroke = sb.createStroke(ff.property("color"), ff.literal("4.0"));
+					Style style = SLD.wrapSymbolizers(sb.createLineSymbolizer(stroke));	
+					mc.addLayer(new FeatureLayer(hlFeatures, style));
 				}
 			}
 			
@@ -499,6 +507,66 @@ public class Drawer {
 			image.flush();
 			mc.dispose();
 		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	public static void geoDrawConnectivityMap(Map<double[], Set<double[]>> cm, int[] ga, String fn) {
+		// draw
+		try {
+			SimpleFeatureTypeBuilder typeBuilder = new SimpleFeatureTypeBuilder();
+			typeBuilder.setName("lines");
+			typeBuilder.add("the_geom", LineString.class);
+	
+			SimpleFeatureBuilder featureBuilder = new SimpleFeatureBuilder(typeBuilder.buildFeatureType());
+	
+			StyleBuilder sb = new StyleBuilder();
+			MapContent map = new MapContent();
+			ReferencedEnvelope maxBounds = null;
+	
+			GeometryFactory gf = new GeometryFactory();
+			DefaultFeatureCollection fc = new DefaultFeatureCollection();
+			for (double[] a : cm.keySet()) {
+				for (double[] b : cm.get(a)) {
+					Geometry g = gf.createLineString(new Coordinate[] { new Coordinate(a[ga[0]], a[ga[1]]), new Coordinate(b[ga[0]], b[ga[1]]) });
+					featureBuilder.add(g);
+					fc.add(featureBuilder.buildFeature("" + fc.size()));
+				}
+			}
+	
+			maxBounds = fc.getBounds();
+			map.addLayer(new FeatureLayer(fc, SLD.wrapSymbolizers(sb.createLineSymbolizer(Color.BLACK))));
+	
+			GTRenderer renderer = new StreamingRenderer();
+			RenderingHints hints = new RenderingHints(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+			hints.put(RenderingHints.KEY_ALPHA_INTERPOLATION, RenderingHints.VALUE_ALPHA_INTERPOLATION_QUALITY);
+			hints.put(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_SPEED);
+	
+			renderer.setMapContent(map);
+	
+			Rectangle imageBounds = null;
+			try {
+				double heightToWidth = maxBounds.getSpan(1) / maxBounds.getSpan(0);
+				int imageWidth = 1024*5;
+	
+				imageBounds = new Rectangle(0, 0, imageWidth, (int) Math.round(imageWidth * heightToWidth));
+				// imageBounds = new Rectangle( 0, 0, mp.getWidth(), (int)
+				// Math.round(mp.getWidth() * heightToWidth));
+	
+				BufferedImage image = new BufferedImage(imageBounds.width, imageBounds.height, BufferedImage.TYPE_INT_RGB);
+				Graphics2D gr = image.createGraphics();
+				gr.setPaint(Color.WHITE);
+				gr.fill(imageBounds);
+	
+				renderer.paint(gr, imageBounds, maxBounds);
+	
+				ImageIO.write(image, "png", new File(fn));
+				image.flush();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			map.dispose();
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}

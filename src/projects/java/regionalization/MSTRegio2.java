@@ -21,8 +21,8 @@ import com.vividsolutions.jts.triangulate.VoronoiDiagramBuilder;
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
 import spawnn.dist.RandomDist;
-import spawnn.utils.Clustering;
 import spawnn.utils.Drawer;
+import spawnn.utils.GraphUtils;
 
 public class MSTRegio2 {
 	private static Logger log = Logger.getLogger(MSTRegio2.class);
@@ -70,9 +70,9 @@ public class MSTRegio2 {
 		
 		Dist<double[]> fDist = new EuclideanDist(new int[]{2});
 		Dist<double[]> rDist = new RandomDist<double[]>();
-		Map<double[], Set<double[]>>  mst = Clustering.getMinimumSpanningTree(cm, fDist);
-		Map<double[], Set<double[]>>  treeA = Clustering.getMinimumSpanningTree(cm, rDist);
-		Map<double[], Set<double[]>>  treeB = Clustering.getMinimumSpanningTree(cm, rDist);
+		Map<double[], Set<double[]>>  mst = GraphUtils.getMinimumSpanningTree(cm, fDist);
+		Map<double[], Set<double[]>>  treeA = GraphUtils.getMinimumSpanningTree(cm, rDist);
+		Map<double[], Set<double[]>>  treeB = GraphUtils.getMinimumSpanningTree(cm, rDist);
 		
 		Drawer.geoDrawConnections(treeA, null, new int[]{0,1},null, "output/treeA.png");
 		Drawer.geoDrawConnections(treeB, null, new int[]{0,1},null, "output/treeB.png");
@@ -169,7 +169,7 @@ public class MSTRegio2 {
 			Map<double[],double[]> hl = new HashMap<double[],double[]>();
 			hl.put(na, nb);
 			
-			Drawer.geoDrawConnections(nTree, hl, new int[]{0,1},null, "output/nTree_con.png");
+			Drawer.geoDrawConnections(nTree, null, new int[]{0,1},null, "output/nTree_con.png");
 		}
 				
 		// build complete spanning tree, prefer edges from treeA and treeB
@@ -252,7 +252,7 @@ public class MSTRegio2 {
 		Drawer.geoDrawConnections(cutTree, null, new int[]{0,1},null, "output/cutTree.png");
 		
 		List<Set<double[]>> clusters = new ArrayList<Set<double[]>>();
-		for (Map<double[], Set<double[]>> sg : Clustering.getSubGraphs(cutTree)) {
+		for (Map<double[], Set<double[]>> sg : GraphUtils.getSubGraphs(cutTree)) {
 			Set<double[]> nodes = new HashSet<double[]>(sg.keySet());
 			for (double[] a : sg.keySet())
 				nodes.addAll(sg.get(a));

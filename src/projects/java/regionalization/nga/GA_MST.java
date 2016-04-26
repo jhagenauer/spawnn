@@ -23,8 +23,8 @@ import myga.GeneticAlgorithm;
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
 import spawnn.dist.RandomDist;
-import spawnn.utils.Clustering;
 import spawnn.utils.Drawer;
+import spawnn.utils.GraphUtils;
 
 public class GA_MST {
 	private static Logger log = Logger.getLogger(GA_MST.class);
@@ -69,42 +69,46 @@ public class GA_MST {
 					s.add(samples.get(j));
 			cm.put(samples.get(i), s);
 		}
-		Drawer.geoDrawConnections(cm, null, new int[]{0,1}, null, "output/cm.png");
+		//Drawer.geoDrawConnections(cm, null, new int[]{0,1}, null, "output/cm.png");
 		
 		Dist<double[]> fDist = new EuclideanDist(new int[]{2});
 		Dist<double[]> rDist = new RandomDist<double[]>();
 		
 		Evaluator<TreeIndividual> evaluator = new MSTEvaluator(fDist);
-		TreeIndividual mst = new TreeIndividual(cm, Clustering.getMinimumSpanningTree(cm, fDist));
+		TreeIndividual mst = new TreeIndividual(cm, GraphUtils.getMinimumSpanningTree(cm, fDist));
 		Drawer.geoDrawConnections(mst.getTree(), null, new int[]{0,1}, null, "output/mst.png");
 		log.debug("mst: "+evaluator.evaluate(mst));
-		
+						
 		{
+			GeneticAlgorithm.debug = false;
+			GeneticAlgorithm.tournamentSize = 2;
+			TreeIndividual.xorMutate = false;
 			DescriptiveStatistics ds = new DescriptiveStatistics();
-			for( int j = 0; j < 1; j++ ) {
-				TreeIndividual bestRnd = null;
-				for( int i = 0; i < 10000; i++ ) {
-					TreeIndividual ti = new TreeIndividual(cm, Clustering.getMinimumSpanningTree(cm, rDist));
-					if( bestRnd == null || evaluator.evaluate(ti) < evaluator.evaluate(bestRnd))
-						bestRnd = ti;
-				}
-				ds.addValue(evaluator.evaluate(bestRnd));
-			}
-			log.debug("best rnd: "+ds.getMean()+","+ds.getMin());
-		}
-		
-		{
-			GeneticAlgorithm.debug = true;
-			DescriptiveStatistics ds = new DescriptiveStatistics();
-			for( int j = 0; j < 1; j++ ) {
+			for( int j = 0; j < 10; j++ ) {
 				List<TreeIndividual> init = new ArrayList<TreeIndividual>();
 				while( init.size() < 50 ) 
-					init.add( new TreeIndividual(cm, Clustering.getMinimumSpanningTree(cm, rDist)));
+					init.add( new TreeIndividual(cm, GraphUtils.getMinimumSpanningTree(cm, rDist)));
 				GeneticAlgorithm<TreeIndividual> ga = new GeneticAlgorithm<>(evaluator);
 				TreeIndividual bestGA = ga.search(init);
 				ds.addValue(evaluator.evaluate(bestGA));
 			}
-			log.debug("best ga: "+ds.getMean()+","+ds.getMin());
+			log.debug("best ga1: "+ds.getMean()+","+ds.getMin());
+		}
+		
+		{
+			GeneticAlgorithm.debug = false;
+			GeneticAlgorithm.tournamentSize = 3;
+			TreeIndividual.xorMutate = false;
+			DescriptiveStatistics ds = new DescriptiveStatistics();
+			for( int j = 0; j < 10; j++ ) {
+				List<TreeIndividual> init = new ArrayList<TreeIndividual>();
+				while( init.size() < 50 ) 
+					init.add( new TreeIndividual(cm, GraphUtils.getMinimumSpanningTree(cm, rDist)));
+				GeneticAlgorithm<TreeIndividual> ga = new GeneticAlgorithm<>(evaluator);
+				TreeIndividual bestGA = ga.search(init);
+				ds.addValue(evaluator.evaluate(bestGA));
+			}
+			log.debug("best ga1: "+ds.getMean()+","+ds.getMin());
 		}
 	}
 }

@@ -44,6 +44,7 @@ import spawnn.gui.DistanceDialog.StatMode;
 import spawnn.ng.utils.NGUtils;
 import spawnn.utils.Clustering;
 import spawnn.utils.GraphClustering;
+import spawnn.utils.GraphUtils;
 import spawnn.utils.SpatialDataFrame;
 
 public class NGResultPanel extends ResultPanel<double[]> {
@@ -256,9 +257,9 @@ public class NGResultPanel extends ResultPanel<double[]> {
 						clusters = new ArrayList<Set<double[]>>(Clustering.kMeans(ns, cd.getNumCluster(), fDist).values());
 					else if (cd.getAlgorithm() == ClusterDialogGrid.ClusterAlgorithm.SKATER) {
 						
-						int numSubgraphs = Clustering.getSubGraphs(cm).size();
+						int numSubgraphs = GraphUtils.getSubGraphs(cm).size();
 						if( numSubgraphs == 1 ) {
-							Map<double[], Set<double[]>> mst = Clustering.getMinimumSpanningTree(cm, fDist);
+							Map<double[], Set<double[]>> mst = GraphUtils.getMinimumSpanningTree(cm, fDist);
 							clusters = Clustering.skater(mst, cd.getNumCluster() - 1, fDist, 1);
 						} else {
 							clusters = new ArrayList<Set<double[]>>();

@@ -1,12 +1,6 @@
 package spawnn.utils;
 
-import java.awt.Color;
-import java.awt.Graphics2D;
-import java.awt.Rectangle;
-import java.awt.RenderingHints;
-import java.awt.image.BufferedImage;
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -21,24 +15,9 @@ import java.util.PriorityQueue;
 import java.util.Random;
 import java.util.Set;
 
-import javax.imageio.ImageIO;
-
 import org.apache.log4j.Logger;
-import org.geotools.feature.DefaultFeatureCollection;
-import org.geotools.feature.simple.SimpleFeatureBuilder;
-import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
-import org.geotools.geometry.jts.ReferencedEnvelope;
-import org.geotools.map.FeatureLayer;
-import org.geotools.map.MapContent;
-import org.geotools.renderer.GTRenderer;
-import org.geotools.renderer.lite.StreamingRenderer;
-import org.geotools.styling.SLD;
-import org.geotools.styling.StyleBuilder;
 
-import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
-import com.vividsolutions.jts.geom.GeometryFactory;
-import com.vividsolutions.jts.geom.LineString;
 
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
@@ -454,198 +433,6 @@ public class Clustering {
 		return tree;
 	}
 	
-	public static Map<double[], Set<double[]>> deriveQueenContiguitiyMap(List<double[]> samples, List<Geometry> geoms) {
-		Map<double[], Set<double[]>> cm = new HashMap<double[], Set<double[]>>();
-
-		for (int i = 0; i < samples.size(); i++) {
-			double[] a = samples.get(i);
-			Geometry ag = geoms.get(i);
-
-			cm.put(a, new HashSet<double[]>());
-
-			for (int j = 0; j < samples.size(); j++) {
-				double[] b = samples.get(j);
-				Geometry bg = geoms.get(j);
-
-				if (bg.touches(ag) || bg.intersects(ag))
-					cm.get(a).add(b);
-			}
-		}
-		return cm;
-	}
-
-	// assumes that cm is directed and is fully connected! Prim's algorithm
-	public static Map<double[], Set<double[]>> getMinimumSpanningTree(Map<double[], Set<double[]>> cm, Dist<double[]> dist) {
-		Map<double[], Set<double[]>> mst = new HashMap<double[], Set<double[]>>();
-
-		Set<double[]> added = new HashSet<double[]>();
-		added.add(cm.keySet().iterator().next());
-
-		while (added.size() != cm.size()) { // maybe critical if undirected
-
-			double[] bestA = null, bestB = null;
-			double minDist = Double.MAX_VALUE;
-			for (double[] a : added) {
-				for (double[] b : cm.get(a)) {
-					if (added.contains(b))
-						continue;
-
-					double d = dist.dist(a, b);
-					if (d < minDist) {
-						minDist = d;
-						bestA = a;
-						bestB = b;
-					}
-				}
-			}
-
-			// add connections to both directions
-			if (!mst.containsKey(bestA))
-				mst.put(bestA, new HashSet<double[]>());
-			mst.get(bestA).add(bestB);
-
-			if (!mst.containsKey(bestB))
-				mst.put(bestB, new HashSet<double[]>());
-			mst.get(bestB).add(bestA);
-
-			added.add(bestB);
-		}
-		return mst;
-	}
-
-	public static boolean isUndirected(Map<double[], Set<double[]>> cm) {
-		boolean undirected = true;
-
-		for (double[] a : cm.keySet()) {
-			for (double[] b : cm.get(a)) {
-				if (!cm.containsKey(b) || !cm.get(b).contains(a))
-					undirected = false;
-			}
-		}
-		return undirected;
-	}
-
-	public static Map<double[], Set<double[]>> getUndirectedGraph(Map<double[], Set<double[]>> cm) {
-		Map<double[], Set<double[]>> undirected = new HashMap<double[], Set<double[]>>();
-
-		for (double[] a : cm.keySet()) {
-			if (!undirected.containsKey(a))
-				undirected.put(a, new HashSet<double[]>());
-			for (double[] b : cm.get(a)) {
-				undirected.get(a).add(b);
-
-				if (!undirected.containsKey(b))
-					undirected.put(b, new HashSet<double[]>());
-				undirected.get(b).add(a);
-			}
-		}
-		return undirected;
-	}
-
-	private static Map<double[], Set<double[]>> getSubGraphOf(Map<double[], Set<double[]>> cm, double[] initNode) {
-		Map<double[], Set<double[]>> visited = new HashMap<double[], Set<double[]>>(); // expanded/subgraph nodes
-		Set<double[]> open = new HashSet<double[]>();
-		open.add(initNode);
-
-		while (!open.isEmpty()) {
-			double[] cur = open.iterator().next();
-			open.remove(cur);
-			visited.put(cur,new HashSet<double[]>() );
-
-			for (double[] nb : cm.get(cur)) {
-				visited.get(cur).add(nb);
-				
-				if( nb != cur && !visited.containsKey(nb) )
-					open.add(nb);
-			}
-		}
-		return visited;
-	}
-	
-	public static List<Map<double[], Set<double[]>>> getSubGraphs(Map<double[], Set<double[]>> cm) {
-		List<Map<double[], Set<double[]>>> subs = new ArrayList<Map<double[], Set<double[]>>>();
-		Set<double[]> allNodes = getNodes(cm);
-
-		while (!allNodes.isEmpty()) {
-
-			// get first non-visited node
-			double[] initNode = allNodes.iterator().next();
-			allNodes.remove(initNode);
-
-			Map<double[], Set<double[]>> sg = getSubGraphOf(cm, initNode);
-			allNodes.removeAll(getNodes(sg));
-			subs.add(sg);
-		}
-		return subs;
-	}
-
-	public static void geoDrawConnectivityMap(Map<double[], Set<double[]>> cm, int[] ga, String fn) {
-		// draw
-		try {
-			SimpleFeatureTypeBuilder typeBuilder = new SimpleFeatureTypeBuilder();
-			typeBuilder.setName("lines");
-			typeBuilder.add("the_geom", LineString.class);
-
-			SimpleFeatureBuilder featureBuilder = new SimpleFeatureBuilder(typeBuilder.buildFeatureType());
-
-			StyleBuilder sb = new StyleBuilder();
-			MapContent map = new MapContent();
-			ReferencedEnvelope maxBounds = null;
-
-			GeometryFactory gf = new GeometryFactory();
-			DefaultFeatureCollection fc = new DefaultFeatureCollection();
-			for (double[] a : cm.keySet()) {
-				for (double[] b : cm.get(a)) {
-					Geometry g = gf.createLineString(new Coordinate[] { new Coordinate(a[ga[0]], a[ga[1]]), new Coordinate(b[ga[0]], b[ga[1]]) });
-					featureBuilder.add(g);
-					fc.add(featureBuilder.buildFeature("" + fc.size()));
-				}
-			}
-
-			maxBounds = fc.getBounds();
-			map.addLayer(new FeatureLayer(fc, SLD.wrapSymbolizers(sb.createLineSymbolizer(Color.BLACK))));
-
-			GTRenderer renderer = new StreamingRenderer();
-			RenderingHints hints = new RenderingHints(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-			hints.put(RenderingHints.KEY_ALPHA_INTERPOLATION, RenderingHints.VALUE_ALPHA_INTERPOLATION_QUALITY);
-			hints.put(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_SPEED);
-
-			renderer.setMapContent(map);
-
-			Rectangle imageBounds = null;
-			try {
-				double heightToWidth = maxBounds.getSpan(1) / maxBounds.getSpan(0);
-				int imageWidth = 1024*5;
-
-				imageBounds = new Rectangle(0, 0, imageWidth, (int) Math.round(imageWidth * heightToWidth));
-				// imageBounds = new Rectangle( 0, 0, mp.getWidth(), (int)
-				// Math.round(mp.getWidth() * heightToWidth));
-
-				BufferedImage image = new BufferedImage(imageBounds.width, imageBounds.height, BufferedImage.TYPE_INT_RGB);
-				Graphics2D gr = image.createGraphics();
-				gr.setPaint(Color.WHITE);
-				gr.fill(imageBounds);
-
-				renderer.paint(gr, imageBounds, maxBounds);
-
-				ImageIO.write(image, "png", new File(fn));
-				image.flush();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-			map.dispose();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
-
-	public static Set<double[]> getNodes(Map<double[], Set<double[]>> cm) {
-		Set<double[]> nodes = new HashSet<double[]>(cm.keySet());
-		for (double[] a : cm.keySet())
-			nodes.addAll(cm.get(a));
-		return nodes;
-	}
-
 	public static List<Set<double[]>> skater(Map<double[], Set<double[]>> mst, int numCuts, Dist<double[]> dist, int minClusterSize) {
 
 		class Edge { // undirected
@@ -669,7 +456,7 @@ public class Clustering {
 			int best_n = 0;
 
 			// for each tree/subgraph
-			for (Map<double[], Set<double[]>> sg : getSubGraphs(mst)) {
+			for (Map<double[], Set<double[]>> sg : GraphUtils.getSubGraphs(mst)) {
 
 				List<Edge> edges = new ArrayList<Edge>();
 				for (double[] a : sg.keySet()) {
@@ -696,8 +483,8 @@ public class Clustering {
 					sg.get(e.a).remove(e.b);
 					sg.get(e.b).remove(e.a);
 
-					Set<double[]> sgA = getNodes(getSubGraphOf(sg, e.a));
-					Set<double[]> sgB = getNodes(getSubGraphOf(sg, e.b));
+					Set<double[]> sgA = GraphUtils.getNodes(GraphUtils.getSubGraphOf(sg, e.a));
+					Set<double[]> sgB = GraphUtils.getNodes(GraphUtils.getSubGraphOf(sg, e.b));
 					int d = Math.abs(sgA.size() - sgB.size());
 					if (initEdge == null || d < diff) {
 						initEdge = e;
@@ -748,7 +535,7 @@ public class Clustering {
 								ssdT = sgCache.get(s);
 
 						if (ssdT == -1) {
-							Set<double[]> s = getNodes(getSubGraphOf(sg, e.a));
+							Set<double[]> s = GraphUtils.getNodes(GraphUtils.getSubGraphOf(sg, e.a));
 							sgCache.put(s, DataUtils.getSumOfSquares(s, dist));
 						}
 
@@ -756,8 +543,8 @@ public class Clustering {
 						sg.get(e.a).remove(e.b);
 						sg.get(e.b).remove(e.a);
 
-						Set<double[]> nodesA = getNodes(getSubGraphOf(sg, e.a));
-						Set<double[]> nodesB = getNodes(getSubGraphOf(sg, e.b));
+						Set<double[]> nodesA = GraphUtils.getNodes(GraphUtils.getSubGraphOf(sg, e.a));
+						Set<double[]> nodesB = GraphUtils.getNodes(GraphUtils.getSubGraphOf(sg, e.b));
 
 						double ssdT_a = DataUtils.getSumOfSquares(nodesA, dist);
 						double ssdT_b = DataUtils.getSumOfSquares(nodesB, dist);
@@ -793,8 +580,8 @@ public class Clustering {
 
 		// form clusters
 		List<Set<double[]>> clusters = new ArrayList<Set<double[]>>();
-		for (Map<double[], Set<double[]>> sg : getSubGraphs(mst))
-			clusters.add(getNodes(sg));
+		for (Map<double[], Set<double[]>> sg : GraphUtils.getSubGraphs(mst))
+			clusters.add(GraphUtils.getNodes(sg));
 
 		return clusters;
 	}
