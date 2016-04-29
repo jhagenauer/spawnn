@@ -94,7 +94,8 @@ public class GA_Regionalization {
 		int repeats = 1;
 		Evaluator<TreeIndividual> evaluator = new WSSEvaluator(fDist);
 		GeneticAlgorithm.debug = false;
-		TreeIndividual.onlyMutCuts = true;
+		GeneticAlgorithm.recombProb = 0.5;
+		TreeIndividual.onlyMutCuts = false;
 		TreeIndividual.onlyMutTrees = false;
 		{
 			DescriptiveStatistics ds = new DescriptiveStatistics();
@@ -110,18 +111,7 @@ public class GA_Regionalization {
 			}
 			log.debug("best ga_mst: " + ds.getMean() + "," + ds.getMin());
 		}
-		
-		{
-			DescriptiveStatistics ds = new DescriptiveStatistics();
-			for( int j = 0; j < repeats; j++ ) {
-				TreeIndividual init = new TreeIndividual(cm, GraphUtils.getMinimumSpanningTree(cm, fDist),0);
-				SimulatedAnnealing<TreeIndividual> sa = new SimulatedAnnealing<TreeIndividual>(evaluator);
-				TreeIndividual best = sa.search(init);
-				ds.addValue(evaluator.evaluate(best));
-			}
-			log.debug("best sa_mst: "+ds.getMean()+","+ds.getMin());
-		}
-		
+				
 		TreeIndividual.onlyMutCuts = false;
 		TreeIndividual.onlyMutTrees = false;
 		{
@@ -137,17 +127,6 @@ public class GA_Regionalization {
 				ds.addValue(evaluator.evaluate(bestGA));
 			}
 			log.debug("best ga_norma: " + ds.getMean() + "," + ds.getMin());
-		}
-		
-		{
-			DescriptiveStatistics ds = new DescriptiveStatistics();
-			for( int j = 0; j < repeats; j++ ) {
-				TreeIndividual init = new TreeIndividual(cm, GraphUtils.getMinimumSpanningTree(cm, rDist),0);
-				SimulatedAnnealing<TreeIndividual> sa = new SimulatedAnnealing<TreeIndividual>(evaluator);
-				TreeIndividual best = sa.search(init);
-				ds.addValue(evaluator.evaluate(best));
-			}
-			log.debug("best sa_norma: "+ds.getMean()+","+ds.getMin());
 		}
 	}
 }

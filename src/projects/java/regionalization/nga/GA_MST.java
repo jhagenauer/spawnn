@@ -23,7 +23,6 @@ import myga.GeneticAlgorithm;
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
 import spawnn.dist.RandomDist;
-import spawnn.utils.Drawer;
 import spawnn.utils.GraphUtils;
 
 public class GA_MST {
@@ -95,7 +94,7 @@ public class GA_MST {
 			}
 			log.debug("best ga: "+ds.getMean()+","+ds.getMin());
 		}
-		
+				
 		{
 			DescriptiveStatistics ds = new DescriptiveStatistics();
 			for( int j = 0; j < repeats; j++ ) {

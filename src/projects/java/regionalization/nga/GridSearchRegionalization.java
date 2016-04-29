@@ -88,30 +88,27 @@ public class GridSearchRegionalization {
 		final Dist<double[]> fDist = new EuclideanDist(new int[] { 2 });
 		final Dist<double[]> rDist = new RandomDist<double[]>();
 
-		int threads = 4;
-		int runs = 32;
+		int threads = 8;
+		int runs = 8;
 		List<Data> data = new ArrayList<Data>();
 		while (data.size() < 8)
 			data.add(new Data());
 		
-		final int numCluster = 0;
-		//final Evaluator<TreeIndividual> evaluator = new WSSEvaluator(fDist);
-		final Evaluator<TreeIndividual> evaluator = new MSTEvaluator(fDist);
-		TreeIndividual.onlyMutTrees = true;
+		final int numCluster = 5;
+		final Evaluator<TreeIndividual> evaluator = new WSSEvaluator(fDist);
+		//final Evaluator<TreeIndividual> evaluator = new MSTEvaluator(fDist);
 		TreeIndividual.onlyMutCuts = false;
+		TreeIndividual.onlyMutTrees = false;
 		
 		GeneticAlgorithm.debug = false;
-		for( final int k : new int[]{ -1, 3, 4, 5 } )
-		for( final TreeIndividual2.mode m : new TreeIndividual2.mode[]{ TreeIndividual2.mode.min,TreeIndividual2.mode.sum } )
+		for( final int k : new int[]{ 1 } )
 		for( final boolean mst : new boolean[]{ false } )
-		for (final int tournamenSize : new int[] { 2 })
-			for (final double recombProb : new double[] { 0.8 }) {
+		for (final int tournamenSize : new int[] { 2, 3 })
+		for (final double recombProb : new double[] { 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9 }) {
 				ExecutorService es = Executors.newFixedThreadPool(threads);
 				List<Future<double[]>> futures = new ArrayList<Future<double[]>>();
 				GeneticAlgorithm.tournamentSize = tournamenSize;
 				GeneticAlgorithm.recombProb = recombProb;
-				TreeIndividual2.k = k;
-				TreeIndividual2.m = m;
 				
 				for (final Data d : data) {
 					for (int i = 0; i < runs; i++) {
@@ -145,9 +142,9 @@ public class GridSearchRegionalization {
 											numCuts++;
 										}
 									}
-									if( k == 0 ) 
+									if( k == 1 )
 										init.add(new TreeIndividual(d.cm, tree, cuts));
-									else
+									else if( k == 2 )
 										init.add(new TreeIndividual2(d.cm, tree, cuts));
 								}
 								GeneticAlgorithm<TreeIndividual> ga = new GeneticAlgorithm<>(evaluator);
@@ -169,7 +166,7 @@ public class GridSearchRegionalization {
 						ex.printStackTrace();
 					}
 				}
-				log.info(m +"\t" + k + "\t" + ds.getMean() + "\t" + ds.getStandardDeviation());
+				log.info(k + "\t" + tournamenSize+"\t"+recombProb+"\t"+ds.getMean() + "\t" + ds.getStandardDeviation());
 			}
 	}
 }
