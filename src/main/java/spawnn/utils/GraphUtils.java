@@ -1,6 +1,7 @@
 package spawnn.utils;
 
 import java.util.AbstractMap;
+import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -201,5 +202,38 @@ public class GraphUtils {
 			}
 		}
 		return null;
+	}
+
+	public static Map<double[], Double> getShortestDists(Map<double[], Map<double[], Double>> graph, double[] from) {
+		Set<double[]> openList = new HashSet<double[]>();
+		Map<double[], Double> distMap = new HashMap<double[], Double>();
+		Map<double[], Entry<double[], Double>> precessors = new HashMap<double[], Entry<double[], Double>>();
+	
+		openList.add(from);
+		distMap.put(from, 0.0);
+	
+		while (!openList.isEmpty()) {
+			// find nearest
+			double min = Double.POSITIVE_INFINITY;
+			double[] curNode = null;
+			for (double[] v : openList) {
+				if (distMap.get(v) < min) {
+					min = distMap.get(v);
+					curNode = v;
+				}
+			}
+			openList.remove(curNode);
+	
+			for (Entry<double[], Double> e : graph.get(curNode).entrySet()) {
+				double[] nb = e.getKey();
+				double d = min + e.getValue();
+				if (!distMap.containsKey(nb) || d < distMap.get(nb)) {
+					distMap.put(nb, d);
+					precessors.put(nb, new AbstractMap.SimpleEntry<double[], Double>(curNode, e.getValue()));
+					openList.add(nb);
+				}
+			}
+		}
+		return distMap;
 	}
 }

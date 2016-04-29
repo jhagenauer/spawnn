@@ -80,7 +80,6 @@ public class GA_Regionalization {
 		Map<Set<double[]>, TreeNode> hcTree = Clustering.getHierarchicalClusterTree(cm, fDist, HierarchicalClusteringType.ward);
 		List<Set<double[]>> hcClusters = Clustering.cutTree(hcTree, numCluster);
 		log.debug("ward: " + DataUtils.getWithinSumOfSuqares(hcClusters, fDist));
-
 		{
 			DescriptiveStatistics ds = new DescriptiveStatistics();
 			for( int i = 0; i < 25; i++ ) {
@@ -88,74 +87,67 @@ public class GA_Regionalization {
 				List<Set<double[]>> skaterClusters = Clustering.skater(mst, numCluster - 1, fDist, 0);
 				ds.addValue( DataUtils.getWithinSumOfSuqares(skaterClusters, fDist));
 			}
-			log.debug("skater :"+ds.getMean()+","+ds.getMin());
+			log.debug("skater: "+ds.getMean()+","+ds.getMin());
 		}
 
-		GeneticAlgorithm.debug = false;
-		TreeIndividual.xorMutate = true;
+
+		int repeats = 1;
 		Evaluator<TreeIndividual> evaluator = new WSSEvaluator(fDist);
+		GeneticAlgorithm.debug = false;
+		TreeIndividual.onlyMutCuts = true;
+		TreeIndividual.onlyMutTrees = false;
 		{
 			DescriptiveStatistics ds = new DescriptiveStatistics();
-			for (int i = 0; i < 4; i++) {
+			for (int i = 0; i < repeats; i++) {
 				List<TreeIndividual> init = new ArrayList<TreeIndividual>();
 				while (init.size() < 50) {
-					Map<double[], Set<double[]>> tree = GraphUtils.getMinimumSpanningTree(cm, fDist);
-					Map<double[], Set<double[]>> cuts = new HashMap<double[], Set<double[]>>();
-					int numCuts = 0;
-					while (numCuts < numCluster - 1) {
-						double[] na = new ArrayList<double[]>(tree.keySet()).get(r.nextInt(tree.keySet().size()));
-						double[] nb = new ArrayList<double[]>(tree.get(na)).get(r.nextInt(tree.get(na).size()));
-
-						if (!cuts.containsKey(na) || !cuts.get(na).contains(nb)) {
-							if (!cuts.containsKey(na))
-								cuts.put(na, new HashSet<double[]>());
-							cuts.get(na).add(nb);
-
-							if (!cuts.containsKey(nb))
-								cuts.put(nb, new HashSet<double[]>());
-							cuts.get(nb).add(na);
-							numCuts++;
-						}
-					}
-					init.add(new TreeIndividual(cm, tree, cuts));
+					Map<double[], Set<double[]>> tree = GraphUtils.getMinimumSpanningTree(cm, fDist); //constant trees
+					init.add(new TreeIndividual(cm, tree, numCluster));
 				}
 				GeneticAlgorithm<TreeIndividual> ga = new GeneticAlgorithm<>(evaluator);
 				TreeIndividual bestGA = ga.search(init);
 				ds.addValue(evaluator.evaluate(bestGA));
 			}
-			log.debug("best ga_fDist: " + ds.getMean() + "," + ds.getMin());
+			log.debug("best ga_mst: " + ds.getMean() + "," + ds.getMin());
 		}
 		
 		{
 			DescriptiveStatistics ds = new DescriptiveStatistics();
-			for (int i = 0; i < 4; i++) {
+			for( int j = 0; j < repeats; j++ ) {
+				TreeIndividual init = new TreeIndividual(cm, GraphUtils.getMinimumSpanningTree(cm, fDist),0);
+				SimulatedAnnealing<TreeIndividual> sa = new SimulatedAnnealing<TreeIndividual>(evaluator);
+				TreeIndividual best = sa.search(init);
+				ds.addValue(evaluator.evaluate(best));
+			}
+			log.debug("best sa_mst: "+ds.getMean()+","+ds.getMin());
+		}
+		
+		TreeIndividual.onlyMutCuts = false;
+		TreeIndividual.onlyMutTrees = false;
+		{
+			DescriptiveStatistics ds = new DescriptiveStatistics();
+			for (int i = 0; i < repeats; i++) {
 				List<TreeIndividual> init = new ArrayList<TreeIndividual>();
 				while (init.size() < 50) {
-					Map<double[], Set<double[]>> tree = GraphUtils.getMinimumSpanningTree(cm, rDist);
-					Map<double[], Set<double[]>> cuts = new HashMap<double[], Set<double[]>>();
-					int numCuts = 0;
-					while (numCuts < numCluster - 1) {
-						double[] na = new ArrayList<double[]>(tree.keySet()).get(r.nextInt(tree.keySet().size()));
-						double[] nb = new ArrayList<double[]>(tree.get(na)).get(r.nextInt(tree.get(na).size()));
-
-						if (!cuts.containsKey(na) || !cuts.get(na).contains(nb)) {
-							if (!cuts.containsKey(na))
-								cuts.put(na, new HashSet<double[]>());
-							cuts.get(na).add(nb);
-
-							if (!cuts.containsKey(nb))
-								cuts.put(nb, new HashSet<double[]>());
-							cuts.get(nb).add(na);
-							numCuts++;
-						}
-					}
-					init.add(new TreeIndividual(cm, tree, cuts));
+					Map<double[], Set<double[]>> tree = GraphUtils.getMinimumSpanningTree(cm, rDist); //constant trees
+					init.add(new TreeIndividual(cm, tree, numCluster));
 				}
 				GeneticAlgorithm<TreeIndividual> ga = new GeneticAlgorithm<>(evaluator);
 				TreeIndividual bestGA = ga.search(init);
 				ds.addValue(evaluator.evaluate(bestGA));
 			}
-			log.debug("best ga_rDist: " + ds.getMean() + "," + ds.getMin());
+			log.debug("best ga_norma: " + ds.getMean() + "," + ds.getMin());
+		}
+		
+		{
+			DescriptiveStatistics ds = new DescriptiveStatistics();
+			for( int j = 0; j < repeats; j++ ) {
+				TreeIndividual init = new TreeIndividual(cm, GraphUtils.getMinimumSpanningTree(cm, rDist),0);
+				SimulatedAnnealing<TreeIndividual> sa = new SimulatedAnnealing<TreeIndividual>(evaluator);
+				TreeIndividual best = sa.search(init);
+				ds.addValue(evaluator.evaluate(best));
+			}
+			log.debug("best sa_norma: "+ds.getMean()+","+ds.getMin());
 		}
 	}
 }

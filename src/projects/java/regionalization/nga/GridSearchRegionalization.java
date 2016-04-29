@@ -48,7 +48,7 @@ public class GridSearchRegionalization {
 				samples = new ArrayList<double[]>();
 				geoms = new ArrayList<Geometry>();
 				coords = new ArrayList<Coordinate>();
-				while (samples.size() < 200) {
+				while (samples.size() < 80) {
 					double x = r.nextDouble();
 					double y = r.nextDouble();
 					double z = r.nextDouble();
@@ -84,29 +84,37 @@ public class GridSearchRegionalization {
 				}
 			}
 		}
-
-		List<Data> data = new ArrayList<Data>();
-		while (data.size() < 4)
-			data.add(new Data());
-
-		final int numCluster = 5;
+		
 		final Dist<double[]> fDist = new EuclideanDist(new int[] { 2 });
-		final Evaluator<TreeIndividual> evaluator = new WSSEvaluator(fDist);
 		final Dist<double[]> rDist = new RandomDist<double[]>();
 
+		int threads = 4;
+		int runs = 32;
+		List<Data> data = new ArrayList<Data>();
+		while (data.size() < 8)
+			data.add(new Data());
+		
+		final int numCluster = 0;
+		//final Evaluator<TreeIndividual> evaluator = new WSSEvaluator(fDist);
+		final Evaluator<TreeIndividual> evaluator = new MSTEvaluator(fDist);
+		TreeIndividual.onlyMutTrees = true;
+		TreeIndividual.onlyMutCuts = false;
+		
 		GeneticAlgorithm.debug = false;
-		for( final boolean xorMutate : new boolean[]{ true, false } )
-		for( final boolean mst : new boolean[]{ true, false } )
-		for (final int tournamenSize : new int[] { 2, 3 })
-			for (final double recombProb : new double[] { 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9  }) {
-				ExecutorService es = Executors.newFixedThreadPool(10);
+		for( final int k : new int[]{ -1, 3, 4, 5 } )
+		for( final TreeIndividual2.mode m : new TreeIndividual2.mode[]{ TreeIndividual2.mode.min,TreeIndividual2.mode.sum } )
+		for( final boolean mst : new boolean[]{ false } )
+		for (final int tournamenSize : new int[] { 2 })
+			for (final double recombProb : new double[] { 0.8 }) {
+				ExecutorService es = Executors.newFixedThreadPool(threads);
 				List<Future<double[]>> futures = new ArrayList<Future<double[]>>();
 				GeneticAlgorithm.tournamentSize = tournamenSize;
 				GeneticAlgorithm.recombProb = recombProb;
-				TreeIndividual.xorMutate = xorMutate;
+				TreeIndividual2.k = k;
+				TreeIndividual2.m = m;
 				
 				for (final Data d : data) {
-					for (int i = 0; i < 16; i++) {
+					for (int i = 0; i < runs; i++) {
 						futures.add(es.submit(new Callable<double[]>() {
 							@Override
 							public double[] call() throws Exception {
@@ -137,7 +145,10 @@ public class GridSearchRegionalization {
 											numCuts++;
 										}
 									}
-									init.add(new TreeIndividual(d.cm, tree, cuts));
+									if( k == 0 ) 
+										init.add(new TreeIndividual(d.cm, tree, cuts));
+									else
+										init.add(new TreeIndividual2(d.cm, tree, cuts));
 								}
 								GeneticAlgorithm<TreeIndividual> ga = new GeneticAlgorithm<>(evaluator);
 								TreeIndividual bestGA = ga.search(init);
@@ -158,7 +169,7 @@ public class GridSearchRegionalization {
 						ex.printStackTrace();
 					}
 				}
-				log.info(mst+"\t"+xorMutate+"\t"+tournamenSize + "\t" + recombProb + "\t" + ds.getMean() + "\t" + ds.getStandardDeviation());
+				log.info(m +"\t" + k + "\t" + ds.getMean() + "\t" + ds.getStandardDeviation());
 			}
 	}
 }

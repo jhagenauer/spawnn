@@ -381,8 +381,8 @@ public class HousepriceTest {
 			typeBuilder.add("weight",Double.class);
 			typeBuilder.add("the_geom", LineString.class);
 			
-			double min = Collections.min( conns.values() );
-			double max = Collections.max( conns.values() );
+			double min = (double) Collections.min( conns.values() );
+			double max = (double) Collections.max( conns.values() );
 
 			SimpleFeatureBuilder featureBuilder = new SimpleFeatureBuilder(typeBuilder.buildFeatureType());
 			for (Connection c : conns.keySet()) {

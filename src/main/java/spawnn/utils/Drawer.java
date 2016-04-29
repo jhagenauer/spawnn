@@ -1,6 +1,7 @@
 package spawnn.utils;
 
 import java.awt.Color;
+import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.RenderingHints;
@@ -485,6 +486,195 @@ public class Drawer {
 				}
 				
 				Style style = SLD.wrapSymbolizers(sb.createPointSymbolizer());
+				FeatureLayer fl = new FeatureLayer(features, style);
+				mc.addLayer(fl);
+				mapBounds.expandToInclude(fl.getBounds());
+			}
+	
+			GTRenderer renderer = new StreamingRenderer();
+			renderer.setMapContent(mc);
+		
+			Rectangle imageBounds = null;
+	
+			double heightToWidth = mapBounds.getSpan(1) / mapBounds.getSpan(0);
+			int imageWidth = 1000;
+			imageBounds = new Rectangle(0, 0, imageWidth, (int) Math.round(imageWidth * heightToWidth));
+	
+			BufferedImage image = new BufferedImage(imageBounds.width, imageBounds.height, BufferedImage.TYPE_INT_ARGB);
+			Graphics2D gr = image.createGraphics();
+			renderer.paint(gr, imageBounds, mapBounds);
+	
+			ImageIO.write(image, "png", new FileOutputStream(fn));
+			image.flush();
+			mc.dispose();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public static void geoDrawWeightedConnections(Map<double[], Map<double[],Double>> mst, Map<double[], Map<double[],Double>> hl, int[] ga, CoordinateReferenceSystem crs, String fn) {
+		FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
+		GeometryFactory gf = new GeometryFactory();
+		try {
+			StyleBuilder sb = new StyleBuilder();
+			MapContent mc = new MapContent();
+			ReferencedEnvelope mapBounds = mc.getMaxBounds();
+	
+			// lines
+			{
+				SimpleFeatureTypeBuilder typeBuilder = new SimpleFeatureTypeBuilder();
+				typeBuilder.setName("lines");
+				typeBuilder.setCRS(crs);
+				typeBuilder.add("color",Color.class);
+				typeBuilder.add("weight",Double.class);
+				typeBuilder.add("the_geom", LineString.class);
+	
+				SimpleFeatureBuilder featureBuilder = new SimpleFeatureBuilder(typeBuilder.buildFeatureType());
+				DefaultFeatureCollection features = new DefaultFeatureCollection();
+				for (double[] a : mst.keySet())
+					for (double[] b : mst.get(a).keySet() ) {
+						LineString ls = gf.createLineString(new Coordinate[] { new Coordinate(a[ga[0]], a[ga[1]]), new Coordinate(b[ga[0]], b[ga[1]]) });
+						if( mst.containsKey(b) && mst.get(b).keySet().contains(a) )
+							featureBuilder.set("color",  Color.BLACK );
+						else
+							featureBuilder.set("color",  Color.BLUE );
+						featureBuilder.set("weight", mst.get(a).get(b));
+						featureBuilder.set("the_geom", ls);
+						features.add(featureBuilder.buildFeature("" + features.size()));
+					}
+				{
+				Stroke stroke = sb.createStroke(ff.property("color"), ff.literal("2.0"));
+				Style style = SLD.wrapSymbolizers(sb.createLineSymbolizer(stroke));
+				style.featureTypeStyles().add(sb.createFeatureTypeStyle(sb.createTextSymbolizer(Color.BLACK,sb.createFont("Arial", 20),"weight")));
+				mc.addLayer(new FeatureLayer(features, style));
+				}
+				
+				// highlights
+				DefaultFeatureCollection hlFeatures = new DefaultFeatureCollection();
+				
+				if( hl != null && !hl.isEmpty() ) {
+					for(double[] a : hl.keySet() ) {
+							for( double[] b : hl.get(a).keySet() ) {
+								LineString ls = gf.createLineString(new Coordinate[] { new Coordinate(a[ga[0]], a[ga[1]]), new Coordinate(b[ga[0]], b[ga[1]]) });
+								featureBuilder.set("color",  Color.RED );
+								featureBuilder.set("weight", hl.get(a).get(b));
+								featureBuilder.set("the_geom", ls);
+								hlFeatures.add(featureBuilder.buildFeature("" + hlFeatures.size()));
+						}
+					}
+					Stroke stroke = sb.createStroke(ff.property("color"), ff.literal("4.0"));
+					Style style = SLD.wrapSymbolizers(sb.createLineSymbolizer(stroke));	
+					style.featureTypeStyles().add(sb.createFeatureTypeStyle(sb.createTextSymbolizer(Color.RED,sb.createFont("Arial", 20),"weight")));
+					mc.addLayer(new FeatureLayer(hlFeatures, style));
+				}
+			}
+			
+			// points
+			{
+				SimpleFeatureTypeBuilder typeBuilder = new SimpleFeatureTypeBuilder();
+				typeBuilder.setName("points");
+				typeBuilder.setCRS(crs);
+				typeBuilder.add("the_geom", Point.class);
+	
+				SimpleFeatureBuilder featureBuilder = new SimpleFeatureBuilder(typeBuilder.buildFeatureType());
+				DefaultFeatureCollection features = new DefaultFeatureCollection();
+				Set<double[]> s = new HashSet<double[]>(mst.keySet());
+				for( Map<double[],Double> m : mst.values() )
+					s.addAll(m.keySet());
+				for (double[] a :s ) {
+					Point p = gf.createPoint( new Coordinate( a[ga[0]], a[ga[1]] ) );
+					featureBuilder.set("the_geom", p);
+					features.add(featureBuilder.buildFeature("" + features.size()));
+				}
+				
+				Style style = SLD.wrapSymbolizers(sb.createPointSymbolizer());
+				FeatureLayer fl = new FeatureLayer(features, style);
+				mc.addLayer(fl);
+				mapBounds.expandToInclude(fl.getBounds());
+			}
+	
+			GTRenderer renderer = new StreamingRenderer();
+			renderer.setMapContent(mc);
+		
+			Rectangle imageBounds = null;
+	
+			double heightToWidth = mapBounds.getSpan(1) / mapBounds.getSpan(0);
+			int imageWidth = 1000;
+			imageBounds = new Rectangle(0, 0, imageWidth, (int) Math.round(imageWidth * heightToWidth));
+	
+			BufferedImage image = new BufferedImage(imageBounds.width, imageBounds.height, BufferedImage.TYPE_INT_ARGB);
+			Graphics2D gr = image.createGraphics();
+			renderer.paint(gr, imageBounds, mapBounds);
+	
+			ImageIO.write(image, "png", new FileOutputStream(fn));
+			image.flush();
+			mc.dispose();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public static void geoDrawConnections2(Map<double[], Map<double[],Double>> mst, Map<double[],Double> points, int[] ga, CoordinateReferenceSystem crs, String fn) {
+		FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
+		GeometryFactory gf = new GeometryFactory();
+		try {
+			StyleBuilder sb = new StyleBuilder();
+			MapContent mc = new MapContent();
+			ReferencedEnvelope mapBounds = mc.getMaxBounds();
+	
+			// lines
+			{
+				SimpleFeatureTypeBuilder typeBuilder = new SimpleFeatureTypeBuilder();
+				typeBuilder.setName("lines");
+				typeBuilder.setCRS(crs);
+				typeBuilder.add("color",Color.class);
+				typeBuilder.add("weight",Double.class);
+				typeBuilder.add("the_geom", LineString.class);
+	
+				SimpleFeatureBuilder featureBuilder = new SimpleFeatureBuilder(typeBuilder.buildFeatureType());
+				DefaultFeatureCollection features = new DefaultFeatureCollection();
+				for (double[] a : mst.keySet())
+					for (double[] b : mst.get(a).keySet() ) {
+						LineString ls = gf.createLineString(new Coordinate[] { new Coordinate(a[ga[0]], a[ga[1]]), new Coordinate(b[ga[0]], b[ga[1]]) });
+						if( mst.containsKey(b) && mst.get(b).keySet().contains(a) )
+							featureBuilder.set("color",  Color.BLACK );
+						else
+							featureBuilder.set("color",  Color.BLUE );
+						featureBuilder.set("weight", mst.get(a).get(b));
+						featureBuilder.set("the_geom", ls);
+						features.add(featureBuilder.buildFeature("" + features.size()));
+					}
+				{
+				Stroke stroke = sb.createStroke(ff.property("color"), ff.literal("2.0"));
+				Style style = SLD.wrapSymbolizers(sb.createLineSymbolizer(stroke));
+				style.featureTypeStyles().add(sb.createFeatureTypeStyle(sb.createTextSymbolizer(Color.BLACK,sb.createFont("Arial", 20),"weight")));
+				mc.addLayer(new FeatureLayer(features, style));
+				}
+			}
+			
+			// points
+			{
+				SimpleFeatureTypeBuilder typeBuilder = new SimpleFeatureTypeBuilder();
+				typeBuilder.setName("points");
+				typeBuilder.setCRS(crs);
+				typeBuilder.add("weight",Double.class);
+				typeBuilder.add("the_geom", Point.class);
+	
+				SimpleFeatureBuilder featureBuilder = new SimpleFeatureBuilder(typeBuilder.buildFeatureType());
+				DefaultFeatureCollection features = new DefaultFeatureCollection();
+				Set<double[]> s = new HashSet<double[]>(mst.keySet());
+				for( Map<double[],Double> m : mst.values() )
+					s.addAll(m.keySet());
+				for (double[] a : s ) {
+					Point p = gf.createPoint( new Coordinate( a[ga[0]], a[ga[1]] ) );
+					featureBuilder.set("the_geom", p);
+					featureBuilder.set("weight", points.get(a));
+					features.add(featureBuilder.buildFeature("" + features.size()));
+				}
+				
+				Style style = SLD.wrapSymbolizers(sb.createPointSymbolizer());
+				style.featureTypeStyles().add(sb.createFeatureTypeStyle(sb.createTextSymbolizer(Color.RED,sb.createFont("Arial", 20),"weight")));
+				
 				FeatureLayer fl = new FeatureLayer(features, style);
 				mc.addLayer(fl);
 				mapBounds.expandToInclude(fl.getBounds());

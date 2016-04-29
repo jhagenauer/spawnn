@@ -894,45 +894,6 @@ public class SomUtils {
 		return componentMatrix;
 	}
 
-	public static void printSurface(double[][] matrix, OutputStream os) {
-		double max = Double.MIN_VALUE;
-		for (int i = 0; i < matrix.length; i++)
-			for (int j = 0; j < matrix[0].length; j++)
-				if (matrix[i][j] > max)
-					max = matrix[i][j];
-
-		byte[] pixels = new byte[matrix.length * matrix[0].length];
-		for (int i = 0; i < matrix.length; i++)
-			for (int j = 0; j < matrix[0].length; j++)
-				pixels[i + j * matrix.length] = (byte) (255 * matrix[i][j] / max);
-
-		ImageProcessor ip = new ByteProcessor(matrix.length, matrix[0].length);
-		ip.setPixels(pixels);
-
-		ImagePlus imp = new ImagePlus("surface", ip);
-		JRenderer3D render = new JRenderer3D(imp.getWidth() / 2, imp.getHeight() / 2, 256 / 2);
-		// render.setSurfacePlotGridSize(1000, 1000);
-		render.setBufferSize(1000, 1000);
-		render.setTransformScale(20.0);
-
-		render.setSurfacePlotMode(JRenderer3D.SURFACEPLOT_FILLED);
-		render.setSurfacePlotLut(JRenderer3D.LUT_ORIGINAL);
-		render.setLines(true);
-		render.setAxes(true);
-		render.setTransformRotationXYZ(25, 15, 25);
-
-		render.setTransformZAspectRatio(0.1);
-		render.setSurfacePlot(imp);
-
-		render.doRendering();
-
-		try {
-			ImageIO.write((RenderedImage) render.getImage(), "png", os);
-		} catch (IOException ex) {
-			ex.printStackTrace();
-		}
-	}
-
 	public static void printPositions(Grid2D<double[]> grid, int[] geocoords, String fn, int CELLSIZE) {
 		try {
 			printPositions(grid, geocoords, new FileOutputStream(fn), CELLSIZE);
