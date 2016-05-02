@@ -88,23 +88,31 @@ public class GridSearchRegionalization {
 		final Dist<double[]> fDist = new EuclideanDist(new int[] { 2 });
 		final Dist<double[]> rDist = new RandomDist<double[]>();
 
-		int threads = 8;
-		int runs = 8;
+		int threads = 3;
+		int runs = 3;
 		List<Data> data = new ArrayList<Data>();
-		while (data.size() < 8)
+		while (data.size() < 2)
 			data.add(new Data());
 		
-		final int numCluster = 5;
 		final Evaluator<TreeIndividual> evaluator = new WSSEvaluator(fDist);
+		final int numCluster = 5;
 		//final Evaluator<TreeIndividual> evaluator = new MSTEvaluator(fDist);
-		TreeIndividual.onlyMutCuts = false;
-		TreeIndividual.onlyMutTrees = false;
 		
 		GeneticAlgorithm.debug = false;
-		for( final int k : new int[]{ 1 } )
-		for( final boolean mst : new boolean[]{ false } )
+		for( final int k : new int[]{ 2 } )
+		for( final boolean mst : new boolean[]{ true, false } )
 		for (final int tournamenSize : new int[] { 2, 3 })
-		for (final double recombProb : new double[] { 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9 }) {
+		for (final double recombProb : new double[]{ 0.0, 0.1, 0.2, 0.3 ,0.4 ,0.5, 0.6, 0.7, 0.8, 0.9 }) {
+			
+			if( mst ) { // only mut cuts
+				TreeIndividual.onlyMutCuts = true;
+				TreeIndividual.onlyMutTrees = false;
+			} else { // mut all
+				TreeIndividual.onlyMutCuts = false;
+				TreeIndividual.onlyMutTrees = false;
+			}
+			
+				long time = System.currentTimeMillis();
 				ExecutorService es = Executors.newFixedThreadPool(threads);
 				List<Future<double[]>> futures = new ArrayList<Future<double[]>>();
 				GeneticAlgorithm.tournamentSize = tournamenSize;
@@ -166,7 +174,7 @@ public class GridSearchRegionalization {
 						ex.printStackTrace();
 					}
 				}
-				log.info(k + "\t" + tournamenSize+"\t"+recombProb+"\t"+ds.getMean() + "\t" + ds.getStandardDeviation());
+				log.info(k + "\t" + mst+"\t"+tournamenSize+"\t"+recombProb+"\t"+ds.getMean() + "\t" + ds.getStandardDeviation()+"\t"+(System.currentTimeMillis()-time)/1000.0);
 			}
 	}
 }

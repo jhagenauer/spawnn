@@ -1,7 +1,6 @@
 package spawnn.utils;
 
 import java.awt.Color;
-import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.RenderingHints;
@@ -12,6 +11,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -496,6 +496,7 @@ public class Drawer {
 		
 			Rectangle imageBounds = null;
 	
+			mapBounds.expandBy(0.2);
 			double heightToWidth = mapBounds.getSpan(1) / mapBounds.getSpan(0);
 			int imageWidth = 1000;
 			imageBounds = new Rectangle(0, 0, imageWidth, (int) Math.round(imageWidth * heightToWidth));
@@ -512,7 +513,7 @@ public class Drawer {
 		}
 	}
 	
-	public static void geoDrawWeightedConnections(Map<double[], Map<double[],Double>> mst, Map<double[], Map<double[],Double>> hl, int[] ga, CoordinateReferenceSystem crs, String fn) {
+	public static void geoDrawWeightedConnections(Map<double[], Map<double[],Double>> mst, int[] ga, CoordinateReferenceSystem crs, String fn) {
 		FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
 		GeometryFactory gf = new GeometryFactory();
 		try {
@@ -526,7 +527,7 @@ public class Drawer {
 				typeBuilder.setName("lines");
 				typeBuilder.setCRS(crs);
 				typeBuilder.add("color",Color.class);
-				typeBuilder.add("weight",Double.class);
+				typeBuilder.add("weight",String.class);
 				typeBuilder.add("the_geom", LineString.class);
 	
 				SimpleFeatureBuilder featureBuilder = new SimpleFeatureBuilder(typeBuilder.buildFeatureType());
@@ -538,7 +539,7 @@ public class Drawer {
 							featureBuilder.set("color",  Color.BLACK );
 						else
 							featureBuilder.set("color",  Color.BLUE );
-						featureBuilder.set("weight", mst.get(a).get(b));
+						featureBuilder.set("weight", ""+(double)Math.round(1000*mst.get(a).get(b))/1000 );
 						featureBuilder.set("the_geom", ls);
 						features.add(featureBuilder.buildFeature("" + features.size()));
 					}
@@ -548,25 +549,6 @@ public class Drawer {
 				style.featureTypeStyles().add(sb.createFeatureTypeStyle(sb.createTextSymbolizer(Color.BLACK,sb.createFont("Arial", 20),"weight")));
 				mc.addLayer(new FeatureLayer(features, style));
 				}
-				
-				// highlights
-				DefaultFeatureCollection hlFeatures = new DefaultFeatureCollection();
-				
-				if( hl != null && !hl.isEmpty() ) {
-					for(double[] a : hl.keySet() ) {
-							for( double[] b : hl.get(a).keySet() ) {
-								LineString ls = gf.createLineString(new Coordinate[] { new Coordinate(a[ga[0]], a[ga[1]]), new Coordinate(b[ga[0]], b[ga[1]]) });
-								featureBuilder.set("color",  Color.RED );
-								featureBuilder.set("weight", hl.get(a).get(b));
-								featureBuilder.set("the_geom", ls);
-								hlFeatures.add(featureBuilder.buildFeature("" + hlFeatures.size()));
-						}
-					}
-					Stroke stroke = sb.createStroke(ff.property("color"), ff.literal("4.0"));
-					Style style = SLD.wrapSymbolizers(sb.createLineSymbolizer(stroke));	
-					style.featureTypeStyles().add(sb.createFeatureTypeStyle(sb.createTextSymbolizer(Color.RED,sb.createFont("Arial", 20),"weight")));
-					mc.addLayer(new FeatureLayer(hlFeatures, style));
-				}
 			}
 			
 			// points
@@ -574,6 +556,7 @@ public class Drawer {
 				SimpleFeatureTypeBuilder typeBuilder = new SimpleFeatureTypeBuilder();
 				typeBuilder.setName("points");
 				typeBuilder.setCRS(crs);
+				typeBuilder.add("weight",String.class);
 				typeBuilder.add("the_geom", Point.class);
 	
 				SimpleFeatureBuilder featureBuilder = new SimpleFeatureBuilder(typeBuilder.buildFeatureType());
@@ -584,13 +567,19 @@ public class Drawer {
 				for (double[] a :s ) {
 					Point p = gf.createPoint( new Coordinate( a[ga[0]], a[ga[1]] ) );
 					featureBuilder.set("the_geom", p);
+					String st = "";
+					for( double d : a )
+						st += (double)Math.round(1000*d)/1000+",";
+					featureBuilder.set("weight", st);
 					features.add(featureBuilder.buildFeature("" + features.size()));
 				}
 				
 				Style style = SLD.wrapSymbolizers(sb.createPointSymbolizer());
+				style.featureTypeStyles().add(sb.createFeatureTypeStyle(sb.createTextSymbolizer(Color.RED,sb.createFont("Arial", 20),"weight")));
 				FeatureLayer fl = new FeatureLayer(features, style);
 				mc.addLayer(fl);
 				mapBounds.expandToInclude(fl.getBounds());
+				mapBounds.expandBy(0.2);
 			}
 	
 			GTRenderer renderer = new StreamingRenderer();

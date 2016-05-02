@@ -26,9 +26,10 @@ public class SimulatedAnnealing<T extends GAIndividual<T>> {
 		int maxI = 1200; 
 		int maxJ = 10; 
 		for( double t = maxT; t > 0.001; t = t*0.92 ) { // 0.001, 0.92
+			//og.debug(t+","+x.getValue());
 			int j = 0;
 			for( int i = 0; i < maxI; ) {
-				T y = x.recombine(x); // effectively clone
+				T y = x.recombine(x); // effectively clone				
 				y.mutate();
 				y.setValue( eva.evaluate(y) );
 				

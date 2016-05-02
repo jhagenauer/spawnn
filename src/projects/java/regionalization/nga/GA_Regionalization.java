@@ -1,8 +1,7 @@
 package regionalization.nga;
 
+import java.io.File;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -11,12 +10,8 @@ import java.util.Set;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.log4j.Logger;
 
-import com.vividsolutions.jts.geom.Coordinate;
-import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.Geometry;
-import com.vividsolutions.jts.geom.GeometryCollection;
 import com.vividsolutions.jts.geom.GeometryFactory;
-import com.vividsolutions.jts.triangulate.VoronoiDiagramBuilder;
 
 import myga.Evaluator;
 import myga.GeneticAlgorithm;
@@ -27,7 +22,10 @@ import spawnn.utils.Clustering;
 import spawnn.utils.Clustering.HierarchicalClusteringType;
 import spawnn.utils.Clustering.TreeNode;
 import spawnn.utils.DataUtils;
+import spawnn.utils.Drawer;
 import spawnn.utils.GraphUtils;
+import spawnn.utils.RegionUtils;
+import spawnn.utils.SpatialDataFrame;
 
 public class GA_Regionalization {
 	private static Logger log = Logger.getLogger(GA_Regionalization.class);
@@ -35,10 +33,16 @@ public class GA_Regionalization {
 	public static void main(String[] args) {
 		GeometryFactory gf = new GeometryFactory();
 		Random r = new Random();
-		List<double[]> samples = new ArrayList<double[]>();
+		
+		SpatialDataFrame sdf = DataUtils.readSpatialDataFrameFromShapefile(new File("data/redcap/Election/election2004.shp"), true);
+		List<double[]> samples = sdf.samples;
+		List<Geometry> geoms = sdf.geoms;
+		Map<double[], Set<double[]>> cm = RegionUtils.readContiguitiyMap(samples, "data/redcap/Election/election2004_Queen.ctg");
+		
+		/*List<double[]> samples = new ArrayList<double[]>();
 		List<Geometry> geoms = new ArrayList<Geometry>();
 		List<Coordinate> coords = new ArrayList<Coordinate>();
-		while (samples.size() < 200) {
+		while (samples.size() < 6) {
 			double x = r.nextDouble();
 			double y = r.nextDouble();
 			double z = r.nextDouble();
@@ -71,18 +75,20 @@ public class GA_Regionalization {
 				if (i != j && voroGeoms.get(i).intersects(voroGeoms.get(j)))
 					s.add(samples.get(j));
 			cm.put(samples.get(i), s);
-		}
-
-		int numCluster = 5;
-		Dist<double[]> fDist = new EuclideanDist(new int[] { 2 });
+		}*/
+		
+		int numCluster = 12;
+		Dist<double[]> fDist = new EuclideanDist(new int[] { 7 });
 		Dist<double[]> rDist = new RandomDist<double[]>();
 
 		Map<Set<double[]>, TreeNode> hcTree = Clustering.getHierarchicalClusterTree(cm, fDist, HierarchicalClusteringType.ward);
 		List<Set<double[]>> hcClusters = Clustering.cutTree(hcTree, numCluster);
 		log.debug("ward: " + DataUtils.getWithinSumOfSuqares(hcClusters, fDist));
+		Drawer.geoDrawCluster(hcClusters, samples, geoms, "output/ward.png", true);
+		
 		{
 			DescriptiveStatistics ds = new DescriptiveStatistics();
-			for( int i = 0; i < 25; i++ ) {
+			for( int i = 0; i < 1; i++ ) {
 				Map<double[], Set<double[]>> mst = GraphUtils.getMinimumSpanningTree(cm, fDist);
 				List<Set<double[]>> skaterClusters = Clustering.skater(mst, numCluster - 1, fDist, 0);
 				ds.addValue( DataUtils.getWithinSumOfSuqares(skaterClusters, fDist));
@@ -93,9 +99,9 @@ public class GA_Regionalization {
 
 		int repeats = 1;
 		Evaluator<TreeIndividual> evaluator = new WSSEvaluator(fDist);
-		GeneticAlgorithm.debug = false;
-		GeneticAlgorithm.recombProb = 0.5;
-		TreeIndividual.onlyMutCuts = false;
+		GeneticAlgorithm.debug = true;
+		
+		TreeIndividual.onlyMutCuts = true;
 		TreeIndividual.onlyMutTrees = false;
 		{
 			DescriptiveStatistics ds = new DescriptiveStatistics();
@@ -103,11 +109,11 @@ public class GA_Regionalization {
 				List<TreeIndividual> init = new ArrayList<TreeIndividual>();
 				while (init.size() < 50) {
 					Map<double[], Set<double[]>> tree = GraphUtils.getMinimumSpanningTree(cm, fDist); //constant trees
-					init.add(new TreeIndividual(cm, tree, numCluster));
+					init.add(new TreeIndividual2(cm, tree, numCluster));
 				}
 				GeneticAlgorithm<TreeIndividual> ga = new GeneticAlgorithm<>(evaluator);
-				TreeIndividual bestGA = ga.search(init);
-				ds.addValue(evaluator.evaluate(bestGA));
+				TreeIndividual ti = ga.search(init);
+				ds.addValue(evaluator.evaluate(ti));
 			}
 			log.debug("best ga_mst: " + ds.getMean() + "," + ds.getMin());
 		}
@@ -120,13 +126,13 @@ public class GA_Regionalization {
 				List<TreeIndividual> init = new ArrayList<TreeIndividual>();
 				while (init.size() < 50) {
 					Map<double[], Set<double[]>> tree = GraphUtils.getMinimumSpanningTree(cm, rDist); //constant trees
-					init.add(new TreeIndividual(cm, tree, numCluster));
+					init.add(new TreeIndividual2(cm, tree, numCluster));
 				}
 				GeneticAlgorithm<TreeIndividual> ga = new GeneticAlgorithm<>(evaluator);
-				TreeIndividual bestGA = ga.search(init);
-				ds.addValue(evaluator.evaluate(bestGA));
+				TreeIndividual ti = ga.search(init);
+				ds.addValue(evaluator.evaluate(ti));
 			}
-			log.debug("best ga_norma: " + ds.getMean() + "," + ds.getMin());
+			log.debug("best ga_norm: " + ds.getMean() + "," + ds.getMin());
 		}
 	}
 }
