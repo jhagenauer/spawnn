@@ -1,6 +1,5 @@
 package regionalization.nga;
 
-import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -9,22 +8,26 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Random;
-import java.util.Set;
 
 import heuristics.GAIndividual;
+
+import java.util.Random;
+import java.util.Set;
+import java.util.AbstractMap.SimpleEntry;
+
+import spawnn.dist.ConstantDist;
+import spawnn.utils.Drawer;
 import spawnn.utils.GraphUtils;
 
-public class TreeIndividual extends GAIndividual<TreeIndividual> {
+// Main Difference/Characteristics: when mutaing close edges are preferred
+public class TreeIndividual_old extends GAIndividual<TreeIndividual_old> {
 	static Random r = new Random();
-
-	enum NodeState {
-		None, Both, A, B
-	};
-
+	public static boolean onlyMutTrees = true, onlyMutCuts = true;
+	public static int k = -1;
+	
 	Map<double[], Set<double[]>> cm, tree, cuts;
 
-	public TreeIndividual(Map<double[], Set<double[]>> cm, Map<double[], Set<double[]>> tree, int numCluster) {
+	public TreeIndividual_old(Map<double[], Set<double[]>> cm, Map<double[], Set<double[]>> tree, int numCluster) {
 		this.cm = cm;
 		this.tree = tree;
 		this.cuts = new HashMap<double[], Set<double[]>>();
@@ -46,7 +49,7 @@ public class TreeIndividual extends GAIndividual<TreeIndividual> {
 		}
 	}
 
-	public TreeIndividual(Map<double[], Set<double[]>> cm, Map<double[], Set<double[]>> tree, Map<double[], Set<double[]>> cuts) {
+	public TreeIndividual_old(Map<double[], Set<double[]>> cm, Map<double[], Set<double[]>> tree, Map<double[], Set<double[]>> cuts) {
 		this.cm = cm;
 		this.tree = tree;
 		this.cuts = cuts;
@@ -56,7 +59,8 @@ public class TreeIndividual extends GAIndividual<TreeIndividual> {
 	public void mutate() {
 		int numCuts = countEdges(cuts);
 
-		{
+		boolean f = new Random().nextBoolean();
+		if ( (f && !onlyMutCuts) || onlyMutTrees ) {
 			// remove random edge
 			double[] ra = new ArrayList<double[]>(tree.keySet()).get(r.nextInt(tree.keySet().size()));
 			double[] rb = new ArrayList<double[]>(tree.get(ra)).get(r.nextInt(tree.get(ra).size()));
@@ -67,21 +71,36 @@ public class TreeIndividual extends GAIndividual<TreeIndividual> {
 
 			if (sub.size() != 2)
 				throw new RuntimeException("Not a tree!");
-
+			
+			Map<double[], Double> m0, m1;
+			if(  GraphUtils.getNodes(sub.get(0)).contains(ra) ) {
+					m0 = GraphUtils.getShortestDists( GraphUtils.toWeightedGraph(sub.get(0), new ConstantDist<>(1.0)), ra);
+					m1 = GraphUtils.getShortestDists( GraphUtils.toWeightedGraph(sub.get(1), new ConstantDist<>(1.0)), rb);
+			} else {
+				m0 = GraphUtils.getShortestDists( GraphUtils.toWeightedGraph(sub.get(0), new ConstantDist<>(1.0)), rb);
+				m1 = GraphUtils.getShortestDists( GraphUtils.toWeightedGraph(sub.get(1), new ConstantDist<>(1.0)), ra);
+			}
+			
 			// get candidates for new edge
-			Map<double[], Set<double[]>> c = new HashMap<double[], Set<double[]>>();
+			Map<double[], Map<double[],Double>> c = new HashMap<double[], Map<double[],Double>>();
 			for (double[] a : sub.get(0).keySet()) {
-				Set<double[]> s = new HashSet<double[]>();
+				Map<double[],Double> s = new HashMap<double[],Double>();
 				for (double[] b : sub.get(1).keySet())
-					if (cm.containsKey(a) && cm.get(a).contains(b))
-						s.add(b);
+					if (cm.containsKey(a) && cm.get(a).contains(b) ) 
+						s.put(b, m0.get(a) + m1.get(b) + 1 ); 
 				if (!s.isEmpty())
 					c.put(a, s);
 			}
-
-			double[] na = new ArrayList<double[]>(c.keySet()).get(r.nextInt(c.keySet().size()));
-			double[] nb = new ArrayList<double[]>(c.get(na)).get(r.nextInt(c.get(na).size()));
-
+			
+			double[]  na, nb;
+			if( k != 0 ) {
+				Entry<double[],double[]> n = selectEdgesByCost(c, k);
+				na = n.getKey();
+				nb = n.getValue();
+			} else {
+				na = new ArrayList<double[]>(c.keySet()).get(r.nextInt(c.keySet().size()));
+				nb = new ArrayList<double[]>(c.get(na).keySet()).get(r.nextInt(c.get(na).size()));
+			}
 			if (!tree.containsKey(na))
 				tree.put(na, new HashSet<double[]>());
 			tree.get(na).add(nb);
@@ -110,67 +129,85 @@ public class TreeIndividual extends GAIndividual<TreeIndividual> {
 				cuts.get(nb).add(na);
 			}
 		}
+		if (numCuts > 0 && ((!f && !onlyMutTrees) || onlyMutCuts ) ) {
 
-		/*{
+				// randomly remove one cut
+				double[] na = new ArrayList<double[]>(cuts.keySet()).get(r.nextInt(cuts.keySet().size()));
+				double[] nb = new ArrayList<double[]>(cuts.get(na)).get(r.nextInt(cuts.get(na).size()));
 
-			// randomly remove one cut
-			double[] na = new ArrayList<double[]>(cuts.keySet()).get(r.nextInt(cuts.keySet().size()));
-			double[] nb = new ArrayList<double[]>(cuts.get(na)).get(r.nextInt(cuts.get(na).size()));
-
-			cuts.get(na).remove(nb);
-			if (cuts.get(na).isEmpty())
-				cuts.remove(na);
-			cuts.get(nb).remove(na);
-			if (cuts.get(nb).isEmpty())
-				cuts.remove(nb);
-
-			Map<double[], Set<double[]>> c = new HashMap<double[], Set<double[]>>();
-			for (double[] nbA : tree.get(na)) {
-				if (nbA == nb || (cuts.containsKey(na) && cuts.get(na).contains(nbA)))
-					continue;
-				if (!c.containsKey(na))
-					c.put(na, new HashSet<double[]>());
-				c.get(na).add(nbA);
+				cuts.get(na).remove(nb);
+				if (cuts.get(na).isEmpty())
+					cuts.remove(na);
+				cuts.get(nb).remove(na);
+				if (cuts.get(nb).isEmpty())
+					cuts.remove(nb);
+				
+				double[] ra, rb;
+				if( k != 0 ) { // cost based selection
+					Map<double[], Double> m0 = GraphUtils.getShortestDists( GraphUtils.toWeightedGraph(tree, new ConstantDist<>(1.0)), na );
+					Map<double[], Double> m1 = GraphUtils.getShortestDists( GraphUtils.toWeightedGraph( tree, new ConstantDist<>(1.0)), nb );
+					// get candidates for new edge
+					Map<double[], Map<double[],Double>> c = new HashMap<double[], Map<double[],Double>>();
+					for (double[] a : tree.keySet()) {
+						Map<double[],Double> s = new HashMap<double[],Double>();
+						for (double[] b : tree.get(a) )
+							if (!cuts.containsKey(a) || !cuts.get(a).contains(b)) { // no double-cuts
+								s.put(b, Math.min(m0.get(a)+m1.get(b),m0.get(b)+m1.get(a))+1 ); 
+							}
+						if (!s.isEmpty())
+							c.put(a, s);
+					}
+					
+					Entry<double[],double[]> n = selectEdgesByCost(c, k);
+					ra = n.getKey();
+					rb = n.getValue(); 
+				} else {
+					Map<double[],Set<double[]>> c = new HashMap<double[],Set<double[]>>();
+					for( double[] nbA : tree.get(na) ) {
+						if( nbA == nb || ( cuts.containsKey(na) && cuts.get(na).contains(nbA) ) )
+							continue;
+						if( !c.containsKey(na) )
+							c.put(na, new HashSet<double[]>());
+						c.get(na).add(nbA);
+					}
+					for( double[] nbB : tree.get(nb) ) {
+						if( nbB == na || ( cuts.containsKey(nb) && cuts.get(nb).contains(nbB) ) )
+							continue;
+						if( !c.containsKey(nb) )
+							c.put(nb, new HashSet<double[]>());
+						c.get(nb).add(nbB);
+					}						
+					if( !c.isEmpty() ) {
+						ra = new ArrayList<double[]>(c.keySet()).get(r.nextInt(c.keySet().size()));
+						rb = new ArrayList<double[]>(c.get(ra)).get(r.nextInt(c.get(ra).size()));
+					} else {
+						ra = na;
+						rb = nb;
+					}
+				}
+				
+				if (!cuts.containsKey(ra))
+					cuts.put(ra, new HashSet<double[]>());
+				cuts.get(ra).add(rb);
+				if (!cuts.containsKey(rb))
+					cuts.put(rb, new HashSet<double[]>());
+				cuts.get(rb).add(ra);
 			}
-			for (double[] nbB : tree.get(nb)) {
-				if (nbB == na || (cuts.containsKey(nb) && cuts.get(nb).contains(nbB)))
-					continue;
-				if (!c.containsKey(nb))
-					c.put(nb, new HashSet<double[]>());
-				c.get(nb).add(nbB);
-			}
-			double[] ra, rb;
-			if (!c.isEmpty()) {
-				ra = new ArrayList<double[]>(c.keySet()).get(r.nextInt(c.keySet().size()));
-				rb = new ArrayList<double[]>(c.get(ra)).get(r.nextInt(c.get(ra).size()));
-			} else {
-				ra = na;
-				rb = nb;
-			}
-
-			if (!cuts.containsKey(ra))
-				cuts.put(ra, new HashSet<double[]>());
-			cuts.get(ra).add(rb);
-			if (!cuts.containsKey(rb))
-				cuts.put(rb, new HashSet<double[]>());
-			cuts.get(rb).add(ra);
-		}*/
+		
 
 		if (numCuts != countEdges(cuts))
 			throw new RuntimeException("Wrong number of cuts!");
 	}
 
 	@Override
-	public TreeIndividual recombine(TreeIndividual mother) {
+	public TreeIndividual_old recombine(TreeIndividual_old mother) {
 
 		Map<double[], Set<double[]>> nTree = new HashMap<double[], Set<double[]>>();
 		Map<double[], Set<double[]>> treeA = tree;
 		Map<double[], Set<double[]>> treeB = mother.getTree();
-		Map<double[], NodeState> ns = new HashMap<double[], NodeState>();
-		for (double[] a : treeA.keySet()) {// init with all nodes
+
+		for (double[] a : treeA.keySet()) // init with all nodes
 			nTree.put(a, new HashSet<double[]>());
-			ns.put(a, NodeState.None);
-		}
 
 		for (double[] a : treeA.keySet()) // add intersections
 			for (double[] b : treeA.get(a))
@@ -184,79 +221,64 @@ public class TreeIndividual extends GAIndividual<TreeIndividual> {
 		List<Set<double[]>> added = new ArrayList<Set<double[]>>();
 		for (Map<double[], Set<double[]>> m : sub)
 			added.add(GraphUtils.getNodes(m));
-
+		
 		while (true) {
 			// get all candidates with cost for each sub
-			Map<Integer, Map<double[], Map<double[], Double>>> c = new HashMap<Integer, Map<double[], Map<double[], Double>>>();
+			Map<Integer,Map<double[], Map<double[],Double>>> c = new HashMap<Integer,Map<double[], Map<double[],Double>>>();
 			for (int i = 0; i < sub.size(); i++) {
-				Map<double[], Map<double[], Double>> cm = new HashMap<double[], Map<double[], Double>>();
+				Map<double[], Map<double[],Double>> cm = new HashMap<double[], Map<double[],Double>>();
 				for (double[] a : added.get(i)) {
-
-					Map<double[], Double> s = new HashMap<double[], Double>();
+					
+					int ca = 0;
+					for (double[] b : sub.get(i).get(a))
+						if( treeA.get(a).contains(b) ) 
+							ca++;
+					int cb = 0;
+					for (double[] b : sub.get(i).get(a))
+						if( treeB.get(a).contains(b) ) 
+							cb++;
+					
+					Map<double[],Double> s = new HashMap<double[],Double>();
 					for (double[] b : treeA.get(a))
 						if (!added.get(i).contains(b)) // avoid cycles
-							s.put(b, ns.get(a) == NodeState.B ? 10 + r.nextDouble() : r.nextDouble());
-
+							s.put(b, cb > 0 && ca == 0 ? 10 : r.nextDouble() );
+					
 					for (double[] b : treeB.get(a))
 						if (!added.get(i).contains(b)) // avoid cycles
-							s.put(b, ns.get(a) == NodeState.A ? 10 + r.nextDouble() : r.nextDouble());
-
+							s.put(b, ca > 0 && cb == 0 ? 10 : r.nextDouble() );
+					
 					if (!s.isEmpty())
 						cm.put(a, s);
 				}
-				if (!cm.isEmpty())
-					c.put(i, cm);
+				if( !cm.isEmpty() )
+					c.put(i,cm);
 			}
-
-			if (c.isEmpty()) // full?
+			
+			if( c.isEmpty() ) // full?
 				break;
-
+			
 			// get best candidates
 			int idx = -1;
 			double[] na = null, nb = null;
 			double bestCost = Double.MAX_VALUE;
-			for (int i : c.keySet())
-				for (double[] a : c.get(i).keySet())
-					for (double[] b : c.get(i).get(a).keySet()) {
+			for( int i : c.keySet() )
+				for( double[] a : c.get(i).keySet() )
+					for( double[] b : c.get(i).get(a).keySet() ) {
 						double cost = c.get(i).get(a).get(b);
-
-						if (cost < bestCost) {
+						
+						if( cost < bestCost ) {
 							bestCost = cost;
 							idx = i;
 							na = a;
 							nb = b;
 						}
 					}
-
+	
 			// add edge
 			sub.get(idx).get(na).add(nb); // add new edge
 			if (!sub.get(idx).containsKey(nb))
 				sub.get(idx).put(nb, new HashSet<double[]>());
 			sub.get(idx).get(nb).add(na);
-
-			// update node states
-			if (treeA.get(na).contains(nb)) { // edge was from treeA
-				if (ns.get(na) == NodeState.None)
-					ns.put(na, NodeState.A);
-				else if (ns.get(na) == NodeState.B)
-					ns.put(na, NodeState.Both);
-
-				if (ns.get(nb) == NodeState.None)
-					ns.put(nb, NodeState.A);
-				else if (ns.get(nb) == NodeState.B)
-					ns.put(nb, NodeState.Both);
-			}
-			if (treeB.get(na).contains(nb)) { // edge was from treeB
-				if (ns.get(na) == NodeState.None)
-					ns.put(na, NodeState.B);
-				else if (ns.get(na) == NodeState.A)
-					ns.put(na, NodeState.Both);
-
-				if (ns.get(nb) == NodeState.None)
-					ns.put(nb, NodeState.B);
-				else if (ns.get(nb) == NodeState.A)
-					ns.put(nb, NodeState.Both);
-			}
 
 			// check if we must merge idx with some sub
 			for (int i = 0; i < sub.size(); i++)
@@ -349,18 +371,18 @@ public class TreeIndividual extends GAIndividual<TreeIndividual> {
 				nCuts.get(rb).add(ra);
 			}
 		}
-		return new TreeIndividual(cm, nTree, nCuts);
+		return new TreeIndividual_old(cm, nTree, nCuts);
 	}
-
-	public static Entry<double[], double[]> selectEdgesByCost(final Map<double[], Map<double[], Double>> c, int k) {
+	
+	public static Entry<double[],double[]> selectEdgesByCost(final Map<double[], Map<double[], Double>> c, int k) {
 		List<Entry<double[], double[]>> l = new ArrayList<Entry<double[], double[]>>();
 		for (double[] a : c.keySet())
-			for (double[] b : c.get(a).keySet()) {
+			for (double[] b : c.get(a).keySet() ) {
 				Entry<double[], double[]> e = new SimpleEntry<double[], double[]>(a, b);
 				l.add(e);
 			}
-
-		if (k == -1) { // tournament selection
+		
+		if( k == -1 ) { // tournament selection
 			double min = Double.MAX_VALUE, max = Double.MIN_VALUE;
 			for (Entry<double[], double[]> e : l) {
 				double w = c.get(e.getKey()).get(e.getValue());
@@ -372,18 +394,18 @@ public class TreeIndividual extends GAIndividual<TreeIndividual> {
 			double sum = 0;
 			for (Entry<double[], double[]> e : l) {
 				double w = c.get(e.getKey()).get(e.getValue());
-				sum += Math.abs(w - max + min);
+				sum += Math.abs( w -max + min);
 			}
 
 			double v = r.nextDouble() * sum;
 			double lower = 0;
 			for (Entry<double[], double[]> e : l) {
 				double w = Math.abs(c.get(e.getKey()).get(e.getValue()) - max + min);
-				if (lower <= v && v <= lower + w)
-					return new SimpleEntry<double[], double[]>(e.getKey(), e.getValue());
+				if (lower <= v && v <= lower + w) 
+					return new SimpleEntry<double[],double[]>(e.getKey(),e.getValue());
 				lower += w;
 			}
-		} else if (k > 0) { // select random from k-nearest
+		} else if( k > 0 ) { // select random from k-nearest
 			Collections.sort(l, new Comparator<Entry<double[], double[]>>() {
 				@Override
 				public int compare(Entry<double[], double[]> o1, Entry<double[], double[]> o2) {
@@ -401,8 +423,8 @@ public class TreeIndividual extends GAIndividual<TreeIndividual> {
 			}
 			double[] ra = new ArrayList<double[]>(rc.keySet()).get(r.nextInt(rc.keySet().size()));
 			double[] rb = new ArrayList<double[]>(rc.get(ra)).get(r.nextInt(rc.get(ra).size()));
-			return new SimpleEntry<double[], double[]>(ra, rb);
-		}
+			return new SimpleEntry<double[],double[]>(ra,rb);
+		} 
 		return null;
 	}
 
@@ -412,10 +434,6 @@ public class TreeIndividual extends GAIndividual<TreeIndividual> {
 
 	public Map<double[], Set<double[]>> getCuts() {
 		return cuts;
-	}
-	
-	public Map<double[], Set<double[]>> getConnectionMap() {
-		return cm;
 	}
 
 	protected int countEdges(Map<double[], Set<double[]>> m) {

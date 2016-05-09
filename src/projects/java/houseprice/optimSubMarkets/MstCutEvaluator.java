@@ -6,9 +6,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+
+import heuristics.Evaluator;
+
 import java.util.Set;
 
-import myga.Evaluator;
 import spawnn.dist.Dist;
 
 public class MstCutEvaluator implements Evaluator<MaintainSumIndividual> {

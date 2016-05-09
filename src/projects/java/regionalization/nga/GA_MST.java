@@ -18,8 +18,9 @@ import com.vividsolutions.jts.geom.GeometryCollection;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.triangulate.VoronoiDiagramBuilder;
 
-import myga.Evaluator;
-import myga.GeneticAlgorithm;
+import heuristics.Evaluator;
+import heuristics.GeneticAlgorithm;
+import heuristics.sa.SimulatedAnnealing;
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
 import spawnn.dist.RandomDist;
@@ -80,8 +81,6 @@ public class GA_MST {
 					
 		int repeats = 1;
 		GeneticAlgorithm.debug = false;
-		TreeIndividual.onlyMutTrees = true;
-		TreeIndividual.onlyMutCuts = false;
 		{
 			DescriptiveStatistics ds = new DescriptiveStatistics();
 			for( int j = 0; j < repeats; j++ ) {

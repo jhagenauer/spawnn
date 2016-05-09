@@ -1,11 +1,11 @@
-package regionalization.nga;
+package heuristics.sa;
 
 import java.util.Random;
 
 import org.apache.log4j.Logger;
 
-import myga.Evaluator;
-import myga.GAIndividual;
+import heuristics.Evaluator;
+import heuristics.GAIndividual;
 
 public class SimulatedAnnealing<T extends GAIndividual<T>> {
 	private static Logger log = Logger.getLogger(SimulatedAnnealing.class);
@@ -23,10 +23,10 @@ public class SimulatedAnnealing<T extends GAIndividual<T>> {
 		x.setValue( eva.evaluate(x) );
 
 		double maxT = 10; 
-		int maxI = 1200; 
+		int maxI = 800; 
 		int maxJ = 10; 
 		for( double t = maxT; t > 0.001; t = t*0.92 ) { // 0.001, 0.92
-			//og.debug(t+","+x.getValue());
+			//log.debug(t+","+x.getValue());
 			int j = 0;
 			for( int i = 0; i < maxI; ) {
 				T y = x.recombine(x); // effectively clone				

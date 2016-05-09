@@ -1,9 +1,11 @@
 package regionalization.nga;
 
 import java.util.Map.Entry;
+
+import heuristics.Evaluator;
+
 import java.util.Set;
 
-import myga.Evaluator;
 import spawnn.dist.Dist;
 
 public class MSTEvaluator implements Evaluator<TreeIndividual> {

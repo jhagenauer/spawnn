@@ -1,4 +1,4 @@
-package myga;
+package heuristics;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -8,11 +8,19 @@ import java.util.Random;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.log4j.Logger;
 
+import heuristics.tabu.TabuSearch;
+import regionalization.nga.TreeIndividual;
+import regionalization.nga.WSSCutsTabuEvaluator;
+import regionalization.nga.tabu.CutsTabuIndividual;
+import spawnn.dist.Dist;
+import spawnn.dist.EuclideanDist;
+
 public class GeneticAlgorithm<T extends GAIndividual<T>> {
 	
 	private static Logger log = Logger.getLogger(GeneticAlgorithm.class);
 	
 	private final static Random r = new Random();
+	public static boolean meme = false;
 	
 	Evaluator<T> evaluator;
 			
@@ -25,7 +33,7 @@ public class GeneticAlgorithm<T extends GAIndividual<T>> {
 	public GeneticAlgorithm(Evaluator<T> evaluator) {
 		this.evaluator = evaluator;
 	}
-
+	
 	public T search( List<T> init ) {		
 		List<T> gen = new ArrayList<T>(init);
 		T best = null;
@@ -41,7 +49,7 @@ public class GeneticAlgorithm<T extends GAIndividual<T>> {
 			i.setValue(evaluator.evaluate(i));
 							
 		int k = 0;
-		while( noImpro < 200 /*&& evaluations < 10000*/ ) {
+		while( noImpro < 300 /*&& evaluations < 10000*/ ) {
 						
 			// check best and increase noImpro
 			noImpro++;
@@ -54,6 +62,7 @@ public class GeneticAlgorithm<T extends GAIndividual<T>> {
 				}
 				ds.addValue( cur.getValue() );
 			}
+									
 			if( noImpro == 0 || k % 100 == 0 || false ) {		
 				if( debug ) log.debug(k+","+noImpro+","+evaluations+","+ds.getMin()+","+ds.getMean()+","+ds.getMax()+","+ds.getStandardDeviation() );
 			}
@@ -89,12 +98,24 @@ public class GeneticAlgorithm<T extends GAIndividual<T>> {
 					child = a.recombine( a ); // clone
 																		
 				child.mutate();
-				child.setValue(evaluator.evaluate( child ));
-				offSpring.add(child);
+				child.setValue( evaluator.evaluate( child ) );
+				
+				if( meme && r.nextDouble() < 0.1 ){
+					Dist<double[]> fDist = new EuclideanDist(new int[] { 2 });
+					TreeIndividual ti = (TreeIndividual)child;
+					CutsTabuIndividual ctInit = new CutsTabuIndividual(ti.getTree(),ti.getCuts());
+					TabuSearch<CutsTabuIndividual> ts = new TabuSearch<CutsTabuIndividual>(new WSSCutsTabuEvaluator(fDist),5, 100, 20, 10 );
+					CutsTabuIndividual ti2 = ts.search(ctInit);
+					child = (T)(new TreeIndividual(ti.getConnectionMap(),ti2.getTree(),ti2.getCuts()));
+					child.setValue( evaluator.evaluate( child ) );
+					offSpring.add( child );
+				} else {
+					offSpring.add(child);
+				}
 					
 			}
 			evaluations += offspringSize;
-			
+						
 			gen = offSpring; // REPLACE GEN WITH OFFSPRING
 			//gen.addAll(elite); // ALWAYS KEEP ELITE, is that a good idea?
 			k++;

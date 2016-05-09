@@ -26,16 +26,16 @@ public class Clustering {
 
 	private static Logger log = Logger.getLogger(Clustering.class);
 
-	// Actually, this is NOT PAM, but works nevertheless
+	// Actually, this is NOT PAM, but works nevertheless, needs some rework/cleanup
 	public static Map<double[], Set<double[]>> kMedoidsPAM(Collection<double[]> samples, int num, Dist<double[]> dist) {
 		Random r = new Random();
 
-		Map<double[], Set<double[]>> medoidMap = new HashMap<double[], Set<double[]>>();
+		Map<double[], Set<double[]>> clusterMap = new HashMap<double[], Set<double[]>>();
 		// 1. random init
-		while (medoidMap.size() < num) {
+		while (clusterMap.size() < num) {
 			for (double[] s : samples)
 				if (r.nextDouble() < 1.0 / samples.size() ) {
-					medoidMap.put(s, new HashSet<double[]>());
+					clusterMap.put(s, new HashSet<double[]>());
 					break;
 				}
 		}
@@ -45,24 +45,24 @@ public class Clustering {
 	
 		while( true ) {			
 			// 2. Assignment step
-			for( double[] m : medoidMap.keySet() ) 
-				medoidMap.get(m).add(m);
+			for( double[] m : clusterMap.keySet() ) 
+				clusterMap.get(m).add(m);
 			
 			for (double[] s : samples) {
-				if( medoidMap.keySet().contains(s) )
+				if( clusterMap.keySet().contains(s) )
 					continue;
 				
 				double[] closest = null;
-				for (double[] medoid : medoidMap.keySet()) 
+				for (double[] medoid : clusterMap.keySet()) 
 					if (closest == null || dist.dist(s, medoid) < dist.dist(s, closest)) 
 						closest = medoid;
-				medoidMap.get(closest).add(s);
+				clusterMap.get(closest).add(s);
 			}
 			
 			// 3. update step, get better medoid
 			double sumCost = 0;
 			List<double[]> newMedoids = new ArrayList<double[]>();
-			for (Entry<double[],Set<double[]>> e : medoidMap.entrySet() ) {
+			for (Entry<double[],Set<double[]>> e : clusterMap.entrySet() ) {
 				
 				double bestCost = Double.MAX_VALUE;
 				double[] bestMedoid = null;
@@ -90,11 +90,11 @@ public class Clustering {
 			if( noImpro++ == 100 )
 				break;
 		
-			medoidMap.clear();
+			clusterMap.clear();
 			for( double[] m : newMedoids )
-				medoidMap.put(m, new HashSet<double[]>() );	
+				clusterMap.put(m, new HashSet<double[]>() );	
 		}
-		return medoidMap;
+		return clusterMap;
 	}
 	
 	public static Map<double[], Set<double[]>> kMeans(List<double[]> samples, int num, Dist<double[]> dist) {
@@ -168,7 +168,7 @@ public class Clustering {
 	public enum HierarchicalClusteringType {
 		single_linkage, complete_linkage, average_linkage, ward
 	};
-	
+		
 	public static <T> List<Set<T>> cutTree( Map<Set<T>,TreeNode> tree, int numCluster ) {
 		Comparator<TreeNode> comp = new Comparator<TreeNode>() {
 			@Override
@@ -200,6 +200,28 @@ public class Clustering {
 		public String toString() { return age+", "+cost; }
 	}
 	
+	public static Map<Set<double[]>,Set<Set<double[]>>> toConnectionMap(Map<Set<double[]>,TreeNode> hcTree ) {
+		Map<Set<double[]>,Set<Set<double[]>>> m = new HashMap<>();	
+		
+		for( Entry<Set<double[]>,TreeNode> e : hcTree.entrySet() ) {
+			Set<Set<double[]>> s = new HashSet<Set<double[]>>();
+			for( TreeNode child : e.getValue().children ) {
+				if( child == null ) 
+					continue;
+				
+				// find set of child
+				for( Entry<Set<double[]>,TreeNode> e2 : hcTree.entrySet() )
+					if( e2.getValue() == child ) {
+						s.add(e2.getKey());
+						break;
+					}		
+			}
+			m.put(e.getKey(), s);	
+		}
+			
+		return m;
+	}
+			
 	// not connected
 	public static Map<Set<double[]>,TreeNode> getHierarchicalClusterTree(List<double[]> samples, Dist<double[]> dist, HierarchicalClusteringType type) {
 		return getHierarchicalClusterTree(samples, null, dist, type);

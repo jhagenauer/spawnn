@@ -5,7 +5,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
-import myga.GAIndividual;
+import heuristics.GAIndividual;
 
 // genetic operators maintain constant sum of ones
 public class MaintainSumIndividual extends GAIndividual<MaintainSumIndividual> {
