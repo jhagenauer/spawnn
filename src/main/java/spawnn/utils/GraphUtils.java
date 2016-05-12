@@ -28,41 +28,41 @@ public class GraphUtils {
 		return ng;
 	}
 
-	public static Set<double[]> getNodes(Map<double[], Set<double[]>> cm) {
-		Set<double[]> nodes = new HashSet<double[]>(cm.keySet());
-		for (double[] a : cm.keySet())
+	public static <T> Set<T> getNodes(Map<T, Set<T>> cm) {
+		Set<T> nodes = new HashSet<T>(cm.keySet());
+		for (T a : cm.keySet())
 			nodes.addAll(cm.get(a));
 		return nodes;
 	}
 
-	public static List<Map<double[], Set<double[]>>> getSubGraphs(Map<double[], Set<double[]>> cm) {
-		List<Map<double[], Set<double[]>>> subs = new ArrayList<Map<double[], Set<double[]>>>();
-		Set<double[]> allNodes = getNodes(cm);
+	public static <T> List<Map<T, Set<T>>> getSubGraphs(Map<T, Set<T>> cm) {
+		List<Map<T, Set<T>>> subs = new ArrayList<Map<T, Set<T>>>();
+		Set<T> allNodes = getNodes(cm);
 	
 		while (!allNodes.isEmpty()) {
 	
 			// get first non-visited node
-			double[] initNode = allNodes.iterator().next();
+			T initNode = allNodes.iterator().next();
 			allNodes.remove(initNode);
 	
-			Map<double[], Set<double[]>> sg = GraphUtils.getSubGraphOf(cm, initNode);
+			Map<T, Set<T>> sg = GraphUtils.getSubGraphOf(cm, initNode);
 			allNodes.removeAll(getNodes(sg));
 			subs.add(sg);
 		}
 		return subs;
 	}
 
-	static Map<double[], Set<double[]>> getSubGraphOf(Map<double[], Set<double[]>> cm, double[] initNode) {
-		Map<double[], Set<double[]>> visited = new HashMap<double[], Set<double[]>>(); // expanded/subgraph nodes
-		Set<double[]> open = new HashSet<double[]>();
+	static <T> Map<T, Set<T>> getSubGraphOf(Map<T, Set<T>> cm, T initNode) {
+		Map<T, Set<T>> visited = new HashMap<T, Set<T>>(); // expanded/subgraph nodes
+		Set<T> open = new HashSet<T>();
 		open.add(initNode);
 	
 		while (!open.isEmpty()) {
-			double[] cur = open.iterator().next();
+			T cur = open.iterator().next();
 			open.remove(cur);
-			visited.put(cur,new HashSet<double[]>() );
+			visited.put(cur,new HashSet<T>() );
 	
-			for (double[] nb : cm.get(cur)) {
+			for (T nb : cm.get(cur)) {
 				visited.get(cur).add(nb);
 				
 				if( nb != cur && !visited.containsKey(nb) )
@@ -140,7 +140,7 @@ public class GraphUtils {
 		return mst;
 	}
 
-	public static Map<double[], Set<double[]>> deriveQueenContiguitiyMap(List<double[]> samples, List<Geometry> geoms) {
+	public static Map<double[], Set<double[]>> deriveQueenContiguitiyMap(List<double[]> samples, List<Geometry> geoms, boolean withIdent) {
 		Map<double[], Set<double[]>> cm = new HashMap<double[], Set<double[]>>();
 	
 		for (int i = 0; i < samples.size(); i++) {
@@ -150,9 +150,11 @@ public class GraphUtils {
 			cm.put(a, new HashSet<double[]>());
 	
 			for (int j = 0; j < samples.size(); j++) {
+				if( i == j && !withIdent )
+					continue;
+				
 				double[] b = samples.get(j);
 				Geometry bg = geoms.get(j);
-	
 				if (bg.touches(ag) || bg.intersects(ag))
 					cm.get(a).add(b);
 			}

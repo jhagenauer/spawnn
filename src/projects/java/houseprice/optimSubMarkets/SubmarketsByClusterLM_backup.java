@@ -561,7 +561,7 @@ public class SubmarketsByClusterLM_backup {
 			
 			TreeNode cn = new TreeNode();
 			cn.cost = curCost;
-			cn.children = new TreeNode[]{ tree.get(c1), tree.get(c2) };
+			cn.children = Arrays.asList( new TreeNode[]{ tree.get(c1), tree.get(c2) } );
 			cn.age = ++age;
 			tree.put(union, cn);
 		}

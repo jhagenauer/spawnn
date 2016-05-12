@@ -29,25 +29,32 @@ public class Clustering {
 	// Actually, this is NOT PAM, but works nevertheless, needs some rework/cleanup
 	public static Map<double[], Set<double[]>> kMedoidsPAM(Collection<double[]> samples, int num, Dist<double[]> dist) {
 		Random r = new Random();
-
-		Map<double[], Set<double[]>> clusterMap = new HashMap<double[], Set<double[]>>();
-		// 1. random init
-		while (clusterMap.size() < num) {
+		Set<double[]> medoids = new HashSet<double[]>();
+		while( medoids.size() < num ) {
 			for (double[] s : samples)
 				if (r.nextDouble() < 1.0 / samples.size() ) {
-					clusterMap.put(s, new HashSet<double[]>());
+					medoids.add(s);
 					break;
 				}
 		}
-		List<double[]> bestMedoids = null;
+		
+		Map<double[],Set<double[]>> bestCluster = null;
 		double bestSum = 0;
 		int noImpro = 0;
 	
-		while( true ) {			
+		while( true ) {	
+			// 1. random init
+			Map<double[], Set<double[]>> clusterMap = new HashMap<double[], Set<double[]>>();
+			for( double[] m : medoids ) {
+				clusterMap.put(m, new HashSet<double[]>());
+				clusterMap.get(m).add(m);
+			}
+			
 			// 2. Assignment step
 			for( double[] m : clusterMap.keySet() ) 
 				clusterMap.get(m).add(m);
 			
+			double sumCost = 0;
 			for (double[] s : samples) {
 				if( clusterMap.keySet().contains(s) )
 					continue;
@@ -56,14 +63,19 @@ public class Clustering {
 				for (double[] medoid : clusterMap.keySet()) 
 					if (closest == null || dist.dist(s, medoid) < dist.dist(s, closest)) 
 						closest = medoid;
+				sumCost += dist.dist(closest, s);
 				clusterMap.get(closest).add(s);
 			}
 			
-			// 3. update step, get better medoid
-			double sumCost = 0;
-			List<double[]> newMedoids = new ArrayList<double[]>();
+			if( bestCluster == null || sumCost < bestSum ) {
+				bestSum = sumCost;
+				bestCluster = clusterMap;
+				noImpro = 0;
+			}
+						
+			// 3. update medoids
+			medoids.clear();
 			for (Entry<double[],Set<double[]>> e : clusterMap.entrySet() ) {
-				
 				double bestCost = Double.MAX_VALUE;
 				double[] bestMedoid = null;
 				for( double[] d : e.getValue() ) {
@@ -77,24 +89,13 @@ public class Clustering {
 						bestCost = cost;
 					} 
 				}
-				newMedoids.add(bestMedoid);
-				sumCost += bestCost;
+				medoids.add(bestMedoid);
 			}
-			
-			if( bestMedoids == null || sumCost < bestSum ) {
-				bestSum = sumCost;
-				bestMedoids = newMedoids;
-				noImpro = 0;
-			}
-			
+						
 			if( noImpro++ == 100 )
-				break;
-		
-			clusterMap.clear();
-			for( double[] m : newMedoids )
-				clusterMap.put(m, new HashSet<double[]>() );	
+				break;	
 		}
-		return clusterMap;
+		return bestCluster;
 	}
 	
 	public static Map<double[], Set<double[]>> kMeans(List<double[]> samples, int num, Dist<double[]> dist) {
@@ -194,34 +195,124 @@ public class Clustering {
 	}
 	
 	public static class TreeNode {
+		public Set<double[]> contents;
 		public int age = 0;
-		public double cost = 0; // sum of squares
-		public TreeNode children[] = null;
+		public double cost = 0; 
+		public List<TreeNode> children = new ArrayList<TreeNode>();
 		public String toString() { return age+", "+cost; }
 	}
-	
-	public static Map<Set<double[]>,Set<Set<double[]>>> toConnectionMap(Map<Set<double[]>,TreeNode> hcTree ) {
-		Map<Set<double[]>,Set<Set<double[]>>> m = new HashMap<>();	
 		
-		for( Entry<Set<double[]>,TreeNode> e : hcTree.entrySet() ) {
-			Set<Set<double[]>> s = new HashSet<Set<double[]>>();
-			for( TreeNode child : e.getValue().children ) {
-				if( child == null ) 
-					continue;
-				
-				// find set of child
-				for( Entry<Set<double[]>,TreeNode> e2 : hcTree.entrySet() )
-					if( e2.getValue() == child ) {
-						s.add(e2.getKey());
-						break;
-					}		
+	public static Map<double[],Set<double[]>> toREDCAPSpanningTree( Collection<TreeNode> tree, Map<double[],Set<double[]>> cm, HierarchicalClusteringType type, Dist<double[]> dist ) {
+		List<TreeNode> l = new ArrayList<>(tree);
+		Collections.sort(l, new Comparator<TreeNode>() {
+			@Override
+			public int compare(TreeNode o1, TreeNode o2) {
+				return Integer.compare(o1.age, o2.age);
 			}
-			m.put(e.getKey(), s);	
-		}
-			
+		});
+		
+		Map<double[],Set<double[]>> m = new HashMap<>();	
+		for( TreeNode tn : l ) { // iterate by age, starting from 0
+			if( tn.age == 0 ) { // s contains only one element
+				m.put(tn.contents.iterator().next(), new HashSet<>());
+				continue;
+			}
+
+			double[] bestA = null, bestB = null;
+
+			// always shortest??
+			if( type == HierarchicalClusteringType.complete_linkage || type == HierarchicalClusteringType.single_linkage ) {
+				double minDist = Double.MAX_VALUE;
+				for (double[] a : tn.children.get(0).contents)
+					for (double[] b : tn.children.get(1).contents)
+						if (cm.get(a).contains(b)) {
+							double d = dist.dist(a, b);
+							if (d < minDist) {
+								minDist = d;
+								bestA = a;
+								bestB = b;
+							}
+						}
+			} else {
+				double minDist = Double.MAX_VALUE;
+				for (double[] a : tn.children.get(0).contents)
+					for (double[] b : tn.children.get(1).contents)
+						if ( cm.get(a).contains(b) ) {
+							double d = dist.dist(a, b);
+							if (d < minDist) {
+								minDist = d;
+								bestA = a;
+								bestB = b;
+							}
+						}
+			}
+			m.get(bestA).add(bestB);
+			m.get(bestB).add(bestA);
+		}		
 		return m;
 	}
+		
+	// From REDCAP/SKATER, slow... performance could be improved
+	public static List<Set<double[]>> cutTreeREDCAP( Collection<TreeNode> tree, Map<double[],Set<double[]>> cm, HierarchicalClusteringType type, int numCluster, Dist<double[]> dist ) {
+		Map<double[],Set<double[]>> spaningTree = Clustering.toREDCAPSpanningTree(tree,cm,type,dist); // its bidirectional
+		
+		List<Map<double[], Set<double[]>>> subs = GraphUtils.getSubGraphs(spaningTree);
+		while( subs.size() != numCluster ) {
+			// get subtree with largest cluster-SS
+			Map<double[],Set<double[]>> bestT = null;
+			double cost = Double.MIN_VALUE;
+			for( Map<double[],Set<double[]>> t : subs ) {
+				double c = DataUtils.getSumOfSquares(GraphUtils.getNodes(t), dist);
+				if( c > cost ) {
+					cost = c;
+					bestT = t;
+				}
+			}
 			
+			// get best cut of tree with largest WSS
+			double[] bestA = null, bestB = null;
+			double bestInc = Double.MIN_VALUE;
+			for( double[] a : new ArrayList<double[]>(bestT.keySet() ) )
+				for( double[] b : new ArrayList<double[]>(bestT.get(a) ) ) {
+					if( a.hashCode() < b.hashCode() ) // just one direction is enough
+						continue;
+					
+					bestT.get(a).remove(b);
+					bestT.get(b).remove(a);
+										
+					Set<double[]> clusterA = GraphUtils.getNodes( GraphUtils.getSubGraphOf(bestT, a) );				
+					Set<double[]> clusterB = GraphUtils.getNodes( GraphUtils.getSubGraphOf(bestT, b) );
+										
+					double inc = cost - DataUtils.getSumOfSquares(clusterA, dist) - DataUtils.getSumOfSquares(clusterB, dist);
+					if( inc > bestInc ) {
+						bestInc = inc;
+						bestA = a;
+						bestB = b;
+					}
+							
+					bestT.get(a).add(b);
+					bestT.get(b).add(a);
+				}
+			
+			// do the cut, replace tree by subtrees
+			bestT.get(bestA).remove(bestB);
+			bestT.get(bestB).remove(bestA);
+						
+			Map<double[], Set<double[]>> subA = GraphUtils.getSubGraphOf(bestT, bestA);
+			Map<double[], Set<double[]>> subB = GraphUtils.getSubGraphOf(bestT, bestB);
+			
+			subs.remove(bestT);
+			subs.add(subA);
+			subs.add(subB);
+		}
+				
+		// to cluster
+		List<Set<double[]>> cluster = new ArrayList<Set<double[]>>();
+		for( Map<double[], Set<double[]>> s : subs ) 
+			cluster.add(GraphUtils.getNodes(s));
+		return cluster;
+	}
+					
 	// not connected
 	public static Map<Set<double[]>,TreeNode> getHierarchicalClusterTree(List<double[]> samples, Dist<double[]> dist, HierarchicalClusteringType type) {
 		return getHierarchicalClusterTree(samples, null, dist, type);
@@ -232,17 +323,12 @@ public class Clustering {
 		return getHierarchicalClusterTree( null, cm, dist, type);
 	}
 	
+	// TODO returns Map just for historic reasons, refactor to List/Collection
 	private static Map<Set<double[]>,TreeNode> getHierarchicalClusterTree( Collection<double[]> samples, Map<double[], Set<double[]>> cm, Dist<double[]> dist, HierarchicalClusteringType type) {
-		if( samples == null ) {
-			samples = new HashSet<double[]>();
-			for( double[] a : cm.keySet() ) {
-				samples.add(a);
-				for( double[] b : cm.get(a) )
-					samples.add(b);
-			}
-		}
+		if( samples == null )
+			samples = GraphUtils.getNodes(cm);
 		int length = samples.iterator().next().length;
-		
+				
 		class FlatSet<T> extends HashSet<T> {
 			private static final long serialVersionUID = -1960947872875758352L;
 			public int hashCode = 0;
@@ -265,123 +351,102 @@ public class Clustering {
 			}
 		}
 				
-		Map<Set<double[]>,TreeNode> tree = new HashMap<Set<double[]>,TreeNode>();
-		List<Set<double[]>> leafLayer = new ArrayList<Set<double[]>>();
+		List<TreeNode> tree = new ArrayList<TreeNode>();
+		List<TreeNode> leafLayer = new ArrayList<TreeNode>();
 		
-		Map<Set<double[]>, Double> ssCache = new HashMap<Set<double[]>, Double>();
-		Map<Set<double[]>, Map<Set<double[]>, Double>> unionCache = new HashMap<Set<double[]>, Map<Set<double[]>, Double>>();
+		Map<TreeNode, Double> ssCache = new HashMap<TreeNode, Double>();
+		Map<TreeNode, Map<TreeNode,Double>> unionCache = new HashMap<>();
 						
 		int age = 0;
 		for (double[] d : samples) {
-			Set<double[]> l = new FlatSet<double[]>();
+			Set<double[]> l = new FlatSet<double[]>(); // flat
 			l.add(d);
 			
 			TreeNode cn = new TreeNode();
 			cn.age = age;
 			cn.cost = 0;
-			tree.put(l,cn);
+			cn.contents = l;
+			tree.add(cn);
 			
-			leafLayer.add(l);
-			ssCache.put(l, 0.0);
+			leafLayer.add(cn);
+			ssCache.put(cn, 0.0);
 		}
-		
-				
+						
 		// init connected map
-		Map<Set<double[]>, Set<Set<double[]>>> connected = null;
+		Map<TreeNode, Set<TreeNode>> connected = null;
 		if (cm != null) {
-			connected = new HashMap<Set<double[]>, Set<Set<double[]>>>();
-			for (Set<double[]> a : leafLayer) {
-				for (Set<double[]> b : leafLayer) {
-					if ( a != b && cm.get(a.iterator().next()).contains(b.iterator().next())) {
+			connected = new HashMap<TreeNode, Set<TreeNode>>();
+			for (TreeNode a : leafLayer) 
+				for (TreeNode b : leafLayer) 
+					if ( a != b && cm.get(a.contents.iterator().next()).contains(b.contents.iterator().next())) {
 						if (!connected.containsKey(a))
-							connected.put(a, new HashSet<Set<double[]>>());
+							connected.put(a, new HashSet<TreeNode>());
 						connected.get(a).add(b);
 					}
-				}
-			}
 		}
 		
 		while (leafLayer.size() > 1 ) {
-			Set<double[]> c1 = null, c2 = null;
+			TreeNode c1 = null, c2 = null;
 			double sMin = Double.MAX_VALUE;
 			
 			for (int i = 0; i < leafLayer.size() - 1; i++) {
-				Set<double[]> l1 = leafLayer.get(i);
+				TreeNode l1 = leafLayer.get(i);
 
 				for (int j = i + 1; j < leafLayer.size(); j++) {
-					Set<double[]> l2 = leafLayer.get(j);
+					TreeNode l2 = leafLayer.get(j);
 					
-					if( connected != null 
-							&& ( !connected.containsKey(l1) || !connected.get(l1).contains(l2) ) ) // disjoint
+					if( connected != null && ( !connected.containsKey(l1) || !connected.get(l1).contains(l2) ) ) // disjoint
 						continue;
 															
-					double s = -1;
-					if (HierarchicalClusteringType.ward == type) {
-																																				
+					double s = Double.NaN;
+					if (HierarchicalClusteringType.ward == type) {																														
 						// get error sum of squares
 						if (!unionCache.containsKey(l1) || !unionCache.get(l1).containsKey(l2)) {
 																
 							// calculate mean and ss, slightly faster than actually forming a union
 							double[] r = new double[length];
 							for (int l = 0; l < length; l++) {
-								for (double[] d : l1)
+								for (double[] d : l1.contents)
 									r[l] += d[l];
-								for (double[] d : l2)
+								for (double[] d : l2.contents)
 									r[l] += d[l];
 							}
 							
 							for (int l = 0; l < length; l++)
-								r[l] /= l1.size()+l2.size();
+								r[l] /= l1.contents.size()+l2.contents.size();
 							
 							double ssUnion = 0;
-							for( double[] d : l1 ) {
+							for( double[] d : l1.contents ) {
 								double di = dist.dist(r, d);
 								ssUnion += di * di;
 							}
-							for( double[] d : l2 ) {
+							for( double[] d : l2.contents ) {
 								double di = dist.dist(r, d);
 								ssUnion += di * di;
 							}
 
 							if (!unionCache.containsKey(l1))
-								unionCache.put( l1, new HashMap<Set<double[]>, Double>() );
+								unionCache.put( l1, new HashMap<TreeNode, Double>() );
 							unionCache.get(l1).put(l2, ssUnion);
-						}		
-																		
+						}													
 						s = unionCache.get(l1).get(l2) - ( ssCache.get(l1) + ssCache.get(l2) );	
-						
 					} else if (HierarchicalClusteringType.single_linkage == type) {
 						s = Double.MAX_VALUE;
-
-						for (double[] d1 : l1) {
-							for (double[] d2 : l2) {
-								double d = dist.dist(d1, d2);
-								if (d < s)
-									s = d;
-							}
-						}
+						for (double[] d1 : l1.contents) 
+							for (double[] d2 : l2.contents) 
+								s = Math.min(s, dist.dist(d1, d2) );				
 					} else if (HierarchicalClusteringType.complete_linkage == type) {
 						s = Double.MIN_VALUE;
-
-						for (double[] d1 : l1) {
-							for (double[] d2 : l2) {
-								double d = dist.dist(d1, d2);
-								if (d > s)
-									s = d;
-							}
-						}
+						for (double[] d1 : l1.contents)
+							for (double[] d2 : l2.contents)
+								s = Math.max(s, dist.dist(d1, d2) );
 					} else if (HierarchicalClusteringType.average_linkage == type) {
 						s = 0;
-
-						for (double[] d1 : l1) {
-							for (double[] d2 : l2) {
-								double d = dist.dist(d1, d2);
-								s += d;
-							}
-						}
-						s /= (l1.size() * l2.size());
+						for (double[] d1 : l1.contents) 
+							for (double[] d2 : l2.contents) 
+								s += dist.dist(d1, d2);
+						s /= (l1.contents.size() * l2.contents.size());
 					}
-
 					if (s < sMin) {
 						c1 = l1;
 						c2 = l2;
@@ -390,69 +455,70 @@ public class Clustering {
 				}
 			}
 			
-			boolean nanSS = false;
 			if( c1 == null && c2 == null ) { // no connected clusters present anymore
-				c1 = leafLayer.get(0);
-				c2 = leafLayer.get(1);
-				nanSS = true;	
+				log.warn("only non-connected clusters present! "+leafLayer.size() );
+				Map<Set<double[]>,TreeNode> t = new HashMap<>();
+				for( TreeNode tn : tree )
+					t.put(tn.contents, tn);
+				return t;
 			}
 			
 			// remove old clusters
 			leafLayer.remove(c1);
 			leafLayer.remove(c2);
 
-			// merge
-			Set<double[]> union = new FlatSet<double[]>();
-			union.addAll(c1);
-			union.addAll(c2);	
-			leafLayer.add(union);
+			// create merge node		
+			TreeNode mergeNode = new TreeNode();
+			Set<double[]> union = new FlatSet<double[]>(); // flat
+			union.addAll(c1.contents);
+			union.addAll(c2.contents);	
+			mergeNode.contents = union;
+			mergeNode.age = ++age;
+			mergeNode.children = Arrays.asList(new TreeNode[]{ c1, c2 });
 			
+			// calculate/update cost
 			double ss = 0;
-			if( nanSS ) {
-				ss = Double.NaN;
-			} else if( type == HierarchicalClusteringType.ward ) {
-				for( Set<double[]> s : leafLayer )
-					if( s == union )
-						ss += unionCache.get(c1).get(c2);
-					else
-						ss += ssCache.get(s);
+			if( type == HierarchicalClusteringType.ward ) {
+				ss = unionCache.get(c1).get(c2);
+				for( TreeNode s : leafLayer )
+					ss += ssCache.get(s);
 				
 				// update caches
 				ssCache.remove(c1);
 				ssCache.remove(c2);
-				ssCache.put( union, unionCache.get(c1).get(c2) );
+				ssCache.put( mergeNode, unionCache.get(c1).get(c2) );
 			
 				unionCache.remove(c1);
 			} else
-				ss = DataUtils.getWithinSumOfSuqares(leafLayer, dist); // expensive
+				ss = sMin;
+			mergeNode.cost = ss;
+									
+			// add nodes
+			leafLayer.add(mergeNode);
+			tree.add(mergeNode);
 			
 			// update connected map, non-connected cluster are ALSO merged in order to return a single tree. These merges have ss=NAN
-			// 1. merge values of c1 and c2 and put union
 			if( connected != null ) {
-				Set<Set<double[]>> ns = connected.remove(c1);
+				// 1. merge values of c1 and c2 and put union
+				Set<TreeNode> ns = connected.remove(c1);
 				ns.addAll( connected.remove(c2) );
-				connected.put(union, ns);
+				connected.put(mergeNode, ns);
 				
 				// 2. replace all values c1,c2 by union
-				for( Set<double[]> a : connected.keySet() ) {
-					Set<Set<double[]>> s = connected.get(a);
+				for( Set<TreeNode> s : connected.values() ) {
 					if( s.contains(c1) || s.contains(c2)) {
 						s.remove(c1);
 						s.remove(c2);
-						s.add(union);
+						s.add(mergeNode);
 					}
 				}
 			}
-						
-			TreeNode cn = new TreeNode();
-			cn.cost = ss;
-			cn.age = ++age;
-			cn.children = new TreeNode[]{ tree.get(c1), tree.get(c2) };
-			tree.put(union, cn);
-			
-			//log.debug( leafLayer.size()+", ss:"+ss);
+
 		}
-		return tree;
+		Map<Set<double[]>,TreeNode> t = new HashMap<>();
+		for( TreeNode tn : tree )
+			t.put(tn.contents, tn);
+		return t;
 	}
 	
 	public static List<Set<double[]>> skater(Map<double[], Set<double[]>> mst, int numCuts, Dist<double[]> dist, int minClusterSize) {
@@ -622,6 +688,6 @@ public class Clustering {
 		
 		int nrCluster = 7;
 		Map<Set<double[]>,TreeNode> tree = Clustering.getHierarchicalClusterTree(samples, cm, dist, HierarchicalClusteringType.ward);
-		System.out.println("WCSS1: " + DataUtils.getWithinSumOfSuqares(Clustering.cutTree( tree, nrCluster), dist));		
+		System.out.println("WCSS1: " + DataUtils.getWithinSumOfSquares(Clustering.cutTree( tree, nrCluster), dist));		
 	}
 }

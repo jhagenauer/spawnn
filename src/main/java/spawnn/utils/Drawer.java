@@ -11,7 +11,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -98,14 +97,13 @@ public class Drawer {
 		for (Collection<double[]> l : cluster) {
 			if (l.isEmpty())
 				continue;
-
+			
 			for (double[] d : l)
 				valueMap.put(d, (double) nonEmpty);
 			nonEmpty++;
 		}
-
+		
 		Map<double[], Color> colorMap = ColorUtils.getColorMap(valueMap, ColorBrewer.Set3,false);
-
 		// draw
 		try {
 			SimpleFeatureTypeBuilder typeBuilder = new SimpleFeatureTypeBuilder();
@@ -172,7 +170,7 @@ public class Drawer {
 			Rectangle imageBounds = null;
 			try {
 				double heightToWidth = maxBounds.getSpan(1) / maxBounds.getSpan(0);
-				int imageWidth = 1000;
+				int imageWidth = 2000;
 
 				imageBounds = new Rectangle(0, 0, imageWidth, (int) Math.round(imageWidth * heightToWidth));
 				// imageBounds = new Rectangle( 0, 0, mp.getWidth(), (int) Math.round(mp.getWidth() * heightToWidth));
@@ -498,7 +496,7 @@ public class Drawer {
 	
 			mapBounds.expandBy(0.2);
 			double heightToWidth = mapBounds.getSpan(1) / mapBounds.getSpan(0);
-			int imageWidth = 1000;
+			int imageWidth = 2400;
 			imageBounds = new Rectangle(0, 0, imageWidth, (int) Math.round(imageWidth * heightToWidth));
 	
 			BufferedImage image = new BufferedImage(imageBounds.width, imageBounds.height, BufferedImage.TYPE_INT_ARGB);

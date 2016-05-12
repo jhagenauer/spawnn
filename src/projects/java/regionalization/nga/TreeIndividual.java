@@ -403,6 +403,7 @@ public class TreeIndividual extends GAIndividual<TreeIndividual> {
 			double[] rb = new ArrayList<double[]>(rc.get(ra)).get(r.nextInt(rc.get(ra).size()));
 			return new SimpleEntry<double[], double[]>(ra, rb);
 		}
+		System.err.println("null");
 		return null;
 	}
 

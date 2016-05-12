@@ -220,8 +220,8 @@ public class WMNGParamSensREDCAP {
 							
 							r.m.put("QE", DataUtils.getMeanQuantizationError(bmus, fDist));
 							r.m.put("QE_orig", DataUtils.getMeanQuantizationError(bmus, fDistOrig));
-							r.m.put("WSS", DataUtils.getWithinSumOfSuqares(bmus.values(), fDist ) );
-							r.m.put("WSS_orig", DataUtils.getWithinSumOfSuqares(bmus.values(), fDistOrig ) );
+							r.m.put("WSS", DataUtils.getWithinSumOfSquares(bmus.values(), fDist ) );
+							r.m.put("WSS_orig", DataUtils.getWithinSumOfSquares(bmus.values(), fDistOrig ) );
 							r.m.put("NumRegions", (double)numSubs);
 							r.m.put("ptvMean",ds1.getMean() );
 							r.m.put("ptvVar", ds1.getVariance() );

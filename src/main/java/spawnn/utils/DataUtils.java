@@ -792,69 +792,103 @@ public class DataUtils {
 	}
 
 	public static DataFrame readDataFrameFromCSV(File file, int[] ign, boolean verbose) {
-		DataFrame sd = new DataFrame();
-		List<double[]> r = new ArrayList<double[]>();
-
+		char quote = '"';
+		char sep = ',';
+		
 		Set<Integer> ignore = new HashSet<Integer>();
 		for (int i : ign)
 			ignore.add(i);
-
-		BufferedReader reader = null;
-		;
-		try {
-			reader = new BufferedReader(new FileReader(file));
-			// header handling
-			String header = null;
-			while ((header = reader.readLine()) != null)
-				// skip comments
-				if (!header.startsWith("#"))
-					break;
-
-			List<String> names = new ArrayList<String>();
-			String[] h = header.split(",");
-
-			for (int i = 0; i < h.length; i++) {
-				if (!ignore.contains(i)) {
-					log.debug(i + "," + h[i] + "," + names.size());
-					names.add(h[i]);
+		
+		DataFrame sd = new DataFrame();
+		while( true ) {
+			boolean retry = false;
+			List<double[]> r = new ArrayList<double[]>();
+			BufferedReader reader = null;
+			try {
+				reader = new BufferedReader(new FileReader(file));
+				// header handling
+				String header = null;
+				while ((header = reader.readLine()) != null)
+					// skip comments
+					if (!header.startsWith("#"))
+						break;
+	
+				// clear line from commas within strings
+				{
+				boolean start = false;
+				char[] charStr = header.toCharArray();
+				for (int i = 0; i < charStr.length; i++){
+				    if( charStr[i] == quote )
+				    	start = !start;
+				    if( start == true && charStr[i] == sep )
+				    	charStr[i] = ';'; // replace
 				}
-			}
-			sd.names = names;
-
-			String line = null;
-			while ((line = reader.readLine()) != null) {
-
-				if (line.startsWith("#"))
-					continue;
-
-				String[] data = line.split(",");
-				double[] d = new double[data.length - ign.length];
-				int modIdx = 0;
-				for (int i = 0; i < data.length; i++)
-					if (ignore.contains(i))
-						modIdx++;
-					else
-						d[i - modIdx] = Double.parseDouble(data[i]);
-				r.add(d);
-
-			}
-		} catch (IOException e) {
-			e.printStackTrace();
-		} finally {
-			if (reader != null)
-				try {
-					reader.close();
-				} catch (IOException e) {
-					e.printStackTrace();
+				header = String.valueOf(charStr);
 				}
-		}
-		sd.samples = r;
+				String[] h = header.split(sep+"");
+	
+				List<String> names = new ArrayList<String>();
+				for (int i = 0; i < h.length; i++)
+					if (!ignore.contains(i))
+						names.add(h[i]);
+				sd.names = names;
+	
+				String line = null;
+				while ((line = reader.readLine()) != null ) {
+	
+					if (line.startsWith("#"))
+						continue;
+					
+					// clear line from commas within strings
+					boolean start = false;
+					char[] charStr = line.toCharArray();
+					for (int i = 0; i < charStr.length; i++){
+					    if( charStr[i] == quote)
+					    	start = !start;
+					    if( start == true && charStr[i] == sep )
+					    	charStr[i] = ';'; // replace
+					}
+					line = String.valueOf(charStr);
+					
+					String[] data = line.split(sep+"");
+					double[] d = new double[data.length - ignore.size()];
+					int modIdx = 0;
+					for (int i = 0; i < data.length; i++)
+						if (ignore.contains(i))
+							modIdx++;
+						else {
+							try {
+								d[i - modIdx] = Double.parseDouble(data[i]);
+							} catch( NumberFormatException e ) {
+								log.warn("Cannot parse value "+data[i]+" in column "+i+", ignoring column...");
+								ignore.add(i);
+								retry = true;
+								break;
+							}
+						}
+					r.add(d);
+				}
+			} catch (IOException e) {
+				e.printStackTrace();
+			} finally {
+				if (reader != null)
+					try {
+						reader.close();
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+			}
+	
+			sd.samples = r;
+			if( !retry )
+				break;
+		} 
 
 		// TODO for now its all double
 		sd.bindings = new ArrayList<binding>();
 		for (int i = 0; i < sd.names.size(); i++)
 			sd.bindings.add(binding.Double);
-
+		
 		return sd;
 	}
 
@@ -1246,7 +1280,7 @@ public class DataUtils {
 		return ssq;
 	}
 
-	public static double getWithinSumOfSuqares(Collection<Set<double[]>> c, Dist<double[]> dist) {
+	public static double getWithinSumOfSquares(Collection<Set<double[]>> c, Dist<double[]> dist) {
 		double ssq = 0;
 		for (Set<double[]> s : c)
 			ssq += getSumOfSquares(s, dist);

@@ -13,6 +13,6 @@ public class WSSCutsTabuEvaluator implements Evaluator<CutsTabuIndividual> {
 	}
 	@Override
 	public double evaluate(CutsTabuIndividual i) {		
-		return DataUtils.getWithinSumOfSuqares(i.toCluster(), dist);
+		return DataUtils.getWithinSumOfSquares(i.toCluster(), dist);
 	}
 }

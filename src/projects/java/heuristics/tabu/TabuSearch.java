@@ -50,7 +50,7 @@ public class TabuSearch<T extends TabuIndividual<T>> {
 			k++;
 			Set<TabuMove<T>> moves = new HashSet<>(curBest.getNeighboringMoves());
 			
-			if( rndMoveDiversication ) {
+			if( rndMoveDiversication && noImpro > noImprosUntilPenalty && noImpro % noImprosUntilPenalty < maxPenaltyDuration ) {
 				int s = moves.size();
 				moves.clear();
 				while( moves.size() < s ) 

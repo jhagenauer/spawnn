@@ -1,4 +1,4 @@
-package regionalization;
+package regionalization.medoid;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -7,16 +7,14 @@ import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
 
-import org.apache.log4j.Logger;
-
 import spawnn.dist.Dist;
 import spawnn.utils.DataUtils;
 import spawnn.utils.GraphUtils;
 
-public class PamLikeRegioClustering {
-	private static Logger log = Logger.getLogger(PamLikeRegioClustering.class);
+public class MedoidRegioClustering {
 
 	// Actually, this is NOT PAM, but works nevertheless
+	@Deprecated
 	public static Map<double[], Set<double[]>> cluster(Map<double[],Set<double[]>> tree, int num, Dist<double[]> dist, boolean nbMode ) {
 		Random r = new Random();
 
@@ -84,7 +82,7 @@ public class PamLikeRegioClustering {
 			for( Entry<double[],Map<double[],Set<double[]>>> e : clusterMap.entrySet() ) 
 				clusters.put(e.getKey(),GraphUtils.getNodes(e.getValue()));
 						
-			double cost = DataUtils.getWithinSumOfSuqares(clusters.values(), dist);
+			double cost = DataUtils.getWithinSumOfSquares(clusters.values(), dist);
 			if( bestCluster == null || cost < bestSum ) {
 				//log.debug("found new best: "+cost+","+noImpro);
 				bestSum = cost;
@@ -127,9 +125,8 @@ public class PamLikeRegioClustering {
 		return bestCluster;
 	}
 	
-	public static Map<double[], Set<double[]>> clusterCached(Map<double[],Set<double[]>> tree, int num, Dist<double[]> dist, boolean nbMode ) {
+	public static Map<double[], Set<double[]>> clusterCached(Map<double[],Set<double[]>> tree, int num , Dist<double[]> dist, DistMode dm ) {
 		Random r = new Random();
-
 		Set<double[]> medoids = new HashSet<double[]>();
 		while( medoids.size() < num ) {
 			for (double[] s : tree.keySet())
@@ -138,12 +135,18 @@ public class PamLikeRegioClustering {
 					break;
 				}
 		}
+		return clusterCached(tree, medoids, dist, dm );
+	}
+	
+	public static enum DistMode { WSS, Euclidean, EuclideanSqrd };
+	
+	public static Map<double[], Set<double[]>> clusterCached(Map<double[],Set<double[]>> tree, Set<double[]> meds, Dist<double[]> dist, DistMode dm ) {
 		
+		Set<double[]> medoids = new HashSet<double[]>(meds);
 		Map<double[],Set<double[]>> bestCluster = null;
 		double bestSum = 0;
-		int noImpro = 0;
 		
-		while( true ) {
+		for( int noImpro = 0; noImpro < 20; noImpro++ ) {
 			// 1. init clusterMap with best medoids
 			Map<double[], Map<double[], Set<double[]>>> clusterMap = new HashMap<double[], Map<double[], Set<double[]>>>();
 			Map<double[],Set<double[]>> added = new HashMap<double[],Set<double[]>>();
@@ -171,20 +174,37 @@ public class PamLikeRegioClustering {
 				for( double[] m : clusterMap.keySet() ) {
 					
 					// get cost update cache
-					if( !cache.containsKey(m) || !open.contains(cache.get(m).bestB) ) {
+					if( !cache.containsKey(m) || !open.contains( cache.get(m).bestB) ) {
 						BestEntry be = new BestEntry();
 						Set<double[]> nodes = GraphUtils.getNodes(clusterMap.get(m));
 						for( double[] a : added.get(m) ) {
 							for( double[] b : tree.get(a) ) 
-								if( open.contains(b) ) { // unassigned
-									nodes.add(b);
-									double cost = DataUtils.getSumOfSquares(nodes, dist);
-									if( cost < be.cost ) {
-										be.bestA = a;
-										be.bestB = b;
-										be.cost = cost;
+								if( open.contains(b) ) { // unassigned	
+									
+									if( dm == DistMode.WSS ) {
+										nodes.add(b);
+										double cost = DataUtils.getSumOfSquares(nodes, dist);
+										if( cost < be.cost ) {
+											be.bestA = a;
+											be.bestB = b;
+											be.cost = cost;
+										}
+										nodes.remove(b);
+									} else if( dm == DistMode.Euclidean ) {
+										double cost = dist.dist(m,b);
+										if( cost < be.cost ) {
+											be.bestA = a;
+											be.bestB = b;
+											be.cost = cost;
+										}
+									} else if( dm == DistMode.EuclideanSqrd ) {
+										double cost = Math.pow(dist.dist(m,b),2);
+										if( cost < be.cost ) {
+											be.bestA = a;
+											be.bestB = b;
+											be.cost = cost;
+										}
 									}
-									nodes.remove(b);
 								}					
 						}
 						cache.put(m, be);
@@ -212,8 +232,8 @@ public class PamLikeRegioClustering {
 			Map<double[],Set<double[]>> clusters = new HashMap<double[],Set<double[]>>();
 			for( Entry<double[],Map<double[],Set<double[]>>> e : clusterMap.entrySet() ) 
 				clusters.put(e.getKey(),GraphUtils.getNodes(e.getValue()));
-						
-			double cost = DataUtils.getWithinSumOfSuqares(clusters.values(), dist);
+			
+			double cost = DataUtils.getWithinSumOfSquares(clusters.values(), dist);
 			if( bestCluster == null || cost < bestSum ) {
 				//log.debug("found new best: "+cost+","+noImpro);
 				bestSum = cost;
@@ -222,36 +242,30 @@ public class PamLikeRegioClustering {
 			}
 						
 			// 3. update medoids
-			medoids.clear();
+			medoids = new HashSet<double[]>();
 			for(double[] m : clusters.keySet() ) {
 								
 				double[] nm = m;
 				double bs = Double.MAX_VALUE;				
 				
-				if( !nbMode ) {
-					for( double[] a : clusters.get(m) ) {
-						double sum = DataUtils.getSumOfSquares(a, clusters.get(m), dist);
-						if( sum < bs ) {
-							nm = a;
-							bs = sum;
-						}
+				for( double[] a : clusters.get(m) ) {
+					double sum = 0;
+					if( dm == DistMode.WSS )
+						sum = DataUtils.getSumOfSquares(a, clusters.get(m), dist);
+					else if( dm == DistMode.Euclidean ) {
+						for( double[] b : clusters.get(m) )
+							sum += dist.dist(a, b);
+					} else if( dm == DistMode.EuclideanSqrd )
+						for( double[] b : clusters.get(m) )
+							sum += Math.pow(dist.dist(a, b),2);
+					if( sum < bs ) {
+						nm = a;
+						bs = sum;
 					}
-				} else {
-					for( double[] a : clusterMap.get(m).get(m) ) {
-						double sum = DataUtils.getSumOfSquares(a, clusters.get(m), dist);
-						if( sum < bs ) {
-							nm = a;
-							bs = sum;
-						}
-					}
-				}
-					
-				
+				}				
 				medoids.add(nm);
 			}
-						
-			if( noImpro++ == 20 ) 
-				break;
+			
 		}
 		return bestCluster;
 	}

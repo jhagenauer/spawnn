@@ -21,7 +21,8 @@ import com.vividsolutions.jts.triangulate.VoronoiDiagramBuilder;
 import heuristics.Evaluator;
 import heuristics.GeneticAlgorithm;
 import heuristics.tabu.TabuSearch;
-import regionalization.PamLikeRegioClustering;
+import regionalization.medoid.MedoidRegioClustering;
+import regionalization.medoid.MedoidRegioClustering.DistMode;
 import regionalization.nga.tabu.CutsTabuIndividual;
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
@@ -88,42 +89,57 @@ public class GA_Regionalization_MST {
 		Dist<double[]> fDist = new EuclideanDist(new int[] { 2 });
 		
 		Dist<double[]> rDist = new RandomDist<>();
-
-		{
+		
 		log.debug("start");
 		Map<Set<double[]>, TreeNode> hcTree = Clustering.getHierarchicalClusterTree(cm, fDist, HierarchicalClusteringType.ward);
 		List<Set<double[]>> hcClusters = Clustering.cutTree(hcTree, numCluster);
-		log.debug("ward: " + DataUtils.getWithinSumOfSuqares(hcClusters, fDist));
-		}
-		
-		int repeats = 40;
+		double wardCost = DataUtils.getWithinSumOfSquares(hcClusters, fDist);
+		log.debug("ward: " + wardCost );
+				
+		int repeats = 10;
 		{
 			DescriptiveStatistics ds = new DescriptiveStatistics();
 			for( int i = 0; i < repeats; i++ ) {
 				Map<double[], Set<double[]>> mst = GraphUtils.getMinimumSpanningTree(cm, fDist);
 				List<Set<double[]>> skaterClusters = Clustering.skater(mst, numCluster - 1, fDist, 0);
-				ds.addValue( DataUtils.getWithinSumOfSuqares(skaterClusters, fDist));
+				ds.addValue( DataUtils.getWithinSumOfSquares(skaterClusters, fDist));
 			}
 			log.debug("skater: "+ds.getMean()+","+ds.getMin());
 		}
 				
 		{
-			long time = System.currentTimeMillis();
+			int lower = 0;
 			DescriptiveStatistics ds = new DescriptiveStatistics();
 			for( int i = 0; i < repeats; i++ ) {
-				ds.addValue( DataUtils.getWithinSumOfSuqares(PamLikeRegioClustering.clusterCached(cm, numCluster, fDist, true).values(), fDist));
+				double cost = DataUtils.getWithinSumOfSquares(MedoidRegioClustering.clusterCached(cm, numCluster, fDist, DistMode.WSS ).values(), fDist);
+				if( cost < wardCost ) lower++;
+				ds.addValue( cost );
 			}
-			log.debug("pam nbMove: "+ds.getMean()+","+ds.getMin()+","+(System.currentTimeMillis()-time)/1000.0);
+			log.debug("pam: "+ds.getMean()+","+ds.getMin()+","+(double)lower/repeats);
 		}
 		
 		{
+			int lower = 0;
 			DescriptiveStatistics ds = new DescriptiveStatistics();
 			for( int i = 0; i < repeats; i++ ) {
-				ds.addValue( DataUtils.getWithinSumOfSuqares(PamLikeRegioClustering.clusterCached(cm, numCluster, fDist, false).values(), fDist));
+				double cost = DataUtils.getWithinSumOfSquares(MedoidRegioClustering.clusterCached(cm, numCluster, fDist, DistMode.Euclidean ).values(), fDist);
+				if( cost < wardCost ) lower++;
+				ds.addValue( cost );
 			}
-			log.debug("pam: "+ds.getMean()+","+ds.getMin());
+			log.debug("pam: "+ds.getMean()+","+ds.getMin()+","+(double)lower/repeats);
 		}
 		
+		{
+			int lower = 0;
+			DescriptiveStatistics ds = new DescriptiveStatistics();
+			for( int i = 0; i < repeats; i++ ) {
+				double cost = DataUtils.getWithinSumOfSquares(MedoidRegioClustering.clusterCached(cm, numCluster, fDist, DistMode.EuclideanSqrd ).values(), fDist);
+				if( cost < wardCost ) lower++;
+				ds.addValue( cost );
+			}
+			log.debug("pam: "+ds.getMean()+","+ds.getMin()+","+(double)lower/repeats);
+		}
+				
 		{
 			Evaluator<CutsTabuIndividual> evaluator = new WSSCutsTabuEvaluator(fDist);
 			DescriptiveStatistics ds = new DescriptiveStatistics();

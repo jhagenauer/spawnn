@@ -138,9 +138,9 @@ public class FoodDeserts2 {
 									set.addAll(bmus.get(p));
 								c.add(set);
 							}
-							return new double[] { DataUtils.getWithinSumOfSuqares(c, fDist), DataUtils.getWithinSumOfSuqares(c, gDist) };
+							return new double[] { DataUtils.getWithinSumOfSquares(c, fDist), DataUtils.getWithinSumOfSquares(c, gDist) };
 						} else {
-							return new double[] { DataUtils.getWithinSumOfSuqares(bmus.values(), fDist), DataUtils.getWithinSumOfSuqares(bmus.values(), gDist) };
+							return new double[] { DataUtils.getWithinSumOfSquares(bmus.values(), fDist), DataUtils.getWithinSumOfSquares(bmus.values(), gDist) };
 						}
 					}
 				}));

@@ -292,7 +292,7 @@ public class GeneticAlgorithm {
 				e.printStackTrace();
 			}*/
 			
-			ds.addValue(DataUtils.getWithinSumOfSuqares( result.getCluster(), fDist));
+			ds.addValue(DataUtils.getWithinSumOfSquares( result.getCluster(), fDist));
 		}
 									
 		log.debug("GA WCSS: "+ ds.getMin()+","+ds.getMean()+","+ds.getMax()+","+ds.getStandardDeviation() );
@@ -306,7 +306,7 @@ public class GeneticAlgorithm {
 					idx = Math.min(idx, samples.indexOf(d) );
 				str += idx +" ";
 			}
-			log.debug(type+", WCSS: "+DataUtils.getWithinSumOfSuqares(wardCluster, fDist) +": "+str );
+			log.debug(type+", WCSS: "+DataUtils.getWithinSumOfSquares(wardCluster, fDist) +": "+str );
 		}
 	}
 }

@@ -125,17 +125,15 @@ public class RegionUtils {
 	}
 	
 	public static double getSSD( Set<double[]> cluster, int[] fa ) {
-		double sum = 0;
-		int cs = cluster.size();
-		
-		if( cs == 0 )
-			return sum;
-			
+		if( cluster.isEmpty() )
+			return 0;
+					
 		double[] mean = new double[fa.length];
 		for( double[] d : cluster )
 			for( int j = 0; j < fa.length; j++ )
-				mean[j] += d[fa[j]]/cs;
-				
+				mean[j] += d[fa[j]]/cluster.size();
+			
+		double sum = 0;
 		for( double[] d : cluster ) {
 			double s = 0;
 			for( int j = 0; j < fa.length; j++ )
@@ -147,6 +145,7 @@ public class RegionUtils {
 		return sum;
 	}
 		
+	@Deprecated // use the one of GraphUtils
 	public static Map<double[], Set<double[]>> deriveQueenContiguitiyMap( List<double[]> samples, List<Geometry> geoms ) {
 		Map<double[], Set<double[]>> cm = new HashMap<double[],Set<double[]>>();
 		

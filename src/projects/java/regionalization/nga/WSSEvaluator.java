@@ -12,6 +12,6 @@ public class WSSEvaluator implements Evaluator<TreeIndividual> {
 	}
 	@Override
 	public double evaluate(TreeIndividual i) {		
-		return DataUtils.getWithinSumOfSuqares(i.toCluster(), dist);
+		return DataUtils.getWithinSumOfSquares(i.toCluster(), dist);
 	}
 }

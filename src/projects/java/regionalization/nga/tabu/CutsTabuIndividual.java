@@ -19,7 +19,6 @@ import spawnn.utils.GraphUtils;
 public class CutsTabuIndividual extends TabuIndividual<CutsTabuIndividual> {
 
 	public static int k = 0;
-	public static int rndMoves = 10;
 
 	Random r = new Random();
 	Map<double[], Set<double[]>> tree, cuts;
@@ -119,12 +118,6 @@ public class CutsTabuIndividual extends TabuIndividual<CutsTabuIndividual> {
 
 	@Override
 	public List<TabuMove<CutsTabuIndividual>> getNeighboringMoves() {
-		if( k != 0 ) {
-			Set<TabuMove<CutsTabuIndividual>> s = new HashSet<>();
-			while( s.size() != rndMoves ) 
-				s.add( getRandomMove() );
-			return new ArrayList<>(s);
-		}
 		Set<Entry<double[],double[]>> oldCuts = new HashSet<Entry<double[],double[]>>(); 
 		for (double[] a : cuts.keySet())
 			for (double[] b : cuts.get(a)) {

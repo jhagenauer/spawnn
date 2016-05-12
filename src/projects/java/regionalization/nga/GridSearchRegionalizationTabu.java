@@ -49,7 +49,7 @@ public class GridSearchRegionalizationTabu {
 				samples = new ArrayList<double[]>();
 				geoms = new ArrayList<Geometry>();
 				coords = new ArrayList<Coordinate>();
-				while (samples.size() < 160) {
+				while (samples.size() < 400) {
 					double x = r.nextDouble();
 					double y = r.nextDouble();
 					double z = r.nextDouble();
@@ -90,7 +90,7 @@ public class GridSearchRegionalizationTabu {
 		int numCluster = 5;
 
 		int threads = 4;
-		int runs = 8;
+		int runs = 4;
 		List<Data> data = new ArrayList<Data>();
 		while (data.size() < 4)
 			data.add(new Data());
@@ -98,13 +98,18 @@ public class GridSearchRegionalizationTabu {
 
 		double bestValue = Double.MAX_VALUE;
 		
-		for (final int k : new int[] { 0 })
-			for (final int tlLength : new int[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,24, 25, 26,27,28,29,30 })
-				for (final int penDur : new int[] { 10, 25, 50, 75 }) 
-					for( final int noImproUntilPen : new int[]{ 10, 25, 50, 75, 100 } ){
+		for (final int k : new int[] { -1, 40, Integer.MAX_VALUE })
+			for( final boolean rndDiv : new boolean[]{true,false} )
+					for( final int noImproUntilPen : new int[]{ 25, 50, 75 } )
+						for( final int penDur : new int[]{ 25, 50, 75} ){
+							
+						if( rndDiv == false && k != -1 )
+							continue;
+							
 					long time = System.currentTimeMillis();
 
 					CutsTabuIndividual.k = k;
+					TabuSearch.rndMoveDiversication = rndDiv;
 
 					ExecutorService es = Executors.newFixedThreadPool(threads);
 					List<Future<double[]>> futures = new ArrayList<Future<double[]>>();
@@ -116,7 +121,7 @@ public class GridSearchRegionalizationTabu {
 								@Override
 								public double[] call() throws Exception {
 									CutsTabuIndividual init = new CutsTabuIndividual(tree, numCluster);
-									TabuSearch<CutsTabuIndividual> ts = new TabuSearch<CutsTabuIndividual>(evaluator,tlLength, 350, noImproUntilPen, penDur );
+									TabuSearch<CutsTabuIndividual> ts = new TabuSearch<CutsTabuIndividual>(evaluator,10, 350, noImproUntilPen, penDur );
 									CutsTabuIndividual ti = ts.search(init);
 									return new double[] { ti.getValue() };
 								}
@@ -135,7 +140,7 @@ public class GridSearchRegionalizationTabu {
 							ex.printStackTrace();
 						}
 					}
-					log.info(k + "\t" + tlLength + "\t" + noImproUntilPen +"\t" + penDur + "\t" + ds.getMean() + "\t" + ds.getStandardDeviation() + "\t" + (System.currentTimeMillis() - time) / 1000.0);
+					log.info(k + "\t" + rndDiv + "\t" + noImproUntilPen +"\t"+penDur+"\t"+ds.getMean() + "\t" + ds.getStandardDeviation() + "\t" + (System.currentTimeMillis() - time) / 1000.0);
 					bestValue = Math.min(bestValue, ds.getMean());
 				}
 		log.debug("best value: "+bestValue);
