@@ -124,7 +124,8 @@ public class MedoidRegioClustering {
 
 		int noImpro = 0;
 		while (true) {
-			Map<double[], Set<double[]>> clusters = growFromMedoids(tree, meds, dist, dm);
+			Map<double[], Set<double[]>> clusters = growFromMedoids(tree, medoids, dist, dm);
+			
 			double cost = DataUtils.getWithinSumOfSquares(clusters.values(), dist);
 			if (bestCluster == null || cost < bestSum) {
 				bestSum = cost;
@@ -157,7 +158,6 @@ public class MedoidRegioClustering {
 				}
 				medoids.add(nm);
 			}
-
 		}
 		return bestCluster;
 	}

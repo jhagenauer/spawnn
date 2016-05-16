@@ -113,7 +113,7 @@ public class TestMedoidClustering {
 				for( mInit mi : new mInit[]{ mInit.rnd, mInit.fDist, mInit.gDist/*, mInit.graphDist*/ } )
 				params.add( new Object[][]{
 					new Object[]{ numCluster },
-					new Object[]{ method.medoid, dm, 40, mi, gd }, 
+					new Object[]{ method.medoid, dm, 10, mi, gd }, 
 					new Object[]{ "none" } 
 				});
 		}
