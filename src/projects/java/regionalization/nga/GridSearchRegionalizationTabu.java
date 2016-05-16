@@ -98,19 +98,15 @@ public class GridSearchRegionalizationTabu {
 
 		double bestValue = Double.MAX_VALUE;
 		
-		for (final int k : new int[] { -1, 40, Integer.MAX_VALUE })
-			for( final boolean rndDiv : new boolean[]{true,false} )
-					for( final int noImproUntilPen : new int[]{ 25, 50, 75 } )
-						for( final int penDur : new int[]{ 25, 50, 75} ){
-							
-						if( rndDiv == false && k != -1 )
-							continue;
-							
+			for( final int pow : new int[]{ 1, 2, 3 } )
+					for( final int noImproUntilPen : new int[]{ 50 } )
+						for( final int penDur : new int[]{ 50 } ){
+													
 					long time = System.currentTimeMillis();
 
-					CutsTabuIndividual.k = k;
-					TabuSearch.rndMoveDiversication = rndDiv;
-
+					CutsTabuIndividual.k = -1;
+					TabuSearch.rndMoveDiversication = true;
+					
 					ExecutorService es = Executors.newFixedThreadPool(threads);
 					List<Future<double[]>> futures = new ArrayList<Future<double[]>>();
 
@@ -140,7 +136,7 @@ public class GridSearchRegionalizationTabu {
 							ex.printStackTrace();
 						}
 					}
-					log.info(k + "\t" + rndDiv + "\t" + noImproUntilPen +"\t"+penDur+"\t"+ds.getMean() + "\t" + ds.getStandardDeviation() + "\t" + (System.currentTimeMillis() - time) / 1000.0);
+					log.info(pow + "\t" + noImproUntilPen +"\t"+penDur+"\t"+ds.getMean() + "\t" + ds.getStandardDeviation() + "\t" + (System.currentTimeMillis() - time) / 1000.0);
 					bestValue = Math.min(bestValue, ds.getMean());
 				}
 		log.debug("best value: "+bestValue);

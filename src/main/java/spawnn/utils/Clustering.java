@@ -252,24 +252,29 @@ public class Clustering {
 		return m;
 	}
 		
-	// From REDCAP/SKATER, slow... performance could be improved
 	public static List<Set<double[]>> cutTreeREDCAP( Collection<TreeNode> tree, Map<double[],Set<double[]>> cm, HierarchicalClusteringType type, int numCluster, Dist<double[]> dist ) {
 		Map<double[],Set<double[]>> spaningTree = Clustering.toREDCAPSpanningTree(tree,cm,type,dist); // its bidirectional
+		return cutTreeREDCAP( spaningTree, numCluster, dist);
+	}
+	
+	public static List<Set<double[]>> cutTreeREDCAP( Map<double[],Set<double[]>> spaningTree, int numCluster, Dist<double[]> dist ) {
 		
-		List<Map<double[], Set<double[]>>> subs = GraphUtils.getSubGraphs(spaningTree);
+		Map<Map<double[], Set<double[]>>,Double> subs = new HashMap<>();
+		for( Map<double[],Set<double[]>> sub : GraphUtils.getSubGraphs(spaningTree) )
+			subs.put(sub, DataUtils.getSumOfSquares(GraphUtils.getNodes(sub), dist ));
+		
 		while( subs.size() != numCluster ) {
 			// get subtree with largest cluster-SS
 			Map<double[],Set<double[]>> bestT = null;
 			double cost = Double.MIN_VALUE;
-			for( Map<double[],Set<double[]>> t : subs ) {
-				double c = DataUtils.getSumOfSquares(GraphUtils.getNodes(t), dist);
-				if( c > cost ) {
-					cost = c;
-					bestT = t;
+			for( Entry<Map<double[],Set<double[]>>,Double> e : subs.entrySet() ) 
+				if( e.getValue() > cost ) {
+					cost = e.getValue();
+					bestT = e.getKey();
 				}
-			}
-			
-			// get best cut of tree with largest WSS
+			subs.remove(bestT);
+						
+			// get best cut of tree
 			double[] bestA = null, bestB = null;
 			double bestInc = Double.MIN_VALUE;
 			for( double[] a : new ArrayList<double[]>(bestT.keySet() ) )
@@ -300,19 +305,18 @@ public class Clustering {
 						
 			Map<double[], Set<double[]>> subA = GraphUtils.getSubGraphOf(bestT, bestA);
 			Map<double[], Set<double[]>> subB = GraphUtils.getSubGraphOf(bestT, bestB);
-			
-			subs.remove(bestT);
-			subs.add(subA);
-			subs.add(subB);
+						
+			subs.put(subA,DataUtils.getSumOfSquares(GraphUtils.getNodes(subA), dist ));
+			subs.put(subB,DataUtils.getSumOfSquares(GraphUtils.getNodes(subB), dist ));
 		}
 				
 		// to cluster
 		List<Set<double[]>> cluster = new ArrayList<Set<double[]>>();
-		for( Map<double[], Set<double[]>> s : subs ) 
+		for( Map<double[], Set<double[]>> s : subs.keySet() ) 
 			cluster.add(GraphUtils.getNodes(s));
 		return cluster;
 	}
-					
+						
 	// not connected
 	public static Map<Set<double[]>,TreeNode> getHierarchicalClusterTree(List<double[]> samples, Dist<double[]> dist, HierarchicalClusteringType type) {
 		return getHierarchicalClusterTree(samples, null, dist, type);

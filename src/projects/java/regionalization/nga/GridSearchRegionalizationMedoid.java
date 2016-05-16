@@ -20,7 +20,7 @@ import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
 
 import regionalization.medoid.MedoidRegioClustering;
-import regionalization.medoid.MedoidRegioClustering.DistMode;
+import regionalization.medoid.MedoidRegioClustering.GrowMode;
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
 import spawnn.utils.Clustering;
@@ -149,7 +149,7 @@ public class GridSearchRegionalizationMedoid {
 		
 		System.exit(1);
 
-		for( final DistMode dm : new DistMode[]{ DistMode.WSS/*, DistMode.Euclidean, DistMode.EuclideanSqrt*/ } )
+		for( final GrowMode dm : new GrowMode[]{ GrowMode.WSS/*, DistMode.Euclidean, DistMode.EuclideanSqrt*/ } )
 			for( final int initMode : new int[]{ 0, 1, 2 } ) {
 					long time = System.currentTimeMillis();
 
@@ -180,7 +180,7 @@ public class GridSearchRegionalizationMedoid {
 										} else { // medoid f-dist
 											init = Clustering.kMedoidsPAM(dt.samples, numCluster, fDist).keySet();
 										}
-										cost = Math.min(cost, DataUtils.getWithinSumOfSquares(MedoidRegioClustering.clusterCached(dt.cm, init, fDist, DistMode.WSS ).values(), fDist));
+										cost = Math.min(cost, DataUtils.getWithinSumOfSquares(MedoidRegioClustering.cluster(dt.cm, init, fDist, GrowMode.WSS, 20 ).values(), fDist));
 									}
 									
 									return new double[]{cost}; 
