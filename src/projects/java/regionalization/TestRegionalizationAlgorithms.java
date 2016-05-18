@@ -48,13 +48,14 @@ public class TestRegionalizationAlgorithms {
 		GeometryFactory gf = new GeometryFactory();
 		Random r = new Random();
 		
-		SpatialDataFrame sdf = DataUtils.readSpatialDataFrameFromShapefile(new File("data/redcap/Election/election2004.shp"), true);
+		SpatialDataFrame sdf = DataUtils.readSpatialDataFrameFromShapefile(new File("output/selection.shp"), true);
+		//SpatialDataFrame sdf = DataUtils.readSpatialDataFrameFromShapefile(new File("data/redcap/Election/election2004.shp"), true);
 		List<double[]> samples = sdf.samples;
 		List<Geometry> geoms = sdf.geoms;
-		//Map<double[], Set<double[]>> cm = GraphUtils.deriveQueenContiguitiyMap(samples, geoms,false); // some islands are not connected
-		Map<double[], Set<double[]>> cm = RegionUtils.readContiguitiyMap(samples, "data/redcap/Election/election2004_Queen.ctg");
+		Map<double[], Set<double[]>> cm = GraphUtils.deriveQueenContiguitiyMap(samples, geoms,false); // some islands are not connected
+		/*Map<double[], Set<double[]>> cm = RegionUtils.readContiguitiyMap(samples, "data/redcap/Election/election2004_Queen.ctg");
 		for( Entry<double[],Set<double[]>> e : cm.entrySet() ) // no identity
-			e.getValue().remove(e.getKey());
+			e.getValue().remove(e.getKey());*/
 		
 		for (int i = 0; i < samples.size(); i++) {
 			Coordinate c = geoms.get(i).getCentroid().getCoordinate();
@@ -82,28 +83,12 @@ public class TestRegionalizationAlgorithms {
 			log.debug("took: "+(double)(System.currentTimeMillis()-time)/1000.0);
 			log.debug("wardRedcap: "+DataUtils.getWithinSumOfSquares(redcapCluster, fDist));
 		}
-		
-		{
-			GeneticAlgorithm.debug = true;
-			TreeIndividual.k = -1;
-			TreeIndividual.mutCut = false;
-			List<TreeIndividual> init = new ArrayList<TreeIndividual>();
-			while (init.size() < 10) {
-				Map<double[], Set<double[]>> tree = GraphUtils.getMinimumSpanningTree(cm, rDist); 
-				init.add(new TreeIndividual(tree, tree, numCluster));
-			}
-			Evaluator<TreeIndividual> evaluator = new regionalization.nga.WSSEvaluator(fDist);
-			GeneticAlgorithm<TreeIndividual> ga = new GeneticAlgorithm<>(evaluator);
-			TreeIndividual ti = ga.search(init);
-			log.debug("best: " + ", "+ti.getValue());
-		}
-		System.exit(1);
-		
+			
 		{
 			GeneticAlgorithm.debug = true;
 			WSSEvaluator eval = new WSSEvaluator(samples, cm, fDist, GrowMode.EuclideanSqrd);
 			List<MedoidIndividual> init = new ArrayList<MedoidIndividual>();
-			while (init.size() < 10) 
+			while (init.size() < 20) 
 				init.add(new MedoidIndividual( numCluster, samples.size() ) );
 				
 			GeneticAlgorithm<MedoidIndividual> ga = new GeneticAlgorithm<>(eval);
@@ -111,6 +96,23 @@ public class TestRegionalizationAlgorithms {
 			
 			log.debug("ga: "+ti.getValue());
 		}
+		System.exit(1);
+		
+		{
+			GeneticAlgorithm.debug = true;
+			TreeIndividual.k = -1;
+			TreeIndividual.mutCut = false;
+			List<TreeIndividual> init = new ArrayList<TreeIndividual>();
+			while (init.size() < 20) {
+				Map<double[], Set<double[]>> tree = GraphUtils.getMinimumSpanningTree(cm, rDist); 
+				init.add(new TreeIndividual(tree, tree, numCluster));
+			}
+			Evaluator<TreeIndividual> evaluator = new regionalization.nga.WSSEvaluator(fDist,true);
+			GeneticAlgorithm<TreeIndividual> ga = new GeneticAlgorithm<>(evaluator);
+			TreeIndividual ti = ga.search(init);
+			log.debug("best: " + ", "+ti.getValue());
+		}
+		System.exit(1);
 		
 	}
 }

@@ -404,7 +404,7 @@ public class DataUtils {
 			double sum = 0;
 			for (T d : s)
 				sum += Math.pow(dist.dist(d, center), 2);
-		return sum/s.size();
+		return sum;
 	}
 
 	public static <T> double getMeanQuantizationError(Map<T, Set<T>> clusters, Dist<T> dist) {

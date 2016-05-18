@@ -277,6 +277,7 @@ public class Clustering {
 			// get best cut of tree
 			double[] bestA = null, bestB = null;
 			double bestInc = Double.MIN_VALUE;
+			Set<double[]> nodesBestT = GraphUtils.getNodes( bestT );
 			for( double[] a : new ArrayList<double[]>(bestT.keySet() ) )
 				for( double[] b : new ArrayList<double[]>(bestT.get(a) ) ) {
 					if( a.hashCode() < b.hashCode() ) // just one direction is enough
@@ -284,11 +285,15 @@ public class Clustering {
 					
 					bestT.get(a).remove(b);
 					bestT.get(b).remove(a);
+						
+					Set<double[]> nodesA = GraphUtils.getNodes( GraphUtils.getSubGraphOf(bestT, a) );
+					
+					// NOTE: Assumes that treeA is complementary to treeB (which should always be the case)
+					//Set<double[]> nodesB = GraphUtils.getNodes( GraphUtils.getSubGraphOf(bestT, b) );
+					Set<double[]> nodesB = new HashSet<double[]>(nodesBestT);
+					nodesB.removeAll(nodesA);
 										
-					Set<double[]> clusterA = GraphUtils.getNodes( GraphUtils.getSubGraphOf(bestT, a) );				
-					Set<double[]> clusterB = GraphUtils.getNodes( GraphUtils.getSubGraphOf(bestT, b) );
-										
-					double inc = cost - DataUtils.getSumOfSquares(clusterA, dist) - DataUtils.getSumOfSquares(clusterB, dist);
+					double inc = cost - DataUtils.getSumOfSquares( nodesA, dist ) - DataUtils.getSumOfSquares( nodesB, dist );
 					if( inc > bestInc ) {
 						bestInc = inc;
 						bestA = a;

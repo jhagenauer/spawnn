@@ -33,6 +33,7 @@ import regionalization.nga.tabu.CutsTabuIndividual;
 import spawnn.dist.ConstantDist;
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
+import spawnn.dist.RandomDist;
 import spawnn.utils.Clustering;
 import spawnn.utils.Clustering.HierarchicalClusteringType;
 import spawnn.utils.Clustering.TreeNode;
@@ -78,6 +79,7 @@ public class TestMedoidClustering {
 		DataUtils.transform(samples, new int[]{7}, DataUtils.transform.zScore ); // not needed	
 		Dist<double[]> fDist = new EuclideanDist(new int[] { 7 });
 		Dist<double[]> gDist = new EuclideanDist(new int[] { 0,1 });
+		Dist<double[]> rDist = new RandomDist<double[]>();
 						
 		// census
 		/*SpatialDataFrame sdf = DataUtils.readSpatialDataFrameFromShapefile(new File("output/counties.shp"), true);
@@ -108,12 +110,13 @@ public class TestMedoidClustering {
 				} );
 			
 			// medoid		
-			for( boolean gd : new boolean[]{ false, true } )
+			for( int maxNoImpro : new int[]{ 20 } )
+			for( Dist updateDist : new Dist[]{ gDist, fDist, rDist } )
 			for( GrowMode dm : new GrowMode[]{ /*DistMode.WSS,*/ GrowMode.EuclideanSqrd, /*DistMode.WSS_INC*/ } )
-				for( mInit mi : new mInit[]{ mInit.rnd, mInit.fDist, mInit.gDist/*, mInit.graphDist*/ } )
+				for( mInit initMode : new mInit[]{ mInit.rnd, mInit.fDist, mInit.gDist/*, mInit.graphDist*/ } )
 				params.add( new Object[][]{
 					new Object[]{ numCluster },
-					new Object[]{ method.medoid, dm, 10, mi, gd }, 
+					new Object[]{ method.medoid, dm, maxNoImpro, 10, initMode, updateDist }, 
 					new Object[]{ "none" } 
 				});
 		}
@@ -151,14 +154,16 @@ public class TestMedoidClustering {
 						}
 					} else if( me == method.medoid ) {
 						Random ra = new Random();
-						GrowMode dm = (GrowMode)p[1][1];
-						mInit mi = (mInit)p[1][3];
+						GrowMode growMode = (GrowMode)p[1][1];
+						int maxNoImpro = (int)p[1][2];
+						mInit initMode = (mInit)p[1][4];
+						
 						r.ds = new DescriptiveStatistics();
 						double bestCost = Double.MAX_VALUE;
-						for( int i = 0; i < (int)p[1][2]; i++ ) { // random restarts
+						for( int i = 0; i < (int)p[1][3]; i++ ) { // random restarts
 							Set<double[]> medoids = new HashSet<double[]>();
 							
-							if( mi == mInit.rnd ) { // rnd init
+							if( initMode == mInit.rnd ) { // rnd init
 								while( medoids.size() < numCluster ) {
 									for (double[] s : cm.keySet())
 										if (ra.nextDouble() < 1.0 / cm.keySet().size() ) {
@@ -166,7 +171,7 @@ public class TestMedoidClustering {
 											break;
 										}
 								}
-							} else if( mi == mInit.fDist || mi == mInit.gDist || mi == mInit.graphDist ) { //k-means++-init
+							} else if( initMode == mInit.fDist || initMode == mInit.gDist || initMode == mInit.graphDist ) { //k-means++-init
 								medoids.add(samples.get(ra.nextInt(samples.size())));
 								Map<double[],Map<double[],Double>> wCm = GraphUtils.toWeightedGraph(cm,new ConstantDist<>(1.0));
 								
@@ -180,7 +185,7 @@ public class TestMedoidClustering {
 											continue;
 										
 										double d = Double.MAX_VALUE;
-										if( mi == mInit.graphDist ) {
+										if( initMode == mInit.graphDist ) {
 											for( double[] m : medoids ) {
 												if( !map.containsKey(m) )
 													map.put(m, GraphUtils.getShortestDists(wCm, m));
@@ -188,9 +193,9 @@ public class TestMedoidClustering {
 											}
 										} else {
 											for( double[] m : medoids )
-												if( mi == mInit.fDist )
+												if( initMode == mInit.fDist )
 													d = Math.min( d, fDist.dist(n, m));
-												else if( mi == mInit.gDist )
+												else if( initMode == mInit.gDist )
 													d = Math.min( d, gDist.dist(n, m));
 										}
 										distMap.put( n, d );
@@ -217,11 +222,7 @@ public class TestMedoidClustering {
 								}
 							} 
 									
-							Map<double[], Set<double[]>> c;
-							if( (boolean)p[1][4] )
-								c = MedoidRegioClustering.cluster(cm, medoids, fDist, dm, 20, gDist );
-							else 
-								c = MedoidRegioClustering.cluster(cm, medoids, fDist, dm, 20, null );
+							Map<double[], Set<double[]>> c = MedoidRegioClustering.cluster(cm, medoids, fDist, growMode, maxNoImpro, (Dist<double[]>) p[1][5] );
 							
 							double cost = DataUtils.getWithinSumOfSquares(c.values(), fDist);
 							r.ds.addValue(cost);

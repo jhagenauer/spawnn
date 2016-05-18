@@ -18,7 +18,7 @@ public class MedoidRegioClustering {
 	};
 
 	public static Map<double[], Set<double[]>> cluster(Map<double[], Set<double[]>> tree, Set<double[]> meds, Dist<double[]> dist, GrowMode dm, int maxNoImpro) {
-		return cluster(tree, meds, dist, dm, maxNoImpro, null);
+		return cluster(tree, meds, dist, dm, maxNoImpro, dist);
 	}
 
 	public static Map<double[], Set<double[]>> growFromMedoids(Map<double[], Set<double[]>> tree, Set<double[]> medoids, Dist<double[]> dist, GrowMode dm) {
@@ -28,6 +28,7 @@ public class MedoidRegioClustering {
 		for (double[] m : medoids) {
 			clusterMap.put(m, new HashMap<double[], Set<double[]>>());
 			clusterMap.get(m).put(m, new HashSet<double[]>());
+
 			added.put(m, new HashSet<double[]>());
 			added.get(m).add(m);
 		}
@@ -52,40 +53,41 @@ public class MedoidRegioClustering {
 				if (!cache.containsKey(m) || !open.contains(cache.get(m).bestB)) {
 					BestEntry be = new BestEntry();
 					Set<double[]> nodes = added.get(m);
-
 					double preCost = 0;
+
 					if (dm == GrowMode.WSS_INC)
 						preCost = DataUtils.getSumOfSquares(nodes, dist);
 					for (double[] a : new ArrayList<double[]>(nodes)) {
-						for (double[] b : tree.get(a))
-							if (open.contains(b)) { // unassigned
-								if (dm == GrowMode.WSS_INC) {
-									nodes.add(b);
-									double cost = DataUtils.getSumOfSquares(nodes, dist) - preCost;
-									if (cost < be.cost) {
-										be.bestA = a;
-										be.bestB = b;
-										be.cost = cost;
-									}
-									nodes.remove(b);
-								} else if (dm == GrowMode.WSS) {
-									nodes.add(b);
-									double cost = DataUtils.getSumOfSquares(nodes, dist);
-									if (cost < be.cost) {
-										be.bestA = a;
-										be.bestB = b;
-										be.cost = cost;
-									}
-									nodes.remove(b);
-								} else if (dm == GrowMode.EuclideanSqrd) {
-									double cost = Math.pow(dist.dist(m, b), 2);
-									if (cost < be.cost) {
-										be.bestA = a;
-										be.bestB = b;
-										be.cost = cost;
-									}
+						for (double[] b : tree.get(a)) {
+							if (!open.contains(b))
+								continue; 
+							if (dm == GrowMode.WSS_INC) {
+								nodes.add(b);
+								double cost = DataUtils.getSumOfSquares(nodes, dist) - preCost;
+								if (cost < be.cost) {
+									be.bestA = a;
+									be.bestB = b;
+									be.cost = cost;
+								}
+								nodes.remove(b);
+							} else if (dm == GrowMode.WSS) {
+								nodes.add(b);
+								double cost = DataUtils.getSumOfSquares(nodes, dist);
+								if (cost < be.cost) {
+									be.bestA = a;
+									be.bestB = b;
+									be.cost = cost;
+								}
+								nodes.remove(b);
+							} else if (dm == GrowMode.EuclideanSqrd) {
+								double cost = Math.pow(dist.dist(m, b), 2);
+								if (cost < be.cost) {
+									be.bestA = a;
+									be.bestB = b;
+									be.cost = cost;
 								}
 							}
+						}
 					}
 					cache.put(m, be);
 				}
@@ -106,7 +108,6 @@ public class MedoidRegioClustering {
 
 			added.get(bestM).add(beM.bestB);
 			open.remove(beM.bestB);
-			cache.remove(bestM);
 		}
 
 		Map<double[], Set<double[]>> clusters = new HashMap<double[], Set<double[]>>();
@@ -115,42 +116,34 @@ public class MedoidRegioClustering {
 
 		return clusters;
 	}
-
-	public static Map<double[], Set<double[]>> cluster(Map<double[], Set<double[]>> tree, Set<double[]> meds, Dist<double[]> dist, GrowMode dm, int maxNoImpro, Dist<double[]> gDist) {
-
-		Set<double[]> medoids = new HashSet<double[]>(meds);
+		
+	public static Map<double[], Set<double[]>> cluster(Map<double[], Set<double[]>> tree, Set<double[]> meds, Dist<double[]> dist, GrowMode dm, int maxNoImpro, Dist<double[]> updateDist) {
 		Map<double[], Set<double[]>> bestCluster = null;
-		double bestSum = 0;
-
+		double bestCost = 0;
+		
 		int noImpro = 0;
+		Set<double[]> medoids = new HashSet<double[]>(meds);
 		while (true) {
-			Map<double[], Set<double[]>> clusters = growFromMedoids(tree, medoids, dist, dm);
 			
+			Map<double[], Set<double[]>> clusters = growFromMedoids(tree, medoids, dist, dm);
 			double cost = DataUtils.getWithinSumOfSquares(clusters.values(), dist);
-			if (bestCluster == null || cost < bestSum) {
-				bestSum = cost;
+			if (bestCluster == null || cost < bestCost) {
+				bestCost = cost;
 				bestCluster = clusters;
 				noImpro = 0;
-			}
+			} 
 
 			if (noImpro++ >= maxNoImpro)
 				break;
 
 			// 3. update medoids
-			medoids = new HashSet<double[]>();
+			medoids.clear();
 			for (double[] m : clusters.keySet()) {
 				double[] nm = m;
 				double bs = Double.MAX_VALUE;
 
 				for (double[] a : clusters.get(m)) {
-					double sum = 0;
-					if (gDist != null)
-						sum = DataUtils.getSumOfSquares(a, clusters.get(m), gDist);
-					else if (dm == GrowMode.WSS || dm == GrowMode.WSS_INC)
-						sum = DataUtils.getSumOfSquares(a, clusters.get(m), dist);
-					else if (dm == GrowMode.EuclideanSqrd) // sum of squares
-						for (double[] b : clusters.get(m))
-							sum += Math.pow(dist.dist(a, b), 2);
+					double sum = DataUtils.getSumOfSquares(a, clusters.get(m), updateDist);
 					if (sum < bs) {
 						nm = a;
 						bs = sum;
