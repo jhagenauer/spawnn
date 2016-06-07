@@ -1,12 +1,18 @@
 package spawnn.gui;
 
 import java.awt.Dimension;
+import java.awt.Image;
+import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 
 import javax.swing.JFrame;
 import javax.swing.JMenu;
@@ -20,6 +26,8 @@ import javax.swing.event.ChangeListener;
 import net.miginfocom.swing.MigLayout;
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
+import spawnn.som.grid.GridPos;
+import spawnn.utils.DataUtils;
 import spawnn.utils.SpatialDataFrame;
 
 public class SpawnnGui extends JFrame implements PropertyChangeListener, ActionListener, ChangeListener, TrainingListener { //TODO A general class Prototype for GridPos, double[] etc. is needed
@@ -33,7 +41,29 @@ public class SpawnnGui extends JFrame implements PropertyChangeListener, ActionL
 	private JMenuItem aboutItem, quitItem;
 
 	SpawnnGui() {
-		super("Spawnn");
+		super("SPAWNN");
+				
+        setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
+		addWindowListener(new java.awt.event.WindowAdapter() {
+		    @Override
+		    public void windowClosing(java.awt.event.WindowEvent windowEvent) {
+		        if (JOptionPane.showConfirmDialog(null,
+		            "Are you sure to close this window?", "Really Closing?", 
+		            JOptionPane.YES_NO_OPTION,
+		            JOptionPane.QUESTION_MESSAGE) == JOptionPane.YES_OPTION){
+		            System.exit(0);
+		        }
+		    }
+		});
+		
+
+		Toolkit kit = Toolkit.getDefaultToolkit();
+		Image[] icons = new Image[]{
+				kit.createImage(ClassLoader.getSystemResource("icon_20x20.png")),
+				kit.createImage(ClassLoader.getSystemResource("icon_26x26.png")),
+				kit.createImage(ClassLoader.getSystemResource("icon_32x32.png")),
+		};
+		setIconImages(Arrays.asList(icons));
 
 		// Menu Bar
 		JMenuBar mb = new JMenuBar();
@@ -135,12 +165,31 @@ public class SpawnnGui extends JFrame implements PropertyChangeListener, ActionL
 			tp.addTab("Results (SOM," + (numSom++) + ")", srp);
 			tp.setSelectedComponent(srp);
 			tp.setTabComponentAt(tp.indexOfComponent(srp), new ButtonTabComponent(tp));
+			
+			Map<double[],Set<double[]>> dBmus = new HashMap<>();
+			for( Entry<GridPos,Set<double[]>> e :tfs.getBmus().entrySet() ) 
+				dBmus.put( tfs.getGrid().getPrototypeAt(e.getKey()), e.getValue() );
+			
+			double a = DataUtils.getMeanQuantizationError(dBmus, fDist);
+			double b = DataUtils.getMeanQuantizationError(dBmus, gDist);
+			System.out.println("SOM "+(numSom-1));
+			System.out.println("qe: "+a);
+			System.out.println("sqe: "+b);
+			System.out.println(""+a/b);
+			
 		} else {
 			TrainingFinishedNG tfn = (TrainingFinishedNG)te;
 			NGResultPanel srp = new NGResultPanel(this, sdf, samples, tfn.getBmus(), tfn.getGraph(), fDist, gDist, fa, ga, tfn.isWMC() );
 			tp.addTab("Results (NG, " + (numNg++) + ")", srp);
 			tp.setSelectedComponent(srp);
 			tp.setTabComponentAt(tp.indexOfComponent(srp), new ButtonTabComponent(tp));
+			
+			double a = DataUtils.getMeanQuantizationError(tfn.getBmus(), fDist);
+			double b = DataUtils.getMeanQuantizationError(tfn.getBmus(), gDist);
+			System.out.println("NG "+(numNg-1));
+			System.out.println("qe: "+a);
+			System.out.println("sqe: "+b);
+			System.out.println(""+a/b);
 		}
 	}
 }

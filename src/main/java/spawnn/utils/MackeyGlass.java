@@ -82,10 +82,8 @@ public class MackeyGlass {
 		MackeyGlass mg = new MackeyGlass(a, b, tau, x0, deltat);
 		double[] seq = mg.createSequence(450000, 0.1);
 		List<double[]> samples = new ArrayList<double[]>();
-		for( double d : seq ) {
-			//System.out.println(d);
-			samples.add( new double[]{d});
-		}
+		for( int i = 0; i < seq.length; i++ )
+			samples.add( new double[]{i,seq[i]});
 		
 		try {
 			DataUtils.writeCSV(new FileOutputStream("output/mg.csv"), samples);

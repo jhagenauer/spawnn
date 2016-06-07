@@ -1,4 +1,4 @@
-package regionalization.medoid;
+package regionalization;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -66,19 +66,19 @@ public class PrepareCensusData {
 							g.getCentroid().getX(),
 							g.getCentroid().getY(),
 							(d[2]+d[4]+d[6]+d[8]+d[10])/totPop, // 0 to 24
-							(d[12]+d[14]+d[16]+d[18]+d[20]+d[22]+d[24]+d[26])/totPop, // 25 to 64
+							//(d[12]+d[14]+d[16]+d[18]+d[20]+d[22]+d[24]+d[26])/totPop, // 25 to 64
 							(d[28]+d[30]+d[32]+d[34]+d[36])/totPop, // 65 older
 							//d[38], // median age
 							d[151], // white
 							d[153], // black
-							d[155], // indian
-							d[157], // asian
+							//d[155], // indian
+							//d[157], // asian
 							//d[173], // hawaiian
 							//d[183], // other
-							(d[172]+d[182])/totPop, // hawaiian + other
-							d[185], // 2 races
+							//(d[154]+d[156]+d[172]+d[182])/totPop, // indian + asian + hawaiian + other
+							//d[185], // 2 races
 							d[208], // hispanic
-							d[253], // in households
+							//d[253], // in households
 							d[291], // family households
 							d[322], // avg household size
 							//d[323], // avg family size
@@ -93,17 +93,17 @@ public class PrepareCensusData {
 					"x",
 					"y",
 					"0to24",
-					"25to64",
+					//"25to64",
 					"65older",
 					//"mAge",
 					"white",
 					"black",
-					"indian",
-					"asian",
-					"other",
-					"2races",
+					//"indian",
+					//"asian",
+					//"other",
+					//"2races",
 					"hispanic",
-					"inHH",
+					//"inHH",
 					"famHH",
 					"avgHHs",
 					//"avgFams",

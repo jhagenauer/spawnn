@@ -971,8 +971,12 @@ public class DataUtils {
 
 		return sd;
 	}
-
+	
 	public static SpatialDataFrame readSpatialDataFrameFromShapefile(File file, boolean debug) {
+		return  readSpatialDataFrameFromShapefile(file, new int[]{}, debug);
+	}
+
+	public static SpatialDataFrame readSpatialDataFrameFromShapefile(File file, int[] toDouble, boolean debug) {
 
 		SpatialDataFrame sd = new SpatialDataFrame();
 		sd.samples = new ArrayList<double[]>();
@@ -986,6 +990,9 @@ public class DataUtils {
 			FeatureSource<SimpleFeatureType, SimpleFeature> featureSource = dataStore.getFeatureSource(dataStore.getTypeNames()[0]);
 			sd.crs = featureSource.getSchema().getCoordinateReferenceSystem();
 
+			Set<Integer> td = new HashSet<>();
+			for( int i : toDouble )
+				td.add(i);
 			Set<Integer> ignore = new HashSet<Integer>();
 
 			List<AttributeDescriptor> adl = featureSource.getFeatures().getSchema().getAttributeDescriptors(); // all
@@ -993,7 +1000,7 @@ public class DataUtils {
 				AttributeDescriptor ad = adl.get(i);
 				String bin = ad.getType().getBinding().getName();
 
-				if (ignore.contains(i))
+				if (ignore.contains(i) || td.contains(i) )
 					continue;
 
 				if (bin.equals("java.lang.Integer")) {
@@ -1036,7 +1043,9 @@ public class DataUtils {
 
 						String name = adl.get(i).getLocalName();
 						Object o = feature.getAttribute(name);
-						if (o instanceof Double)
+						if( td.contains(i) && o instanceof String )
+							d[idx++] = Double.parseDouble((String)o);
+						else if (o instanceof Double)
 							d[idx++] = ((Double) o).doubleValue();
 						else if (o instanceof Integer)
 							d[idx++] = ((Integer) o).intValue();

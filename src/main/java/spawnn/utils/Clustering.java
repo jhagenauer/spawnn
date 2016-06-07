@@ -170,7 +170,7 @@ public class Clustering {
 		single_linkage, complete_linkage, average_linkage, ward
 	};
 		
-	public static <T> List<Set<T>> cutTree( Map<Set<T>,TreeNode> tree, int numCluster ) {
+	public static List<Set<double[]>> cutTree( Map<Set<double[]>,TreeNode> tree, int numCluster ) {
 		Comparator<TreeNode> comp = new Comparator<TreeNode>() {
 			@Override
 			public int compare(TreeNode o1, TreeNode o2) {
@@ -178,19 +178,24 @@ public class Clustering {
 			}
 		};
 		
+		// multiple for constrained clustering
+		Set<TreeNode> roots = new HashSet<>(tree.values());
+		for( TreeNode a : tree.values() )
+			for( TreeNode b : tree.values() )
+				if( b.children.contains(a) ) // as is a children and therefore no root
+						roots.remove(a);
+		
 		PriorityQueue<TreeNode> pq = new PriorityQueue<TreeNode>(1, comp);
-		pq.add( Collections.min(tree.values(), comp));
+		pq.addAll(roots);
 		while( pq.size() < numCluster ) {
 			for( TreeNode child : pq.poll().children )
 				if( child != null )
 					pq.add(child);
 		}
 		
-		List<Set<T>> clusters = new ArrayList<Set<T>>();
-		for( Entry<Set<T>,TreeNode> e : tree.entrySet() )
-			if( pq.contains(e.getValue()))
-				clusters.add(e.getKey());
-		
+		List<Set<double[]>> clusters = new ArrayList<Set<double[]>>();
+		for( TreeNode t : pq )
+			clusters.add(t.contents);		
 		return clusters;
 	}
 	
@@ -199,7 +204,7 @@ public class Clustering {
 		public int age = 0;
 		public double cost = 0; 
 		public List<TreeNode> children = new ArrayList<TreeNode>();
-		public String toString() { return age+", "+cost; }
+		public String toString() { return "["+age+", "+cost+"]"; }
 	}
 		
 	public static Map<double[],Set<double[]>> toREDCAPSpanningTree( Collection<TreeNode> tree, Map<double[],Set<double[]>> cm, HierarchicalClusteringType type, Dist<double[]> dist ) {

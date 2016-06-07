@@ -49,7 +49,7 @@ public class TimeSeries {
 		
 		List<double[]> samples = null;
 		try {		
-			samples = DataUtils.readCSV(new FileInputStream("data/mg/mgsamples.csv") ).subList(0, 150000);
+			samples = DataUtils.readCSV(new FileInputStream("output/mg.csv") ).subList(0, 150000);
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}
@@ -466,8 +466,13 @@ public class TimeSeries {
 		}*/
 		
 		// MNG
-		for( double[] p : new double[][]{ new double[]{0.94,0.75}, new double[]{0.85,0.65}, } ){
-			log.debug("mng "+p[0]+" "+p[1]);
+		double bestSum = Double.MAX_VALUE;
+		for( double a = 0.0; a <= 1.0; a+=0.05 )
+			for( double b = 0.0; b <= 1.0; b+= 0.5 ) {
+				double[] p = new double[]{a,b};
+		
+		//for( double[] p : new double[][]{ new double[]{0.0, 0.0}, new double[]{0.94,0.75}, new double[]{0.85,0.65}, } ){
+			//log.debug("mng "+p[0]+" "+p[1]);
 			
 			List<double[]> neurons = new ArrayList<double[]>();
 			for( int i = 0; i < 100; i++ ) {
@@ -493,15 +498,20 @@ public class TimeSeries {
 			double sum = 0;
 			for( double d : tqe )
 				sum += d;
-			log.debug("sum: "+sum);
 			
+			if( sum < bestSum ) {
+				bestSum = sum;
+				log.debug("found new best: "+a+","+b+","+sum);
+			}
+			
+			/*log.debug("sum: "+sum);
 			log.debug("entr: "+SomUtils.getEntropy(samples, bmus));
 			
 			XYSeries error = new XYSeries("mng "+p[0]+" "+p[1]);		
 			for( int size = 0; size < tqe.length; size++ )
 				error.add(size,tqe[size]);
 			dataset.addSeries(error);
-			log.debug("--------------------");
+			log.debug("--------------------");*/
 		}
 		
 		// LAG
@@ -672,7 +682,7 @@ public class TimeSeries {
 				nd[j] = d[j];
 			
 			for( int j = 1; j <= lag; j++ ) {
-				if( i -j < 0 )
+				if( i - j < 0 )
 					continue;
 				double[] l = samples.get(i - j);
 				for( int k = 0; k < d.length; k++ )

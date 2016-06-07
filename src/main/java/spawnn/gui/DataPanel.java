@@ -140,24 +140,28 @@ public class DataPanel extends JPanel implements ActionListener, TableModelListe
 		updateStatus();
 		add( infoField,"span 2, growx");
 	}
+	
+	private File lastDir = null;
 
 	@Override
 	public void actionPerformed(ActionEvent ae) {
 		
 		if( ae.getSource() == btnLoadData ) {
+			
 			JFileChooser fc = new JFileChooser();
-					
 			fc.setFileFilter(FFilter.csvFilter); 
 			fc.setFileFilter(FFilter.shpFilter);
+			
+			if( lastDir != null )
+				fc.setCurrentDirectory(lastDir);
 									
 			int state = fc.showOpenDialog(this);
 			if( state == JFileChooser.APPROVE_OPTION ) {
 				dMap = null;
 				normedSamples = null;
+				File fn = fc.getSelectedFile();
+				lastDir = fc.getCurrentDirectory();
 				
-				File fn = fc.getSelectedFile(); 
-				
-
 				parent.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 				if( fc.getFileFilter() == FFilter.shpFilter ) {
 			      sdf = DataUtils.readSpatialDataFrameFromShapefile(fn, true); 

@@ -1,4 +1,4 @@
-package FoodDeserts;
+package foodDeserts;
 
 import java.io.File;
 import java.io.IOException;

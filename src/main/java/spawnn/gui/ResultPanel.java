@@ -33,6 +33,8 @@ import javax.swing.JFileChooser;
 import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.JToggleButton;
 import javax.swing.ListCellRenderer;
@@ -124,7 +126,7 @@ public abstract class ResultPanel<T> extends JPanel implements ActionListener, N
 				
 		quantileButton = new JToggleButton("Quantile");
 		quantileButton.setToolTipText("Use quantile color scale.");
-		quantileButton.setSelected(true);
+		quantileButton.setSelected(false);
 		quantileButton.addActionListener(this);
 		
 		colorChooser = new JButton("Color...");
@@ -147,11 +149,12 @@ public abstract class ResultPanel<T> extends JPanel implements ActionListener, N
 		infoField.setEditable(false);
 	}
 
-	public static Map<double[], Set<double[]>> prototypeClusterToDataCluster(Map<double[], Set<double[]>> nBmus, List<Set<double[]>> clusters) {
+	// creates data clusters from clusters of prototypes, given bmu-mapping
+	public static <T> Map<double[], Set<double[]>> prototypeClusterToDataCluster(Map<T, Set<double[]>> nBmus, List<Set<T>> clusters) {
 		Map<double[], Set<double[]>> ll = new HashMap<double[], Set<double[]>>();
-		for (Set<double[]> s : clusters) {
+		for (Set<T> s : clusters) { // for each cluster s
 			Set<double[]> l = new HashSet<double[]>();
-			for (double[] p : s)
+			for (T p : s) // for each cluster element p
 				if (nBmus.containsKey(p))
 					l.addAll(nBmus.get(p));
 			if (!l.isEmpty())
@@ -440,21 +443,21 @@ public abstract class ResultPanel<T> extends JPanel implements ActionListener, N
 		}
 	}
 	
-	public void showClusterSummary(Frame parent, Map<double[], Set<double[]>> ll, Dist<double[]> fDist, Dist<double[]> gDist) {
-		String s = "";
-		s += "#Cluster:\t" + ll.size()+ "\n";
-		s += "Within cluster sum of squares:\t" + ClusterValidation.getWithinClusterSumOfSuqares(ll.values(), fDist)+"\n";
-		s += "Between cluster sum of squares:\t" + ClusterValidation.getBetweenClusterSumOfSuqares(ll.values(), fDist)+"\n";
-		// log.debug("Connectivity: " + ClusterValidation.getConnectivity(ll, fDist, 10));
-		s += "Dunn Index:\t" + ClusterValidation.getDunnIndex(ll.values(), fDist)+"\n";
-
-		s += "Quantization error:\t" + DataUtils.getMeanQuantizationError(ll, fDist)+"\n";
-		if( gDist != null )
-			s += "Spatial quantization error:\t" + DataUtils.getMeanQuantizationError(ll, gDist)+"\n";
-		s += "Davies-Bouldin Index:\t" + ClusterValidation.getDaviesBouldinIndex(ll, fDist)+"\n";
-		s += "Silhouette Coefficient:\t" + ClusterValidation.getSilhouetteCoefficient(ll, fDist)+"\n";
-
-		JOptionPane.showMessageDialog(parent, s);
+	public void showClusterSummary(Frame parent, Map<double[], Set<double[]>> ll, Dist<double[]> fDist, Dist<double[]> gDist) {		
+		String[] cols = new String[]{"Statistic", "Value"};
+		String[][] rows = new String[][]{
+				new String[]{"#Cluster", ll.size()+""},
+				new String[]{"Within cluster sum of squares", ClusterValidation.getWithinClusterSumOfSuqares(ll.values(), fDist)+""},
+				new String[]{"Between cluster sum of squares", ClusterValidation.getBetweenClusterSumOfSuqares(ll.values(), fDist)+""},
+				new String[]{"Dunn Index", ClusterValidation.getDunnIndex(ll.values(), fDist)+""},
+				new String[]{"Quantization error", DataUtils.getMeanQuantizationError(ll, fDist)+""},
+				new String[]{"Spatial quantization error", gDist != null ? DataUtils.getMeanQuantizationError(ll, gDist)+"" : "-"},
+				new String[]{"Davies-Bouldin Index",ClusterValidation.getDaviesBouldinIndex(ll, fDist)+""},
+				new String[]{"Silhouette Coefficient",ClusterValidation.getSilhouetteCoefficient(ll, fDist)+""}	
+		};
+		
+		JTable table = new JTable(rows,cols);
+		JOptionPane.showMessageDialog(null, new JScrollPane(table));
 	}
 
 	@Override

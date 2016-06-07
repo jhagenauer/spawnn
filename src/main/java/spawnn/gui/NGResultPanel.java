@@ -26,6 +26,7 @@ import javax.swing.JFileChooser;
 import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.ListCellRenderer;
+import javax.swing.colorchooser.ColorChooserComponentFactory;
 import javax.xml.stream.XMLOutputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamWriter;
@@ -43,6 +44,8 @@ import spawnn.gui.DistanceDialog.DistMode;
 import spawnn.gui.DistanceDialog.StatMode;
 import spawnn.ng.utils.NGUtils;
 import spawnn.utils.Clustering;
+import spawnn.utils.ColorBrewer;
+import spawnn.utils.ColorUtils;
 import spawnn.utils.GraphClustering;
 import spawnn.utils.GraphUtils;
 import spawnn.utils.SpatialDataFrame;
@@ -171,13 +174,15 @@ public class NGResultPanel extends ResultPanel<double[]> {
 				} else if (fc.getFileFilter() == FFilter.pngFilter) {
 					pnlGraph.saveImage(fn, "PNG");
 				} else if( fc.getFileFilter() == FFilter.epsFilter ) {
-					/*String s = fn.getAbsolutePath(); //TODO remove this
+					
+					//TODO remove this
+					String s = fn.getAbsolutePath(); 
 					s = s.replaceFirst(".eps", "_legend.eps");
-					saveLegend(ColorBrewerUtil.valuesToColors(neuronValues, (ColorBrewerUtil.ColorMode) colorComboBox.getSelectedItem()), neuronValues, new File(s), "EPS");
-					saveLegend(ColorBrewerUtil.valuesToColors(neuronValues, (ColorBrewerUtil.ColorMode) colorComboBox.getSelectedItem()), neuronValues, new File("output/cng_35_cluster_legend.eps"), "EPS");
-					saveLegend(ColorBrewerUtil.valuesToColors(neuronValues, (ColorBrewerUtil.ColorMode) colorComboBox.getSelectedItem()), neuronValues, new File("output/geosom_4_cluster_legend.eps"), "EPS");
-					saveLegend2(ColorBrewerUtil.valuesToColors(neuronValues, (ColorBrewerUtil.ColorMode) colorComboBox.getSelectedItem()), neuronValues, new File("output/cng_35_cluster_legend2.eps"), true, true);
-					saveLegend2(ColorBrewerUtil.valuesToColors(neuronValues, (ColorBrewerUtil.ColorMode) colorComboBox.getSelectedItem()), neuronValues, new File("output/geosom_4_cluster_legend2.eps"), true, false);*/
+					saveLegend( ColorUtils.getColorMap( neuronValues, (ColorBrewer)colorModeBox.getSelectedItem(), false ), neuronValues, new File(s), "EPS" );
+					//saveLegend(ColorBrewerUtil.valuesToColors(neuronValues, (ColorBrewerUtil.ColorMode) colorComboBox.getSelectedItem()), neuronValues, new File("output/cng_35_cluster_legend.eps"), "EPS");
+					//saveLegend(ColorBrewerUtil.valuesToColors(neuronValues, (ColorBrewerUtil.ColorMode) colorComboBox.getSelectedItem()), neuronValues, new File("output/geosom_4_cluster_legend.eps"), "EPS");
+					//saveLegend2(ColorBrewerUtil.valuesToColors(neuronValues, (ColorBrewerUtil.ColorMode) colorComboBox.getSelectedItem()), neuronValues, new File("output/cng_35_cluster_legend2.eps"), true, true);
+					//saveLegend2(ColorBrewerUtil.valuesToColors(neuronValues, (ColorBrewerUtil.ColorMode) colorComboBox.getSelectedItem()), neuronValues, new File("output/geosom_4_cluster_legend2.eps"), true, false);
 										
 					pnlGraph.saveImage(fn, "EPS");
 				} else if( fc.getFileFilter() == FFilter.ngXMLFilter ) {
@@ -282,7 +287,7 @@ public class NGResultPanel extends ResultPanel<double[]> {
 						else
 							clusters = Clustering.cutTree( Clustering.getHierarchicalClusterTree(ns, fDist, type), cd.getNumCluster());
 					}
-					//showClusterSummary(parent, ResultPanel.prototypeClusterToDataCluster(bmus, clusters), fDist, gDist);
+					showClusterSummary(parent, ResultPanel.prototypeClusterToDataCluster(bmus, clusters), fDist, gDist);
 					
 					for( int i = 0; i < clusters.size(); i++ ) 
 					for( double[] pt : clusters.get(i) )

@@ -75,6 +75,7 @@ public class NG implements UnsupervisedNet {
 		return neurons;
 	}
 	
+	@Deprecated
 	public void initRandom( List<double[]> samples ) {
 		Random r = new Random();
 		for(double[] n : neurons )  

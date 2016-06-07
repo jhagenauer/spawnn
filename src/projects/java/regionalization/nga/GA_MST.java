@@ -35,7 +35,7 @@ public class GA_MST {
 		List<double[]> samples = new ArrayList<double[]>();
 		List<Geometry> geoms = new ArrayList<Geometry>();
 		List<Coordinate> coords = new ArrayList<Coordinate>();
-		while( samples.size() < 80 ) {
+		while( samples.size() < 200 ) {
 			double x = r.nextDouble();
 			double y = r.nextDouble();
 			double z = r.nextDouble();
@@ -82,6 +82,7 @@ public class GA_MST {
 		int repeats = 1;
 		GeneticAlgorithm.debug = false;
 		{
+			TreeIndividual.k = 0;
 			DescriptiveStatistics ds = new DescriptiveStatistics();
 			for( int j = 0; j < repeats; j++ ) {
 				List<TreeIndividual> init = new ArrayList<TreeIndividual>();
@@ -109,6 +110,34 @@ public class GA_MST {
 		}
 		
 		{
+			TreeIndividual.k = 1;
+			DescriptiveStatistics ds = new DescriptiveStatistics();
+			for( int j = 0; j < repeats; j++ ) {
+				List<TreeIndividual> init = new ArrayList<TreeIndividual>();
+				while( init.size() < 50 ) 
+					init.add( new TreeIndividual(cm, GraphUtils.getMinimumSpanningTree(cm, rDist),0));
+				GeneticAlgorithm<TreeIndividual> ga = new GeneticAlgorithm<>(evaluator);
+				TreeIndividual bestGA = ga.search(init);
+				ds.addValue(evaluator.evaluate(bestGA));
+			}
+			log.debug("best ga 1: "+ds.getMean()+","+ds.getMin());
+		}
+		
+		{
+			TreeIndividual.k = 5;
+			DescriptiveStatistics ds = new DescriptiveStatistics();
+			for( int j = 0; j < repeats; j++ ) {
+				List<TreeIndividual> init = new ArrayList<TreeIndividual>();
+				while( init.size() < 50 ) 
+					init.add( new TreeIndividual(cm, GraphUtils.getMinimumSpanningTree(cm, rDist),0));
+				GeneticAlgorithm<TreeIndividual> ga = new GeneticAlgorithm<>(evaluator);
+				TreeIndividual bestGA = ga.search(init);
+				ds.addValue(evaluator.evaluate(bestGA));
+			}
+			log.debug("best ga 5: "+ds.getMean()+","+ds.getMin());
+		}
+		
+		{
 			TreeIndividual.k = 10;
 			DescriptiveStatistics ds = new DescriptiveStatistics();
 			for( int j = 0; j < repeats; j++ ) {
@@ -121,16 +150,6 @@ public class GA_MST {
 			}
 			log.debug("best ga 10: "+ds.getMean()+","+ds.getMin());
 		}
-				
-		{
-			DescriptiveStatistics ds = new DescriptiveStatistics();
-			for( int j = 0; j < repeats; j++ ) {
-				TreeIndividual init = new TreeIndividual(cm, GraphUtils.getMinimumSpanningTree(cm, rDist),0);
-				SimulatedAnnealing<TreeIndividual> sa = new SimulatedAnnealing<TreeIndividual>(evaluator);
-				TreeIndividual best = sa.search(init);
-				ds.addValue(evaluator.evaluate(best));
-			}
-			log.debug("best sa: "+ds.getMean()+","+ds.getMin());
-		}
+		
 	}
 }

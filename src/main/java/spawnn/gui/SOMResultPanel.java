@@ -41,7 +41,8 @@ import spawnn.som.utils.SomToolboxUtils;
 import spawnn.som.utils.SomUtils;
 import spawnn.utils.Clustering;
 import spawnn.utils.Clustering.TreeNode;
-import spawnn.utils.DataUtils;
+import spawnn.utils.ColorBrewer;
+import spawnn.utils.ColorUtils;
 import spawnn.utils.GraphUtils;
 import spawnn.utils.SpatialDataFrame;
 
@@ -300,16 +301,15 @@ public class SOMResultPanel extends ResultPanel<GridPos> {
 						clusters = Clustering.cutTree( tree, cd.getNumCluster() );
 					}
 
-					// prototypes to samples
-					/*Map<double[], Set<double[]>> nBmus = new HashMap<double[], Set<double[]>>();
-					for (double d[] : prototypes) {
-						GridPos p = grid.getPositionOf(d);
-						if (bmus.containsKey(p))
-							nBmus.put(d, bmus.get(p));
-						else
-							nBmus.put(d, new HashSet<double[]>());
+					// clusters of prototype-double-vectors to gridPos-cluster
+					/*List<Set<GridPos>> gpCluster = new ArrayList<>();
+					for( Set<double[]> s : clusters ) {
+						Set<GridPos> ns = new HashSet<>();
+						for( double[] d : s )
+							ns.add( grid.getPositionOf(d));
+						gpCluster.add(ns);
 					}
-					showClusterSummary(parent, ResultPanel.prototypeClusterToDataCluster(nBmus, clusters), fDist, gDist);*/
+					showClusterSummary(parent, ResultPanel.prototypeClusterToDataCluster(bmus, gpCluster), fDist, gDist);*/
 								
 					for( int i = 0; i < clusters.size(); i++ ) 
 						for( double[] pt : clusters.get(i) ) 
@@ -353,9 +353,11 @@ public class SOMResultPanel extends ResultPanel<GridPos> {
 						else
 							pnlGraph.saveImage(fn, "PNG");
 					} else if (fc.getFileFilter() == FFilter.epsFilter) {
-						String s = fn.getAbsolutePath(); //TODO remove this
+						
+						 //TODO remove this
+						String s = fn.getAbsolutePath();
 						s = s.replaceFirst(".eps", "_legend.eps");
-						//saveLegend(ColorBrewerUtil.valuesToColors(neuronValues, (ColorBrewerUtil.ColorMode) colorComboBox.getSelectedItem()), neuronValues, new File(s), "EPS");
+						saveLegend( ColorUtils.getColorMap( neuronValues, (ColorBrewer)colorModeBox.getSelectedItem(), false ), neuronValues, new File(s), "EPS" );
 						
 						if (gridModeComboBox.getSelectedItem() == GRID)
 							pnlGrid.saveImage(fn, "EPS");
@@ -418,8 +420,7 @@ public class SOMResultPanel extends ResultPanel<GridPos> {
 				s.add(grid.getPrototypeAt(p));
 				nr++;
 			}
-		double ss = DataUtils.getSumOfSquares(s, fDist);
-		infoField.setText(nr+" neurons, "+ss+" sum of squares");
+		infoField.setText(nr+" neurons");
 		updatePanels();
 	}
 

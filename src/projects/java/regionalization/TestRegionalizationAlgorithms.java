@@ -48,14 +48,14 @@ public class TestRegionalizationAlgorithms {
 		GeometryFactory gf = new GeometryFactory();
 		Random r = new Random();
 		
-		SpatialDataFrame sdf = DataUtils.readSpatialDataFrameFromShapefile(new File("output/selection.shp"), true);
-		//SpatialDataFrame sdf = DataUtils.readSpatialDataFrameFromShapefile(new File("data/redcap/Election/election2004.shp"), true);
+		//SpatialDataFrame sdf = DataUtils.readSpatialDataFrameFromShapefile(new File("output/selection.shp"), true);
+		SpatialDataFrame sdf = DataUtils.readSpatialDataFrameFromShapefile(new File("data/redcap/Election/election2004.shp"), true);
 		List<double[]> samples = sdf.samples;
 		List<Geometry> geoms = sdf.geoms;
-		Map<double[], Set<double[]>> cm = GraphUtils.deriveQueenContiguitiyMap(samples, geoms,false); // some islands are not connected
-		/*Map<double[], Set<double[]>> cm = RegionUtils.readContiguitiyMap(samples, "data/redcap/Election/election2004_Queen.ctg");
+		//Map<double[], Set<double[]>> cm = GraphUtils.deriveQueenContiguitiyMap(samples, geoms,false); // some islands are not connected
+		Map<double[], Set<double[]>> cm = RegionUtils.readContiguitiyMap(samples, "data/redcap/Election/election2004_Queen.ctg");
 		for( Entry<double[],Set<double[]>> e : cm.entrySet() ) // no identity
-			e.getValue().remove(e.getKey());*/
+			e.getValue().remove(e.getKey());
 		
 		for (int i = 0; i < samples.size(); i++) {
 			Coordinate c = geoms.get(i).getCentroid().getCoordinate();

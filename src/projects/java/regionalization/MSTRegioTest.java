@@ -24,8 +24,8 @@ import spawnn.dist.RandomDist;
 import spawnn.utils.Drawer;
 import spawnn.utils.GraphUtils;
 
-public class MSTRegio2 {
-	private static Logger log = Logger.getLogger(MSTRegio2.class);
+public class MSTRegioTest {
+	private static Logger log = Logger.getLogger(MSTRegioTest.class);
 	
 	public static void main(String[] args ) {
 		GeometryFactory gf = new GeometryFactory();

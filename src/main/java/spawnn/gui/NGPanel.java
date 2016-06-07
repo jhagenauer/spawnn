@@ -75,7 +75,7 @@ public class NGPanel extends JPanel {
 		add(lblEpsilonFinal, "");
 		
 		textField_7 = new JTextField();
-		textField_7.setText("0.01");
+		textField_7.setText("0.005");
 		add(textField_7, "");
 		textField_7.setColumns(10);
 	}

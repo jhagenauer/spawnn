@@ -1,5 +1,6 @@
 package spawnn.gui;
 
+import java.awt.AlphaComposite;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
@@ -142,12 +143,17 @@ public class MapPanel<T> extends NeuronVisPanel<T> implements MapPaneListener, C
 			throw new RuntimeException(e);
 
 		}
-		BufferedImage bufImage = new BufferedImage(imageBounds.width, imageBounds.height, BufferedImage.TYPE_INT_RGB);
+		BufferedImage bufImage = new BufferedImage(imageBounds.width, imageBounds.height, BufferedImage.TYPE_INT_ARGB);
 		try {
 			FileOutputStream stream = new FileOutputStream(fn);
 			if (mode.equals("PNG")) {
 				Graphics2D g = bufImage.createGraphics();
-				g.drawImage(bufImage, 0, 0, imageBounds.width + 2 * offset, imageBounds.height + 2 * offset, null);
+				g.setComposite(AlphaComposite.Clear);
+				int w = imageBounds.width + 2 * offset;
+				int h = imageBounds.height + 2 * offset;
+				g.fillRect(0, 0, w, h);
+				g.setComposite(AlphaComposite.Src);
+				g.drawImage(bufImage, 0, 0, w, h, null);
 				mp.getRenderer().paint(g, imageBounds, mapBounds);
 
 				ImageIO.write(bufImage, "PNG", stream);
