@@ -128,6 +128,7 @@ public class SOMResultPanel extends ResultPanel<GridPos> {
 
 			for (GridPos nb : grid.getNeighbours(gp)) {
 				double[] b = grid.getPrototypeAt(nb);
+				
 				if (!graph.getVertices().contains(b))
 					graph.addVertex(b);
 
@@ -353,11 +354,9 @@ public class SOMResultPanel extends ResultPanel<GridPos> {
 						else
 							pnlGraph.saveImage(fn, "PNG");
 					} else if (fc.getFileFilter() == FFilter.epsFilter) {
-						
-						 //TODO remove this
-						String s = fn.getAbsolutePath();
-						s = s.replaceFirst(".eps", "_legend.eps");
-						saveLegend( ColorUtils.getColorMap( neuronValues, (ColorBrewer)colorModeBox.getSelectedItem(), false ), neuronValues, new File(s), "EPS" );
+						//String s = fn.getAbsolutePath();
+						//s = s.replaceFirst(".eps", "_legend.eps");
+						//saveLegend( ColorUtils.getColorMap( neuronValues, (ColorBrewer)colorModeBox.getSelectedItem(), false ), neuronValues, new File(s), "EPS" );
 						
 						if (gridModeComboBox.getSelectedItem() == GRID)
 							pnlGrid.saveImage(fn, "EPS");

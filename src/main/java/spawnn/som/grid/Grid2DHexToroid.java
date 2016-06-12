@@ -1,5 +1,6 @@
 package spawnn.som.grid;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
 
@@ -22,6 +23,7 @@ public class Grid2DHexToroid<T> extends Grid2DHex<T> {
 	}
 
 	// in output space
+	@Override
 	public int dist( GridPos aPos, GridPos bPos ) {
 		int x0 = aPos.getPos(0);
 		int y0 = aPos.getPos(1);
@@ -45,26 +47,28 @@ public class Grid2DHexToroid<T> extends Grid2DHex<T> {
 		return Math.min(a, Math.min(b, Math.min(c,d)));
 	}
 		
+	@Override
 	public Collection<GridPos> getNeighbours( GridPos pos ) {
-		Collection<GridPos> l = getNeighborCandidates(pos);
 		int xDim = getSizeOfDim(0);
 		int yDim = getSizeOfDim(1);
 		
-		for( GridPos p : l ) {
-			int pv0 = p.getPos(0);
-			int pv1 = p.getPos(1);
+		Collection<GridPos> l = new ArrayList<GridPos>();
+		for( GridPos p : getNeighborCandidates(pos) ) {
+			int x = p.getPos(0);
+			int y = p.getPos(1);
 			
 			// wrap around x
-			if( pv0 < 0 )
-				pv0 = xDim - 1;
-			else if( pv0 > xDim - 1 )
-				pv0 = 0;
+			if( x < 0 )
+				x = xDim - 1;
+			else if( x > xDim - 1 )
+				x = 0;
 			
 			// wrap around y
-			if( pv1 < 0 )
-				pv1 = yDim -1;
-			else if( pv1 > yDim -1 )
-				pv1 = 0;
+			if( y < 0 )
+				y = yDim -1;
+			else if( y > yDim -1 )
+				y = 0;
+			l.add( new GridPos(x,y) );
 		}
 		return l;
 	}

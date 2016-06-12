@@ -1,6 +1,7 @@
 package spawnn.gui;
 
 import javax.swing.DefaultComboBoxModel;
+import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -12,6 +13,8 @@ import spawnn.som.decay.LinearDecay;
 import spawnn.som.decay.PowerDecay;
 import spawnn.som.grid.Grid2D;
 import spawnn.som.grid.Grid2DHex;
+import spawnn.som.grid.Grid2DHexToroid;
+import spawnn.som.grid.Grid2DToroid;
 import spawnn.som.kernel.BubbleKernel;
 import spawnn.som.kernel.GaussKernel;
 import spawnn.som.kernel.KernelFunction;
@@ -21,6 +24,7 @@ public class SOMPanel extends JPanel {
 	private static final long serialVersionUID = -6356980461891020350L;
 	private JTextField textField, textField_1, textField_2, textField_3, textField_4, textField_5;
 	private JComboBox comboBox, comboBox_1, comboBox_2;
+	private JCheckBox toroBox;
 	
 	enum kernel { Bubble, Gauss };
 	enum type {Regular, Hexagonal};
@@ -98,8 +102,13 @@ public class SOMPanel extends JPanel {
 		
 		textField_5 = new JTextField();
 		textField_5.setText("0.0");
-		add(textField_5, "");
 		textField_5.setColumns(10);
+		add(textField_5, "wrap");
+		
+		JLabel toroid_l = new JLabel("Toroid:");
+		add(toroid_l, "");
+		toroBox = new JCheckBox();
+		add( toroBox );
 	}
 	
 	public DecayFunction getLearningRate() {
@@ -124,8 +133,15 @@ public class SOMPanel extends JPanel {
 		int xDim = Integer.parseInt( textField.getText() );
 		int yDim = Integer.parseInt( textField_1.getText() );
 		if( comboBox_1.getSelectedItem() == type.Regular )
-			return new Grid2D<double[]>( xDim, yDim );
-		else
-			return new Grid2DHex<double[]>( xDim, yDim );	
+			if( toroBox.isSelected() )
+				return new Grid2DToroid<double[]>( xDim, yDim );
+			else
+				return new Grid2D<double[]>( xDim, yDim );
+		else 
+			if( toroBox.isSelected() )
+				return new Grid2DHexToroid<double[]>( xDim, yDim);
+			else
+				return new Grid2DHex<double[]>( xDim, yDim );
+		
 	}
 }

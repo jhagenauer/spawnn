@@ -28,6 +28,7 @@ import spawnn.som.utils.SomUtils;
 import spawnn.utils.ColorBrewer;
 import spawnn.utils.DataFrame;
 import spawnn.utils.DataUtils;
+import spawnn.utils.DataUtils.transform;
 
 public class IrisTest {
 
@@ -43,10 +44,10 @@ public class IrisTest {
 			cMap.put( Arrays.copyOf(d, d.length-1), (int)d[d.length-1]);
 		
 		List<double[]> samples = new ArrayList<double[]>(cMap.keySet());			
-		DataUtils.zScore(samples);
+		DataUtils.transform(samples, transform.zScore);
 						
 		Dist<double[]> eDist = new EuclideanDist();
-		Grid2D<double[]> grid = new Grid2DHexToroid<double[]>(12, 8);
+		Grid2D<double[]> grid = new Grid2DHexToroid<double[]>(4, 4);
 		SomUtils.initRandom(grid, samples);
 		
 		log.debug("max radius: "+grid.getMaxDist());

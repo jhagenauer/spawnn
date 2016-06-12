@@ -56,15 +56,13 @@ public class Grid2DHex<T> extends Grid2D<T> {
 				l.add( new GridPos( x-1, y+1 ) );
 				l.add( new GridPos( x+1, y+1 ) );
 		} 
-		
 		return l;
 	}
 		
 	@Override
 	public Collection<GridPos> getNeighbours( GridPos pos ) { 
 		Collection<GridPos> l = getNeighborCandidates(pos);
-		l.retainAll(getPositions()); // only positions that are present in the grid
-						
+		l.retainAll(getPositions()); // only positions that are present in the grid				
 		return l;
 	}
 }
