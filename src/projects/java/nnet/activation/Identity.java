@@ -6,4 +6,9 @@ public class Identity implements Function {
 		return x;
 	}
 
+	@Override
+	public double fDevFOut(double fOut) {
+		return 1.0;
+	}
+
 }

@@ -10,4 +10,9 @@ public class Constant implements Function {
 	public double f(double x) {
 		return this.x;
 	}
+
+	@Override
+	public double fDevFOut(double fOut) {
+		return 0;
+	}
 }
