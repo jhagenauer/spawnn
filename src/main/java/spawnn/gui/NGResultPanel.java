@@ -19,14 +19,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.swing.BorderFactory;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
 import javax.swing.JList;
 import javax.swing.JOptionPane;
+import javax.swing.JPanel;
 import javax.swing.ListCellRenderer;
-import javax.swing.colorchooser.ColorChooserComponentFactory;
 import javax.xml.stream.XMLOutputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamWriter;
@@ -44,8 +45,6 @@ import spawnn.gui.DistanceDialog.DistMode;
 import spawnn.gui.DistanceDialog.StatMode;
 import spawnn.ng.utils.NGUtils;
 import spawnn.utils.Clustering;
-import spawnn.utils.ColorBrewer;
-import spawnn.utils.ColorUtils;
 import spawnn.utils.GraphClustering;
 import spawnn.utils.GraphUtils;
 import spawnn.utils.SpatialDataFrame;
@@ -84,6 +83,7 @@ public class NGResultPanel extends ResultPanel<double[]> {
 		    	return CLUSTER_GRAPH.equals(value);
 			}                                                                            
 		});  
+		vertexComboBox.setBorder(BorderFactory.createTitledBorder("Neuron"));
 		
 		Set<Integer> fas = new HashSet<Integer>();
 		for( int i : fa )
@@ -114,6 +114,7 @@ public class NGResultPanel extends ResultPanel<double[]> {
 			edgeComboBox.addItem(GraphPanel.DIST_GEO);
 		edgeComboBox.setToolTipText("Set edge style.");
 		edgeComboBox.addActionListener(this);
+		edgeComboBox.setBorder(BorderFactory.createTitledBorder("Edge"));
 
 		layoutComboBox = new JComboBox();
 		layoutComboBox.setModel(new DefaultComboBoxModel(GraphPanel.Layout.values()));
@@ -123,6 +124,7 @@ public class NGResultPanel extends ResultPanel<double[]> {
 		layoutComboBox.setSelectedItem(GraphPanel.Layout.KamadaKawai);
 		layoutComboBox.setToolTipText("Select graph layout.");
 		layoutComboBox.addActionListener(this);
+		layoutComboBox.setBorder(BorderFactory.createTitledBorder("Graph layout"));
 
 		btnExpGraph = new JButton("Export gas...");
 		btnExpGraph.addActionListener(this);
@@ -133,16 +135,27 @@ public class NGResultPanel extends ResultPanel<double[]> {
 		actionPerformed(new ActionEvent(vertexComboBox, 0, DISTANCE));
 		Map<double[], Color> colorMap = updatePanels();
 
-		add(vertexComboBox, "split 6");
-		add(colorModeBox, "");
-		add(quantileButton);
+		add(vertexComboBox, "split 5");
+		
+		JPanel colorPanel = new JPanel(new MigLayout("insets 0, gapy 0"));
+		colorPanel.add(colorModeBox,"");
+		colorPanel.add(quantileButton,"");
+		colorPanel.setBorder(BorderFactory.createTitledBorder("Color scheme"));
+		add(colorPanel,"growy");
+		
 		add(edgeComboBox,"");
 		add(layoutComboBox, "");
 		add(btnExpGraph, "");
 				
-		add(colorChooser, "split 3");
-		//add(selectSingle, "");
-		add(clearSelect, "");
+		//add(colorChooser, "split 3");
+		//add(clearSelect, "");
+		
+		JPanel selectPanel = new JPanel(new MigLayout("insets 0, gapy 0"));
+		selectPanel.add(colorChooser,"");
+		selectPanel.add(clearSelect,"");
+		selectPanel.setBorder(BorderFactory.createTitledBorder("Selection"));
+		add(selectPanel,"growy, split 2");
+		
 		add(btnExpMap, "pushx, wrap");
 		
 		add(pnlGraph, "w 50%, pushy, grow");
@@ -287,6 +300,10 @@ public class NGResultPanel extends ResultPanel<double[]> {
 					for( double[] pt : clusters.get(i) )
 						neuronValues.put( pt, (double)i);
 					
+					/*colorModeBox.removeActionListener(this);
+					colorModeBox.setSelectedItem(ColorBrewer.Set3);
+					colorModeBox.addActionListener(this);*/
+					
 					parent.setCursor(Cursor.getDefaultCursor());
 				} else { // ok not pressed
 					vertexComboBox.setSelectedItem(currentVertexComboBox);
@@ -363,7 +380,7 @@ public class NGResultPanel extends ResultPanel<double[]> {
 					}
 					
 					Map<double[],Set<double[]>> ll = ResultPanel.prototypeClusterToDataCluster(bmus, clusters);
-					//showClusterSummary(parent, ll, fDist, gDist);
+					showClusterSummary(parent, ll, fDist, gDist);
 					
 					List<double[]> means = new ArrayList<double[]>(ll.keySet());
 					if( gDist != null )
@@ -398,6 +415,10 @@ public class NGResultPanel extends ResultPanel<double[]> {
 							}
 						}							
 					}
+					
+					/*colorModeBox.removeActionListener(this);
+					colorModeBox.setSelectedItem(ColorBrewer.Set3);
+					colorModeBox.addActionListener(this);*/
 
 					parent.setCursor(Cursor.getDefaultCursor());
 				} else {

@@ -23,6 +23,7 @@ import javax.swing.JTabbedPane;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
+import edu.uci.ics.jung.graph.UndirectedSparseGraph;
 import net.miginfocom.swing.MigLayout;
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
@@ -142,7 +143,10 @@ public class SpawnnGui extends JFrame implements PropertyChangeListener, ActionL
 	public void trainingResultsAvailable(TrainingEvent te) {
 		int[] fa = dataPanel.getFA();
 		Dist<double[]> fDist = new EuclideanDist(fa);
-		Dist<double[]> gDist = new EuclideanDist(dataPanel.getGA(false));
+		Dist<double[]> gDist = null;
+		if( dataPanel.getGA(false).length > 0 )
+			gDist = new EuclideanDist(dataPanel.getGA(false));
+		
 		List<double[]> samples = te.getSamples();
 		SpatialDataFrame sdf = dataPanel.getSpatialData();
 		int[] ga = dataPanel.getGA(true);
@@ -158,12 +162,11 @@ public class SpawnnGui extends JFrame implements PropertyChangeListener, ActionL
 			for (Entry<GridPos, Set<double[]>> e : tfs.getBmus().entrySet())
 				dBmus.put(tfs.getGrid().getPrototypeAt(e.getKey()), e.getValue());
 
-			double a = DataUtils.getMeanQuantizationError(dBmus, fDist);
-			double b = DataUtils.getMeanQuantizationError(dBmus, gDist);
 			System.out.println("SOM " + (numSom - 1));
-			System.out.println("qe: " + a);
-			System.out.println("sqe: " + b);
-			System.out.println("" + a / b);
+			System.out.println("Quantization error: " + DataUtils.getMeanQuantizationError(dBmus, fDist));
+			if( gDist != null )
+				System.out.println("Spatial quantization error: " + DataUtils.getMeanQuantizationError(dBmus, gDist));
+			
 
 		} else {
 			TrainingFinishedNG tfn = (TrainingFinishedNG) te;
@@ -171,13 +174,11 @@ public class SpawnnGui extends JFrame implements PropertyChangeListener, ActionL
 			tp.addTab("Results (NG, " + (numNg++) + ")", srp);
 			tp.setSelectedComponent(srp);
 			tp.setTabComponentAt(tp.indexOfComponent(srp), new ButtonTabComponent(tp));
-
-			double a = DataUtils.getMeanQuantizationError(tfn.getBmus(), fDist);
-			double b = DataUtils.getMeanQuantizationError(tfn.getBmus(), gDist);
+			
 			System.out.println("NG " + (numNg - 1));
-			System.out.println("qe: " + a);
-			System.out.println("sqe: " + b);
-			System.out.println("" + a / b);
+			System.out.println("Quantization error: " + DataUtils.getMeanQuantizationError(tfn.getBmus(), fDist));
+			if( gDist != null )
+				System.out.println("Spatial quantization error: " + DataUtils.getMeanQuantizationError(tfn.getBmus(), gDist));
 		}
 	}
 }

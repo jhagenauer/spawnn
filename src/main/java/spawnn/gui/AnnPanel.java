@@ -67,12 +67,12 @@ public class AnnPanel extends JPanel implements ChangeListener, ActionListener {
 		
 		tpANN = new JTabbedPane();
 		tpANN.setBorder( BorderFactory.createTitledBorder("Self-Organizing Neural Network") );
-
-		somPanel = new SOMPanel();
-		tpANN.addTab("SOM", somPanel );
 		
 		ngPanel = new NGPanel();
 		tpANN.addTab("NG", ngPanel );
+
+		somPanel = new SOMPanel();
+		tpANN.addTab("SOM", somPanel );
 		
 		tpANN.addChangeListener( this );
 				

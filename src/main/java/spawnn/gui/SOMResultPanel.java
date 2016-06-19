@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
@@ -42,7 +43,6 @@ import spawnn.som.utils.SomUtils;
 import spawnn.utils.Clustering;
 import spawnn.utils.Clustering.TreeNode;
 import spawnn.utils.ColorBrewer;
-import spawnn.utils.ColorUtils;
 import spawnn.utils.GraphUtils;
 import spawnn.utils.SpatialDataFrame;
 
@@ -104,6 +104,7 @@ public class SOMResultPanel extends ResultPanel<GridPos> {
 				gridComboBox.addItem(s);
 			}
 		gridComboBox.addActionListener(this);
+		gridComboBox.setBorder(BorderFactory.createTitledBorder("Neuron"));
 		currentGridComboBoxItem = gridComboBox.getSelectedItem();
 
 		gridModeComboBox = new JComboBox();
@@ -116,6 +117,7 @@ public class SOMResultPanel extends ResultPanel<GridPos> {
 			gridModeComboBox.setEnabled(false);
 		}
 		gridModeComboBox.setToolTipText("Set neural layout.");
+		gridModeComboBox.setBorder(BorderFactory.createTitledBorder("Grid layout"));
 
 		btnExpGrid = new JButton("Export grid...");
 		btnExpGrid.addActionListener(this);
@@ -179,15 +181,26 @@ public class SOMResultPanel extends ResultPanel<GridPos> {
 		cards.add(pnlGrid, GRID);
 		cards.add(pnlGraph, GRAPH);
 
-		add(gridComboBox, "split 5");
-		add(colorModeBox, "");
-		add(quantileButton,"");
+		add(gridComboBox, "split 4");
+		
+		JPanel colorPanel = new JPanel(new MigLayout("insets 0, gapy 0"));
+		colorPanel.add(colorModeBox,"");
+		colorPanel.add(quantileButton,"");
+		colorPanel.setBorder(BorderFactory.createTitledBorder("Color scheme"));
+		add(colorPanel,"growy");
+		
 		add(gridModeComboBox, "");
 		add(btnExpGrid, "");
 				
-		add(colorChooser, "split 3");
-		//add(selectSingle, "");
-		add(clearSelect, "");
+		//add(colorChooser, "split 3");
+		//add(clearSelect, "");
+		
+		JPanel selectPanel = new JPanel(new MigLayout("insets 0, gapy 0"));
+		selectPanel.add(colorChooser,"");
+		selectPanel.add(clearSelect,"");
+		selectPanel.setBorder(BorderFactory.createTitledBorder("Selection"));
+		add(selectPanel,"growy, split 2");
+		
 		add(btnExpMap, "pushx, wrap");
 		
 		add( cards, "w 50%, pushy, grow");
@@ -303,14 +316,14 @@ public class SOMResultPanel extends ResultPanel<GridPos> {
 					}
 
 					// clusters of prototype-double-vectors to gridPos-cluster
-					/*List<Set<GridPos>> gpCluster = new ArrayList<>();
+					List<Set<GridPos>> gpCluster = new ArrayList<>();
 					for( Set<double[]> s : clusters ) {
 						Set<GridPos> ns = new HashSet<>();
 						for( double[] d : s )
 							ns.add( grid.getPositionOf(d));
 						gpCluster.add(ns);
 					}
-					showClusterSummary(parent, ResultPanel.prototypeClusterToDataCluster(bmus, gpCluster), fDist, gDist);*/
+					showClusterSummary(parent, ResultPanel.prototypeClusterToDataCluster(bmus, gpCluster), fDist, gDist);
 								
 					for( int i = 0; i < clusters.size(); i++ ) 
 						for( double[] pt : clusters.get(i) ) 
@@ -318,6 +331,11 @@ public class SOMResultPanel extends ResultPanel<GridPos> {
 					
 					quantileButton.setEnabled(false);
 					quantileButton.setSelected(false);
+					
+					/*colorModeBox.removeActionListener(this);
+					colorModeBox.setSelectedItem(ColorBrewer.Set3);
+					colorModeBox.addActionListener(this);*/
+					
 					parent.setCursor(Cursor.getDefaultCursor());
 				} else { // ok not pressed
 					gridComboBox.setSelectedItem(currentGridComboBoxItem);

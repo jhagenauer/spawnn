@@ -352,7 +352,7 @@ public class DataPanel extends JPanel implements ActionListener, TableModelListe
 		for( int i = 0; i < dataTable.getRowCount(); i++ ) {
 			if( ( allGA || (Boolean)dataTable.getValueAt(i, USE) ) && (Boolean)dataTable.getValueAt(i, COORDINATE) )
 				l.add(i);
-		}
+		}		
 		int[] ga = new int[l.size()];
 		for( int i = 0; i < l.size(); i++ )
 			ga[i] = l.get(i);

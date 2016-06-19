@@ -31,10 +31,7 @@ import javax.swing.JColorChooser;
 import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
 import javax.swing.JList;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.JToggleButton;
 import javax.swing.ListCellRenderer;
@@ -123,6 +120,7 @@ public abstract class ResultPanel<T> extends JPanel implements ActionListener, N
 		}); 
 		colorModeBox.addActionListener(this);
 		colorModeBox.setToolTipText("Select color scheme.");
+		//colorModeBox.setBorder(BorderFactory.createTitledBorder("Color scheme"));
 				
 		quantileButton = new JToggleButton("Quantile");
 		quantileButton.setToolTipText("Use quantile color scale.");
@@ -456,8 +454,11 @@ public abstract class ResultPanel<T> extends JPanel implements ActionListener, N
 				new String[]{"Silhouette Coefficient",ClusterValidation.getSilhouetteCoefficient(ll, fDist)+""}	
 		};
 		
-		JTable table = new JTable(rows,cols);
-		JOptionPane.showMessageDialog(null, new JScrollPane(table));
+		for( int i = 0; i < rows.length; i++ )
+			System.out.println(Arrays.toString(rows[i]));
+		
+		//JTable table = new JTable(rows,cols);
+		//JOptionPane.showMessageDialog(null, new JScrollPane(table));
 	}
 
 	@Override

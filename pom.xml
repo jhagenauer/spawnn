@@ -145,8 +145,9 @@
 			<artifactId>gt-swing</artifactId>
 			<version>${geotools.version}</version>
 		</dependency>
-		<!--<dependency> <groupId>com.miglayout</groupId> <artifactId>miglayout-swing</artifactId> 
-			<version>4.2</version> </dependency> -->
+		<!--<dependency> <groupId>com.miglayout</groupId> 
+		<artifactId>miglayout-swing</artifactId> 
+		<version>5.0</version> </dependency>-->
 		<dependency>
 			<groupId>org.jfree</groupId>
 			<artifactId>jfreechart</artifactId>
