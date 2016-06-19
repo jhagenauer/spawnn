@@ -140,7 +140,7 @@ public abstract class ResultPanel<T> extends JPanel implements ActionListener, N
 		clearSelect.setToolTipText("Clear selection.");
 		clearSelect.addActionListener(this);
 
-		btnExpMap = new JButton("Export map...");
+		btnExpMap = new JButton("Map...");
 		btnExpMap.addActionListener(this);
 		
 		infoField = new JTextField("");

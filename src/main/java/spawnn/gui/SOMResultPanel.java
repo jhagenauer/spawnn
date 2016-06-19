@@ -119,7 +119,7 @@ public class SOMResultPanel extends ResultPanel<GridPos> {
 		gridModeComboBox.setToolTipText("Set neural layout.");
 		gridModeComboBox.setBorder(BorderFactory.createTitledBorder("Grid layout"));
 
-		btnExpGrid = new JButton("Export grid...");
+		btnExpGrid = new JButton("Network...");
 		btnExpGrid.addActionListener(this);
 
 		graph = new UndirectedSparseGraph<double[], double[]>();
@@ -190,21 +190,21 @@ public class SOMResultPanel extends ResultPanel<GridPos> {
 		add(colorPanel,"growy");
 		
 		add(gridModeComboBox, "");
-		add(btnExpGrid, "");
-				
-		//add(colorChooser, "split 3");
-		//add(clearSelect, "");
 		
 		JPanel selectPanel = new JPanel(new MigLayout("insets 0, gapy 0"));
 		selectPanel.add(colorChooser,"");
 		selectPanel.add(clearSelect,"");
 		selectPanel.setBorder(BorderFactory.createTitledBorder("Selection"));
-		add(selectPanel,"growy, split 2");
+		add(selectPanel,"growy, pushx");
 		
-		add(btnExpMap, "pushx, wrap");
-		
-		add( cards, "w 50%, pushy, grow");
-		add( mapPanel, "grow, wrap");
+		JPanel exportPanel = new JPanel(new MigLayout("insets 0, gapy 0"));
+		exportPanel.add(btnExpGrid,"");
+		exportPanel.add(btnExpMap,"");
+		exportPanel.setBorder(BorderFactory.createTitledBorder("Export"));
+		add(exportPanel,"growy, wrap");
+				
+		add( cards, "span 2, split 2, w 50%, grow");
+		add( mapPanel, "w 50%, grow, wrap");
 		add( infoField,"span 2, growx");
 	}
 

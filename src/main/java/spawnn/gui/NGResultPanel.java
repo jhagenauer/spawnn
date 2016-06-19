@@ -102,6 +102,7 @@ public class NGResultPanel extends ResultPanel<double[]> {
 				s+= " (ctx)";
 				vertexComboBox.addItem(s);
 			}
+		//vertexComboBox.setSelectedItem(DISTANCE);
 		vertexComboBox.addActionListener(this);
 		currentVertexComboBox = vertexComboBox.getSelectedItem();
 		
@@ -126,7 +127,7 @@ public class NGResultPanel extends ResultPanel<double[]> {
 		layoutComboBox.addActionListener(this);
 		layoutComboBox.setBorder(BorderFactory.createTitledBorder("Graph layout"));
 
-		btnExpGraph = new JButton("Export gas...");
+		btnExpGraph = new JButton("Network...");
 		btnExpGraph.addActionListener(this);
 
 		pnlGraph = new GraphPanel(g, ga);
@@ -145,26 +146,35 @@ public class NGResultPanel extends ResultPanel<double[]> {
 		
 		add(edgeComboBox,"");
 		add(layoutComboBox, "");
-		add(btnExpGraph, "");
 				
-		//add(colorChooser, "split 3");
-		//add(clearSelect, "");
-		
 		JPanel selectPanel = new JPanel(new MigLayout("insets 0, gapy 0"));
 		selectPanel.add(colorChooser,"");
 		selectPanel.add(clearSelect,"");
 		selectPanel.setBorder(BorderFactory.createTitledBorder("Selection"));
-		add(selectPanel,"growy, split 2");
+		add(selectPanel,"growy, pushx");
 		
-		add(btnExpMap, "pushx, wrap");
+		JPanel exportPanel = new JPanel(new MigLayout("insets 0, gapy 0"));
+		exportPanel.add(btnExpGraph,"");
+		exportPanel.add(btnExpMap,"");
+		exportPanel.setBorder(BorderFactory.createTitledBorder("Export"));
+		add(exportPanel,"growy, wrap");
 		
-		add(pnlGraph, "w 50%, pushy, grow");
-		add(mapPanel, "grow,wrap");
-		add( infoField,"span 2, growx");
+		add(pnlGraph, "span 2, split 2, w 50%, grow");
+		add(mapPanel, "w 50%, grow, wrap");
+		add( infoField, "span 2, growx");
+		
+		// set init neuron Values to mean distance
+		/*neuronValues = new HashMap<double[], Double>();
+		for (double[] v : g.getVertices() ) {
+			DescriptiveStatistics ds = new DescriptiveStatistics();
+			for (double[] nb : g.getNeighbors(v) ) 
+				ds.addValue( fDist.dist(v, nb ) );
+			neuronValues.put(v, ds.getMean());
+		}**/
 		
 		// are the following lines necessary?
 		mapPanel.setGridColors(colorMap, selectedColors, neuronValues);
-		mapPanel.addNeuronSelectedListener(this);
+		mapPanel.addNeuronSelectedListener(this);		
 	}
 
 	@Override
@@ -213,8 +223,7 @@ public class NGResultPanel extends ResultPanel<double[]> {
 				for (double[] d : rndPos)
 					neuronValues.put(d, (double) k++);
 
-			} else if (vertexComboBox.getSelectedItem() == DISTANCE ) {
-				
+			} else if (vertexComboBox.getSelectedItem() == DISTANCE ) {	
 				DistanceDialog dd = new DistanceDialog(parent, "Distance...", true, gDist != null );
 				if( dd.isOkPressed() ) {
 					DistMode dm = dd.getDistMode();
