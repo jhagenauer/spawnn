@@ -18,6 +18,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Map.Entry;
 
 import javax.swing.BorderFactory;
 import javax.swing.DefaultComboBoxModel;
@@ -45,6 +46,7 @@ import spawnn.gui.DistanceDialog.DistMode;
 import spawnn.gui.DistanceDialog.StatMode;
 import spawnn.ng.utils.NGUtils;
 import spawnn.utils.Clustering;
+import spawnn.utils.DataUtils;
 import spawnn.utils.GraphClustering;
 import spawnn.utils.GraphUtils;
 import spawnn.utils.SpatialDataFrame;
@@ -67,6 +69,10 @@ public class NGResultPanel extends ResultPanel<double[]> {
 	
 	public NGResultPanel(Frame parent, SpatialDataFrame orig, List<double[]> samples, Map<double[], Set<double[]>> bmus, Graph<double[], double[]> g, Dist<double[]> fDist, Dist<double[]> gDist, int[] fa, int[] ga, boolean wmc) {
 		super(parent,orig,samples,bmus,new ArrayList<double[]>(g.getVertices()),fDist,gDist);
+		String st = "Quantization error: "+DataUtils.getMeanQuantizationError(bmus, fDist);
+		if( gDist != null )
+			st += ", Spatial quantization error: "+DataUtils.getMeanQuantizationError(bmus, gDist);
+		infoField.setText(st);
 		this.g = g;
 		
 		setLayout(new MigLayout(""));
@@ -102,7 +108,7 @@ public class NGResultPanel extends ResultPanel<double[]> {
 				s+= " (ctx)";
 				vertexComboBox.addItem(s);
 			}
-		//vertexComboBox.setSelectedItem(DISTANCE);
+				
 		vertexComboBox.addActionListener(this);
 		currentVertexComboBox = vertexComboBox.getSelectedItem();
 		
@@ -133,7 +139,7 @@ public class NGResultPanel extends ResultPanel<double[]> {
 		pnlGraph = new GraphPanel(g, ga);
 		pnlGraph.addNeuronSelectedListener(this);
 
-		actionPerformed(new ActionEvent(vertexComboBox, 0, DISTANCE));
+		actionPerformed(new ActionEvent(vertexComboBox, 0, RANDOM));
 		Map<double[], Color> colorMap = updatePanels();
 
 		add(vertexComboBox, "split 5");
@@ -144,15 +150,15 @@ public class NGResultPanel extends ResultPanel<double[]> {
 		colorPanel.setBorder(BorderFactory.createTitledBorder("Color scheme"));
 		add(colorPanel,"growy");
 		
-		add(edgeComboBox,"");
-		add(layoutComboBox, "");
-				
 		JPanel selectPanel = new JPanel(new MigLayout("insets 0, gapy 0"));
 		selectPanel.add(colorChooser,"");
 		selectPanel.add(clearSelect,"");
 		selectPanel.setBorder(BorderFactory.createTitledBorder("Selection"));
-		add(selectPanel,"growy, pushx");
+		add(selectPanel,"growy");
 		
+		add(edgeComboBox,"");
+		add(layoutComboBox, "pushx");
+						
 		JPanel exportPanel = new JPanel(new MigLayout("insets 0, gapy 0"));
 		exportPanel.add(btnExpGraph,"");
 		exportPanel.add(btnExpMap,"");
@@ -162,18 +168,9 @@ public class NGResultPanel extends ResultPanel<double[]> {
 		add(pnlGraph, "span 2, split 2, w 50%, grow");
 		add(mapPanel, "w 50%, grow, wrap");
 		add( infoField, "span 2, growx");
-		
-		// set init neuron Values to mean distance
-		/*neuronValues = new HashMap<double[], Double>();
-		for (double[] v : g.getVertices() ) {
-			DescriptiveStatistics ds = new DescriptiveStatistics();
-			for (double[] nb : g.getNeighbors(v) ) 
-				ds.addValue( fDist.dist(v, nb ) );
-			neuronValues.put(v, ds.getMean());
-		}**/
-		
+				
 		// are the following lines necessary?
-		mapPanel.setGridColors(colorMap, selectedColors, neuronValues);
+		mapPanel.setColors(colorMap, selectedColors, neuronValues);
 		mapPanel.addNeuronSelectedListener(this);		
 	}
 
@@ -450,7 +447,7 @@ public class NGResultPanel extends ResultPanel<double[]> {
 	@Override 
 	protected Map<double[], Color> updatePanels() {
 		Map<double[],Color> colorMap = super.updatePanels();
-		pnlGraph.setGridColors(colorMap, selectedColors, neuronValues);
+		pnlGraph.setColors(colorMap, selectedColors, neuronValues);
 		return colorMap;
 	}
 

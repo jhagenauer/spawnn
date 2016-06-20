@@ -16,6 +16,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Map.Entry;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -43,6 +44,7 @@ import spawnn.som.utils.SomUtils;
 import spawnn.utils.Clustering;
 import spawnn.utils.Clustering.TreeNode;
 import spawnn.utils.ColorBrewer;
+import spawnn.utils.DataUtils;
 import spawnn.utils.GraphUtils;
 import spawnn.utils.SpatialDataFrame;
 
@@ -70,6 +72,10 @@ public class SOMResultPanel extends ResultPanel<GridPos> {
 
 	public SOMResultPanel(Frame parent, SpatialDataFrame orig, List<double[]> samples, Map<GridPos, Set<double[]>> bmus, Grid2D<double[]> grid, Dist<double[]> fDist, Dist<double[]> gDist, int[] fa, int[] ga, boolean wmc) {
 		super(parent,orig,samples,bmus,new ArrayList<GridPos>(grid.getPositions()),fDist,gDist);
+		String st = "Quantization error: "+SomUtils.getMeanQuantError(grid, bmus, fDist);
+		if( gDist != null )
+			st += ", Spatial quantization error: "+SomUtils.getMeanQuantError(grid, bmus, gDist);
+		infoField.setText(st);
 		this.grid = grid;
 
 		setLayout(new MigLayout(""));
@@ -103,6 +109,7 @@ public class SOMResultPanel extends ResultPanel<GridPos> {
 				s+= " (ctx)";
 				gridComboBox.addItem(s);
 			}
+		gridComboBox.setSelectedItem(RANDOM);
 		gridComboBox.addActionListener(this);
 		gridComboBox.setBorder(BorderFactory.createTitledBorder("Neuron"));
 		currentGridComboBoxItem = gridComboBox.getSelectedItem();
@@ -170,7 +177,7 @@ public class SOMResultPanel extends ResultPanel<GridPos> {
 		}
 		pnlGraph.addNeuronSelectedListener(new NSL(grid));
 
-		actionPerformed(new ActionEvent(gridComboBox, 0, DISTANCE));
+		actionPerformed(new ActionEvent(gridComboBox, 0, RANDOM));
 		updatePanels();
 		
 		pnlGrid.addMouseListener(pnlGrid);
@@ -189,14 +196,14 @@ public class SOMResultPanel extends ResultPanel<GridPos> {
 		colorPanel.setBorder(BorderFactory.createTitledBorder("Color scheme"));
 		add(colorPanel,"growy");
 		
-		add(gridModeComboBox, "");
-		
 		JPanel selectPanel = new JPanel(new MigLayout("insets 0, gapy 0"));
 		selectPanel.add(colorChooser,"");
 		selectPanel.add(clearSelect,"");
 		selectPanel.setBorder(BorderFactory.createTitledBorder("Selection"));
-		add(selectPanel,"growy, pushx");
+		add(selectPanel,"growy");
 		
+		add(gridModeComboBox, "pushx");
+				
 		JPanel exportPanel = new JPanel(new MigLayout("insets 0, gapy 0"));
 		exportPanel.add(btnExpGrid,"");
 		exportPanel.add(btnExpMap,"");
@@ -402,8 +409,8 @@ public class SOMResultPanel extends ResultPanel<GridPos> {
 	@Override 
 	protected Map<GridPos, Color> updatePanels() {
 		Map<GridPos,Color> colorMap = super.updatePanels();
-		pnlGrid.setGridColors(colorMap, selectedColors, neuronValues);
-		pnlGraph.setGridColors(toDoubleArrayMap(colorMap), toDoubleArrayMap(selectedColors), toDoubleArrayMap(neuronValues));
+		pnlGrid.setColors(colorMap, selectedColors, neuronValues);
+		pnlGraph.setColors(toDoubleArrayMap(colorMap), toDoubleArrayMap(selectedColors), toDoubleArrayMap(neuronValues));
 		return colorMap;
 	}
 
@@ -414,33 +421,6 @@ public class SOMResultPanel extends ResultPanel<GridPos> {
 		return nm;
 	}
 	
-	@Override
-	public void neuronSelectedOccured(NeuronSelectedEvent<GridPos> evt) {
-		GridPos gp = evt.getNeuron();
-		
-		// remove from cluster if click one already same-colored neuron
-		if (selectedColors.containsKey(gp) && selectedColors.get(gp) == selectedColor)
-			selectedColors.remove(gp);
-		else { // color n neurons
-			Set<GridPos> curNeurons = new HashSet<GridPos>();
-			curNeurons.add(gp);
-			
-			// color neurons
-			for( GridPos t : curNeurons )
-				selectedColors.put(t, selectedColor);
-		}
-		
-		int nr = 0;
-		Set<double[]> s = new HashSet<double[]>();
-		for( GridPos p : grid.getPositions() )
-			if( selectedColors.get(p) == selectedColor ) {
-				s.add(grid.getPrototypeAt(p));
-				nr++;
-			}
-		infoField.setText(nr+" neurons");
-		updatePanels();
-	}
-
 	@Override
 	public boolean isClusterVis() {
 		return (String)gridComboBox.getSelectedItem() == CLUSTER;

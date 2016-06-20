@@ -62,7 +62,7 @@ public class GraphPanel extends NeuronVisPanel<double[]> implements ItemListener
 		al = new KKLayout<double[], double[]>(graph);
 		vv = new VisualizationViewer<double[], double[]>(al);
 		vv.getRenderContext().setEdgeShapeTransformer(new EdgeShape.Line<double[], double[]>());
-		
+
 		DefaultModalGraphMouse<double[], String> gm = new DefaultModalGraphMouse<double[], String>();
 		gm.setMode(ModalGraphMouse.Mode.PICKING);
 
@@ -70,8 +70,7 @@ public class GraphPanel extends NeuronVisPanel<double[]> implements ItemListener
 
 		ps = vv.getPickedVertexState();
 		ps.addItemListener(this);
-		
-		add(vv);			
+		add(vv);	
 	}
 
 	@Override
@@ -87,13 +86,19 @@ public class GraphPanel extends NeuronVisPanel<double[]> implements ItemListener
 	}
 
 	@Override
-	public void setGridColors(final Map<double[], Color> colorMap, final Map<double[], Color> selected, Map<double[],Double> neuronValues ) {
+	public void setColors(final Map<double[], Color> colorMap, final Map<double[], Color> selected, Map<double[],Double> neuronValues ) {
 		vv.getRenderContext().setVertexFillPaintTransformer(new Transformer<double[], Paint>() {
 			public Paint transform(double[] i) {
-				if (colorMap.containsKey(i))
-					return colorMap.get(i);
-				else
-					return Color.GRAY;
+				Color c = colorMap.get(i);
+				if( selected.containsKey(i) ) {
+					Color s = selected.get(i);
+					int alpha = NeuronVisPanel.SELECTED_OPACITY;
+					int red = (s.getRed() * alpha + c.getRed() * (255 - alpha)) / 255;
+					int green = (s.getGreen() * alpha + c.getGreen() * (255 - alpha)) / 255;
+					int blue = (s.getBlue() * alpha + c.getBlue() * (255 - alpha)) / 255;
+					return new Color(red,green,blue);
+				}				
+				return c;
 			}
 		});
 
@@ -233,8 +238,7 @@ public class GraphPanel extends NeuronVisPanel<double[]> implements ItemListener
 			}
 			stream.flush();
 			stream.close();
-		} catch( Exception e ) {
-			
+		} catch( Exception e ) {	
 		}
 	}
 }

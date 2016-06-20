@@ -101,13 +101,13 @@ public class GridPanel extends NeuronVisPanel<GridPos> implements MouseListener 
 			g2.draw( scaledCells.get(p));
 		}
 		g2.setStroke(origStroke);
-				
+			
+		// fill
 		for( GridPos p : scaledCells.keySet() ) {
 			if( gridColors.containsKey(p) ) 
 				g2.setColor( gridColors.get( p ) );
 			else
 				g2.setColor( Color.GRAY );
-			
 			g2.fill( scaledCells.get(p) );
 		}
 		
@@ -121,7 +121,15 @@ public class GridPanel extends NeuronVisPanel<GridPos> implements MouseListener 
 			g2.drawString(p.toString(), x, y);*/
 		}
 		
-		// draw selected
+		// fill selected
+		for( GridPos p : selectedColors.keySet() ) {
+			Color c = selectedColors.get(p);
+			g2.setColor(new Color( c.getRed(), c.getGreen(), c.getBlue(), NeuronVisPanel.SELECTED_OPACITY ));
+			g2.setStroke(fatStroke);
+			g2.fill( scaledCells.get(p) );
+		}
+				
+		// draw border selected
 		g2.setStroke(fatStroke);
 		for( GridPos p : selectedColors.keySet() ) {
 			g2.setColor( selectedColors.get(p));
@@ -189,7 +197,7 @@ public class GridPanel extends NeuronVisPanel<GridPos> implements MouseListener 
 	}
 	
 	@Override
-	public void setGridColors(Map<GridPos, Color> gridColors, Map<GridPos, Color> selectedColors, Map<GridPos,Double> neuronValues ) {
+	public void setColors(Map<GridPos, Color> gridColors, Map<GridPos, Color> selectedColors, Map<GridPos,Double> neuronValues ) {
 		this.gridColors = gridColors;
 		this.selectedColors = selectedColors;
 		repaint();

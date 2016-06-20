@@ -34,6 +34,7 @@ import org.geotools.map.MapContent;
 import org.geotools.map.MapViewport;
 import org.geotools.renderer.GTRenderer;
 import org.geotools.renderer.lite.StreamingRenderer;
+import org.geotools.styling.Fill;
 import org.geotools.styling.Mark;
 import org.geotools.styling.SLD;
 import org.geotools.styling.Stroke;
@@ -169,12 +170,12 @@ public class MapPanel<T> extends NeuronVisPanel<T> implements MapPaneListener, C
 			stream.flush();
 			stream.close();
 		} catch (Exception e) {
-
+			e.printStackTrace();
 		}
 	}
 
 	@Override
-	public void setGridColors(Map<T, Color> colorMap, Map<T, Color> selectedColors, Map<T, Double> neuronValues) {
+	public void setColors(Map<T, Color> colorMap, Map<T, Color> selectedColors, Map<T, Double> neuronValues) {
 		StyleBuilder sb = new StyleBuilder();
 		GeometryType gt = fc.getSchema().getGeometryDescriptor().getType();
 		
@@ -242,7 +243,10 @@ public class MapPanel<T> extends NeuronVisPanel<T> implements MapPaneListener, C
 
 				Style style = null;
 				if (gt.getBinding() == Polygon.class || gt.getBinding() == MultiPolygon.class) {
-					style = SLD.wrapSymbolizers(sb.createPolygonSymbolizer(c, SELECTED_WIDTH));
+					Stroke stroke = sb.createStroke(c,SELECTED_WIDTH);
+					Fill fill = sb.createFill(c, (double)NeuronVisPanel.SELECTED_OPACITY/256); 
+					Symbolizer sym = sb.createPolygonSymbolizer(stroke,fill);
+					style = SLD.wrapSymbolizers(sym);
 				} else if (gt.getBinding() == Point.class || gt.getBinding() == MultiPoint.class) {
 					Mark mark = sb.createMark(StyleBuilder.MARK_CIRCLE, c, SELECTED_WIDTH);
 					mark.setFill(null);
@@ -253,10 +257,9 @@ public class MapPanel<T> extends NeuronVisPanel<T> implements MapPaneListener, C
 				mc.addLayer(new FeatureLayer(sub, style));
 			}
 		}
-				
-		mc.setViewport( new MapViewport(bounds));			
+		mp.getMapContent().dispose();	
+		mc.setViewport( new MapViewport(bounds));	
 		mp.setBackground(getBackground()); // quick and dirty hack. setOpaque(false) does not work somehow
-		mp.getMapContent().dispose();
 		mp.setMapContent(mc);
 	}
 

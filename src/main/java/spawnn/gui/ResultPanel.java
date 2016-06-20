@@ -57,6 +57,7 @@ import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.geom.Polygon;
 
 import spawnn.dist.Dist;
+import spawnn.som.grid.GridPos;
 import spawnn.utils.ClusterValidation;
 import spawnn.utils.ColorBrewer;
 import spawnn.utils.ColorUtils;
@@ -535,7 +536,7 @@ public abstract class ResultPanel<T> extends JPanel implements ActionListener, N
 		}
 		
 		Map<T, Color> colorMap = ColorUtils.getColorMap(neuronValues, cb, quantileButton.isSelected() );
-		mapPanel.setGridColors(colorMap, selectedColors, neuronValues);
+		mapPanel.setColors(colorMap, selectedColors, neuronValues);
 		return colorMap;
 	}
 
@@ -548,15 +549,14 @@ public abstract class ResultPanel<T> extends JPanel implements ActionListener, N
 			selectedColors.remove(gp);
 		else 
 			selectedColors.put(gp, selectedColor);	
-									
-		// calculate ss for color
-		int nr = 0;
-		for( Entry<T,Color> e : selectedColors.entrySet() ) 
-			if( e.getValue() == selectedColor )
-				nr++;
-				
-		infoField.setText(nr+" neurons");
 		updatePanels();
+		
+		int i = 0;
+		for( Entry<T,Color> e : selectedColors.entrySet() ) 
+		if( e.getValue() == selectedColor )
+			i++;
+		
+		infoField.setText(i+" neurons");
 	}
 	
 	public abstract boolean isClusterVis();

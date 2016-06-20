@@ -13,7 +13,6 @@ import java.awt.geom.Arc2D;
 import java.awt.geom.Line2D;
 import java.awt.image.BufferedImage;
 import java.awt.image.ColorConvertOp;
-import java.awt.image.RenderedImage;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -28,6 +27,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
 
@@ -50,7 +50,6 @@ import org.jdom.Element;
 import org.jdom.input.SAXBuilder;
 import org.jdom.output.Format;
 import org.jdom.output.XMLOutputter;
-import org.jfree.util.Log;
 
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
@@ -64,7 +63,6 @@ import ij.process.ByteProcessor;
 import ij.process.ImageProcessor;
 import imageware.Builder;
 import imageware.ImageWare;
-import jRenderer3D.JRenderer3D;
 import spawnn.dist.Dist;
 import spawnn.som.bmu.BmuGetter;
 import spawnn.som.bmu.KangasBmuGetter;
@@ -1100,6 +1098,13 @@ public class SomUtils {
 		for (GridPos k : mapping.keySet())
 			clusters.put(grid.getPrototypeAt(k), mapping.get(k));
 		return DataUtils.getMeanQuantizationError(clusters, d);
+	}
+	
+	public static <T> double getMeanQuantError(Grid<double[]> grid, Map<GridPos,Set<double[]>> bmus, Dist<double[]> dist ) {
+		Map<double[], Set<double[]>> dBmus = new HashMap<>();
+		for (Entry<GridPos, Set<double[]>> e : bmus.entrySet())
+			dBmus.put(grid.getPrototypeAt(e.getKey()), e.getValue());
+		return DataUtils.getMeanQuantizationError(dBmus, dist);
 	}
 
 	// not normalized by neurons or samples
