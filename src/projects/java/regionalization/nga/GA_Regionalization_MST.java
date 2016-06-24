@@ -22,8 +22,6 @@ import com.vividsolutions.jts.triangulate.VoronoiDiagramBuilder;
 import heuristics.Evaluator;
 import heuristics.GeneticAlgorithm;
 import heuristics.tabu.TabuSearch;
-import regionalization.medoid.MedoidRegioClustering;
-import regionalization.medoid.MedoidRegioClustering.GrowMode;
 import regionalization.nga.tabu.CutsTabuIndividual;
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
@@ -92,7 +90,7 @@ public class GA_Regionalization_MST {
 		Dist<double[]> rDist = new RandomDist<>();
 		
 		log.debug("start");
-		Map<Set<double[]>, TreeNode> hcTree = Clustering.getHierarchicalClusterTree(cm, fDist, HierarchicalClusteringType.ward);
+		List<TreeNode> hcTree = Clustering.getHierarchicalClusterTree(cm, fDist, HierarchicalClusteringType.ward);
 		List<Set<double[]>> hcClusters = Clustering.cutTree(hcTree, numCluster);
 		double wardCost = DataUtils.getWithinSumOfSquares(hcClusters, fDist);
 		log.debug("ward: " + wardCost );
@@ -111,8 +109,8 @@ public class GA_Regionalization_MST {
 		{
 			DescriptiveStatistics ds = new DescriptiveStatistics();
 			for( int i = 0; i < repeats; i++ ) {
-				Map<Set<double[]>,TreeNode> m = Clustering.getHierarchicalClusterTree(cm, fDist, Clustering.HierarchicalClusteringType.ward);
-				List<Set<double[]>> c = Clustering.cutTreeREDCAP(m.values(), cm, HierarchicalClusteringType.ward, numCluster, fDist);
+				List<TreeNode> m = Clustering.getHierarchicalClusterTree(cm, fDist, Clustering.HierarchicalClusteringType.ward);
+				List<Set<double[]>> c = Clustering.cutTreeREDCAP(m, cm, HierarchicalClusteringType.ward, numCluster, fDist);
 				ds.addValue( DataUtils.getWithinSumOfSquares(c, fDist));
 			}
 			log.debug("redcap(ward): "+ds.getMean()+","+ds.getMin());
@@ -161,7 +159,7 @@ public class GA_Regionalization_MST {
 			Evaluator<CutsTabuIndividual> evaluator = new WSSCutsTabuEvaluator(fDist);
 			DescriptiveStatistics ds = new DescriptiveStatistics();
 			for (int i = 0; i < repeats; i++) {
-				Collection<TreeNode> st = Clustering.getHierarchicalClusterTree(cm, fDist, HierarchicalClusteringType.ward).values();
+				Collection<TreeNode> st = Clustering.getHierarchicalClusterTree(cm, fDist, HierarchicalClusteringType.ward);
 				Map<double[],Set<double[]>> tree = Clustering.toREDCAPSpanningTree(st, cm, HierarchicalClusteringType.ward, fDist);
 				CutsTabuIndividual init = new CutsTabuIndividual(tree, numCluster );
 				

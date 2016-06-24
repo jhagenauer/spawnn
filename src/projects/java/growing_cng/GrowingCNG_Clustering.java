@@ -142,7 +142,7 @@ public class GrowingCNG_Clustering {
 										}										
 										
 										// Cluster hierarchical
-										Map<Set<double[]>,TreeNode> tree = Clustering.getHierarchicalClusterTree(cm, fDist, HierarchicalClusteringType.ward);
+										List<TreeNode> tree = Clustering.getHierarchicalClusterTree(cm, fDist, HierarchicalClusteringType.ward);
 										List<Set<double[]>> cTree = Clustering.cutTree(tree, 25);
 										List<Set<double[]>> cluster = new ArrayList<Set<double[]>>();
 										for( Set<double[]> s : cTree ) {

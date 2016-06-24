@@ -16,7 +16,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.Map.Entry;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -43,8 +42,6 @@ import spawnn.som.utils.SomToolboxUtils;
 import spawnn.som.utils.SomUtils;
 import spawnn.utils.Clustering;
 import spawnn.utils.Clustering.TreeNode;
-import spawnn.utils.ColorBrewer;
-import spawnn.utils.DataUtils;
 import spawnn.utils.GraphUtils;
 import spawnn.utils.SpatialDataFrame;
 
@@ -314,7 +311,7 @@ public class SOMResultPanel extends ResultPanel<GridPos> {
 							type = Clustering.HierarchicalClusteringType.ward;
 						
 						log.debug("Algorithm: "+type+","+cd.getConnected() );
-						Map<Set<double[]>,TreeNode> tree;
+						List<TreeNode> tree;
 						if (cd.getConnected()) 
 							tree = Clustering.getHierarchicalClusterTree(cm, fDist, type);
 						else

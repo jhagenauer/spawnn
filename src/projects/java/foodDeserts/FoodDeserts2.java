@@ -129,7 +129,7 @@ public class FoodDeserts2 {
 								cm.get(b).add(a);
 							}
 													
-							Map<Set<double[]>, TreeNode> tree = Clustering.getHierarchicalClusterTree(cm, fDist, HierarchicalClusteringType.ward);
+							List<TreeNode> tree = Clustering.getHierarchicalClusterTree(cm, fDist, HierarchicalClusteringType.ward);
 							
 							List<Set<double[]>> c = new ArrayList<Set<double[]>>();
 							for (Set<double[]> s : Clustering.cutTree(tree, nrCluster )) {

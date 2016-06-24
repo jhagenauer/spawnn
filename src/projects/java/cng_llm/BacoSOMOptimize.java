@@ -149,7 +149,7 @@ public class BacoSOMOptimize {
 							cm.put( som.matrix.get(p)[0], s );
 						}
 						
-						Map<Set<double[]>,TreeNode> tree = Clustering.getHierarchicalClusterTree(cm, new EuclideanDist(), Clustering.HierarchicalClusteringType.ward);
+						List<TreeNode> tree = Clustering.getHierarchicalClusterTree(cm, new EuclideanDist(), Clustering.HierarchicalClusteringType.ward);
 						List<Set<double[]>> c = Clustering.cutTree(tree, 3);
 						
 						List<Set<double[]>> cluster = new ArrayList<Set<double[]>>();

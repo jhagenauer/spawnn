@@ -119,7 +119,7 @@ public class EvalGeoSOM_Topo {
 												cm.get(pp).add(grid.getPrototypeAt(nb));
 											}
 										}
-										Map<Set<double[]>, TreeNode> tree = Clustering.getHierarchicalClusterTree(cm, fDist, HierarchicalClusteringType.ward);
+										List<TreeNode> tree = Clustering.getHierarchicalClusterTree(cm, fDist, HierarchicalClusteringType.ward);
 										List<Set<double[]>> c = new ArrayList<Set<double[]>>();
 										for (Set<double[]> s : Clustering.cutTree(tree, cluster.size())) {
 											Set<double[]> set = new HashSet<double[]>();
@@ -208,7 +208,7 @@ public class EvalGeoSOM_Topo {
 												cm.get(pp).add(grid.getPrototypeAt(nb));
 											}
 										}
-										Map<Set<double[]>, TreeNode> tree = Clustering.getHierarchicalClusterTree(cm, fDist, HierarchicalClusteringType.ward);
+										List<TreeNode> tree = Clustering.getHierarchicalClusterTree(cm, fDist, HierarchicalClusteringType.ward);
 										List<Set<double[]>> c = new ArrayList<Set<double[]>>();
 										for (Set<double[]> s : Clustering.cutTree(tree, cluster.size())) {
 											Set<double[]> set = new HashSet<double[]>();

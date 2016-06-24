@@ -151,19 +151,19 @@ public class TestMedoidClustering {
 					method me = (method)p[1][0];
 					if( me == method.hc ) {
 						HierarchicalClusteringType type = (HierarchicalClusteringType) p[1][1];
-						Map<Set<double[]>, TreeNode> tree = Clustering.getHierarchicalClusterTree(cm, fDist, type );
+						List<TreeNode> tree = Clustering.getHierarchicalClusterTree(cm, fDist, type );
 						for( Object o : p[2] ) {
 							treeCutMethod tcm = (treeCutMethod)o;
 							if( tcm == treeCutMethod.cuts )
 								r.cluster.put(o, Clustering.cutTree(tree, numCluster));
 							else if( tcm == treeCutMethod.redcap ) {
-								r.cluster.put(o, Clustering.cutTreeREDCAP(tree.values(), cm, type, numCluster, fDist) );
+								r.cluster.put(o, Clustering.cutTreeREDCAP(tree, cm, type, numCluster, fDist) );
 							} else if( tcm == treeCutMethod.tabu ){
 								CutsTabuIndividual.k = -1;
 								TabuSearch.rndMoveDiversication = true;
 								WSSCutsTabuEvaluator evaluator = new WSSCutsTabuEvaluator(fDist);
 								TabuSearch<CutsTabuIndividual> ts = new TabuSearch<>(evaluator, 10, 350, 25, 25 );
-								CutsTabuIndividual init = new CutsTabuIndividual(Clustering.toREDCAPSpanningTree(tree.values(), cm, type, fDist), numCluster);
+								CutsTabuIndividual init = new CutsTabuIndividual(Clustering.toREDCAPSpanningTree(tree, cm, type, fDist), numCluster);
 								r.cluster.put(o, ts.search(init).toCluster());
 							} 							
 						}

@@ -21,6 +21,7 @@ import com.vividsolutions.jts.geom.Geometry;
 
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
+import spawnn.utils.DataUtils.transform;
 
 public class Clustering {
 
@@ -170,7 +171,7 @@ public class Clustering {
 		single_linkage, complete_linkage, average_linkage, ward
 	};
 		
-	public static List<Set<double[]>> cutTree( Map<Set<double[]>,TreeNode> tree, int numCluster ) {
+	public static List<Set<double[]>> cutTree( Collection <TreeNode> tree, int numCluster ) {
 		Comparator<TreeNode> comp = new Comparator<TreeNode>() {
 			@Override
 			public int compare(TreeNode o1, TreeNode o2) {
@@ -179,9 +180,9 @@ public class Clustering {
 		};
 		
 		// multiple for constrained clustering
-		Set<TreeNode> roots = new HashSet<>(tree.values());
-		for( TreeNode a : tree.values() )
-			for( TreeNode b : tree.values() )
+		Set<TreeNode> roots = new HashSet<>(tree);
+		for( TreeNode a : tree )
+			for( TreeNode b : tree )
 				if( b.children.contains(a) ) // as is a children and therefore no root
 						roots.remove(a);
 		
@@ -328,17 +329,17 @@ public class Clustering {
 	}
 						
 	// not connected
-	public static Map<Set<double[]>,TreeNode> getHierarchicalClusterTree(List<double[]> samples, Dist<double[]> dist, HierarchicalClusteringType type) {
+	public static List<TreeNode> getHierarchicalClusterTree(List<double[]> samples, Dist<double[]> dist, HierarchicalClusteringType type) {
 		return getHierarchicalClusterTree(samples, null, dist, type);
 	}
 	
 	// connected
-	public static Map<Set<double[]>,TreeNode> getHierarchicalClusterTree(Map<double[], Set<double[]>> cm, Dist<double[]> dist, HierarchicalClusteringType type) {
+	public static List<TreeNode> getHierarchicalClusterTree(Map<double[], Set<double[]>> cm, Dist<double[]> dist, HierarchicalClusteringType type) {
 		return getHierarchicalClusterTree( null, cm, dist, type);
 	}
 	
 	// TODO returns Map just for historic reasons, refactor to List/Collection
-	private static Map<Set<double[]>,TreeNode> getHierarchicalClusterTree( Collection<double[]> samples, Map<double[], Set<double[]>> cm, Dist<double[]> dist, HierarchicalClusteringType type) {
+	private static List<TreeNode> getHierarchicalClusterTree( Collection<double[]> samples, Map<double[], Set<double[]>> cm, Dist<double[]> dist, HierarchicalClusteringType type) {
 		if( samples == null )
 			samples = GraphUtils.getNodes(cm);
 		int length = samples.iterator().next().length;
@@ -471,10 +472,7 @@ public class Clustering {
 			
 			if( c1 == null && c2 == null ) { // no connected clusters present anymore
 				log.warn("only non-connected clusters present! "+leafLayer.size() );
-				Map<Set<double[]>,TreeNode> t = new HashMap<>();
-				for( TreeNode tn : tree )
-					t.put(tn.contents, tn);
-				return t;
+				return tree;
 			}
 			
 			// remove old clusters
@@ -529,10 +527,7 @@ public class Clustering {
 			}
 
 		}
-		Map<Set<double[]>,TreeNode> t = new HashMap<>();
-		for( TreeNode tn : tree )
-			t.put(tn.contents, tn);
-		return t;
+		return tree;
 	}
 	
 	public static List<Set<double[]>> skater(Map<double[], Set<double[]>> mst, int numCuts, Dist<double[]> dist, int minClusterSize) {
@@ -693,15 +688,14 @@ public class Clustering {
 		List<double[]> samples = DataUtils.readSamplesFromShapeFile(new File("data/redcap/Election/election2004.shp"), new int[] {}, true);
 		
 		int[] fa = new int[] { 7 };
-
-		for (int i : fa)
-			DataUtils.zScoreColumn(samples, i);
+		DataUtils.transform(samples, fa, transform.zScore);
 		
 		final Map<double[], Set<double[]>> cm = RegionUtils.readContiguitiyMap(samples, "data/redcap/Election/election2004_Queen.ctg");
 		final Dist<double[]> dist = new EuclideanDist(fa);
 		
 		int nrCluster = 7;
-		Map<Set<double[]>,TreeNode> tree = Clustering.getHierarchicalClusterTree(samples, cm, dist, HierarchicalClusteringType.ward);
-		System.out.println("WCSS1: " + DataUtils.getWithinSumOfSquares(Clustering.cutTree( tree, nrCluster), dist));		
+		long time = System.currentTimeMillis();
+		List<TreeNode> tree = Clustering.getHierarchicalClusterTree(samples, cm, dist, HierarchicalClusteringType.ward);
+		System.out.println("Within sum of squares: " + DataUtils.getWithinSumOfSquares(Clustering.cutTree( tree, nrCluster), dist)+", took: "+(System.currentTimeMillis()-time)/1000.0);		
 	}
 }

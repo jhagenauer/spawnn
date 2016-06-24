@@ -71,14 +71,14 @@ public class TestRegionalizationAlgorithms {
 		int numCluster = 7;
 		
 		{
-			Map<Set<double[]>, TreeNode> hcTree = Clustering.getHierarchicalClusterTree(cm, fDist, HierarchicalClusteringType.ward);
+			List<TreeNode> hcTree = Clustering.getHierarchicalClusterTree(cm, fDist, HierarchicalClusteringType.ward);
 			long time = System.currentTimeMillis();
 			List<Set<double[]>> cutsCluster = Clustering.cutTree(hcTree, numCluster);
 			log.debug("took: "+(double)(System.currentTimeMillis()-time)/1000.0);
 			log.debug("wardCuts: " + DataUtils.getWithinSumOfSquares(cutsCluster, fDist) );
 			
 			time = System.currentTimeMillis();
-			Map<double[],Set<double[]>> spTree = Clustering.toREDCAPSpanningTree(hcTree.values(), cm, Clustering.HierarchicalClusteringType.ward, fDist);
+			Map<double[],Set<double[]>> spTree = Clustering.toREDCAPSpanningTree(hcTree, cm, Clustering.HierarchicalClusteringType.ward, fDist);
 			List<Set<double[]>> redcapCluster = Clustering.cutTreeREDCAP( spTree, numCluster, fDist);
 			log.debug("took: "+(double)(System.currentTimeMillis()-time)/1000.0);
 			log.debug("wardRedcap: "+DataUtils.getWithinSumOfSquares(redcapCluster, fDist));

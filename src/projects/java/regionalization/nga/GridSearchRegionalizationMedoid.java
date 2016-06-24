@@ -117,7 +117,7 @@ public class GridSearchRegionalizationMedoid {
 
 		double slk = 0;
 		for( Data dt : data ) {
-			Map<Set<double[]>, TreeNode> hcTree = Clustering.getHierarchicalClusterTree(dt.cm, fDist, HierarchicalClusteringType.single_linkage);
+			List<TreeNode> hcTree = Clustering.getHierarchicalClusterTree(dt.cm, fDist, HierarchicalClusteringType.single_linkage);
 			List<Set<double[]>> hcClusters = Clustering.cutTree(hcTree, numCluster);
 			slk += DataUtils.getWithinSumOfSquares(hcClusters, fDist);
 		}
@@ -125,7 +125,7 @@ public class GridSearchRegionalizationMedoid {
 		
 		double avg = 0;
 		for( Data dt : data ) {
-			Map<Set<double[]>, TreeNode> hcTree = Clustering.getHierarchicalClusterTree(dt.cm, fDist, HierarchicalClusteringType.average_linkage);
+			List<TreeNode> hcTree = Clustering.getHierarchicalClusterTree(dt.cm, fDist, HierarchicalClusteringType.average_linkage);
 			List<Set<double[]>> hcClusters = Clustering.cutTree(hcTree, numCluster);
 			avg += DataUtils.getWithinSumOfSquares(hcClusters, fDist);
 		}
@@ -133,7 +133,7 @@ public class GridSearchRegionalizationMedoid {
 		
 		double clk = 0;
 		for( Data dt : data ) {
-			Map<Set<double[]>, TreeNode> hcTree = Clustering.getHierarchicalClusterTree(dt.cm, fDist, HierarchicalClusteringType.complete_linkage);
+			List<TreeNode> hcTree = Clustering.getHierarchicalClusterTree(dt.cm, fDist, HierarchicalClusteringType.complete_linkage);
 			List<Set<double[]>> hcClusters = Clustering.cutTree(hcTree, numCluster);
 			clk += DataUtils.getWithinSumOfSquares(hcClusters, fDist);
 		}
@@ -141,7 +141,7 @@ public class GridSearchRegionalizationMedoid {
 		
 		double ward = 0;
 		for( Data dt : data ) {
-			Map<Set<double[]>, TreeNode> hcTree = Clustering.getHierarchicalClusterTree(dt.cm, fDist, HierarchicalClusteringType.ward);
+			List<TreeNode> hcTree = Clustering.getHierarchicalClusterTree(dt.cm, fDist, HierarchicalClusteringType.ward);
 			List<Set<double[]>> hcClusters = Clustering.cutTree(hcTree, numCluster);
 			ward += DataUtils.getWithinSumOfSquares(hcClusters, fDist);
 		}
