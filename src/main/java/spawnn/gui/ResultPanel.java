@@ -36,6 +36,7 @@ import javax.swing.JTextField;
 import javax.swing.JToggleButton;
 import javax.swing.ListCellRenderer;
 
+import org.apache.log4j.Logger;
 import org.apache.xmlgraphics.java2d.ps.EPSDocumentGraphics2D;
 import org.geotools.data.DataStore;
 import org.geotools.data.FeatureStore;
@@ -57,7 +58,6 @@ import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.geom.Polygon;
 
 import spawnn.dist.Dist;
-import spawnn.som.grid.GridPos;
 import spawnn.utils.ClusterValidation;
 import spawnn.utils.ColorBrewer;
 import spawnn.utils.ColorUtils;
@@ -67,6 +67,7 @@ import spawnn.utils.SpatialDataFrame;
 public abstract class ResultPanel<T> extends JPanel implements ActionListener, NeuronSelectedListener<T> {
 
 	private static final long serialVersionUID = 1686748469941486349L;
+	private static Logger log = Logger.getLogger(ResultPanel.class);
 	
 	protected JButton btnExpMap, colorChooser, clearSelect;
 	protected JComboBox colorModeBox;
@@ -549,8 +550,9 @@ public abstract class ResultPanel<T> extends JPanel implements ActionListener, N
 			selectedColors.remove(gp);
 		else 
 			selectedColors.put(gp, selectedColor);	
-		updatePanels();
 		
+		updatePanels();
+				
 		int i = 0;
 		for( Entry<T,Color> e : selectedColors.entrySet() ) 
 		if( e.getValue() == selectedColor )
