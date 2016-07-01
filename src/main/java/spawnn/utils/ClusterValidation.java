@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
+
 import spawnn.dist.Dist;
 
 public class ClusterValidation {
@@ -18,7 +20,7 @@ public class ClusterValidation {
 	// works identically to R-cluster package
 	public static double getSilhouetteCoefficient(Map<double[], Set<double[]>> cluster, Dist<double[]> dist) {
 		int sum = 0;
-		double sil = 0;
+		double sil = -1;
 		for (double[] curCentroid : cluster.keySet()) {
 			for (double[] a : cluster.get(curCentroid)) {
 
@@ -28,24 +30,18 @@ public class ClusterValidation {
 					double avgDist = 0;
 					for (double[] b : cluster.get(key))
 						avgDist += dist.dist(a, b);
-					if (cluster.get(key).contains(a))
-						avgDistMap.put(key, avgDist / (cluster.get(key).size() - 1));
-					else
-						avgDistMap.put(key, avgDist / cluster.get(key).size());
+					avgDistMap.put(key, avgDist / cluster.get(key).size());
 				}
 
 				// get distA and distB
-				double distA = avgDistMap.get(curCentroid); // avg dist to
-															// current cluster
+				double distA = avgDistMap.get(curCentroid); // avg dist to current cluster
 				double distB = Double.MAX_VALUE;
 				for (double[] key : cluster.keySet())
 					// get cluster with best avgDist
 					if (key != curCentroid && avgDistMap.get(key) < distB)
 						distB = avgDistMap.get(key);
 
-				if (distA != 0)
-					sil += (distB - distA) / Math.max(distA, distB);
-
+				sil += (distB - distA) / Math.max(distA, distB);
 				sum++;
 			}
 		}
