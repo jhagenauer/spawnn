@@ -183,25 +183,47 @@ public class Clustering {
 		Set<TreeNode> roots = new HashSet<>(tree);
 		for( TreeNode a : tree )
 			for( TreeNode b : tree )
-				if( b.children.contains(a) ) // as is a children and therefore no root
+				if( b.children.contains(a) ) // a is children of b and therefore no root
 						roots.remove(a);
 		
 		PriorityQueue<TreeNode> pq = new PriorityQueue<TreeNode>(1, comp);
 		pq.addAll(roots);
-		while( pq.size() < numCluster ) {
-			for( TreeNode child : pq.poll().children )
+		while( pq.size() < numCluster ) { 
+			TreeNode tn = pq.poll();
+			if( tn == null )
+				throw new RuntimeException("To few observations for the desired number of clusters!");
+			
+			for( TreeNode child : tn.children )
 				if( child != null )
 					pq.add(child);
 		}
 		
 		List<Set<double[]>> clusters = new ArrayList<Set<double[]>>();
 		for( TreeNode t : pq )
-			clusters.add(t.contents);		
+			clusters.add( getContents(t) );		
 		return clusters;
 	}
 	
+	// Gets contents of leafs for node
+	private static Set<double[]> getContents( TreeNode node ) {
+		Set<double[]> contents = new HashSet<>();
+		List<TreeNode> l = new ArrayList<>();
+		l.add(node);
+		
+		while( !l.isEmpty() ) {
+			TreeNode cur = l.remove(0);			
+			for( TreeNode child : cur.children )
+				if( child != null )
+					l.add(child);
+			
+			if( cur.age == 0 ) // leaf-layer
+				contents.add(cur.contents);
+		}
+		return contents;
+	}
+	
 	public static class TreeNode {
-		public Set<double[]> contents;
+		public double[] contents = null; // only nodes of age 0 should ever have contents! 
 		public int age = 0;
 		public double cost = 0; 
 		public List<TreeNode> children = new ArrayList<TreeNode>();
@@ -217,10 +239,14 @@ public class Clustering {
 			}
 		});
 		
+		Map<TreeNode,Set<double[]>> contents = new HashMap<>();
+		for( TreeNode tn : tree )
+			contents.put(tn, getContents(tn));
+		
 		Map<double[],Set<double[]>> m = new HashMap<>();	
 		for( TreeNode tn : l ) { // iterate by age, starting from 0
 			if( tn.age == 0 ) { // s contains only one element
-				m.put(tn.contents.iterator().next(), new HashSet<>());
+				m.put(contents.get(tn).iterator().next(), new HashSet<>());
 				continue;
 			}
 
@@ -229,8 +255,8 @@ public class Clustering {
 			// always shortest??
 			if( type == HierarchicalClusteringType.complete_linkage || type == HierarchicalClusteringType.single_linkage ) {
 				double minDist = Double.MAX_VALUE;
-				for (double[] a : tn.children.get(0).contents)
-					for (double[] b : tn.children.get(1).contents)
+				for (double[] a : contents.get( tn.children.get(0) ) )
+					for (double[] b : contents.get( tn.children.get(1) ) )
 						if (cm.get(a).contains(b)) {
 							double d = dist.dist(a, b);
 							if (d < minDist) {
@@ -241,8 +267,8 @@ public class Clustering {
 						}
 			} else {
 				double minDist = Double.MAX_VALUE;
-				for (double[] a : tn.children.get(0).contents)
-					for (double[] b : tn.children.get(1).contents)
+				for (double[] a : contents.get( tn.children.get(0) ) )
+					for (double[] b : contents.get( tn.children.get(1) ) )
 						if ( cm.get(a).contains(b) ) {
 							double d = dist.dist(a, b);
 							if (d < minDist) {
@@ -338,7 +364,7 @@ public class Clustering {
 		return getHierarchicalClusterTree( null, cm, dist, type);
 	}
 	
-	// TODO returns Map just for historic reasons, refactor to List/Collection
+	// TODO returns Map just for historic reasons, refactor to List/Collection of root nodes (everything else can be gathered from these) or even an own new tree-class
 	private static List<TreeNode> getHierarchicalClusterTree( Collection<double[]> samples, Map<double[], Set<double[]>> cm, Dist<double[]> dist, HierarchicalClusteringType type) {
 		if( samples == null )
 			samples = GraphUtils.getNodes(cm);
@@ -366,24 +392,23 @@ public class Clustering {
 			}
 		}
 				
-		List<TreeNode> tree = new ArrayList<TreeNode>();
-		List<TreeNode> leafLayer = new ArrayList<TreeNode>();
+		List<TreeNode> tree = new ArrayList<>();
+		Map<TreeNode,Set<double[]>> curLayer = new HashMap<>();
 		
 		Map<TreeNode, Double> ssCache = new HashMap<TreeNode, Double>();
 		Map<TreeNode, Map<TreeNode,Double>> unionCache = new HashMap<>();
 						
 		int age = 0;
-		for (double[] d : samples) {
-			Set<double[]> l = new FlatSet<double[]>(); // flat
-			l.add(d);
-			
+		for (double[] d : samples) {			
 			TreeNode cn = new TreeNode();
 			cn.age = age;
 			cn.cost = 0;
-			cn.contents = l;
+			cn.contents = d;
 			tree.add(cn);
 			
-			leafLayer.add(cn);
+			Set<double[]> l = new FlatSet<double[]>(); // flat
+			l.add(d);
+			curLayer.put(cn, l);
 			ssCache.put(cn, 0.0);
 		}
 						
@@ -391,24 +416,25 @@ public class Clustering {
 		Map<TreeNode, Set<TreeNode>> connected = null;
 		if (cm != null) {
 			connected = new HashMap<TreeNode, Set<TreeNode>>();
-			for (TreeNode a : leafLayer) 
-				for (TreeNode b : leafLayer) 
-					if ( a != b && cm.get(a.contents.iterator().next()).contains(b.contents.iterator().next())) {
+			for (TreeNode a : curLayer.keySet()) 
+				for (TreeNode b : curLayer.keySet()) 
+					if ( a != b && cm.get(a.contents).contains(b.contents)) {
 						if (!connected.containsKey(a))
 							connected.put(a, new HashSet<TreeNode>());
 						connected.get(a).add(b);
 					}
 		}
 		
-		while (leafLayer.size() > 1 ) {
+		while (curLayer.size() > 1 ) {
 			TreeNode c1 = null, c2 = null;
 			double sMin = Double.MAX_VALUE;
 			
-			for (int i = 0; i < leafLayer.size() - 1; i++) {
-				TreeNode l1 = leafLayer.get(i);
+			List<TreeNode> cl = new ArrayList<>(curLayer.keySet());
+			for (int i = 0; i < curLayer.size() - 1; i++) {
+				TreeNode l1 = cl.get(i);
 
-				for (int j = i + 1; j < leafLayer.size(); j++) {
-					TreeNode l2 = leafLayer.get(j);
+				for (int j = i + 1; j < curLayer.size(); j++) {
+					TreeNode l2 = cl.get(j);
 					
 					if( connected != null && ( !connected.containsKey(l1) || !connected.get(l1).contains(l2) ) ) // disjoint
 						continue;
@@ -421,21 +447,21 @@ public class Clustering {
 							// calculate mean and ss, slightly faster than actually forming a union
 							double[] r = new double[length];
 							for (int l = 0; l < length; l++) {
-								for (double[] d : l1.contents)
+								for (double[] d : curLayer.get(l1) )
 									r[l] += d[l];
-								for (double[] d : l2.contents)
+								for (double[] d : curLayer.get(l2) )
 									r[l] += d[l];
 							}
 							
 							for (int l = 0; l < length; l++)
-								r[l] /= l1.contents.size()+l2.contents.size();
+								r[l] /= curLayer.get(l1).size()+curLayer.get(l2).size();
 							
 							double ssUnion = 0;
-							for( double[] d : l1.contents ) {
+							for( double[] d : curLayer.get(l1) ) {
 								double di = dist.dist(r, d);
 								ssUnion += di * di;
 							}
-							for( double[] d : l2.contents ) {
+							for( double[] d : curLayer.get(l2) ) {
 								double di = dist.dist(r, d);
 								ssUnion += di * di;
 							}
@@ -447,20 +473,20 @@ public class Clustering {
 						s = unionCache.get(l1).get(l2) - ( ssCache.get(l1) + ssCache.get(l2) );	
 					} else if (HierarchicalClusteringType.single_linkage == type) {
 						s = Double.MAX_VALUE;
-						for (double[] d1 : l1.contents) 
-							for (double[] d2 : l2.contents) 
+						for (double[] d1 : curLayer.get(l1)) 
+							for (double[] d2 : curLayer.get(l2)) 
 								s = Math.min(s, dist.dist(d1, d2) );				
 					} else if (HierarchicalClusteringType.complete_linkage == type) {
 						s = Double.MIN_VALUE;
-						for (double[] d1 : l1.contents)
-							for (double[] d2 : l2.contents)
+						for (double[] d1 : curLayer.get(l1))
+							for (double[] d2 : curLayer.get(l2))
 								s = Math.max(s, dist.dist(d1, d2) );
 					} else if (HierarchicalClusteringType.average_linkage == type) {
 						s = 0;
-						for (double[] d1 : l1.contents) 
-							for (double[] d2 : l2.contents) 
+						for (double[] d1 : curLayer.get(l1)) 
+							for (double[] d2 : curLayer.get(l2)) 
 								s += dist.dist(d1, d2);
-						s /= (l1.contents.size() * l2.contents.size());
+						s /= (curLayer.get(l1).size() * curLayer.get(l2).size());
 					}
 					if (s < sMin) {
 						c1 = l1;
@@ -471,20 +497,15 @@ public class Clustering {
 			}
 			
 			if( c1 == null && c2 == null ) { // no connected clusters present anymore
-				log.warn("only non-connected clusters present! "+leafLayer.size() );
+				log.warn("only non-connected clusters present! "+curLayer.size() );
 				return tree;
 			}
 			
-			// remove old clusters
-			leafLayer.remove(c1);
-			leafLayer.remove(c2);
-
-			// create merge node		
+			// create merge node, remove c1,c2		
 			TreeNode mergeNode = new TreeNode();
-			Set<double[]> union = new FlatSet<double[]>(); // flat
-			union.addAll(c1.contents);
-			union.addAll(c2.contents);	
-			mergeNode.contents = union;
+			Set<double[]> union = new FlatSet<double[]>(); 
+			union.addAll(curLayer.remove(c1));
+			union.addAll(curLayer.remove(c2));	
 			mergeNode.age = ++age;
 			mergeNode.children = Arrays.asList(new TreeNode[]{ c1, c2 });
 			
@@ -492,7 +513,7 @@ public class Clustering {
 			double ss = 0;
 			if( type == HierarchicalClusteringType.ward ) {
 				ss = unionCache.get(c1).get(c2);
-				for( TreeNode s : leafLayer )
+				for( TreeNode s : curLayer.keySet() )
 					ss += ssCache.get(s);
 				
 				// update caches
@@ -506,17 +527,17 @@ public class Clustering {
 			mergeNode.cost = ss;
 									
 			// add nodes
-			leafLayer.add(mergeNode);
+			curLayer.put(mergeNode,union);
 			tree.add(mergeNode);
 			
-			// update connected map, non-connected cluster are ALSO merged in order to return a single tree. These merges have ss=NAN
+			// update connected map
 			if( connected != null ) {
 				// 1. merge values of c1 and c2 and put union
 				Set<TreeNode> ns = connected.remove(c1);
 				ns.addAll( connected.remove(c2) );
 				connected.put(mergeNode, ns);
 				
-				// 2. replace all values c1,c2 by union
+				// 2. replace all values c1,c2 by merged node
 				for( Set<TreeNode> s : connected.values() ) {
 					if( s.contains(c1) || s.contains(c2)) {
 						s.remove(c1);

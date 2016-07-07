@@ -69,6 +69,7 @@ public class GraphClustering {
 	}
 	
 	// if nrCluster <= 0, return best clusters, otherwise return desired number of clusters
+	// assumes always to connections, one for each direction
 	public static Map<double[],Integer> greedyOptModularity( Map<double[],Map<double[],Double>> graph, int rndRestarts, final int nrCluster ) {		
 			
 		Map<double[],Integer> bestMap = null; // best results

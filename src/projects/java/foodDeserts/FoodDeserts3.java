@@ -7,6 +7,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -38,6 +39,7 @@ import spawnn.utils.Clustering;
 import spawnn.utils.Clustering.HierarchicalClusteringType;
 import spawnn.utils.Clustering.TreeNode;
 import spawnn.utils.DataUtils;
+import spawnn.utils.GraphClustering;
 import spawnn.utils.DataUtils.transform;
 import spawnn.utils.SpatialDataFrame;
 
@@ -49,7 +51,7 @@ public class FoodDeserts3 {
 		final Random r = new Random();
 		final SpatialDataFrame sdf = DataUtils.readSpatialDataFrameFromShapefile(new File("data/foodDeserts2/data_sel_mod.shp"), true);
 
-		final int[] fa = new int[] { 129, 128, 127, 132, 131, 134, 137 };
+		final int[] fa = new int[] { 127, 128, 129, 131, 132, 134, 137 };
 		final int[] ga = new int[] { 0, 1 };
 
 		final Dist<double[]> fDist = new EuclideanDist(fa);
@@ -65,18 +67,17 @@ public class FoodDeserts3 {
 		DataUtils.transform(sdf.samples, fa, transform.zScore);
 		DataUtils.zScoreGeoColumns(sdf.samples, ga, gDist);
 
-		String fn = "output/food2.csv";
-		fn = fn.replaceAll(" ", "");
+		String fn = "output/food3.csv";
 		try {
-			Files.write(Paths.get(fn), ("finalNB,initLR,finalLR,fqe,sqe\n").getBytes());
+			Files.write(Paths.get(fn), ("").getBytes());
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-
+		
 		final int t_max = 100000;
 
-		for (int n : new int[]{24,48,56,64,72,96})
-			for (int l = 1; l <= n/2; l++) {
+		for (int n : new int[]{72})
+			for (int l : new int[]{34,34,34,34}) {
 
 				final int nrNeurons = n;
 				final int L = l;
@@ -109,69 +110,73 @@ public class FoodDeserts3 {
 						}
 
 						Map<double[], Set<double[]>> bmus = NGUtils.getBmuMapping(sdf.samples, neurons, sorter);
-
-						Map<double[], Set<double[]>> cm = new HashMap<double[], Set<double[]>>();
-						for (double[] x : sdf.samples) {
-							sorter.sort(x, neurons);
-							double[] a = neurons.get(0);
-							double[] b = neurons.get(1);
-
-							if (!cm.containsKey(a))
-								cm.put(a, new HashSet<double[]>());
-							if (!cm.containsKey(b))
-								cm.put(b, new HashSet<double[]>());
-							cm.get(a).add(b);
-							cm.get(b).add(a);
+						double qe = DataUtils.getMeanQuantizationError(bmus, fDist);
+						double sqe = DataUtils.getMeanQuantizationError(bmus, gDist);
+						
+						Map<double[],Map<double[],Double>> graph = new HashMap<>();
+						for( double[] d : sdf.samples ) {
+							sorter.sort(d, neurons);					
+							double[] n0 = neurons.get(0), n1 = neurons.get(1);
+							
+							if( !graph.containsKey( n0 ) )
+								graph.put(n0, new HashMap<double[],Double>() );
+							if( !graph.get(n0).containsKey(n1) )
+								graph.get(n0).put(n1, 1.0);
+							else
+								graph.get(n0).put(n1, graph.get(n0).get(n1)+1.0);
+							
+							if( !graph.containsKey( n1) )
+								graph.put(n1, new HashMap<double[],Double>() );
+							if( !graph.get(n1).containsKey(n0) )
+								graph.get(n1).put(n0, 1.0);
+							else
+								graph.get(n1).put(n0, graph.get(n1).get(n0)+1.0);
 						}
-										
-						double bestSil = -1;
-						int bestC = -1;
-						List<TreeNode> tree = Clustering.getHierarchicalClusterTree(cm, fDist, HierarchicalClusteringType.ward);
-						for( int c = 2; c <= nrNeurons; c++ ) {
-														
-							Map<double[],Set<double[]>> m = new HashMap<>();
-							for( Set<double[]> s : Clustering.cutTree(tree, c) ) {
-								 Set<double[]> ns = new HashSet<>();
-								 for( double[] d : s )
-									 ns.addAll(bmus.get(d));
-								 
-								 if( !ns.isEmpty() )
-									 m.put(DataUtils.getMean(ns), ns);
-							}
-							 double sil = ClusterValidation.getSilhouetteCoefficient(m, fDist);
-							 if( sil > bestSil ) {
-								 bestSil = sil;
-								 bestC = c;
-							 }
+						
+						double max = 0;
+						for( Map<double[],Double> m : graph.values() )
+							max = Math.max( max, Collections.max(m.values() ) );
+						
+						Map<double[],Map<double[],Double>> nGraph = new HashMap<>();
+						for( double[] n0 : graph.keySet() ) {
+							Map<double[],Double> m = new HashMap<>();
+							for( double[] n1 : graph.get(n0).keySet() )
+								m.put(n1, graph.get(n0).get(n1)/max );
+							nGraph.put(n0, m);
 						}
-						return new double[]{bestSil,bestC};
+												
+						Map<double[],Integer> map = GraphClustering.multilevelOptimization(nGraph, 100 );
+						
+						Map<double[],Set<double[]>> cluster = new HashMap<>();
+						for( Set<double[]> c :GraphClustering.modulMapToCluster(map) ) 
+							cluster.put(DataUtils.getMean(c), c);
+						
+						return new double[]{ 
+								sqe, 
+								qe, 
+								ClusterValidation.getDunnIndex(cluster.values(), fDist),
+								ClusterValidation.getDaviesBouldinIndex(cluster, fDist),
+								ClusterValidation.getSilhouetteCoefficient(cluster, fDist)
+								};
 					}
 				}));
 				es.shutdown();
 
-				DescriptiveStatistics ds[] = null;
 				for (Future<double[]> ff : futures) {
 					try {
-						double[] ee = ff.get();
-						if (ds == null) {
-							ds = new DescriptiveStatistics[ee.length];
-							for (int i = 0; i < ee.length; i++)
-								ds[i] = new DescriptiveStatistics();
-						}
-						for (int i = 0; i < ee.length; i++)
-							ds[i].addValue(ee[i]);
+						double[] e = ff.get();
+						String s = (n + "," + l +"," + Arrays.toString(e).replace("[", "").replace("]", "") + "\n");
+						System.out.print(s);
+						Files.write(Paths.get(fn), s.getBytes(), StandardOpenOption.APPEND);
 					} catch (InterruptedException ex) {
 						ex.printStackTrace();
 					} catch (ExecutionException ex) {
 						ex.printStackTrace();
+					} catch (IOException e) {
+						e.printStackTrace();
 					}
 				}
-				try {
-					log.debug(n+","+l+","+ds[0].getMean()+","+ds[1].getMean());
-					Files.write(Paths.get(fn), (n + "," + l +"," + ds[0].getMean() + "," + ds[1].getMean() + "\n").getBytes(), StandardOpenOption.APPEND);
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
+				
 			}
 	}
 }

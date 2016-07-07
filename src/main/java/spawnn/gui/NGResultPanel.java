@@ -18,7 +18,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.Map.Entry;
 
 import javax.swing.BorderFactory;
 import javax.swing.DefaultComboBoxModel;
@@ -336,7 +335,7 @@ public class NGResultPanel extends ResultPanel<double[]> {
 							maxCount = Math.max(maxCount, edge[0]);
 							max = Math.max(max, edge[1]); // dist
 							if( edge.length > 2 )
-							maxGeo = Math.max(maxGeo, edge[2]); // dist-geo
+								maxGeo = Math.max(maxGeo, edge[2]); // dist-geo
 						}
 						
 						Map<double[],Map<double[],Double>> graph = new HashMap<double[],Map<double[],Double>>();
