@@ -103,7 +103,7 @@ public class Drawer {
 			nonEmpty++;
 		}
 		
-		Map<double[], Color> colorMap = ColorUtils.getColorMap(valueMap, ColorBrewer.Set3,false);
+		Map<double[], Color> colorMap = ColorUtils.getColorMap(valueMap, ColorBrewer.Set3,ColorUtils.ColorClass.Equal);
 		// draw
 		try {
 			SimpleFeatureTypeBuilder typeBuilder = new SimpleFeatureTypeBuilder();

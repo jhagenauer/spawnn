@@ -304,7 +304,7 @@ public class NGResultPanel extends ResultPanel<double[]> {
 					
 					for( int i = 0; i < clusters.size(); i++ ) 
 					for( double[] pt : clusters.get(i) )
-						neuronValues.put( pt, (double)i);
+						neuronValues.put( pt, (double)i+1);
 					
 					parent.setCursor(Cursor.getDefaultCursor());
 				} else { // ok not pressed
@@ -411,7 +411,7 @@ public class NGResultPanel extends ResultPanel<double[]> {
 								for( Set<double[]> set : clusters ) 
 									if( set.contains(p ) )
 										for( double[] d : set )
-											neuronValues.put(d, (double)i);
+											neuronValues.put(d, (double)i+1);
 								
 								break;
 							}

@@ -49,9 +49,9 @@ public class FoodDeserts3 {
 
 	public static void main(String[] args) {
 		final Random r = new Random();
-		final SpatialDataFrame sdf = DataUtils.readSpatialDataFrameFromShapefile(new File("data/foodDeserts2/data_sel_mod.shp"), true);
-
-		final int[] fa = new int[] { 127, 128, 129, 131, 132, 134, 137 };
+		final SpatialDataFrame sdf = DataUtils.readSpatialDataFrameFromShapefile(new File("data/foodDeserts2/data_sel.shp"), true);
+				
+		final int[] fa = new int[] { 129, 128, 127, 136, 133, 134 };
 		final int[] ga = new int[] { 0, 1 };
 
 		final Dist<double[]> fDist = new EuclideanDist(fa);

@@ -69,7 +69,6 @@ public class LegendPanel<T> extends NeuronVisPanel<T> {
 				g.drawString( s, (int)Math.round(x - 0.5 * sWidth + 0.5 * cellWidth ), (int) (Math.round(cellHeight + cellHeight/4.0 + 12)));
 			}		
 			x += cellWidth;
-			
 		}			
 		
 		g.setColor(Color.BLACK);

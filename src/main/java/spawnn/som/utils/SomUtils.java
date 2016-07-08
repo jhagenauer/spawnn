@@ -767,7 +767,7 @@ public class SomUtils {
 			Shape sp = at.createTransformedShape(p);
 			shapes.put(sp, grid.getPrototypeAt(gp)[idx]);
 		}
-		Map<Shape, Color> colors = ColorUtils.getColorMap(shapes, cm, false);
+		Map<Shape, Color> colors = ColorUtils.getColorMap(shapes, cm, ColorUtils.ColorClass.Equal );
 
 		// fill hexagons
 		DecimalFormat df = new DecimalFormat("#.#####");

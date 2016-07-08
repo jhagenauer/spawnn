@@ -332,7 +332,7 @@ public class SOMResultPanel extends ResultPanel<GridPos> {
 								
 					for( int i = 0; i < clusters.size(); i++ ) 
 						for( double[] pt : clusters.get(i) ) 
-							neuronValues.put( grid.getPositionOf(pt), (double)i);
+							neuronValues.put( grid.getPositionOf(pt), (double)i+1);
 					
 					parent.setCursor(Cursor.getDefaultCursor());
 				} else { // ok not pressed

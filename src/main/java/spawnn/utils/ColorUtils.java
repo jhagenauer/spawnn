@@ -3,12 +3,13 @@ package spawnn.utils;
 import java.awt.Color;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
@@ -19,41 +20,38 @@ public class ColorUtils {
 	
 	@Deprecated
 	public static <T> Map<T, Color> getColorMap(Map<T, Double> valueMap, ColorBrewer cm ) {
-		return getColorMap(valueMap, cm,  new HashSet<Double>(valueMap.values()).size(), ColorClass.Equal, true );
-	}
-	
-	@Deprecated
-	public static <T> Map<T, Color> getColorMap(Map<T, Double> valueMap, ColorBrewer cm, boolean quantile ) {
-		return getColorMap(valueMap, cm,  new HashSet<Double>(valueMap.values()).size(), quantile ? ColorClass.Quantile : ColorClass.Equal, true );
+		return getColorMap(valueMap, cm,  ColorClass.Equal );
 	}
 	
 	public static <T> Map<T, Color> getColorMap(Map<T, Double> valueMap, ColorBrewer cm, ColorClass cc ) {
-		return getColorMap(valueMap, cm,  new HashSet<Double>(valueMap.values()).size(), cc, true );
+		Color[] cols = cm.getColorPalette( new HashSet<Double>(valueMap.values()).size(), true );
+		return getColorMap(valueMap, cc, cols );
 	}
 		
-	public static <T> Map<T, Color> getColorMap(Map<T, Double> valueMap, ColorBrewer cm, int nrColors, ColorClass cc, boolean allowInterpolate ) {
-		Color[] cols = cm.getColorPalette( nrColors, allowInterpolate );
-		Map<T, Color> colMap = new HashMap<T, Color>();
-		
-		List<Double> values = new ArrayList<Double>(valueMap.values());
-		Collections.sort(values);
-		
-		if( cc == ColorClass.Quantile ) {
-			int qSize = (int)Math.round((double)values.size()/cols.length);
-			int curCol = 0;
-			for( double v : values ) {
-				
-				for( Entry<T,Double> e : valueMap.entrySet() ) 
-					if( e.getValue() <= v && !colMap.containsKey(e.getKey() ) ) {
-						colMap.put(e.getKey(),cols[curCol]);
-						break;
-					}
-				if( colMap.size() % qSize == 0 && curCol < cols.length - 1) // bucket full?
-					curCol++;
+	public static <T> Map<T, Color> getColorMap( Map<T, Double> valueMap, ColorClass cc, Color[] cols ) {
+		List<T> sortedKeys = new ArrayList<T>(valueMap.keySet());
+		Collections.sort(sortedKeys,new Comparator<T>() {
+			@Override
+			public int compare(T o0, T o1) {
+				return Double.compare(valueMap.get(o0), valueMap.get(o1));
 			}
+			
+		});
+		
+		Map<T, Color> colMap = new HashMap<T, Color>();	
+		if( cc == ColorClass.Quantile ) {
+			double qSize = (double)valueMap.size()/cols.length;
+			int curCol = 0;
+			
+			for( T t : sortedKeys ) {
+				colMap.put(t, cols[curCol]);
+				if( colMap.size() == (int)Math.round(qSize*(curCol+1)) && curCol < cols.length - 1) // bucket full?
+					curCol++;
+			}			
+			
 		} else if( cc == ColorClass.Equal ){ // eq intervall
-			double min = Collections.min(values);
-			double max = Collections.max(values);
+			double min = Collections.min(valueMap.values());
+			double max = Collections.max(valueMap.values());
 			double ivSize = (max-min)/cols.length;
 			
 			for( Entry<T,Double> e : valueMap.entrySet() ) 
@@ -61,9 +59,8 @@ public class ColorUtils {
 					if( min + i*ivSize <= e.getValue() && e.getValue() <= min + (i+1)*ivSize + Math.pow(10, -10))
 						colMap.put(e.getKey(), cols[i]);
 		} else { // k-means
-			System.out.println("kMeans, "+cols.length+", "+nrColors);
 			List<double[]> v = new ArrayList<>();
-			for( Double d : values )
+			for( Double d : valueMap.values() )
 				v.add( new double[]{d});
 			
 			Dist<double[]> dist = new EuclideanDist();
@@ -87,7 +84,6 @@ public class ColorUtils {
 			for( double[] d : c.keySet() )
 				centroids.add(d[0]);
 			Collections.sort(centroids);
-			System.out.println(centroids);
 			
 			for( Entry<T,Double> e : valueMap.entrySet() ) {
 				int best = 0;

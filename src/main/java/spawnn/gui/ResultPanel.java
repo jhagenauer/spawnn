@@ -540,15 +540,15 @@ public abstract class ResultPanel<T> extends JPanel implements ActionListener, N
 		}
 		
 		int nrColors = new HashSet<Double>(neuronValues.values()).size();
-		//int nrColors = Math.min(new HashSet<Double>(neuronValues.values()).size(),cb.getMaximumColorCount());
 		boolean qualCol = false;
 		for( ColorBrewer a : ColorBrewer.getQualitativeColorPalettes(false) )
 			if( a == cb )
 				qualCol = true;
 		if( qualCol && nrColors >= cb.getMaximumColorCount() )
 			log.warn("Interpolating qualitative color scale.");
-		
-		Map<T, Color> colorMap = ColorUtils.getColorMap(neuronValues, cb, nrColors, (ColorClass)colorClassBox.getSelectedItem(), true );
+
+		Color[] cols = cb.getColorPalette( nrColors, true );
+		Map<T, Color> colorMap = ColorUtils.getColorMap(neuronValues, (ColorClass)colorClassBox.getSelectedItem(), cols );
 		mapPanel.setColors(colorMap, selectedColors, neuronValues);
 		legendPanel.setColors(colorMap, selectedColors, neuronValues);
 		return colorMap;
