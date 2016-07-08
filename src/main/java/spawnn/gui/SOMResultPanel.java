@@ -311,7 +311,6 @@ public class SOMResultPanel extends ResultPanel<GridPos> {
 						else if (cd.getAlgorithm() == ClusterDialogGrid.ClusterAlgorithm.Ward)
 							type = Clustering.HierarchicalClusteringType.ward;
 						
-						log.debug("Algorithm: "+type+","+cd.getConnected() );
 						List<TreeNode> tree;
 						if (cd.getConnected()) 
 							tree = Clustering.getHierarchicalClusterTree(cm, fDist, type);
@@ -319,7 +318,7 @@ public class SOMResultPanel extends ResultPanel<GridPos> {
 							tree = Clustering.getHierarchicalClusterTree(prototypes, fDist, type);
 						clusters = Clustering.cutTree( tree, cd.getNumCluster() );
 					}
-
+					
 					// clusters of prototype-double-vectors to gridPos-cluster
 					List<Set<GridPos>> gpCluster = new ArrayList<>();
 					for( Set<double[]> s : clusters ) {
@@ -329,7 +328,7 @@ public class SOMResultPanel extends ResultPanel<GridPos> {
 						gpCluster.add(ns);
 					}
 					showClusterSummary(parent, ResultPanel.prototypeClusterToDataCluster(bmus, gpCluster), fDist, gDist);
-								
+													
 					for( int i = 0; i < clusters.size(); i++ ) 
 						for( double[] pt : clusters.get(i) ) 
 							neuronValues.put( grid.getPositionOf(pt), (double)i+1);

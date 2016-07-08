@@ -295,7 +295,7 @@ public class NGResultPanel extends ResultPanel<double[]> {
 						else if (cd.getAlgorithm() == ClusterDialogGrid.ClusterAlgorithm.Ward)
 							type = Clustering.HierarchicalClusteringType.ward;
 
-						if (cd.getConnected()) 
+						if (cd.getConnected())
 							clusters = Clustering.cutTree( Clustering.getHierarchicalClusterTree(cm, fDist, type), cd.getNumCluster());
 						else
 							clusters = Clustering.cutTree( Clustering.getHierarchicalClusterTree(ns, fDist, type), cd.getNumCluster());

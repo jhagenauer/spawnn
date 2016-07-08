@@ -42,13 +42,11 @@ public class ColorUtils {
 		if( cc == ColorClass.Quantile ) {
 			double qSize = (double)valueMap.size()/cols.length;
 			int curCol = 0;
-			
 			for( T t : sortedKeys ) {
 				colMap.put(t, cols[curCol]);
 				if( colMap.size() == (int)Math.round(qSize*(curCol+1)) && curCol < cols.length - 1) // bucket full?
 					curCol++;
 			}			
-			
 		} else if( cc == ColorClass.Equal ){ // eq intervall
 			double min = Collections.min(valueMap.values());
 			double max = Collections.max(valueMap.values());

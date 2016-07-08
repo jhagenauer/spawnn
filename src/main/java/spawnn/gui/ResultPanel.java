@@ -533,7 +533,7 @@ public abstract class ResultPanel<T> extends JPanel implements ActionListener, N
 	protected Map<T, Color> updatePanels() {
 		ColorBrewer cb = (ColorBrewer)colorBrewerBox.getSelectedItem();
 		if( isClusterVis() ) { // Cluster is enabled
-			colorClassBox.setSelectedItem(ColorClass.Quantile);
+			colorClassBox.setSelectedItem(ColorClass.Equal);
 			colorClassBox.setEnabled(false);
 		} else {
 			colorClassBox.setEnabled(true);

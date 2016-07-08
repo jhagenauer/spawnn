@@ -183,11 +183,11 @@ public class GraphClustering {
 				
 		while(true) { // no change or modularity does not improve
 	
-			log.debug("step 1: greedy opt...");
+			//log.debug("step 1: greedy opt...");
 			Map<double[],Integer> modulMap = greedyOptModularity(curGraph, rndRestarts, -1);
 			int moduls = new HashSet<Integer>(modulMap.values()).size();
 			
-			log.debug( modularity(curGraph, modulMap) +", graphsize: "+curGraph.size()+", moduls: "+moduls );
+			//log.debug( modularity(curGraph, modulMap) +", graphsize: "+curGraph.size()+", moduls: "+moduls );
 			
 			if( curGraph.size() == moduls ) { // greedy opt could not reduce size anymore
 				
@@ -200,7 +200,7 @@ public class GraphClustering {
 				return mod;
 			}
 															
-			log.debug("step 2: build new graph...");
+			//log.debug("step 2: build new graph...");
 			Map<double[],Map<double[],Double>> ng = new HashMap<double[],Map<double[],Double>>();
 			
 			// build vertices/module representatives

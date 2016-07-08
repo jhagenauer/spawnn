@@ -349,8 +349,7 @@ public class GeoUtils {
 	
 	public static double[] getMoransIStatisticsMonteCarlo( Map<double[], Map<double[], Double>> dMap, Map<double[],Double> values, int reps ) {
 		double moran = getMoransI(dMap, values);
-		double n = values.size();
-		
+				
 		DescriptiveStatistics ds = new DescriptiveStatistics();
 		for( int i = 0; i < reps; i++ ) {
 			

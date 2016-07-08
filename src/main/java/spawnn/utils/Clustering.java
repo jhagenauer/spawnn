@@ -717,6 +717,9 @@ public class Clustering {
 		int nrCluster = 7;
 		long time = System.currentTimeMillis();
 		List<TreeNode> tree = Clustering.getHierarchicalClusterTree(samples, cm, dist, HierarchicalClusteringType.ward);
-		System.out.println("Within sum of squares: " + DataUtils.getWithinSumOfSquares(Clustering.cutTree( tree, nrCluster), dist)+", took: "+(System.currentTimeMillis()-time)/1000.0);		
+		List<Set<double[]>> ct = Clustering.cutTree( tree, nrCluster);
+		System.out.println("Within sum of squares: " + DataUtils.getWithinSumOfSquares(ct, dist)+", took: "+(System.currentTimeMillis()-time)/1000.0);		
+		
+		Drawer.geoDrawCluster(ct, samples, geoms, "output/redcap.png", true);
 	}
 }

@@ -9,7 +9,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -20,7 +19,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.log4j.Logger;
 
 import com.vividsolutions.jts.geom.Point;
@@ -35,12 +33,9 @@ import spawnn.ng.utils.NGUtils;
 import spawnn.som.decay.DecayFunction;
 import spawnn.som.decay.PowerDecay;
 import spawnn.utils.ClusterValidation;
-import spawnn.utils.Clustering;
-import spawnn.utils.Clustering.HierarchicalClusteringType;
-import spawnn.utils.Clustering.TreeNode;
 import spawnn.utils.DataUtils;
-import spawnn.utils.GraphClustering;
 import spawnn.utils.DataUtils.transform;
+import spawnn.utils.GraphClustering;
 import spawnn.utils.SpatialDataFrame;
 
 public class FoodDeserts3 {
@@ -75,15 +70,15 @@ public class FoodDeserts3 {
 		}
 		
 		final int t_max = 100000;
-
-		for (int n : new int[]{72})
-			for (int l : new int[]{34,34,34,34}) {
-
-				final int nrNeurons = n;
-				final int L = l;
-
-				ExecutorService es = Executors.newFixedThreadPool(4);
-				List<Future<double[]>> futures = new ArrayList<Future<double[]>>();
+		
+		ExecutorService es = Executors.newFixedThreadPool(4);
+		List<Future<double[]>> futures = new ArrayList<Future<double[]>>();
+		
+		for( int run = 0; run < 10; run++ )
+		for (int n : new int[]{72} )
+			for (int l : new int[]{ 34 }) {
+				
+				final int[] pars = new int[]{run,n,l};
 
 				futures.add(es.submit(new Callable<double[]>() {
 
@@ -92,13 +87,13 @@ public class FoodDeserts3 {
 
 						Sorter<double[]> secSorter = new DefaultSorter<>(fDist);
 						DefaultSorter<double[]> gSorter = new DefaultSorter<>(gDist);
-						Sorter<double[]> sorter = new KangasSorter<>(gSorter, secSorter, L);
+						Sorter<double[]> sorter = new KangasSorter<>(gSorter, secSorter, pars[2]);
 
-						DecayFunction nbRate = new PowerDecay(nrNeurons * 2.0 / 3.0, 0.01);
+						DecayFunction nbRate = new PowerDecay(pars[1] * 2.0 / 3.0, 0.01);
 						DecayFunction lrRate1 = new PowerDecay(0.6, 0.005);
 
 						List<double[]> neurons = new ArrayList<double[]>();
-						while (neurons.size() < nrNeurons) {
+						while (neurons.size() < pars[1]) {
 							double[] d = sdf.samples.get(r.nextInt(sdf.samples.size()));
 							neurons.add(Arrays.copyOf(d, d.length));
 						}
@@ -151,32 +146,27 @@ public class FoodDeserts3 {
 						for( Set<double[]> c :GraphClustering.modulMapToCluster(map) ) 
 							cluster.put(DataUtils.getMean(c), c);
 						
-						return new double[]{ 
-								sqe, 
-								qe, 
-								ClusterValidation.getDunnIndex(cluster.values(), fDist),
-								ClusterValidation.getDaviesBouldinIndex(cluster, fDist),
-								ClusterValidation.getSilhouetteCoefficient(cluster, fDist)
-								};
+						double sc = ClusterValidation.getSilhouetteCoefficient(cluster, fDist);
+						double mod = GraphClustering.modularity(nGraph, map);
+						return new double[]{pars[0],pars[1],pars[2],sc,mod};
 					}
 				}));
-				es.shutdown();
-
-				for (Future<double[]> ff : futures) {
-					try {
-						double[] e = ff.get();
-						String s = (n + "," + l +"," + Arrays.toString(e).replace("[", "").replace("]", "") + "\n");
-						System.out.print(s);
-						Files.write(Paths.get(fn), s.getBytes(), StandardOpenOption.APPEND);
-					} catch (InterruptedException ex) {
-						ex.printStackTrace();
-					} catch (ExecutionException ex) {
-						ex.printStackTrace();
-					} catch (IOException e) {
-						e.printStackTrace();
-					}
-				}
-				
 			}
+		es.shutdown();
+
+		for (Future<double[]> ff : futures) {
+			try {
+				double[] e = ff.get();
+				String s = (Arrays.toString(e).replace("[", "").replace("]", "") + "\n");
+				System.out.print(s);
+				Files.write(Paths.get(fn), s.getBytes(), StandardOpenOption.APPEND);
+			} catch (InterruptedException ex) {
+				ex.printStackTrace();
+			} catch (ExecutionException ex) {
+				ex.printStackTrace();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}		
 	}
 }
