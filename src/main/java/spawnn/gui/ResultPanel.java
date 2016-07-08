@@ -61,6 +61,7 @@ import spawnn.dist.Dist;
 import spawnn.utils.ClusterValidation;
 import spawnn.utils.ColorBrewer;
 import spawnn.utils.ColorUtils;
+import spawnn.utils.ColorUtils.ColorClass;
 import spawnn.utils.DataUtils;
 import spawnn.utils.SpatialDataFrame;
 
@@ -68,14 +69,15 @@ public abstract class ResultPanel<T> extends JPanel implements ActionListener, N
 
 	private static final long serialVersionUID = 1686748469941486349L;
 	private static Logger log = Logger.getLogger(ResultPanel.class);
-	
-	protected JButton btnExpMap, colorChooser, clearSelect;
-	protected JComboBox colorModeBox;
-	protected JToggleButton selectSingle, quantileButton;
+		
+	protected JButton exportMapButton, selectColorButton, selectClearButton;
+	protected JComboBox colorBrewerBox, colorClassBox;
+	protected JToggleButton selectSingleButton;
 	protected JTextField infoField;
 	protected JTextField nrNeurons;
 
 	protected MapPanel<T> mapPanel;
+	protected LegendPanel<T> legendPanel;
 	
 	protected List<T> pos;
 	protected Map<T, Set<double[]>> bmus;
@@ -102,8 +104,9 @@ public abstract class ResultPanel<T> extends JPanel implements ActionListener, N
 		this.fc = buildClusterFeatures(orig, samples, bmus, pos);
 		
 		mapPanel = new MapPanel<T>(fc, pos);
+		legendPanel = new LegendPanel<T>();
 		
-		colorModeBox = new JComboBox();
+		colorBrewerBox = new JComboBox();
 		
 		List<ColorBrewer> cl = new ArrayList<ColorBrewer>();
 		cl.addAll( Arrays.asList( ColorBrewer.getSequentialColorPalettes(false) ) );
@@ -112,38 +115,38 @@ public abstract class ResultPanel<T> extends JPanel implements ActionListener, N
 		final ColorBrewer l2 = cl.get(cl.size()-1);
 		cl.addAll( Arrays.asList( ColorBrewer.getQualitativeColorPalettes(false) ) );
 		
-		colorModeBox.setModel(new DefaultComboBoxModel(cl.toArray( new ColorBrewer[]{} )));
-		colorModeBox.setSelectedItem(ColorBrewer.Blues);
-		colorModeBox.setRenderer(new ComboSeparatorsRendererColorBrewer((ListCellRenderer<ColorBrewer>)colorModeBox.getRenderer()){        
+		colorBrewerBox.setModel(new DefaultComboBoxModel(cl.toArray( new ColorBrewer[]{} )));
+		colorBrewerBox.setSelectedItem(ColorBrewer.Blues);
+		colorBrewerBox.setRenderer(new ComboSeparatorsRendererColorBrewer((ListCellRenderer<ColorBrewer>)colorBrewerBox.getRenderer()){        
 		    @Override
 			protected boolean addSeparatorAfter(JList list, ColorBrewer value, int index) {
 		    	return l1.equals(value) || l2.equals(value);
 			}                                                                            
 		}); 
-		colorModeBox.addActionListener(this);
-		colorModeBox.setToolTipText("Select color scheme.");
+		colorBrewerBox.addActionListener(this);
+		colorBrewerBox.setToolTipText("Select color scheme.");
 		//colorModeBox.setBorder(BorderFactory.createTitledBorder("Color scheme"));
 				
-		quantileButton = new JToggleButton("Quantile");
-		quantileButton.setToolTipText("Use quantile color scale.");
-		quantileButton.setSelected(false);
-		quantileButton.addActionListener(this);
+		colorClassBox = new JComboBox();
+		colorClassBox.setModel(new DefaultComboBoxModel<>(Arrays.copyOf(ColorClass.values(),2)));
+		colorClassBox.addActionListener(this);
+		colorClassBox.setToolTipText("Select color classifictation.");
+				
+		selectColorButton = new JButton("Color...");
+		selectColorButton.setBackground(selectedColor);
+		selectColorButton.setToolTipText("Select highlight color.");
+		selectColorButton.addActionListener(this);
 		
-		colorChooser = new JButton("Color...");
-		colorChooser.setBackground(selectedColor);
-		colorChooser.setToolTipText("Select highlight color.");
-		colorChooser.addActionListener(this);
+		selectSingleButton = new JToggleButton("Single");
+		selectSingleButton.setToolTipText("Select single shapes on map.");
+		selectSingleButton.addActionListener(this);
 		
-		selectSingle = new JToggleButton("Single");
-		selectSingle.setToolTipText("Select single shapes on map.");
-		selectSingle.addActionListener(this);
-		
-		clearSelect = new JButton("Clear");
-		clearSelect.setToolTipText("Clear selection.");
-		clearSelect.addActionListener(this);
+		selectClearButton = new JButton("Clear");
+		selectClearButton.setToolTipText("Clear selection.");
+		selectClearButton.addActionListener(this);
 
-		btnExpMap = new JButton("Map...");
-		btnExpMap.addActionListener(this);
+		exportMapButton = new JButton("Map...");
+		exportMapButton.addActionListener(this);
 		
 		infoField = new JTextField("");
 		infoField.setEditable(false);
@@ -465,12 +468,12 @@ public abstract class ResultPanel<T> extends JPanel implements ActionListener, N
 
 	@Override
 	public void actionPerformed(ActionEvent e) {
-		if (e.getSource() == selectSingle) {
+		if (e.getSource() == selectSingleButton) {
 			if (!mapPanel.selectSingle)
 				mapPanel.selectSingle = true;
 			else
 				mapPanel.selectSingle = false;
-		} else if (e.getSource() == btnExpMap) {
+		} else if (e.getSource() == exportMapButton) {
 			JFileChooser fChoser = new JFileChooser("output");
 
 			fChoser.setFileFilter(FFilter.pngFilter);
@@ -510,34 +513,44 @@ public abstract class ResultPanel<T> extends JPanel implements ActionListener, N
 					}
 				}
 			}
-		} else if (e.getSource() == colorChooser) {
+		} else if (e.getSource() == selectColorButton) {
 			Color c = JColorChooser.showDialog(this, "Select selection color", selectedColor);
 			if( c != null )
 				selectedColor = c; 
-			colorChooser.setBackground(selectedColor);
+			selectColorButton.setBackground(selectedColor);
 			infoField.setText("");
-		} else if( e.getSource() == clearSelect ) {
+		} else if( e.getSource() == selectClearButton ) {
 			selectedColors.clear();
 			infoField.setText("");
 			updatePanels();
-		} else if (e.getSource() == colorModeBox) {
+		} else if (e.getSource() == colorBrewerBox) {
 			updatePanels();
-		} else if( e.getSource() == quantileButton ) {
+		} else if( e.getSource() == colorClassBox ) {
 			updatePanels();
 		}
 	}
 
 	protected Map<T, Color> updatePanels() {
-		ColorBrewer cb = (ColorBrewer)colorModeBox.getSelectedItem();
-		if( /*cb.paletteType() == 2 ||*/ isClusterVis() ) { //TODO || Cluster-is enabled 
-			quantileButton.setSelected(false);
-			quantileButton.setEnabled(false);
+		ColorBrewer cb = (ColorBrewer)colorBrewerBox.getSelectedItem();
+		if( isClusterVis() ) { // Cluster is enabled
+			colorClassBox.setSelectedItem(ColorClass.Quantile);
+			colorClassBox.setEnabled(false);
 		} else {
-			quantileButton.setEnabled(true);
+			colorClassBox.setEnabled(true);
 		}
 		
-		Map<T, Color> colorMap = ColorUtils.getColorMap(neuronValues, cb, quantileButton.isSelected() );
+		int nrColors = new HashSet<Double>(neuronValues.values()).size();
+		//int nrColors = Math.min(new HashSet<Double>(neuronValues.values()).size(),cb.getMaximumColorCount());
+		boolean qualCol = false;
+		for( ColorBrewer a : ColorBrewer.getQualitativeColorPalettes(false) )
+			if( a == cb )
+				qualCol = true;
+		if( qualCol && nrColors >= cb.getMaximumColorCount() )
+			log.warn("Interpolating qualitative color scale.");
+		
+		Map<T, Color> colorMap = ColorUtils.getColorMap(neuronValues, cb, nrColors, (ColorClass)colorClassBox.getSelectedItem(), true );
 		mapPanel.setColors(colorMap, selectedColors, neuronValues);
+		legendPanel.setColors(colorMap, selectedColors, neuronValues);
 		return colorMap;
 	}
 

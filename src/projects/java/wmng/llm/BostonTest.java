@@ -429,7 +429,7 @@ public class BostonTest {
 		doubleMap.put(minGeom, min);
 		doubleMap.put(maxGeom, max);
 		
-		Map<Geometry,Color> m = ColorUtils.getColorMap(doubleMap, cm,24,false);
+		Map<Geometry,Color> m = ColorUtils.getColorMap(doubleMap,cm,false);
 		m.remove(minGeom);
 		m.remove(maxGeom);
 		Drawer.geoDraw( m, crs, fn);

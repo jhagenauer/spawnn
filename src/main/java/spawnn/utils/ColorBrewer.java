@@ -517,15 +517,19 @@ public enum ColorBrewer {
 		 return paletteType;
 	 }
 	 	 
-	 public Color[] getColorPalette(int colorCount) {
-		 if (colorCount < getMaximumColorCount()) {
+	 public Color[] getColorPalette(int colorCount, boolean allowInterpolate ) {
+		 if (colorCount < getMaximumColorCount())
 			 return toColor(colorCount);
-		 } else {
-			 // if the color count exceeds the number of a
-			 // available in a palette, interpolate between
-			 // colors to create an extended color palette
+		 else if( allowInterpolate )
 			 return interpolatedColors(colorCount);
+		 else {
+			 Color cols[] = toColor( getMaximumColorCount() );
+			 Color nCols[] = new Color[colorCount];
+			 for( int i = 0; i < nCols.length; i++ )
+				 nCols[i] = cols[i % cols.length];
+			 return nCols;
 		 }
+		 
 	 }
 	 
 	 public static ColorBrewer[] getSequentialColorPalettes(boolean colorBlindSave) {

@@ -144,14 +144,14 @@ public class NGResultPanel extends ResultPanel<double[]> {
 		add(vertexComboBox, "split 5");
 		
 		JPanel colorPanel = new JPanel(new MigLayout("insets 0, gapy 0"));
-		colorPanel.add(colorModeBox,"");
-		colorPanel.add(quantileButton,"");
+		colorPanel.add(colorBrewerBox,"");
+		colorPanel.add(colorClassBox,"");
 		colorPanel.setBorder(BorderFactory.createTitledBorder("Color scheme"));
 		add(colorPanel,"growy");
 		
 		JPanel selectPanel = new JPanel(new MigLayout("insets 0, gapy 0"));
-		selectPanel.add(colorChooser,"");
-		selectPanel.add(clearSelect,"");
+		selectPanel.add(selectColorButton,"");
+		selectPanel.add(selectClearButton,"");
 		selectPanel.setBorder(BorderFactory.createTitledBorder("Selection"));
 		add(selectPanel,"growy");
 		
@@ -160,13 +160,14 @@ public class NGResultPanel extends ResultPanel<double[]> {
 						
 		JPanel exportPanel = new JPanel(new MigLayout("insets 0, gapy 0"));
 		exportPanel.add(btnExpGraph,"");
-		exportPanel.add(btnExpMap,"");
+		exportPanel.add(exportMapButton,"");
 		exportPanel.setBorder(BorderFactory.createTitledBorder("Export"));
 		add(exportPanel,"growy, wrap");
 		
 		add(pnlGraph, "span 2, split 2, w 50%, grow");
 		add(mapPanel, "w 50%, grow, wrap");
-		add( infoField, "span 2, growx");
+		add( legendPanel, "span 2, center, wrap");
+		//add( infoField, "span 2, growx");
 				
 		// are the following lines necessary?
 		mapPanel.setColors(colorMap, selectedColors, neuronValues);
@@ -207,8 +208,8 @@ public class NGResultPanel extends ResultPanel<double[]> {
 				}
 			}
 		} else if (e.getSource() == vertexComboBox) {
-			if( !quantileButton.isEnabled() )
-				quantileButton.setEnabled(true);
+			if( !colorClassBox.isEnabled() )
+				colorClassBox.setEnabled(true);
 			
 			if (vertexComboBox.getSelectedItem() == RANDOM) {
 				List<double[]> rndPos = new ArrayList<double[]>(pos);
@@ -304,10 +305,6 @@ public class NGResultPanel extends ResultPanel<double[]> {
 					for( int i = 0; i < clusters.size(); i++ ) 
 					for( double[] pt : clusters.get(i) )
 						neuronValues.put( pt, (double)i);
-					
-					/*colorModeBox.removeActionListener(this);
-					colorModeBox.setSelectedItem(ColorBrewer.Set3);
-					colorModeBox.addActionListener(this);*/
 					
 					parent.setCursor(Cursor.getDefaultCursor());
 				} else { // ok not pressed
@@ -420,10 +417,6 @@ public class NGResultPanel extends ResultPanel<double[]> {
 							}
 						}							
 					}
-					
-					/*colorModeBox.removeActionListener(this);
-					colorModeBox.setSelectedItem(ColorBrewer.Set3);
-					colorModeBox.addActionListener(this);*/
 
 					parent.setCursor(Cursor.getDefaultCursor());
 				} else {

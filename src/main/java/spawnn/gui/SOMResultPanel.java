@@ -188,14 +188,14 @@ public class SOMResultPanel extends ResultPanel<GridPos> {
 		add(gridComboBox, "split 4");
 		
 		JPanel colorPanel = new JPanel(new MigLayout("insets 0, gapy 0"));
-		colorPanel.add(colorModeBox,"");
-		colorPanel.add(quantileButton,"");
+		colorPanel.add(colorBrewerBox,"");
+		colorPanel.add(colorClassBox,"");
 		colorPanel.setBorder(BorderFactory.createTitledBorder("Color scheme"));
 		add(colorPanel,"growy");
 		
 		JPanel selectPanel = new JPanel(new MigLayout("insets 0, gapy 0"));
-		selectPanel.add(colorChooser,"");
-		selectPanel.add(clearSelect,"");
+		selectPanel.add(selectColorButton,"");
+		selectPanel.add(selectClearButton,"");
 		selectPanel.setBorder(BorderFactory.createTitledBorder("Selection"));
 		add(selectPanel,"growy");
 		
@@ -203,21 +203,22 @@ public class SOMResultPanel extends ResultPanel<GridPos> {
 				
 		JPanel exportPanel = new JPanel(new MigLayout("insets 0, gapy 0"));
 		exportPanel.add(btnExpGrid,"");
-		exportPanel.add(btnExpMap,"");
+		exportPanel.add(exportMapButton,"");
 		exportPanel.setBorder(BorderFactory.createTitledBorder("Export"));
 		add(exportPanel,"growy, wrap");
 				
 		add( cards, "span 2, split 2, w 50%, grow");
 		add( mapPanel, "w 50%, grow, wrap");
-		add( infoField,"span 2, growx");
+		add( legendPanel, "span 2, center, wrap");
+		//add( infoField,"span 2, growx");
 	}
 
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		super.actionPerformed(e);
 		if (e.getSource() == gridComboBox) { // som-visualization-change
-			if( !quantileButton.isEnabled() )
-				quantileButton.setEnabled(true);
+			if( !colorClassBox.isEnabled() )
+				colorClassBox.setEnabled(true);
 			if (gridComboBox.getSelectedItem() == DISTANCE) { // dmatrix
 
 				DistanceDialog dd = new DistanceDialog(parent, "Distance...", true, gDist != null);
@@ -332,13 +333,6 @@ public class SOMResultPanel extends ResultPanel<GridPos> {
 					for( int i = 0; i < clusters.size(); i++ ) 
 						for( double[] pt : clusters.get(i) ) 
 							neuronValues.put( grid.getPositionOf(pt), (double)i);
-					
-					quantileButton.setEnabled(false);
-					quantileButton.setSelected(false);
-					
-					/*colorModeBox.removeActionListener(this);
-					colorModeBox.setSelectedItem(ColorBrewer.Set3);
-					colorModeBox.addActionListener(this);*/
 					
 					parent.setCursor(Cursor.getDefaultCursor());
 				} else { // ok not pressed
