@@ -25,6 +25,7 @@ public abstract class NeuronVisPanel <T> extends JPanel {
 	public void fireNeuronSelectedEvent(NeuronSelectedEvent evt) {
 		for( NeuronSelectedListener<GridPos> listener : listenerList.getListeners( NeuronSelectedListener.class ) )
 			listener.neuronSelectedOccured(evt);
+		
 	}	
 	
 	public abstract void setColors(final Map<T, Color> colorMap, final Map<T,Color> selectedMap, final Map<T,Double> neuronValues);

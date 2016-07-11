@@ -139,7 +139,7 @@ public class NGResultPanel extends ResultPanel<double[]> {
 		pnlGraph.addNeuronSelectedListener(this);
 
 		actionPerformed(new ActionEvent(vertexComboBox, 0, RANDOM));
-		Map<double[], Color> colorMap = updatePanels();
+		//Map<double[], Color> colorMap = updatePanels();
 
 		add(vertexComboBox, "split 5");
 		
@@ -168,9 +168,7 @@ public class NGResultPanel extends ResultPanel<double[]> {
 		add(mapPanel, "w 50%, grow, wrap");
 		add( legendPanel, "span 2, center, wrap");
 		//add( infoField, "span 2, growx");
-				
-		// are the following lines necessary?
-		mapPanel.setColors(colorMap, selectedColors, neuronValues);
+		
 		mapPanel.addNeuronSelectedListener(this);		
 	}
 

@@ -15,8 +15,7 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -68,6 +67,7 @@ public class MapPanel<T> extends NeuronVisPanel<T> implements MapPaneListener, C
 	private FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
 	private FeatureCollection<SimpleFeatureType, SimpleFeature> fc;
 	private JMapPane mp;
+	private MapViewport mvp;
 	private List<T> pos;
 
 	//TODO handle resize events properly
@@ -80,17 +80,22 @@ public class MapPanel<T> extends NeuronVisPanel<T> implements MapPaneListener, C
 
 		mp = new JMapPane();
 		mp.setDoubleBuffered(true);
-		mp.setMapContent(new MapContent());
 
 		GTRenderer renderer = new StreamingRenderer();
 		RenderingHints hints = new RenderingHints(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 		hints.put(RenderingHints.KEY_ALPHA_INTERPOLATION, RenderingHints.VALUE_ALPHA_INTERPOLATION_QUALITY);
 		hints.put(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_SPEED);
 		mp.setRenderer(renderer);
+				
+		MapContent mc = new MapContent();
+		mvp = new MapViewport(fc.getBounds());
+		mc.setViewport( mvp );
+		mp.setMapContent(mc);
 
 		mp.addMapPaneListener(this);
 		mp.addComponentListener(this);
 		mp.addMouseListener(this);
+		mp.setBackground(getBackground()); 
 		mp.setOpaque(false); // FIXME this is ignored as soon as setColors is called
 		add(mp, "push, grow");
 	}
@@ -173,6 +178,8 @@ public class MapPanel<T> extends NeuronVisPanel<T> implements MapPaneListener, C
 			e.printStackTrace();
 		}
 	}
+	
+	
 
 	@Override
 	public void setColors(Map<T, Color> colorMap, Map<T, Color> selectedColors, Map<T, Double> neuronValues) {
@@ -192,9 +199,8 @@ public class MapPanel<T> extends NeuronVisPanel<T> implements MapPaneListener, C
 			}
 		}
 		
-		MapContent mc = new MapContent();
-		ReferencedEnvelope bounds = new ReferencedEnvelope();		
-				
+		MapContent mc = new MapContent();	
+		mc.setViewport(mvp);
 		{
 			Stroke stroke = sb.createStroke();
 			// stroke = null; // draw border?
@@ -209,57 +215,43 @@ public class MapPanel<T> extends NeuronVisPanel<T> implements MapPaneListener, C
 			} else {
 				log.warn("GeomType not supported: " + gt.getBinding());
 			}
-			FeatureLayer fl = new FeatureLayer(fc, style);
-			bounds.expandToInclude(fl.getBounds());
-			mc.addLayer(fl);
+			mc.addLayer(new FeatureLayer(fc, style));
 		}
-			
-		// Maybe it would be better to have a single layer here
-		List<Color> colors = new ArrayList<Color>();
-		for( Color c : selectedColors.values() )
-			if( !colors.contains(c) )
-				colors.add(c);
-		Collections.sort(colors,new Comparator<Color>() {
-			@Override
-			public int compare(Color o1, Color o2) {
-				return Integer.compare(o1.getRGB(), o2.getRGB());
-			}
-		});
-		Collections.reverse(colors);
-		
-		for( Color c : colors ) {
-			// selected layer
+					
+		for( Color c : new HashSet<>(selectedColors.values()) ) {
+			List<Filter> fl = new ArrayList<>();
 			for (int i = 0; i < pos.size(); i++) {
 				T t = pos.get(i);
-				if (!selectedColors.containsKey(t) || selectedColors.get(t) != c )
-					continue;
-				
-				FeatureCollection<SimpleFeatureType, SimpleFeature> sub = fc.subCollection(ff.equals(ff.property("neuron"), ff.literal(i)));
-				if (selectSingle && sub.contains(selected)) {
-					DefaultFeatureCollection dfc = new DefaultFeatureCollection();
-					dfc.add(selected);
-					sub = dfc;
-				}
-
-				Style style = null;
-				if (gt.getBinding() == Polygon.class || gt.getBinding() == MultiPolygon.class) {
-					Stroke stroke = sb.createStroke(c,SELECTED_WIDTH);
-					Fill fill = sb.createFill(c, (double)NeuronVisPanel.SELECTED_OPACITY/256); 
-					Symbolizer sym = sb.createPolygonSymbolizer(stroke,fill);
-					style = SLD.wrapSymbolizers(sym);
-				} else if (gt.getBinding() == Point.class || gt.getBinding() == MultiPoint.class) {
-					Mark mark = sb.createMark(StyleBuilder.MARK_CIRCLE, c, SELECTED_WIDTH);
-					mark.setFill(null);
-					style = SLD.wrapSymbolizers(sb.createPointSymbolizer(sb.createGraphic(null, mark, null)));
-				} else {
-					log.warn("GeomType not supported: " + gt.getBinding());
-				}
-				mc.addLayer(new FeatureLayer(sub, style));
+				if (selectedColors.containsKey(t) || selectedColors.get(t) == c )
+					fl.add( ff.equals(ff.property("neuron"), ff.literal(i)));
 			}
+			if( fl.isEmpty() )
+				continue;
+			
+			FeatureCollection<SimpleFeatureType, SimpleFeature> sub = fc.subCollection(ff.or(fl));
+			if (selectSingle && sub.contains(selected)) {
+				DefaultFeatureCollection dfc = new DefaultFeatureCollection();
+				dfc.add(selected);
+				sub = dfc;
+			}
+
+			Style style = null;
+			if (gt.getBinding() == Polygon.class || gt.getBinding() == MultiPolygon.class) {
+				Stroke stroke = sb.createStroke(c,SELECTED_WIDTH);
+				Fill fill = sb.createFill(c, (double)NeuronVisPanel.SELECTED_OPACITY/256); 
+				Symbolizer sym = sb.createPolygonSymbolizer(stroke,fill);
+				style = SLD.wrapSymbolizers(sym);
+			} else if (gt.getBinding() == Point.class || gt.getBinding() == MultiPoint.class) {
+				Mark mark = sb.createMark(StyleBuilder.MARK_CIRCLE, c, SELECTED_WIDTH);
+				mark.setFill(null);
+				style = SLD.wrapSymbolizers(sb.createPointSymbolizer(sb.createGraphic(null, mark, null)));
+			} else {
+				log.warn("GeomType not supported: " + gt.getBinding());
+			}
+			mc.addLayer(new FeatureLayer(sub, style));	
 		}
-		mp.getMapContent().dispose();	
-		mc.setViewport( new MapViewport(bounds));	
-		mp.setBackground(getBackground()); // quick and dirty hack. setOpaque(false) does not work somehow
+		
+		mp.getMapContent().dispose();
 		mp.setMapContent(mc);
 	}
 

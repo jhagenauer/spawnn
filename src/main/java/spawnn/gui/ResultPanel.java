@@ -550,6 +550,7 @@ public abstract class ResultPanel<T> extends JPanel implements ActionListener, N
 		Color[] cols = cb.getColorPalette( nrColors, true );
 		Map<T, Color> colorMap = ColorUtils.getColorMap(neuronValues, (ColorClass)colorClassBox.getSelectedItem(), cols );
 		mapPanel.setColors(colorMap, selectedColors, neuronValues);
+		legendPanel.setClusterLegend(isClusterVis());
 		legendPanel.setColors(colorMap, selectedColors, neuronValues);
 		return colorMap;
 	}
@@ -565,7 +566,7 @@ public abstract class ResultPanel<T> extends JPanel implements ActionListener, N
 			selectedColors.put(gp, selectedColor);	
 		
 		updatePanels();
-				
+							
 		int i = 0;
 		for( Entry<T,Color> e : selectedColors.entrySet() ) 
 		if( e.getValue() == selectedColor )

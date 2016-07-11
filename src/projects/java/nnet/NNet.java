@@ -14,6 +14,7 @@ import nnet.activation.Constant;
 import nnet.activation.Function;
 import nnet.activation.Identity;
 import nnet.activation.Sigmoid;
+import nnet.activation.TanH;
 import spawnn.SupervisedNet;
 import spawnn.utils.DataFrame;
 import spawnn.utils.DataUtils;
@@ -42,15 +43,17 @@ public class NNet implements SupervisedNet {
 			for( int j = 0; j < l[i]; j++ )
 				if( i == 0 ) // input 
 					this.layer[i][j] = new Identity();
-				else // hidden
-					this.layer[i][j] = new Sigmoid();
+				else { // hidden
+					//this.layer[i][j] = new Sigmoid();
+					this.layer[i][j] = new TanH();
+				}
 			this.layer[i][l[i]] = new Constant(1.0); // bias					
 		}
 		this.layer[l.length-1] = new Function[l[l.length-1]]; // last/output layer
 		for( int j = 0; j < l[l.length-1]; j++ )
 			if( linout )  
 				this.layer[l.length-1][j] = new Identity();
-			else 
+			else
 				this.layer[l.length-1][j] = new Sigmoid();	
 		
 		// init weights
@@ -193,8 +196,10 @@ public class NNet implements SupervisedNet {
 				desiredVal.add(desired.get(k));
 			}
 			
-			NNet nnet = new NNet( new int[]{ samplesVal.get(0).length, 24, 1}, true, 0.01 );
-			for (int i = 0; i < 100000; i++) {
+			// 24x24 -> 0.945
+			// 48    -> 0.935
+			NNet nnet = new NNet( new int[]{ samplesVal.get(0).length, 24, 24, 1}, true, 0.01 );
+			for (int i = 0; i < 5000000; i++) {
 				int idx = r.nextInt(samplesTrain.size());
 				nnet.train(i, samplesTrain.get(idx), desiredTrain.get(idx));
 			}
