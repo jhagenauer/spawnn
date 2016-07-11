@@ -47,6 +47,7 @@ public class LegendPanel<T> extends NeuronVisPanel<T> {
 	
 	//@Override
 	public void paintComponent( Graphics g ) {
+		super.paintComponent(g);
 		if( clusterLegend )
 			drawClusterLegend((Graphics2D) g);
 		else
@@ -54,7 +55,7 @@ public class LegendPanel<T> extends NeuronVisPanel<T> {
 	}
 	
 	public void drawContinoutLegend(Graphics2D g) {
-		g.clearRect(0, 0, getWidth(), getHeight());
+		//g.clearRect(0, 0, getWidth(), getHeight());
 		
 		List<T> neurons = new ArrayList<>(neuronValues.keySet());
 		Collections.sort(neurons, new Comparator<T>() {
@@ -84,10 +85,10 @@ public class LegendPanel<T> extends NeuronVisPanel<T> {
 				int sWidth = g.getFontMetrics().stringWidth(s);
 				g.drawString( s, (int)Math.round(x - 0.5 * sWidth + 0.5 * cellWidth ), (int) (Math.round(cellHeight + cellHeight/4.0 + 12)));
 			}
-			if( selectedMap.containsKey(t) ) {
+			/*if( selectedMap.containsKey(t) ) {
 				g.setColor( selectedMap.get(t) );
 				g.drawLine((int) Math.round( x + 0.5 * cellWidth), 0, (int) Math.round(x + 0.5 * cellWidth), (int) Math.round(cellHeight + cellHeight/4.0) );
-			}
+			}*/
 			x += cellWidth;
 		}			
 		g.setColor(Color.BLACK);
@@ -95,7 +96,7 @@ public class LegendPanel<T> extends NeuronVisPanel<T> {
 	}
 	
 	public void drawClusterLegend(Graphics2D g) {
-		g.clearRect(0, 0, getWidth(), getHeight());
+		//g.clearRect(0, 0, getWidth(), getHeight());
 		
 		List<T> neurons = new ArrayList<>(neuronValues.keySet());
 		Collections.sort(neurons, new Comparator<T>() {

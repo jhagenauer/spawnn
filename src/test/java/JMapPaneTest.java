@@ -24,17 +24,25 @@ public class JMapPaneTest extends JFrame {
 	public JMapPane mp;
 	
 	public JMapPaneTest() {
-		mp = new JMapPane();
+		mp = new JMapPane();		
+		mp.setMapContent(new MapContent());
 		
-		GTRenderer renderer = new StreamingRenderer();
-		mp.setRenderer(renderer);
-				
-		MapContent mc = new MapContent();
-		mp.setMapContent(mc);
 		add(mp);
-		
 		setSize(400,400);
 		setVisible(true);
+		
+		updateMP();
+		
+		try {
+			Thread.sleep(1000);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		setSize(800, 800);
+		
+		mp.setSize(getSize());
 	}
 	
 	public void updateMP() {
@@ -47,29 +55,19 @@ public class JMapPaneTest extends JFrame {
 		Random r = new Random();		
 		DefaultFeatureCollection fc = new DefaultFeatureCollection();
 		for( int i = 0; i < 1000; i++ ) {
-			Point p = gf.createPoint(new Coordinate(r.nextDouble()*100,r.nextDouble()*100));
+			Point p = gf.createPoint(new Coordinate(r.nextDouble(),r.nextDouble()));
 			featureBuilder.set("the_geom", p);
 			fc.add( featureBuilder.buildFeature(""+fc.size()));
 		}
-		
-		StyleBuilder sb = new StyleBuilder();
-		Symbolizer sym = sb.createPointSymbolizer();
 
-		//MapContent mc = new MapContent();
 		MapContent mc = mp.getMapContent();
+		Symbolizer sym = new StyleBuilder().createPointSymbolizer();
 		mc.layers().clear();
-		
 		mc.addLayer(new FeatureLayer(fc, SLD.wrapSymbolizers(sym)));
 		mc.setViewport( new MapViewport(fc.getBounds()));
-		
-		//mp.getMapContent().dispose();
-		//mp.setMapContent(mc);
 	}
 	
 	public static void main(String[] args) {
 		JMapPaneTest t = new JMapPaneTest();
-		for( int i = 0; i < 1000; i++)
-			t.updateMP();
-		System.exit(1);
 	}
 }

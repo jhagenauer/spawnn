@@ -59,7 +59,7 @@ import com.vividsolutions.jts.geom.Polygon;
 
 import net.miginfocom.swing.MigLayout;
 
-public class MapPanel<T> extends NeuronVisPanel<T> implements MapPaneListener, ComponentListener, MouseListener {
+public class MapPanel<T> extends NeuronVisPanel<T> implements MapPaneListener, MouseListener, ComponentListener {
 
 	private static final long serialVersionUID = -8904376009449729813L;
 	private static Logger log = Logger.getLogger(MapPanel.class);
@@ -67,13 +67,12 @@ public class MapPanel<T> extends NeuronVisPanel<T> implements MapPaneListener, C
 	private FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
 	private FeatureCollection<SimpleFeatureType, SimpleFeature> fc;
 	private JMapPane mp;
-	private MapViewport mvp;
 	private List<T> pos;
 
 	//TODO handle resize events properly
 	public MapPanel(FeatureCollection<SimpleFeatureType, SimpleFeature> fc, List<T> pos) {
 		super();
-
+		
 		this.pos = pos;
 		this.fc = fc;
 		setLayout(new MigLayout());
@@ -88,13 +87,12 @@ public class MapPanel<T> extends NeuronVisPanel<T> implements MapPaneListener, C
 		mp.setRenderer(renderer);
 				
 		MapContent mc = new MapContent();
-		mvp = new MapViewport(fc.getBounds());
-		mc.setViewport( mvp );
+		mc.setViewport( new MapViewport(fc.getBounds() ) );
 		mp.setMapContent(mc);
 
 		mp.addMapPaneListener(this);
 		mp.addComponentListener(this);
-		mp.addMouseListener(this);
+		addMouseListener(this);
 		mp.setBackground(getBackground()); 
 		mp.setOpaque(false); // FIXME this is ignored as soon as setColors is called
 		add(mp, "push, grow");
@@ -118,20 +116,9 @@ public class MapPanel<T> extends NeuronVisPanel<T> implements MapPaneListener, C
 	}
 
 	@Override
-	public void componentHidden(ComponentEvent arg0) {
-	}
-
-	@Override
-	public void componentMoved(ComponentEvent arg0) {
-	}
-
-	@Override
 	public void componentResized(ComponentEvent arg0) {
-		mp.repaint(); //?
-	}
-
-	@Override
-	public void componentShown(ComponentEvent arg0) {
+		mp.setSize(getSize());
+		//log.debug(mp.getSize()+":::"+getSize());
 	}
 
 	private final int offset = (int) Math.ceil((1.0 + SELECTED_WIDTH) / 2);
@@ -199,8 +186,8 @@ public class MapPanel<T> extends NeuronVisPanel<T> implements MapPaneListener, C
 			}
 		}
 		
-		MapContent mc = new MapContent();	
-		mc.setViewport(mvp);
+		MapContent mc = mp.getMapContent();
+		mc.layers().clear();
 		{
 			Stroke stroke = sb.createStroke();
 			// stroke = null; // draw border?
@@ -249,10 +236,7 @@ public class MapPanel<T> extends NeuronVisPanel<T> implements MapPaneListener, C
 				log.warn("GeomType not supported: " + gt.getBinding());
 			}
 			mc.addLayer(new FeatureLayer(sub, style));	
-		}
-		
-		mp.getMapContent().dispose();
-		mp.setMapContent(mc);
+		}		
 	}
 
 	SimpleFeature selected = null;
@@ -305,5 +289,23 @@ public class MapPanel<T> extends NeuronVisPanel<T> implements MapPaneListener, C
 
 	@Override
 	public void mouseReleased(MouseEvent arg0) {
+	}
+
+	@Override
+	public void componentHidden(ComponentEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void componentMoved(ComponentEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void componentShown(ComponentEvent e) {
+		// TODO Auto-generated method stub
+		
 	}
 }

@@ -9,6 +9,8 @@ import java.awt.Image;
 import java.awt.Paint;
 import java.awt.RenderingHints;
 import java.awt.Stroke;
+import java.awt.event.ComponentEvent;
+import java.awt.event.ComponentListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.awt.geom.AffineTransform;
@@ -42,7 +44,7 @@ import edu.uci.ics.jung.visualization.picking.PickedState;
 import edu.uci.ics.jung.visualization.transform.shape.GraphicsDecorator;
 import edu.uci.ics.jung.visualization.util.Caching;
 
-public class GraphPanel extends NeuronVisPanel<double[]> implements ItemListener {
+public class GraphPanel extends NeuronVisPanel<double[]> implements ItemListener, ComponentListener {
 
 	private static Logger log = Logger.getLogger(GraphPanel.class);
 	private static final long serialVersionUID = -7684883263291420601L;
@@ -55,7 +57,7 @@ public class GraphPanel extends NeuronVisPanel<double[]> implements ItemListener
 	enum Layout {
 		Circle, FruchteReingo, Geo, KamadaKawai
 	}
-
+	
 	// Edge weight layout modes
 	public static String NONE = "None", DIST = "Distance", DIST_GEO = "Distance (geo)", COUNT = "Count";
 
@@ -79,8 +81,10 @@ public class GraphPanel extends NeuronVisPanel<double[]> implements ItemListener
 		ps = vv.getPickedVertexState();
 		ps.addItemListener(this);
 		add(vv);
+		
+		addComponentListener(this);
 	}
-
+	
 	@Override
 	public void itemStateChanged(ItemEvent e) {
 		Object subject = e.getItem();
@@ -128,7 +132,7 @@ public class GraphPanel extends NeuronVisPanel<double[]> implements ItemListener
 					return new BasicStroke(1);
 			}
 		});
-
+				
 		repaint();
 		vv.repaint();
 	}
@@ -318,5 +322,29 @@ public class GraphPanel extends NeuronVisPanel<double[]> implements ItemListener
 			stream.close();
 		} catch (Exception e) {
 		}
+	}
+
+	@Override
+	public void componentResized(ComponentEvent e) {
+		vv.setSize(getSize());
+		al.setSize(getSize());
+	}
+
+	@Override
+	public void componentHidden(ComponentEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void componentMoved(ComponentEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void componentShown(ComponentEvent e) {
+		// TODO Auto-generated method stub
+		
 	}
 }

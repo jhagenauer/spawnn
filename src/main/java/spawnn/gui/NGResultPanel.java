@@ -4,6 +4,8 @@ import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.Frame;
 import java.awt.event.ActionEvent;
+import java.awt.event.ComponentEvent;
+import java.awt.event.ComponentListener;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -58,7 +60,7 @@ public class NGResultPanel extends ResultPanel<double[]> {
 	private JComboBox<String> vertexComboBox;
 	private JComboBox edgeComboBox, layoutComboBox;
 	private JButton btnExpGraph;
-	private GraphPanel pnlGraph;
+	private GraphPanel graphPanel;
 
 	private Graph<double[], double[]> g;
 
@@ -135,8 +137,8 @@ public class NGResultPanel extends ResultPanel<double[]> {
 		btnExpGraph = new JButton("Network...");
 		btnExpGraph.addActionListener(this);
 
-		pnlGraph = new GraphPanel(g, ga);
-		pnlGraph.addNeuronSelectedListener(this);
+		graphPanel = new GraphPanel(g, ga);
+		graphPanel.addNeuronSelectedListener(this);
 
 		actionPerformed(new ActionEvent(vertexComboBox, 0, RANDOM));
 		//Map<double[], Color> colorMap = updatePanels();
@@ -164,18 +166,18 @@ public class NGResultPanel extends ResultPanel<double[]> {
 		exportPanel.setBorder(BorderFactory.createTitledBorder("Export"));
 		add(exportPanel,"growy, wrap");
 		
-		add(pnlGraph, "span 2, split 2, w 50%, grow");
+		add(graphPanel, "span 2, split 2, w 50%, grow");
 		add(mapPanel, "w 50%, grow, wrap");
 		add( legendPanel, "span 2, center, wrap");
 		//add( infoField, "span 2, growx");
 		
-		mapPanel.addNeuronSelectedListener(this);		
+		mapPanel.addNeuronSelectedListener(this);
 	}
 
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		if (e.getSource() == layoutComboBox) {
-			pnlGraph.setGraphLayout((GraphPanel.Layout) layoutComboBox.getSelectedItem());
+			graphPanel.setGraphLayout((GraphPanel.Layout) layoutComboBox.getSelectedItem());
 		} else if (e.getSource() == btnExpGraph) {
 			JFileChooser fc = new JFileChooser("output");
 
@@ -190,13 +192,13 @@ public class NGResultPanel extends ResultPanel<double[]> {
 				if (fc.getFileFilter() == FFilter.graphMLFilter) {
 					writeGraphToGraphML(names, g, neuronValues, selectedColors, fn);
 				} else if (fc.getFileFilter() == FFilter.pngFilter) {
-					pnlGraph.saveImage(fn, "PNG");
+					graphPanel.saveImage(fn, "PNG");
 				} else if( fc.getFileFilter() == FFilter.epsFilter ) {
 					//String s = fn.getAbsolutePath(); 
 					//s = s.replaceFirst(".eps", "_legend.eps");
 					//saveLegend( ColorUtils.getColorMap( neuronValues, (ColorBrewer)colorModeBox.getSelectedItem(), false ), neuronValues, new File(s), "EPS" );
 										
-					pnlGraph.saveImage(fn, "EPS");
+					graphPanel.saveImage(fn, "EPS");
 				} else if( fc.getFileFilter() == FFilter.ngXMLFilter ) {
 					try {
 						NGUtils.saveGas( g.getVertices(), new FileOutputStream(fn));
@@ -428,7 +430,7 @@ public class NGResultPanel extends ResultPanel<double[]> {
 			currentVertexComboBox = vertexComboBox.getSelectedItem();
 			
 		} else if( e.getSource() == edgeComboBox ) {
-			pnlGraph.setEdgeStyle( (String)edgeComboBox.getSelectedItem());
+			graphPanel.setEdgeStyle( (String)edgeComboBox.getSelectedItem());
 		} else {
 			super.actionPerformed(e);
 		}
@@ -437,7 +439,7 @@ public class NGResultPanel extends ResultPanel<double[]> {
 	@Override 
 	protected Map<double[], Color> updatePanels() {
 		Map<double[],Color> colorMap = super.updatePanels();
-		pnlGraph.setColors(colorMap, selectedColors, neuronValues);
+		graphPanel.setColors(colorMap, selectedColors, neuronValues);			
 		return colorMap;
 	}
 
