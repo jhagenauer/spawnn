@@ -21,7 +21,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import javax.imageio.ImageIO;
@@ -70,7 +69,7 @@ public abstract class ResultPanel<T> extends JPanel implements ActionListener, N
 	private static final long serialVersionUID = 1686748469941486349L;
 	private static Logger log = Logger.getLogger(ResultPanel.class);
 		
-	protected JButton exportMapButton, selectColorButton, selectClearButton;
+	protected JButton exportLegendButton, exportMapButton, selectColorButton, selectClearButton;
 	protected JComboBox colorBrewerBox, colorClassBox;
 	protected JToggleButton selectSingleButton;
 	protected JTextField infoField;
@@ -93,6 +92,8 @@ public abstract class ResultPanel<T> extends JPanel implements ActionListener, N
 	protected Color selectedColor = Color.RED;
 	
 	protected Frame parent;
+
+	public enum ExtrAttrib {color, selColor, nValue, neuron};
 
 	public ResultPanel(Frame parent, SpatialDataFrame orig, List<double[]> samples, Map<T, Set<double[]>> bmus, ArrayList<T> pos, Dist<double[]> fDist, Dist<double[]> gDist) {
 		this.parent = parent;
@@ -148,6 +149,9 @@ public abstract class ResultPanel<T> extends JPanel implements ActionListener, N
 		exportMapButton = new JButton("Map...");
 		exportMapButton.addActionListener(this);
 		
+		exportLegendButton = new JButton("Legend...");
+		exportLegendButton.addActionListener(this);
+		
 		infoField = new JTextField("");
 		infoField.setEditable(false);
 	}
@@ -178,10 +182,10 @@ public abstract class ResultPanel<T> extends JPanel implements ActionListener, N
 			else if (sd.bindings.get(i) == SpatialDataFrame.binding.Long)
 				sftb.add(sd.names.get(i), Long.class);
 		}
-		sftb.add("neuron", Integer.class);
-		sftb.add("nValue", Double.class);
-		sftb.add("color", String.class);
-		sftb.add("selColor",String.class);
+		sftb.add(ExtrAttrib.neuron.toString(), Integer.class);
+		sftb.add(ExtrAttrib.nValue.toString(), Double.class);
+		sftb.add(ExtrAttrib.color.toString(), String.class);
+		sftb.add(ExtrAttrib.selColor.toString(),String.class);
 
 		Geometry g = sd.geoms.get(0);
 		if (g instanceof Polygon)
@@ -206,7 +210,7 @@ public abstract class ResultPanel<T> extends JPanel implements ActionListener, N
 				if (cluster.containsKey(p) && cluster.get(p).contains(d)) {
 					for (int j = 0; j < sd.names.size(); j++)
 						builder.set(sd.names.get(j), sd.samples.get(k)[j]);
-					builder.set("neuron", i);
+					builder.set(ExtrAttrib.neuron.toString(), i);
 					builder.set("the_geom", sd.geoms.get(k));
 					fc.add(builder.buildFeature(fc.size() + ""));
 					break;
@@ -549,9 +553,26 @@ public abstract class ResultPanel<T> extends JPanel implements ActionListener, N
 
 		Color[] cols = cb.getColorPalette( nrColors, true );
 		Map<T, Color> colorMap = ColorUtils.getColorMap(neuronValues, (ColorClass)colorClassBox.getSelectedItem(), cols );
+		
+		// update fc, not sure if this is the best idea. Alternative: restrict number of colors and have a layer for each color
+		FeatureIterator<SimpleFeature> iter = fc.features();
+		try {
+			while (iter.hasNext()) {
+				SimpleFeature f = iter.next();
+				int i = Integer.parseInt(f.getAttribute(ExtrAttrib.neuron.toString()).toString());
+				T t = pos.get(i);
+				f.setAttribute(ExtrAttrib.color.toString(), colorMap.get(t));
+				f.setAttribute(ExtrAttrib.selColor.toString(), selectedColors.get(t) );
+				f.setAttribute(ExtrAttrib.nValue.toString(), neuronValues.get(t));
+			}
+		} finally {
+			iter.close();
+		}
+				
 		mapPanel.setColors(colorMap, selectedColors, neuronValues);
 		legendPanel.setClusterLegend(isClusterVis());
 		legendPanel.setColors(colorMap, selectedColors, neuronValues);
+		
 		return colorMap;
 	}
 
@@ -564,15 +585,8 @@ public abstract class ResultPanel<T> extends JPanel implements ActionListener, N
 			selectedColors.remove(gp);
 		else 
 			selectedColors.put(gp, selectedColor);	
-		
+				
 		updatePanels();
-							
-		int i = 0;
-		for( Entry<T,Color> e : selectedColors.entrySet() ) 
-		if( e.getValue() == selectedColor )
-			i++;
-		
-		infoField.setText(i+" neurons");
 	}
 	
 	public abstract boolean isClusterVis();

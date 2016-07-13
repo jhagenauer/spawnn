@@ -5,6 +5,7 @@ import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.RenderingHints;
+import java.awt.RenderingHints.Key;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
 import java.awt.event.MouseEvent;
@@ -15,7 +16,7 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -29,6 +30,7 @@ import org.geotools.feature.FeatureCollection;
 import org.geotools.feature.FeatureIterator;
 import org.geotools.geometry.jts.ReferencedEnvelope;
 import org.geotools.map.FeatureLayer;
+import org.geotools.map.Layer;
 import org.geotools.map.MapContent;
 import org.geotools.map.MapViewport;
 import org.geotools.renderer.GTRenderer;
@@ -72,7 +74,7 @@ public class MapPanel<T> extends NeuronVisPanel<T> implements MapPaneListener, M
 	//TODO handle resize events properly
 	public MapPanel(FeatureCollection<SimpleFeatureType, SimpleFeature> fc, List<T> pos) {
 		super();
-		
+				
 		this.pos = pos;
 		this.fc = fc;
 		setLayout(new MigLayout());
@@ -81,44 +83,24 @@ public class MapPanel<T> extends NeuronVisPanel<T> implements MapPaneListener, M
 		mp.setDoubleBuffered(true);
 
 		GTRenderer renderer = new StreamingRenderer();
-		RenderingHints hints = new RenderingHints(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-		hints.put(RenderingHints.KEY_ALPHA_INTERPOLATION, RenderingHints.VALUE_ALPHA_INTERPOLATION_QUALITY);
+		Map<Key, Object> hints = new HashMap<>();
+		//hints.put(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+		//hints.put(RenderingHints.KEY_ALPHA_INTERPOLATION, RenderingHints.VALUE_ALPHA_INTERPOLATION_QUALITY);
 		hints.put(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_SPEED);
+		renderer.setJava2DHints(new RenderingHints(hints));
+		
 		mp.setRenderer(renderer);
 				
 		MapContent mc = new MapContent();
-		mc.setViewport( new MapViewport(fc.getBounds() ) );
+		mc.setViewport( new MapViewport(fc.getBounds() ) );		
 		mp.setMapContent(mc);
 
-		mp.addMapPaneListener(this);
+		//mp.addMapPaneListener(this);
 		mp.addComponentListener(this);
-		addMouseListener(this);
+		mp.addMouseListener(this);
 		mp.setBackground(getBackground()); 
 		mp.setOpaque(false); // FIXME this is ignored as soon as setColors is called
 		add(mp, "push, grow");
-	}
-
-	@Override
-	public void onDisplayAreaChanged(MapPaneEvent e) {
-		mp.repaint(); //?
-	}
-
-	@Override
-	public void onNewMapContent(MapPaneEvent arg0) {
-	}
-
-	@Override
-	public void onRenderingStarted(MapPaneEvent arg0) {
-	}
-
-	@Override
-	public void onRenderingStopped(MapPaneEvent arg0) {
-	}
-
-	@Override
-	public void componentResized(ComponentEvent arg0) {
-		mp.setSize(getSize());
-		//log.debug(mp.getSize()+":::"+getSize());
 	}
 
 	private final int offset = (int) Math.ceil((1.0 + SELECTED_WIDTH) / 2);
@@ -173,22 +155,8 @@ public class MapPanel<T> extends NeuronVisPanel<T> implements MapPaneListener, M
 		StyleBuilder sb = new StyleBuilder();
 		GeometryType gt = fc.getSchema().getGeometryDescriptor().getType();
 		
-		// set color attributes
-		for (int i = 0; i < pos.size(); i++) {
-			Color c = colorMap.get(pos.get(i));
-			FeatureCollection<SimpleFeatureType, SimpleFeature> sub = fc.subCollection(ff.equals(ff.property("neuron"), ff.literal(i)));
-			FeatureIterator<SimpleFeature> iter = sub.features();
-			try {
-				while (iter.hasNext())
-					iter.next().setAttribute("color", c);
-			} finally {
-				iter.close();
-			}
-		}
-		
-		MapContent mc = mp.getMapContent();
-		mc.layers().clear();
-		{
+		List<Layer> layers = new ArrayList<>();
+		{ // basic draw
 			Stroke stroke = sb.createStroke();
 			// stroke = null; // draw border?
 			Style style = null;
@@ -202,18 +170,16 @@ public class MapPanel<T> extends NeuronVisPanel<T> implements MapPaneListener, M
 			} else {
 				log.warn("GeomType not supported: " + gt.getBinding());
 			}
-			mc.addLayer(new FeatureLayer(fc, style));
+			layers.add(new FeatureLayer(fc, style));
 		}
-					
-		for( Color c : new HashSet<>(selectedColors.values()) ) {
+				
+		{ // select draw
 			List<Filter> fl = new ArrayList<>();
 			for (int i = 0; i < pos.size(); i++) {
 				T t = pos.get(i);
-				if (selectedColors.containsKey(t) || selectedColors.get(t) == c )
+				if (selectedColors.containsKey(t) )
 					fl.add( ff.equals(ff.property("neuron"), ff.literal(i)));
 			}
-			if( fl.isEmpty() )
-				continue;
 			
 			FeatureCollection<SimpleFeatureType, SimpleFeature> sub = fc.subCollection(ff.or(fl));
 			if (selectSingle && sub.contains(selected)) {
@@ -223,20 +189,25 @@ public class MapPanel<T> extends NeuronVisPanel<T> implements MapPaneListener, M
 			}
 
 			Style style = null;
+			Stroke stroke = sb.createStroke(ff.property("selColor"),ff.literal(SELECTED_WIDTH));
+			Fill fill = sb.createFill(ff.property("selColor"), ff.literal((double)NeuronVisPanel.SELECTED_OPACITY/256)); 
 			if (gt.getBinding() == Polygon.class || gt.getBinding() == MultiPolygon.class) {
-				Stroke stroke = sb.createStroke(c,SELECTED_WIDTH);
-				Fill fill = sb.createFill(c, (double)NeuronVisPanel.SELECTED_OPACITY/256); 
 				Symbolizer sym = sb.createPolygonSymbolizer(stroke,fill);
 				style = SLD.wrapSymbolizers(sym);
 			} else if (gt.getBinding() == Point.class || gt.getBinding() == MultiPoint.class) {
-				Mark mark = sb.createMark(StyleBuilder.MARK_CIRCLE, c, SELECTED_WIDTH);
+				Mark mark = sb.createMark(StyleBuilder.MARK_CIRCLE, fill, stroke);
 				mark.setFill(null);
 				style = SLD.wrapSymbolizers(sb.createPointSymbolizer(sb.createGraphic(null, mark, null)));
 			} else {
 				log.warn("GeomType not supported: " + gt.getBinding());
 			}
-			mc.addLayer(new FeatureLayer(sub, style));	
-		}		
+			layers.add(new FeatureLayer(sub, style));	
+		}
+		
+		MapContent mc = mp.getMapContent();
+		for( Layer l : new ArrayList<>( mc.layers() ) )
+			mc.removeLayer(l);
+		mc.addLayers(layers);
 	}
 
 	SimpleFeature selected = null;
@@ -276,36 +247,57 @@ public class MapPanel<T> extends NeuronVisPanel<T> implements MapPaneListener, M
 	}
 
 	@Override
-	public void mouseEntered(MouseEvent arg0) {
+	public void mouseEntered(MouseEvent e) {
 	}
 
 	@Override
-	public void mouseExited(MouseEvent arg0) {
+	public void mouseExited(MouseEvent e) {
 	}
 
 	@Override
-	public void mousePressed(MouseEvent arg0) {
+	public void mousePressed(MouseEvent e) {
 	}
 
 	@Override
-	public void mouseReleased(MouseEvent arg0) {
+	public void mouseReleased(MouseEvent e) {
 	}
 
 	@Override
 	public void componentHidden(ComponentEvent e) {
 		// TODO Auto-generated method stub
-		
 	}
 
 	@Override
 	public void componentMoved(ComponentEvent e) {
-		// TODO Auto-generated method stub
-		
+		// TODO Auto-generated method stub	
 	}
 
 	@Override
 	public void componentShown(ComponentEvent e) {
 		// TODO Auto-generated method stub
-		
+	}
+	
+	@Override
+	public void componentResized(ComponentEvent e) {
+		//mp.setSize(getSize());
+		//mp.getMapContent().setViewport( new MapViewport(fc.getBounds()));
+		//log.debug(mp.getSize()+":::"+getSize());
+	}
+	
+	@Override
+	public void onDisplayAreaChanged(MapPaneEvent e) {
+		mp.repaint(); //?
+	}
+
+	@Override
+	public void onNewMapContent(MapPaneEvent e) {
+	}
+
+	@Override
+	public void onRenderingStarted(MapPaneEvent e) {
+	}
+
+	@Override
+	public void onRenderingStopped(MapPaneEvent e) {
 	}
 }

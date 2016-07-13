@@ -29,8 +29,6 @@ import spawnn.utils.DataUtils.transform;
 
 public class RInterface {
 
-	private static Future<int[][]>[][] ggs;
-
 	public static int[] getCNGCluster(double[][] samples, int numNeurons, double nbStart, double nbEnd, double lrStart, double lrEnd, int[] ga, int[] fa, int l, int trainingTime) {
 		Random r = new Random();
 
