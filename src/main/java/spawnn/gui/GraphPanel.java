@@ -200,7 +200,7 @@ public class GraphPanel extends NeuronVisPanel<double[]> implements ItemListener
 	}
 
 	@Override
-	public void saveImage(File fn, String mode) {
+	public void saveImage(File fn, ImageMode mode) {
 		
 		// all this inherited code just to allow transparent background
 		VisualizationImageServer<double[], double[]> vis = new VisualizationImageServer<double[], double[]>(vv.getGraphLayout(), vv.getGraphLayout().getSize()) {
@@ -305,11 +305,11 @@ public class GraphPanel extends NeuronVisPanel<double[]> implements ItemListener
 
 		try {
 			FileOutputStream stream = new FileOutputStream(fn);
-			if (mode.equals("PNG")) {
+			if (mode == ImageMode.PNG ) {
 				//Graphics2D g = bufImage.createGraphics();
 				//g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 				ImageIO.write(bufImage, "PNG", stream);
-			} else if (mode.equals("EPS")) {
+			} else if (mode == ImageMode.EPS ) {
 				EPSDocumentGraphics2D g = new EPSDocumentGraphics2D(false);
 				g.setGraphicContext(new org.apache.xmlgraphics.java2d.GraphicContext());
 				g.setupDocument(stream, bufImage.getWidth(), bufImage.getHeight());

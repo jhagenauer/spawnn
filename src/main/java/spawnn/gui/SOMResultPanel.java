@@ -35,6 +35,7 @@ import spawnn.dist.Dist;
 import spawnn.gui.ClusterDialogGrid.ClusterAlgorithm;
 import spawnn.gui.DistanceDialog.DistMode;
 import spawnn.gui.DistanceDialog.StatMode;
+import spawnn.gui.NeuronVisPanel.ImageMode;
 import spawnn.som.grid.Grid2D;
 import spawnn.som.grid.Grid2DHex;
 import spawnn.som.grid.GridPos;
@@ -53,8 +54,8 @@ public class SOMResultPanel extends ResultPanel<GridPos> {
 	private JComboBox<String> gridComboBox;
 	private JComboBox gridModeComboBox;
 	private JButton btnExpGrid;
-	private GridPanel pnlGrid;
-	private GraphPanel pnlGraph;
+	private GridPanel gridPanel;
+	private GraphPanel graphPanel;
 	private JPanel cards;
 
 	private Grid2D<double[]> grid;
@@ -145,11 +146,11 @@ public class SOMResultPanel extends ResultPanel<GridPos> {
 			}
 		}
 
-		pnlGrid = new GridPanel(grid, fDist);
-		pnlGraph = new GraphPanel(graph, ga);
+		gridPanel = new GridPanel(grid, fDist);
+		graphPanel = new GraphPanel(graph, ga);
 
 		if (ga != null && ga.length == 2) {
-			pnlGraph.setGraphLayout(GraphPanel.Layout.Geo);
+			graphPanel.setGraphLayout(GraphPanel.Layout.Geo);
 		}
 
 		// maybe it would be nicer to use a MapPanel and to draw the network on a "real" map
@@ -172,18 +173,18 @@ public class SOMResultPanel extends ResultPanel<GridPos> {
 				updatePanels();
 			}
 		}
-		pnlGraph.addNeuronSelectedListener(new NSL(grid));
+		graphPanel.addNeuronSelectedListener(new NSL(grid));
 
 		actionPerformed(new ActionEvent(gridComboBox, 0, RANDOM));
 		updatePanels();
 		
-		pnlGrid.addMouseListener(pnlGrid);
-		pnlGrid.addNeuronSelectedListener(this);
+		gridPanel.addMouseListener(gridPanel);
+		gridPanel.addNeuronSelectedListener(this);
 		mapPanel.addNeuronSelectedListener(this);
 
 		cards = new JPanel(new CardLayout());
-		cards.add(pnlGrid, GRID);
-		cards.add(pnlGraph, GRAPH);
+		cards.add(gridPanel, GRID);
+		cards.add(graphPanel, GRAPH);
 
 		add(gridComboBox, "split 4");
 		
@@ -204,6 +205,7 @@ public class SOMResultPanel extends ResultPanel<GridPos> {
 		JPanel exportPanel = new JPanel(new MigLayout("insets 0, gapy 0"));
 		exportPanel.add(btnExpGrid,"");
 		exportPanel.add(exportMapButton,"");
+		exportPanel.add(exportLegendButton,"");
 		exportPanel.setBorder(BorderFactory.createTitledBorder("Export"));
 		add(exportPanel,"growy, wrap");
 				
@@ -365,18 +367,18 @@ public class SOMResultPanel extends ResultPanel<GridPos> {
 				try {
 					if (fc.getFileFilter() == FFilter.pngFilter) {
 						if (gridModeComboBox.getSelectedItem() == GRID)
-							pnlGrid.saveImage(fn, "PNG");
+							gridPanel.saveImage(fn, ImageMode.PNG );
 						else
-							pnlGraph.saveImage(fn, "PNG");
+							graphPanel.saveImage(fn, ImageMode.PNG );
 					} else if (fc.getFileFilter() == FFilter.epsFilter) {
 						//String s = fn.getAbsolutePath();
 						//s = s.replaceFirst(".eps", "_legend.eps");
 						//saveLegend( ColorUtils.getColorMap( neuronValues, (ColorBrewer)colorModeBox.getSelectedItem(), false ), neuronValues, new File(s), "EPS" );
 						
 						if (gridModeComboBox.getSelectedItem() == GRID)
-							pnlGrid.saveImage(fn, "EPS");
+							gridPanel.saveImage(fn, ImageMode.EPS );
 						else
-							pnlGraph.saveImage(fn, "EPS");
+							graphPanel.saveImage(fn, ImageMode.EPS );
 					} else if (fc.getFileFilter() == FFilter.somXMLFilter) {
 						SomUtils.saveGrid(grid, new FileOutputStream(fn));
 					} else if (fc.getFileFilter() == FFilter.unitFilter) {
@@ -399,8 +401,8 @@ public class SOMResultPanel extends ResultPanel<GridPos> {
 	@Override 
 	protected Map<GridPos, Color> updatePanels() {
 		Map<GridPos,Color> colorMap = super.updatePanels();
-		pnlGrid.setColors(colorMap, selectedColors, neuronValues);
-		pnlGraph.setColors(toDoubleArrayMap(colorMap), toDoubleArrayMap(selectedColors), toDoubleArrayMap(neuronValues));
+		gridPanel.setColors(colorMap, selectedColors, neuronValues);
+		graphPanel.setColors(toDoubleArrayMap(colorMap), toDoubleArrayMap(selectedColors), toDoubleArrayMap(neuronValues));
 		return colorMap;
 	}
 

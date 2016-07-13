@@ -57,6 +57,7 @@ import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.geom.Polygon;
 
 import spawnn.dist.Dist;
+import spawnn.gui.NeuronVisPanel.ImageMode;
 import spawnn.utils.ClusterValidation;
 import spawnn.utils.ColorBrewer;
 import spawnn.utils.ColorUtils;
@@ -488,9 +489,9 @@ public abstract class ResultPanel<T> extends JPanel implements ActionListener, N
 			if (state == JFileChooser.APPROVE_OPTION) {
 				File fn = fChoser.getSelectedFile();
 				if (fChoser.getFileFilter() == FFilter.pngFilter) {
-					mapPanel.saveImage(fn, "PNG");
+					mapPanel.saveImage(fn, ImageMode.PNG );
 				} else if(fChoser.getFileFilter() == FFilter.epsFilter) {
-					mapPanel.saveImage(fn, "EPS");
+					mapPanel.saveImage(fn, ImageMode.EPS );
 				} else if (fChoser.getFileFilter() == FFilter.shpFilter) {
 					try {
 						// ugly but works
@@ -516,6 +517,19 @@ public abstract class ResultPanel<T> extends JPanel implements ActionListener, N
 						ex.printStackTrace();
 					}
 				}
+			}
+		} else if( e.getSource() == exportLegendButton ) {
+			JFileChooser fc = new JFileChooser("output");
+			fc.setFileFilter(FFilter.pngFilter);
+			fc.setFileFilter(FFilter.epsFilter);
+
+			int state = fc.showSaveDialog(this);
+			if (state == JFileChooser.APPROVE_OPTION) {
+				File fn = fc.getSelectedFile();
+				if (fc.getFileFilter() == FFilter.pngFilter)
+					legendPanel.saveImage(fn, ImageMode.PNG );
+				else if (fc.getFileFilter() == FFilter.epsFilter)
+					legendPanel.saveImage(fn, ImageMode.EPS );
 			}
 		} else if (e.getSource() == selectColorButton) {
 			Color c = JColorChooser.showDialog(this, "Select selection color", selectedColor);

@@ -139,7 +139,7 @@ public class GridPanel extends NeuronVisPanel<GridPos> implements MouseListener 
 		g2.setStroke(origStroke);
 	}
 	
-	@Deprecated
+	/*@Deprecated
 	public BufferedImage getBufferedImage() {
 		BufferedImage bufImg = new BufferedImage(getWidth(), getHeight(), BufferedImage.TYPE_INT_ARGB);
 		
@@ -149,24 +149,26 @@ public class GridPanel extends NeuronVisPanel<GridPos> implements MouseListener 
 		
 		g.dispose();
 		return bufImg;
-	}
+	}*/
 	
 	@Override
-	public void saveImage( File fn, String mode ) {
+	public void saveImage( File fn, ImageMode mode ) {
 		try {		
-			FileOutputStream stream = new FileOutputStream(fn);			
-			if( mode.equals("PNG") ) {
-				BufferedImage bufImage = new BufferedImage((int)Math.ceil(maxX*scale)+2*offset, (int)Math.ceil(maxY*scale)+2*offset, BufferedImage.TYPE_INT_ARGB);
+			FileOutputStream stream = new FileOutputStream(fn);	
+			int width = (int)Math.ceil(maxX*scale)+2*offset;
+			int height = (int)Math.ceil(maxY*scale)+2*offset;
+			if( mode == ImageMode.PNG ) {
+				BufferedImage bufImage = new BufferedImage( width, height, BufferedImage.TYPE_INT_ARGB);
 				Graphics2D g = bufImage.createGraphics();
 
 				g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 				draw(g);
 				
 				ImageIO.write(bufImage, "PNG", stream);
-			} else if( mode.equals("EPS")) {
+			} else if( mode == ImageMode.EPS ) {
 				EPSDocumentGraphics2D g = new EPSDocumentGraphics2D(false);
 				g.setGraphicContext(new org.apache.xmlgraphics.java2d.GraphicContext());
-				g.setupDocument(stream, (int)Math.ceil(scale*maxX+2*offset), (int)Math.ceil(scale*maxY+2*offset) ); 	
+				g.setupDocument(stream, width, height ); 	
 								
 				draw(g);
 				g.finish();

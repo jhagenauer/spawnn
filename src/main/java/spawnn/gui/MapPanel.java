@@ -106,7 +106,7 @@ public class MapPanel<T> extends NeuronVisPanel<T> implements MapPaneListener, M
 	private final int offset = (int) Math.ceil((1.0 + SELECTED_WIDTH) / 2);
 
 	@Override
-	public void saveImage(File fn, String mode) {
+	public void saveImage(File fn, ImageMode mode) {
 		Rectangle imageBounds = null;
 		ReferencedEnvelope mapBounds = null;
 		try {
@@ -121,7 +121,7 @@ public class MapPanel<T> extends NeuronVisPanel<T> implements MapPaneListener, M
 		BufferedImage bufImage = new BufferedImage(imageBounds.width, imageBounds.height, BufferedImage.TYPE_INT_ARGB);
 		try {
 			FileOutputStream stream = new FileOutputStream(fn);
-			if (mode.equals("PNG")) {
+			if (mode == ImageMode.PNG ) {
 				Graphics2D g = bufImage.createGraphics();
 				g.setComposite(AlphaComposite.Clear);
 				int w = imageBounds.width + 2 * offset;
@@ -132,7 +132,7 @@ public class MapPanel<T> extends NeuronVisPanel<T> implements MapPaneListener, M
 				mp.getRenderer().paint(g, imageBounds, mapBounds);
 
 				ImageIO.write(bufImage, "PNG", stream);
-			} else if (mode.equals("EPS")) {
+			} else if (mode == ImageMode.EPS ) {
 				EPSDocumentGraphics2D g = new EPSDocumentGraphics2D(false);
 				g.setGraphicContext(new org.apache.xmlgraphics.java2d.GraphicContext());
 				g.setupDocument(stream, imageBounds.width + 2 * offset, imageBounds.height + 2 * offset);

@@ -76,7 +76,7 @@ public class FoodDeserts3 {
 		
 		for( int run = 0; run < 10; run++ )
 		for (int n : new int[]{72} )
-			for (int l : new int[]{ 34 }) {
+			for (int l : new int[]{ 1, 1, 1, 1, 34, 34, 34, 34, 72, 72, 72, 72 }) {
 				
 				final int[] pars = new int[]{run,n,l};
 

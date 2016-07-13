@@ -4,7 +4,10 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.RenderingHints;
+import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -12,9 +15,15 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
+import javax.imageio.ImageIO;
+
+import org.apache.log4j.Logger;
+import org.apache.xmlgraphics.java2d.ps.EPSDocumentGraphics2D;
+
 public class LegendPanel<T> extends NeuronVisPanel<T> {
 
 	private static final long serialVersionUID = -3421819319861456797L;
+	private static Logger log = Logger.getLogger(LegendPanel.class);
 	private Map<T, Color> colorMap;
 	private Map<T, Double> neuronValues;
 	private Map<T, Color> selectedMap;
@@ -41,17 +50,47 @@ public class LegendPanel<T> extends NeuronVisPanel<T> {
 	}
 
 	@Override
-	public void saveImage(File fn, String mode) {
-		// TODO Auto-generated method stub
+	public void saveImage(File fn, ImageMode mode) {
+		try {		
+			FileOutputStream stream = new FileOutputStream(fn);			
+			int width = getWidth();
+			int height = getHeight();
+			if( mode == ImageMode.PNG ) {
+				BufferedImage bufImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+				Graphics2D g = bufImage.createGraphics();
+
+				g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+				draw(g);
+				
+				ImageIO.write(bufImage, "PNG", stream);
+			} else if( mode == ImageMode.EPS ) {
+				EPSDocumentGraphics2D g = new EPSDocumentGraphics2D(false);
+				g.setGraphicContext(new org.apache.xmlgraphics.java2d.GraphicContext());
+				g.setupDocument(stream, width, height ); 	
+								
+				draw(g);
+				g.finish();
+			} else {
+				log.debug("Unknown file format!");
+			}
+			stream.flush();
+			stream.close();
+		} catch( Exception e ) {
+			e.printStackTrace();
+		}
 	}
 	
-	//@Override
+	@Override
 	public void paintComponent( Graphics g ) {
 		super.paintComponent(g);
+		draw((Graphics2D) g);
+	}
+	
+	public void draw( Graphics2D g ) {
 		if( clusterLegend )
-			drawClusterLegend((Graphics2D) g);
+			drawClusterLegend(g);
 		else
-			drawContinoutLegend((Graphics2D) g);
+			drawContinoutLegend(g);
 	}
 	
 	public void drawContinoutLegend(Graphics2D g) {
@@ -77,7 +116,7 @@ public class LegendPanel<T> extends NeuronVisPanel<T> {
 			g.setColor(colorMap.get(t));
 			g.fillRect( (int)Math.round(x), 0, (int)Math.round(cellWidth), cellHeight);
 						
-			if ( neurons.get(0) == t || neurons.get(neurons.size()-1) == t ) {
+			if (i == 0 || i == neurons.size()-1 || i == neurons.size()/2 ) {
 				g.setColor(Color.BLACK);
 				g.drawLine((int) Math.round( x + 0.5 * cellWidth), cellHeight, (int) Math.round(x + 0.5 * cellWidth), (int) Math.round(cellHeight + cellHeight/4.0) );
 												

@@ -4,8 +4,6 @@ import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.Frame;
 import java.awt.event.ActionEvent;
-import java.awt.event.ComponentEvent;
-import java.awt.event.ComponentListener;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -45,6 +43,7 @@ import spawnn.dist.Dist;
 import spawnn.gui.ClusterDialogGraph.ClusterAlgorithm;
 import spawnn.gui.DistanceDialog.DistMode;
 import spawnn.gui.DistanceDialog.StatMode;
+import spawnn.gui.NeuronVisPanel.ImageMode;
 import spawnn.ng.utils.NGUtils;
 import spawnn.utils.Clustering;
 import spawnn.utils.DataUtils;
@@ -163,6 +162,7 @@ public class NGResultPanel extends ResultPanel<double[]> {
 		JPanel exportPanel = new JPanel(new MigLayout("insets 0, gapy 0"));
 		exportPanel.add(btnExpGraph,"");
 		exportPanel.add(exportMapButton,"");
+		exportPanel.add(exportLegendButton,"");
 		exportPanel.setBorder(BorderFactory.createTitledBorder("Export"));
 		add(exportPanel,"growy, wrap");
 		
@@ -192,13 +192,13 @@ public class NGResultPanel extends ResultPanel<double[]> {
 				if (fc.getFileFilter() == FFilter.graphMLFilter) {
 					writeGraphToGraphML(names, g, neuronValues, selectedColors, fn);
 				} else if (fc.getFileFilter() == FFilter.pngFilter) {
-					graphPanel.saveImage(fn, "PNG");
+					graphPanel.saveImage(fn, ImageMode.PNG );
 				} else if( fc.getFileFilter() == FFilter.epsFilter ) {
 					//String s = fn.getAbsolutePath(); 
 					//s = s.replaceFirst(".eps", "_legend.eps");
 					//saveLegend( ColorUtils.getColorMap( neuronValues, (ColorBrewer)colorModeBox.getSelectedItem(), false ), neuronValues, new File(s), "EPS" );
 										
-					graphPanel.saveImage(fn, "EPS");
+					graphPanel.saveImage(fn, ImageMode.EPS );
 				} else if( fc.getFileFilter() == FFilter.ngXMLFilter ) {
 					try {
 						NGUtils.saveGas( g.getVertices(), new FileOutputStream(fn));
