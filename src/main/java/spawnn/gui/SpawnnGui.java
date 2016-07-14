@@ -94,10 +94,8 @@ public class SpawnnGui extends JFrame implements PropertyChangeListener, ActionL
 		add(tp);
 		tp.addChangeListener(this);
 
-		pack();
 		setSize(1245, 700);
-		//setMinimumSize(new Dimension(1245, 700)); // ugly, but needed because of ng results minimum size (vv)
-
+		//pack();
 		setVisible(true);
 	}
 

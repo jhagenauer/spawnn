@@ -419,13 +419,14 @@ public class NGResultPanel extends ResultPanel<double[]> {
 					}
 
 					parent.setCursor(Cursor.getDefaultCursor());
-				} else {
+				} else { // clustering canceled
 					vertexComboBox.setSelectedItem(currentVertexComboBox);
 				}
 			} else { // components
 				for (double[] v : pos)
 					neuronValues.put(v, v[vertexComboBox.getSelectedIndex() - 4]); // RANDOM, DISTANCE, CLUSTER, CLUSTER ( GRAPH)
 			}
+			
 			updatePanels();
 			currentVertexComboBox = vertexComboBox.getSelectedItem();
 			

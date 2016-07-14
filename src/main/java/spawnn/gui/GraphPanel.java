@@ -131,8 +131,7 @@ public class GraphPanel extends NeuronVisPanel<double[]> implements ItemListener
 				else
 					return new BasicStroke(1);
 			}
-		});
-				
+		});				
 		repaint();
 		vv.repaint();
 	}
@@ -174,7 +173,7 @@ public class GraphPanel extends NeuronVisPanel<double[]> implements ItemListener
 		} else if (lm == Layout.FruchteReingo) {
 			al = new FRLayout<double[], double[]>(graph);
 		} else if (lm == Layout.Geo) {
-			int border = 12; // TODO this can be done more elegant
+			int margin = 0; //FIXME margin does not work as exspected
 			Dimension dim = vv.getSize();
 
 			double minX = Double.POSITIVE_INFINITY, minY = Double.POSITIVE_INFINITY, maxX = Double.NEGATIVE_INFINITY, maxY = Double.NEGATIVE_INFINITY;
@@ -184,19 +183,30 @@ public class GraphPanel extends NeuronVisPanel<double[]> implements ItemListener
 				minY = Math.min(minY, -d[ga[1]]);
 				maxY = Math.max(maxY, -d[ga[1]]);
 			}
-
+			double s1 , s2;
+			if( maxX - minX > maxY - minY ) {
+				s1 = maxX - minX;
+				s2 = dim.getWidth();
+			} else {
+				s1 = maxY - minY;
+				s2 = dim.getHeight();
+			}
+			s2 -= 2*margin;
+			
 			Map<double[], Point2D> map = new HashMap<double[], Point2D>();
 			for (double[] d : graph.getVertices()) {
 				// keep aspect ratio
-				double s1 = Math.max(maxX - minX, maxY - minY);
-				double s2 = Math.max(dim.getWidth(), dim.getHeight());
-				map.put(d, new Point2D.Double((s2 - 2 * border) * (d[ga[0]] - minX) / s1 + border, (s2 - 2 * border) * (-d[ga[1]] - minY) / s1 + border));
+				map.put(d, new Point2D.Double(
+						s2 * ( d[ga[0]] - minX) / s1 + margin, 
+						s2 * (-d[ga[1]] - minY) / s1 + margin
+						));
 			}
-
+			
 			Transformer<double[], Point2D> vertexLocations = TransformerUtils.mapTransformer(map);
 			al = new StaticLayout<double[], double[]>(graph, vertexLocations);
 		}
 		vv.setGraphLayout(al);
+		log.debug(vv.getSize()+","+getSize());
 	}
 
 	@Override
@@ -328,6 +338,7 @@ public class GraphPanel extends NeuronVisPanel<double[]> implements ItemListener
 	public void componentResized(ComponentEvent e) {
 		vv.setSize(getSize());
 		al.setSize(getSize());
+		//vv.setGraphLayout(al);
 	}
 
 	@Override

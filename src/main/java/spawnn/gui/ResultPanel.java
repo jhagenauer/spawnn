@@ -551,8 +551,10 @@ public abstract class ResultPanel<T> extends JPanel implements ActionListener, N
 	protected Map<T, Color> updatePanels() {
 		ColorBrewer cb = (ColorBrewer)colorBrewerBox.getSelectedItem();
 		if( isClusterVis() ) { // Cluster is enabled
-			colorClassBox.setSelectedItem(ColorClass.Equal);
 			colorClassBox.setEnabled(false);
+			colorClassBox.removeActionListener(this);
+			colorClassBox.setSelectedItem(ColorClass.Equal);
+			colorClassBox.addActionListener(this);
 		} else {
 			colorClassBox.setEnabled(true);
 		}
@@ -569,6 +571,7 @@ public abstract class ResultPanel<T> extends JPanel implements ActionListener, N
 		Map<T, Color> colorMap = ColorUtils.getColorMap(neuronValues, (ColorClass)colorClassBox.getSelectedItem(), cols );
 		
 		// update fc, not sure if this is the best idea. Alternative: restrict number of colors and have a layer for each color
+		
 		FeatureIterator<SimpleFeature> iter = fc.features();
 		try {
 			while (iter.hasNext()) {

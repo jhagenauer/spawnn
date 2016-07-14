@@ -84,8 +84,13 @@ public class Drawer {
 
 	public static void geoDrawCluster(Collection<Set<double[]>> cluster, List<double[]> samples, List<Geometry> geoms, String fn, boolean label) {
 		try {
-			geoDrawCluster(cluster, samples, geoms, new FileOutputStream(fn), label);
+			FileOutputStream fos = new FileOutputStream(fn);
+			geoDrawCluster(cluster, samples, geoms, fos, label);
+			fos.flush();
+			fos.close();
 		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}

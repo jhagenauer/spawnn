@@ -42,6 +42,7 @@ import org.geotools.styling.Stroke;
 import org.geotools.styling.Style;
 import org.geotools.styling.StyleBuilder;
 import org.geotools.styling.Symbolizer;
+import org.geotools.swing.DefaultRenderingExecutor;
 import org.geotools.swing.JMapPane;
 import org.geotools.swing.event.MapPaneEvent;
 import org.geotools.swing.event.MapPaneListener;
@@ -67,6 +68,7 @@ public class MapPanel<T> extends NeuronVisPanel<T> implements MapPaneListener, M
 	private static Logger log = Logger.getLogger(MapPanel.class);
 
 	private FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
+	private StyleBuilder sb = new StyleBuilder();
 	private FeatureCollection<SimpleFeatureType, SimpleFeature> fc;
 	private JMapPane mp;
 	private List<T> pos;
@@ -90,12 +92,13 @@ public class MapPanel<T> extends NeuronVisPanel<T> implements MapPaneListener, M
 		renderer.setJava2DHints(new RenderingHints(hints));
 		
 		mp.setRenderer(renderer);
+		mp.setRenderingExecutor(new DefaultRenderingExecutor());
 				
 		MapContent mc = new MapContent();
 		mc.setViewport( new MapViewport(fc.getBounds() ) );		
 		mp.setMapContent(mc);
 
-		//mp.addMapPaneListener(this);
+		mp.addMapPaneListener(this);
 		mp.addComponentListener(this);
 		mp.addMouseListener(this);
 		mp.setBackground(getBackground()); 
@@ -152,9 +155,7 @@ public class MapPanel<T> extends NeuronVisPanel<T> implements MapPaneListener, M
 
 	@Override
 	public void setColors(Map<T, Color> colorMap, Map<T, Color> selectedColors, Map<T, Double> neuronValues) {
-		StyleBuilder sb = new StyleBuilder();
 		GeometryType gt = fc.getSchema().getGeometryDescriptor().getType();
-		
 		List<Layer> layers = new ArrayList<>();
 		{ // basic draw
 			Stroke stroke = sb.createStroke();
@@ -203,11 +204,15 @@ public class MapPanel<T> extends NeuronVisPanel<T> implements MapPaneListener, M
 			}
 			layers.add(new FeatureLayer(sub, style));	
 		}
+				
+		MapContent mc = mp.getMapContent();	
+		//mc.removeMapLayerListListener(mp);
 		
-		MapContent mc = mp.getMapContent();
-		for( Layer l : new ArrayList<>( mc.layers() ) )
-			mc.removeLayer(l);
-		mc.addLayers(layers);
+		mc.layers().clear();
+		mc.layers().addAll(layers);
+		
+		//mc.addMapLayerListListener(mp);
+		//mc.fireLayerAdded(null, 0, layers.size()-1);
 	}
 
 	SimpleFeature selected = null;
@@ -264,21 +269,19 @@ public class MapPanel<T> extends NeuronVisPanel<T> implements MapPaneListener, M
 
 	@Override
 	public void componentHidden(ComponentEvent e) {
-		// TODO Auto-generated method stub
 	}
 
 	@Override
 	public void componentMoved(ComponentEvent e) {
-		// TODO Auto-generated method stub	
 	}
 
 	@Override
 	public void componentShown(ComponentEvent e) {
-		// TODO Auto-generated method stub
 	}
 	
 	@Override
 	public void componentResized(ComponentEvent e) {
+		//mp.reset();
 		//mp.setSize(getSize());
 		//mp.getMapContent().setViewport( new MapViewport(fc.getBounds()));
 		//log.debug(mp.getSize()+":::"+getSize());
@@ -286,7 +289,6 @@ public class MapPanel<T> extends NeuronVisPanel<T> implements MapPaneListener, M
 	
 	@Override
 	public void onDisplayAreaChanged(MapPaneEvent e) {
-		mp.repaint(); //?
 	}
 
 	@Override

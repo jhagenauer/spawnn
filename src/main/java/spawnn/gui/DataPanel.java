@@ -157,12 +157,14 @@ public class DataPanel extends JPanel implements ActionListener, TableModelListe
 									
 			int state = fc.showOpenDialog(this);
 			if( state == JFileChooser.APPROVE_OPTION ) {
+				parent.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+				
 				dMap = null;
 				normedSamples = null;
 				File fn = fc.getSelectedFile();
 				lastDir = fc.getCurrentDirectory();
+				useAllState = false;
 				
-				parent.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 				if( fc.getFileFilter() == FFilter.shpFilter ) {
 			      sdf = DataUtils.readSpatialDataFrameFromShapefile(fn, true); 
 			      addCCoords.setEnabled(true);
@@ -173,7 +175,6 @@ public class DataPanel extends JPanel implements ActionListener, TableModelListe
 					sdf.names = df.names;
 					sdf.bindings = df.bindings;
 				}
-				parent.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
 				
 				if( sdf.samples.isEmpty() ) {
 					JOptionPane.showMessageDialog(this, "No rows in data file.");
@@ -193,6 +194,8 @@ public class DataPanel extends JPanel implements ActionListener, TableModelListe
 				boxPlotPnl.plot();	
 				btnDistMat.setEnabled(true);
 				updateStatus();
+
+				parent.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
 			}
 		} else if( ae.getSource() == addCCoords ) {
 			dMap = null; 

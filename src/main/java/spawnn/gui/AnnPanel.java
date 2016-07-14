@@ -58,11 +58,13 @@ public class AnnPanel extends JPanel implements ChangeListener, ActionListener {
 	protected JPanel nonePanel, weightedPanel, geoSomPanel, cngPanel, augmentedPanel;
 	protected WMCPanel wmcPanel;
 	private JButton btnTrain;
+	private Frame parent;
 		
 	private static final int NONE = 0, AUGMENTED = 1, WEIGHTED = 2, GEOSOM = 3, CNG = 4, WMC = 5;
 	
 	public AnnPanel(Frame parent) {
 		super();
+		this.parent = parent;
 		setLayout( new MigLayout("") );
 		
 		tpANN = new JTabbedPane();
@@ -165,7 +167,7 @@ public class AnnPanel extends JPanel implements ChangeListener, ActionListener {
 				}
 			}
 			 									
-			setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+			parent.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 			for (int run = 0; run < Integer.parseInt(runs.getText()); run++) {
 
 				if (tpANN.getSelectedComponent() == somPanel) { // som
@@ -332,7 +334,7 @@ public class AnnPanel extends JPanel implements ChangeListener, ActionListener {
 					}
 				}
 			}
-			setCursor(Cursor.getDefaultCursor());
+			parent.setCursor(Cursor.getDefaultCursor());
 		}
 	}
 	

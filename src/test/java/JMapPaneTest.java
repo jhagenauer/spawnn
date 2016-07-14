@@ -32,32 +32,32 @@ public class JMapPaneTest extends JFrame {
 	}
 	
 	public void updateMP() {
-		GeometryFactory gf = new GeometryFactory();
-		SimpleFeatureTypeBuilder typeBuilder = new SimpleFeatureTypeBuilder();
-		typeBuilder.setName("Points");
-		typeBuilder.add("the_geom",Point.class);
 		
-		SimpleFeatureBuilder featureBuilder = new SimpleFeatureBuilder(typeBuilder.buildFeatureType());
-		Random r = new Random();		
-		DefaultFeatureCollection fc = new DefaultFeatureCollection();
-		for( int i = 0; i < 1000; i++ ) {
-			Point p = gf.createPoint(new Coordinate(r.nextDouble(),r.nextDouble()));
-			featureBuilder.set("the_geom", p);
-			fc.add( featureBuilder.buildFeature(""+fc.size()));
-		}
 		MapContent mc = mp.getMapContent();		
-				
-		for( Layer l : new ArrayList<>(mc.layers()) )
-			mc.removeLayer(l);
-		
-		Symbolizer sym = new StyleBuilder().createPointSymbolizer();
-		mc.addLayer(new FeatureLayer(fc, SLD.wrapSymbolizers(sym)));
-		mc.setViewport( new MapViewport(fc.getBounds()));
+						
+		for( int j = 0; j < 10; j++ ) {
+			GeometryFactory gf = new GeometryFactory();
+			SimpleFeatureTypeBuilder typeBuilder = new SimpleFeatureTypeBuilder();
+			typeBuilder.setName("Points");
+			typeBuilder.add("the_geom",Point.class);
+			
+			SimpleFeatureBuilder featureBuilder = new SimpleFeatureBuilder(typeBuilder.buildFeatureType());
+			Random r = new Random();		
+			DefaultFeatureCollection fc = new DefaultFeatureCollection();
+			for( int i = 0; i < 100000; i++ ) {
+				Point p = gf.createPoint(new Coordinate(r.nextDouble(),r.nextDouble()));
+				featureBuilder.set("the_geom", p);
+				fc.add( featureBuilder.buildFeature(""+fc.size()));
+			}
+
+			Symbolizer sym = new StyleBuilder().createPointSymbolizer();
+			mc.addLayer(new FeatureLayer(fc, SLD.wrapSymbolizers(sym)));
+		}
 	}
 	
 	public static void main(String[] args) {
 		JMapPaneTest t = new JMapPaneTest();
-		for( int i = 0; i < 1000; i++ ) {
+		for( int i = 0; i < 20; i++ ) {
 			System.out.println(i);
 			t.updateMP();
 		}
