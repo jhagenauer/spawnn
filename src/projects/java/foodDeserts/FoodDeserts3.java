@@ -52,7 +52,7 @@ import spawnn.som.decay.DecayFunction;
 import spawnn.som.decay.PowerDecay;
 import spawnn.utils.ClusterValidation;
 import spawnn.utils.DataUtils;
-import spawnn.utils.DataUtils.transform;
+import spawnn.utils.DataUtils.Transform;
 import spawnn.utils.Drawer;
 import spawnn.utils.GraphClustering;
 import spawnn.utils.SpatialDataFrame;
@@ -82,7 +82,7 @@ public class FoodDeserts3 {
 			d[1] = p.getY();
 		}
 
-		DataUtils.transform(sdf.samples, fa, transform.zScore);
+		DataUtils.transform(sdf.samples, fa, Transform.zScore);
 		DataUtils.zScoreGeoColumns(sdf.samples, ga, gDist);
 
 		String fn = "output/food3.csv";

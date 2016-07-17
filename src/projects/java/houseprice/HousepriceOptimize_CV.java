@@ -36,7 +36,7 @@ import spawnn.rbf.RBF;
 import spawnn.som.decay.DecayFunction;
 import spawnn.som.decay.PowerDecay;
 import spawnn.utils.DataUtils;
-import spawnn.utils.DataUtils.transform;
+import spawnn.utils.DataUtils.Transform;
 import spawnn.utils.SpatialDataFrame;
 
 public class HousepriceOptimize_CV {
@@ -65,8 +65,8 @@ public class HousepriceOptimize_CV {
 		final Dist<double[]> gDist = new EuclideanDist(ga);
 		final Dist<double[]> fDist = new EuclideanDist(fa);
 
-		DataUtils.transform(samples, fa, transform.zScore);
-		DataUtils.transform(desired, new int[]{0}, transform.zScore);
+		DataUtils.transform(samples, fa, Transform.zScore);
+		DataUtils.transform(desired, new int[]{0}, Transform.zScore);
 		
 		// ------------------------------------------------------------------------
 

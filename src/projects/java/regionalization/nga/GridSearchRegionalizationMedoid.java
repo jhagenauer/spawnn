@@ -27,7 +27,7 @@ import spawnn.utils.Clustering;
 import spawnn.utils.Clustering.HierarchicalClusteringType;
 import spawnn.utils.Clustering.TreeNode;
 import spawnn.utils.DataUtils;
-import spawnn.utils.DataUtils.transform;
+import spawnn.utils.DataUtils.Transform;
 import spawnn.utils.RegionUtils;
 import spawnn.utils.SpatialDataFrame;
 
