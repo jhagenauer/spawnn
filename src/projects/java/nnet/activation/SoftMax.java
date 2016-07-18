@@ -15,8 +15,8 @@ public class SoftMax implements Function {
 	}
 	
 	// cross-entropy cost model, only last layer
-	public double fDevFOut(double[] x, int i, double desired ) {
-		return f(x,i) - desired;
+	public double fDevFOut(double[] x, int i, double[] desired ) {
+		return f(x,i) - desired[i];
 	}
 
 	@Override

@@ -396,15 +396,15 @@ public class DataUtils {
 
 	public static double getSumOfSquares(Map<double[], Set<double[]>> clusters, Dist<double[]> dist) {
 		double totalSum = 0;
-		for( Entry<double[],Set<double[]>> e : clusters.entrySet() )
+		for (Entry<double[], Set<double[]>> e : clusters.entrySet())
 			totalSum += getSumOfSquares(e.getKey(), e.getValue(), dist);
 		return totalSum;
 	}
-	
+
 	public static <T> double getSumOfSquares(T center, Set<T> s, Dist<T> dist) {
-			double sum = 0;
-			for (T d : s)
-				sum += Math.pow(dist.dist(d, center), 2);
+		double sum = 0;
+		for (T d : s)
+			sum += Math.pow(dist.dist(d, center), 2);
 		return sum;
 	}
 
@@ -412,7 +412,7 @@ public class DataUtils {
 		DescriptiveStatistics ds = new DescriptiveStatistics();
 		for (Entry<T, Set<T>> e : clusters.entrySet())
 			for (T d : e.getValue())
-				ds.addValue( dist.dist(e.getKey(), d) );
+				ds.addValue(dist.dist(e.getKey(), d));
 		return ds.getMean();
 	}
 
@@ -795,13 +795,13 @@ public class DataUtils {
 	public static DataFrame readDataFrameFromCSV(File file, int[] ign, boolean verbose) {
 		char quote = '"';
 		char sep = ',';
-		
+
 		Set<Integer> ignore = new HashSet<Integer>();
 		for (int i : ign)
 			ignore.add(i);
-		
+
 		DataFrame sd = new DataFrame();
-		while( true ) {
+		while (true) {
 			boolean retry = false;
 			List<double[]> r = new ArrayList<double[]>();
 			BufferedReader reader = null;
@@ -813,45 +813,45 @@ public class DataUtils {
 					// skip comments
 					if (!header.startsWith("#"))
 						break;
-	
+
 				// clear line from commas within strings
 				{
-				boolean start = false;
-				char[] charStr = header.toCharArray();
-				for (int i = 0; i < charStr.length; i++){
-				    if( charStr[i] == quote )
-				    	start = !start;
-				    if( start == true && charStr[i] == sep )
-				    	charStr[i] = ';'; // replace
+					boolean start = false;
+					char[] charStr = header.toCharArray();
+					for (int i = 0; i < charStr.length; i++) {
+						if (charStr[i] == quote)
+							start = !start;
+						if (start == true && charStr[i] == sep)
+							charStr[i] = ';'; // replace
+					}
+					header = String.valueOf(charStr);
 				}
-				header = String.valueOf(charStr);
-				}
-				String[] h = header.split(sep+"");
-	
+				String[] h = header.split(sep + "");
+
 				List<String> names = new ArrayList<String>();
 				for (int i = 0; i < h.length; i++)
 					if (!ignore.contains(i))
 						names.add(h[i]);
 				sd.names = names;
-	
+
 				String line = null;
-				while ((line = reader.readLine()) != null ) {
-	
+				while ((line = reader.readLine()) != null) {
+
 					if (line.startsWith("#"))
 						continue;
-					
+
 					// clear line from commas within strings
 					boolean start = false;
 					char[] charStr = line.toCharArray();
-					for (int i = 0; i < charStr.length; i++){
-					    if( charStr[i] == quote)
-					    	start = !start;
-					    if( start == true && charStr[i] == sep )
-					    	charStr[i] = ';'; // replace
+					for (int i = 0; i < charStr.length; i++) {
+						if (charStr[i] == quote)
+							start = !start;
+						if (start == true && charStr[i] == sep)
+							charStr[i] = ';'; // replace
 					}
 					line = String.valueOf(charStr);
-					
-					String[] data = line.split(sep+"");
+
+					String[] data = line.split(sep + "");
 					double[] d = new double[data.length - ignore.size()];
 					int modIdx = 0;
 					for (int i = 0; i < data.length; i++)
@@ -860,8 +860,8 @@ public class DataUtils {
 						else {
 							try {
 								d[i - modIdx] = Double.parseDouble(data[i]);
-							} catch( NumberFormatException e ) {
-								log.warn("Cannot parse value "+data[i]+" in column "+i+", ignoring column...");
+							} catch (NumberFormatException e) {
+								log.warn("Cannot parse value " + data[i] + " in column " + i + ", ignoring column...");
 								ignore.add(i);
 								retry = true;
 								break;
@@ -879,17 +879,17 @@ public class DataUtils {
 						e.printStackTrace();
 					}
 			}
-	
+
 			sd.samples = r;
-			if( !retry )
+			if (!retry)
 				break;
-		} 
+		}
 
 		// TODO for now its all double
 		sd.bindings = new ArrayList<binding>();
 		for (int i = 0; i < sd.names.size(); i++)
 			sd.bindings.add(binding.Double);
-		
+
 		return sd;
 	}
 
@@ -972,9 +972,9 @@ public class DataUtils {
 
 		return sd;
 	}
-	
+
 	public static SpatialDataFrame readSpatialDataFrameFromShapefile(File file, boolean debug) {
-		return  readSpatialDataFrameFromShapefile(file, new int[]{}, debug);
+		return readSpatialDataFrameFromShapefile(file, new int[] {}, debug);
 	}
 
 	public static SpatialDataFrame readSpatialDataFrameFromShapefile(File file, int[] toDouble, boolean debug) {
@@ -992,7 +992,7 @@ public class DataUtils {
 			sd.crs = featureSource.getSchema().getCoordinateReferenceSystem();
 
 			Set<Integer> td = new HashSet<>();
-			for( int i : toDouble )
+			for (int i : toDouble)
 				td.add(i);
 			Set<Integer> ignore = new HashSet<Integer>();
 
@@ -1001,7 +1001,7 @@ public class DataUtils {
 				AttributeDescriptor ad = adl.get(i);
 				String bin = ad.getType().getBinding().getName();
 
-				if (ignore.contains(i) || td.contains(i) )
+				if (ignore.contains(i) || td.contains(i))
 					continue;
 
 				if (bin.equals("java.lang.Integer")) {
@@ -1044,8 +1044,8 @@ public class DataUtils {
 
 						String name = adl.get(i).getLocalName();
 						Object o = feature.getAttribute(name);
-						if( td.contains(i) && o instanceof String )
-							d[idx++] = Double.parseDouble((String)o);
+						if (td.contains(i) && o instanceof String)
+							d[idx++] = Double.parseDouble((String) o);
 						else if (o instanceof Double)
 							d[idx++] = ((Double) o).doubleValue();
 						else if (o instanceof Integer)
@@ -1149,38 +1149,41 @@ public class DataUtils {
 		for (int i : idx)
 			zScoreColumn(samples, i);
 	}
-	
-	public enum Transform { pow2, log, sqrt, div, zScore, scale01 };
-	public static void transform(List<double[]> samples, int[] fa, Transform t ) {
+
+	public enum Transform {
+		pow2, log, sqrt, div, zScore, scale01
+	};
+
+	public static void transform(List<double[]> samples, int[] fa, Transform t) {
 		SummaryStatistics[] ds = new SummaryStatistics[fa.length];
-		for( int i = 0; i < fa.length; i++ )
+		for (int i = 0; i < fa.length; i++)
 			ds[i] = new SummaryStatistics();
-		for( double[] d : samples )
-			for( int i = 0; i < fa.length; i++ )
+		for (double[] d : samples)
+			for (int i = 0; i < fa.length; i++)
 				ds[i].addValue(d[fa[i]]);
-		
-		for( double[] d : samples )
-			for( int i = 0; i < fa.length; i++ ) {
-				if( t == Transform.log )
+
+		for (double[] d : samples)
+			for (int i = 0; i < fa.length; i++) {
+				if (t == Transform.log)
 					d[fa[i]] = Math.log(d[fa[i]]);
-				else if( t == Transform.pow2 )
-					d[fa[i]] = Math.pow(d[fa[i]],2);
-				else if( t == Transform.sqrt )
+				else if (t == Transform.pow2)
+					d[fa[i]] = Math.pow(d[fa[i]], 2);
+				else if (t == Transform.sqrt)
 					d[fa[i]] = Math.sqrt(d[fa[i]]);
-				else if( t == Transform.div )
-					d[fa[i]] = 1.0/d[fa[i]];
-				else if( t == Transform.zScore )
-					d[fa[i]] =  (d[fa[i]] - ds[i].getMean()) / ds[i].getStandardDeviation();
-				else if( t == Transform.scale01 )
+				else if (t == Transform.div)
+					d[fa[i]] = 1.0 / d[fa[i]];
+				else if (t == Transform.zScore)
+					d[fa[i]] = (d[fa[i]] - ds[i].getMean()) / ds[i].getStandardDeviation();
+				else if (t == Transform.scale01)
 					d[fa[i]] = (d[fa[i]] - ds[i].getMin()) / (ds[i].getMax() - ds[i].getMin());
-			}	
+			}
 	}
-	
-	public static void transform(List<double[]> samples, Transform t ) {
+
+	public static void transform(List<double[]> samples, Transform t) {
 		int[] fa = new int[samples.get(0).length];
-		for( int i = 0; i < fa.length; i++ )
+		for (int i = 0; i < fa.length; i++)
 			fa[i] = i;
-		transform(samples,fa,t);
+		transform(samples, fa, t);
 	}
 
 	public static void zScoreGeoColumns(List<double[]> samples, int[] idx, Dist<double[]> dist) {
@@ -1201,7 +1204,7 @@ public class DataUtils {
 
 	public static List<double[]> removeColumns(List<double[]> samples, int[] ign) {
 		List<double[]> ns = new ArrayList<double[]>();
-		
+
 		Set<Integer> ignore = new HashSet<Integer>();
 		for (int i : ign)
 			ignore.add(i);
@@ -1211,7 +1214,7 @@ public class DataUtils {
 
 			int mod = 0;
 			for (int i = 0; i < x.length; i++) {
-				if (ignore.contains(i))
+				if (ignore.contains(i) || i >= n.length )
 					mod++;
 				else
 					n[i - mod] = x[i];
@@ -1296,22 +1299,21 @@ public class DataUtils {
 			ssq += getSumOfSquares(s, dist);
 		return ssq;
 	}
-	
-	/* 
-	 * If one wants to perform PCA on a correlation matrix (instead of a covariance matrix), then columns of X should not only be centered, but standardized as well, i.e. divided by their standard deviations.
-	 * TODO signs are weird... correct?!
+
+	/*
+	 * If one wants to perform PCA on a correlation matrix (instead of a covariance matrix), then columns of X should not only be centered, but standardized as well, i.e. divided by their standard deviations. TODO signs are weird... correct?!
 	 */
-	public static List<double[]> reduceDimensionByPCA(List<double[]> samples, int nrComponents ) {
-		RealMatrix matrix = new Array2DRowRealMatrix(samples.size(),samples.get(0).length );
-		for( int i = 0; i < samples.size(); i++ )
+	public static List<double[]> reduceDimensionByPCA(List<double[]> samples, int nrComponents) {
+		RealMatrix matrix = new Array2DRowRealMatrix(samples.size(), samples.get(0).length);
+		for (int i = 0; i < samples.size(); i++)
 			matrix.setRow(i, samples.get(i));
-		
+
 		SingularValueDecomposition svd = new SingularValueDecomposition(matrix);
 		RealMatrix v = svd.getU().multiply(svd.getS());
-		
+
 		List<double[]> ns = new ArrayList<double[]>();
-		for( int i = 0; i < v.getRowDimension(); i++ ) {
-			double[] d = Arrays.copyOf(v.getRow(i),nrComponents);
+		for (int i = 0; i < v.getRowDimension(); i++) {
+			double[] d = Arrays.copyOf(v.getRow(i), nrComponents);
 			ns.add(d);
 		}
 		return ns;

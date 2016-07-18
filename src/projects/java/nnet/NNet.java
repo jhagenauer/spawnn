@@ -4,6 +4,7 @@ import java.util.Random;
 
 import org.apache.log4j.Logger;
 
+import cern.colt.Arrays;
 import nnet.activation.Constant;
 import nnet.activation.Function;
 import nnet.activation.SoftMax;
@@ -60,7 +61,7 @@ public class NNet implements SupervisedNet {
 					out[j] = ((SoftMax)layer[i][j]).f(in,idxIn++);
 				else
 					out[j] = layer[i][j] instanceof Constant ? layer[i][j].f(1.0) : layer[i][j].f(in[idxIn++]);
-			
+						
 			if (i == layer.length - 1)
 				return out;
 
@@ -104,15 +105,15 @@ public class NNet implements SupervisedNet {
 		double[][] error = new double[layer.length][];
 		int ll = layer.length - 1; // index of last layer
 		
-		// get error
+		// get error of last layer
 		error[ll] = new double[layer[ll].length];
 		for (int j = 0; j < layer[ll].length; j++)
 			if( layer[ll][j] instanceof SoftMax )
-				error[ll][j] = (desired[j] - out[ll][j]) * ((SoftMax)layer[ll][j]).fDevFOut(out[ll],j,desired[j]);
+				error[ll][j] = (desired[j] - out[ll][j]) * ((SoftMax)layer[ll][j]).fDevFOut(out[ll],j,desired);
 			else
 				error[ll][j] = (desired[j] - out[ll][j]) * layer[ll][j].fDevFOut(out[ll][j]);
 		
-		// change weights
+		// change weights of last layer
 		for (int j = 0; j < layer[ll - 1].length; j++)
 			for (int k = 0; k < layer[ll].length; k++)
 				weights[ll - 1][j][k] += eta * error[ll][k] * out[ll - 1][j]; // delta-rule
@@ -121,11 +122,13 @@ public class NNet implements SupervisedNet {
 			// get error
 			error[i] = new double[layer[i].length];
 			for (int j = 0; j < layer[i].length; j++) {
+				
 				double s = 0;
 				for (int k = 0; k < weights[i][j].length; k++)
 					s += error[i + 1][k] * weights[i][j][k];
+				
 				if( layer[i][j] instanceof SoftMax )
-					error[i][j] = s * ((SoftMax)layer[i][j]).fDevFOut(out[i],j,desired[j]);
+					error[i][j] = s * ((SoftMax)layer[i][j]).fDevFOut(out[i],j,desired);
 				else
 					error[i][j] = s * layer[i][j].fDevFOut(out[i][j]);
 			}

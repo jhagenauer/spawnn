@@ -72,7 +72,7 @@ public class AirfoilTest {
 				new Function[]{new Identity()}
 				}, 0.01 );
 			
-			for (int i = 0; i < 1000000; i++) {
+			for (int i = 0; i < 100000; i++) {
 				int idx = r.nextInt(samplesTrain.size());
 				nnet.train(i, samplesTrain.get(idx), desiredTrain.get(idx));
 			}
