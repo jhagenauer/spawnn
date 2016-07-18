@@ -22,7 +22,7 @@ import spawnn.ng.sorter.Sorter;
 import spawnn.som.decay.PowerDecay;
 import spawnn.utils.Clustering.HierarchicalClusteringType;
 import spawnn.utils.Clustering.TreeNode;
-import spawnn.utils.DataUtils.transform;
+import spawnn.utils.DataUtils.Transform;
 
 public class RInterface {
 
@@ -69,9 +69,9 @@ public class RInterface {
 							List<double[]> sa = new ArrayList<>();
 							for( double[] d : samples )
 								sa.add( Arrays.copyOf(d, d.length));
-							
+
 							if( s )
-								DataUtils.transform(sa, transform.zScore);
+								DataUtils.transform(sa, Transform.zScore);
 							
 							Map<double[], Set<double[]>> cm = new HashMap<double[], Set<double[]>>();
 							for (int i = 0; i < sa.size(); i++) {

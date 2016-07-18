@@ -73,7 +73,7 @@ public class TestMedoidClustering {
 			samples.get(i)[0] = c.x;
 			samples.get(i)[1] = c.y;
 		}
-		DataUtils.transform(samples, new int[]{7}, DataUtils.transform.zScore ); // not needed	
+		DataUtils.transform(samples, new int[]{7}, DataUtils.Transform.zScore ); // not needed	
 		Dist<double[]> fDist = new EuclideanDist(new int[] { 7 });
 		Dist<double[]> gDist = new EuclideanDist(new int[] { 0,1 });
 		Dist<double[]> rDist = new RandomDist<double[]>();

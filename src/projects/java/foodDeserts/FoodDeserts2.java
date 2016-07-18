@@ -37,7 +37,7 @@ import spawnn.utils.Clustering;
 import spawnn.utils.Clustering.HierarchicalClusteringType;
 import spawnn.utils.Clustering.TreeNode;
 import spawnn.utils.DataUtils;
-import spawnn.utils.DataUtils.transform;
+import spawnn.utils.DataUtils.Transform;
 import spawnn.utils.SpatialDataFrame;
 
 public class FoodDeserts2 {
@@ -61,7 +61,7 @@ public class FoodDeserts2 {
 			d[1] = p.getY();
 		}
 
-		DataUtils.transform(sdf.samples, fa, transform.zScore);
+		DataUtils.transform(sdf.samples, fa, Transform.zScore);
 		DataUtils.zScoreGeoColumns(sdf.samples, ga, gDist);
 		
 		String fn = "output/food.csv";

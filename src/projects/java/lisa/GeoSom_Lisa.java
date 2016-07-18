@@ -29,7 +29,7 @@ import spawnn.som.net.SOM;
 import spawnn.som.utils.SomUtils;
 import spawnn.utils.ColorBrewer;
 import spawnn.utils.DataUtils;
-import spawnn.utils.DataUtils.transform;
+import spawnn.utils.DataUtils.Transform;
 import spawnn.utils.Drawer;
 import spawnn.utils.GeoUtils;
 import spawnn.utils.SpatialDataFrame;
@@ -64,7 +64,7 @@ public class GeoSom_Lisa {
 		final int[] fa = new int[]{7}; // bush pct
 		final int[] ga = new int[]{2,3};*/
 		
-		DataUtils.transform(samples, fa, transform.zScore);
+		DataUtils.transform(samples, fa, Transform.zScore);
 		final Dist<double[]> fDist = new EuclideanDist(fa);
 		final Dist<double[]> gDist = new EuclideanDist(ga);
 		// ------------------------------------------------------------------------

@@ -29,6 +29,7 @@ import org.apache.commons.math3.linear.Array2DRowRealMatrix;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.SingularValueDecomposition;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
+import org.apache.commons.math3.stat.descriptive.StatisticalSummary;
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 import org.apache.log4j.Logger;
 import org.geotools.data.DataStore;
@@ -1149,33 +1150,33 @@ public class DataUtils {
 			zScoreColumn(samples, i);
 	}
 	
-	public enum transform { pow2, log, sqrt, div, zScore, scale01 };
-	public static void transform(List<double[]> samples, int[] fa, transform t ) {
-		DescriptiveStatistics[] ds = new DescriptiveStatistics[fa.length];
+	public enum Transform { pow2, log, sqrt, div, zScore, scale01 };
+	public static void transform(List<double[]> samples, int[] fa, Transform t ) {
+		SummaryStatistics[] ds = new SummaryStatistics[fa.length];
 		for( int i = 0; i < fa.length; i++ )
-			ds[i] = new DescriptiveStatistics();
+			ds[i] = new SummaryStatistics();
 		for( double[] d : samples )
 			for( int i = 0; i < fa.length; i++ )
 				ds[i].addValue(d[fa[i]]);
 		
 		for( double[] d : samples )
 			for( int i = 0; i < fa.length; i++ ) {
-				if( t == transform.log )
+				if( t == Transform.log )
 					d[fa[i]] = Math.log(d[fa[i]]);
-				else if( t == transform.pow2 )
+				else if( t == Transform.pow2 )
 					d[fa[i]] = Math.pow(d[fa[i]],2);
-				else if( t == transform.sqrt )
+				else if( t == Transform.sqrt )
 					d[fa[i]] = Math.sqrt(d[fa[i]]);
-				else if( t == transform.div )
+				else if( t == Transform.div )
 					d[fa[i]] = 1.0/d[fa[i]];
-				else if( t == transform.zScore )
+				else if( t == Transform.zScore )
 					d[fa[i]] =  (d[fa[i]] - ds[i].getMean()) / ds[i].getStandardDeviation();
-				else if( t == transform.scale01 )
+				else if( t == Transform.scale01 )
 					d[fa[i]] = (d[fa[i]] - ds[i].getMin()) / (ds[i].getMax() - ds[i].getMin());
 			}	
 	}
 	
-	public static void transform(List<double[]> samples, transform t ) {
+	public static void transform(List<double[]> samples, Transform t ) {
 		int[] fa = new int[samples.get(0).length];
 		for( int i = 0; i < fa.length; i++ )
 			fa[i] = i;

@@ -39,7 +39,7 @@ import spawnn.som.decay.PowerDecay;
 import spawnn.utils.ColorBrewer;
 import spawnn.utils.ColorUtils;
 import spawnn.utils.DataUtils;
-import spawnn.utils.DataUtils.transform;
+import spawnn.utils.DataUtils.Transform;
 import spawnn.utils.Drawer;
 import spawnn.utils.GeoUtils;
 import spawnn.utils.SpatialDataFrame;
@@ -66,9 +66,9 @@ public class BostonTest {
 		}
 					
 		SpatialDataFrame sdf = DataUtils.readSpatialDataFrameFromShapefile(new File("data/boston/boston_tracts.shp"), true);
-		DataUtils.transform(sdf.samples, new int[]{5,12,13,17}, transform.log); // without transform performance is bad
-		DataUtils.transform(sdf.samples, new int[]{9,10}, transform.pow2);
-		DataUtils.transform(sdf.samples, transform.zScore);
+		DataUtils.transform(sdf.samples, new int[]{5,12,13,17}, Transform.log); // without transform performance is bad
+		DataUtils.transform(sdf.samples, new int[]{9,10}, Transform.pow2);
+		DataUtils.transform(sdf.samples, Transform.zScore);
 				
 		for( int[] vars : new int[][]{
 				

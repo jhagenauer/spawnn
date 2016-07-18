@@ -21,7 +21,7 @@ import com.vividsolutions.jts.geom.Geometry;
 
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
-import spawnn.utils.DataUtils.transform;
+import spawnn.utils.DataUtils.Transform;
 
 public class Clustering {
 
@@ -709,7 +709,7 @@ public class Clustering {
 		List<double[]> samples = DataUtils.readSamplesFromShapeFile(new File("data/redcap/Election/election2004.shp"), new int[] {}, true);
 		
 		int[] fa = new int[] { 7 };
-		DataUtils.transform(samples, fa, transform.zScore);
+		DataUtils.transform(samples, fa, Transform.zScore);
 		
 		final Map<double[], Set<double[]>> cm = RegionUtils.readContiguitiyMap(samples, "data/redcap/Election/election2004_Queen.ctg");
 		final Dist<double[]> dist = new EuclideanDist(fa);
