@@ -1,12 +1,12 @@
 package spawnn.utils;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -15,9 +15,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import com.vividsolutions.jts.geom.Geometry;
-
-import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
 import spawnn.ng.NG;
 import spawnn.ng.sorter.KangasSorter;
@@ -51,27 +48,21 @@ public class RInterface {
 			re[i] = n.indexOf(s.getBMU(samples[i], neurons));
 		return re;
 	}
-
-	// Ugly, only for internal use/testing
-	public static int[][] getCCC(double[][] samples, double[][] cMat, int[] fa1, int[] fa2, int[] numCluster, int threads) {
 		
-
-		int[][] fas = new int[][] { fa1, fa2 };
-		String[] t = new String[] { "W", "A" };
-		boolean[] scale = new boolean[] { false, true };
-
+	public static Map<int[],int[][]> getHC(double[][] samples, double[][] cMat, int[] fa, boolean[] constrained, boolean[] scale, String[] cType, int[] numCluster, int threads) {
+		
 		ExecutorService es = Executors.newFixedThreadPool(threads);
-		Future futures[][][] = new Future[scale.length][t.length][fas.length];
+		Map<int[],Future<int[][]>> futures = new HashMap<>();
 
-		for (int i = 0; i < scale.length; i++)
-			for (int j = 0; j < t.length; j++)
-				for (int k = 0; k < fas.length; k++) {
-
-					final boolean sc = scale[i];
-					final String tt = t[j];
-					final int[] ffa = fas[k];
-
-					futures[i][j][k] = es.submit(new Callable<int[][]>() {
+		for( int i = 0; i < constrained.length; i++ )
+		for( int j = 0; j < scale.length; j++ )
+		for( int k = 0; k < cType.length; k++ ) {
+			
+			final boolean c = constrained[i];
+			final boolean s = scale[j]; 
+			final String ct = cType[k];
+		
+					futures.put(new int[]{i,j,k}, es.submit(new Callable<int[][]>() {
 						@Override
 						public int[][] call() throws Exception {
 							
@@ -79,7 +70,7 @@ public class RInterface {
 							for( double[] d : samples )
 								sa.add( Arrays.copyOf(d, d.length));
 							
-							if( sc )
+							if( s )
 								DataUtils.transform(sa, transform.zScore);
 							
 							Map<double[], Set<double[]>> cm = new HashMap<double[], Set<double[]>>();
@@ -92,16 +83,20 @@ public class RInterface {
 							}
 														
 							HierarchicalClusteringType type = null;
-							if (tt.equals("W"))
+							if (ct.equals("W"))
 								type = HierarchicalClusteringType.ward;
-							else if (tt.equals("A"))
+							else if (ct.equals("A"))
 								type = HierarchicalClusteringType.average_linkage;
-							else if (tt.equals("C"))
+							else if (ct.equals("C"))
 								type = HierarchicalClusteringType.complete_linkage;
-							else if (tt.equals("S"))
+							else if (ct.equals("S"))
 								type = HierarchicalClusteringType.single_linkage;
 
-							List<TreeNode> tree = Clustering.getHierarchicalClusterTree(cm, new EuclideanDist(ffa), type);
+							List<TreeNode> tree;
+							if( c )
+								tree = Clustering.getHierarchicalClusterTree(cm, new EuclideanDist(fa), type);
+							else
+								tree = Clustering.getHierarchicalClusterTree(sa, new EuclideanDist(fa), type);
 
 							int[][] r = new int[numCluster.length][sa.size()];
 							for (int i = 0; i < numCluster.length; i++) {
@@ -115,26 +110,20 @@ public class RInterface {
 							}
 							return r;
 						}
-					});
+					}));
 				}
 		es.shutdown();
-
+		
+		Map<int[],int[][]> r = new HashMap<>();
 		try {
-			int[][] ni = new int[scale.length * t.length * fas.length * numCluster.length][];
-			for (int i = 0; i < scale.length; i++) 
-				for (int j = 0; j < t.length; j++) 
-					for( int k = 0; k < fas.length; k++ ){
-						int[][] r = (int[][]) futures[i][j][k].get();
-						for (int l = 0; l < numCluster.length; l++)
-							ni[i * t.length * fas.length * numCluster.length + j * fas.length * numCluster.length + k * numCluster.length + l ] = r[l];					
-					}
-			return ni;
+			for( Entry<int[],Future<int[][]>> e : futures.entrySet() ) 
+				r.put(e.getKey(), e.getValue().get() );
 		} catch (InterruptedException ex) {
 			ex.printStackTrace();
 		} catch (ExecutionException ex) {
 			ex.printStackTrace();
 		}
-		return null;
+		return r;
 	}
 
 	public static int[][] getContConstCluster(double[][] samples, double[][] cMat, int[] fa, int[] numCluster, String t) {
@@ -172,36 +161,5 @@ public class RInterface {
 		}
 
 		return r;
-	}
-
-	public static void main(String[] args) {
-		List<Geometry> geoms = DataUtils.readGeometriesFromShapeFile(new File("data/redcap/Election/election2004.shp"));
-		List<double[]> samples = DataUtils.readSamplesFromShapeFile(new File("data/redcap/Election/election2004.shp"), new int[] {}, true);
-
-		int[] fa = new int[] { 7 };
-		DataUtils.transform(samples, fa, transform.zScore);
-
-		final Map<double[], Set<double[]>> cm = RegionUtils.readContiguitiyMap(samples, "data/redcap/Election/election2004_Queen.ctg");
-		final Dist<double[]> dist = new EuclideanDist(fa);
-
-		int nrCluster = 7;
-
-		double[][] s = new double[samples.size()][];
-		for (int i = 0; i < samples.size(); i++)
-			s[i] = samples.get(i);
-
-		double[][] cMat = new double[s.length][s.length];
-		for (int i = 0; i < s.length; i++)
-			for (int j = 0; j < s.length; j++) {
-				if (i == j)
-					continue;
-				double[] a = samples.get(i);
-				double[] b = samples.get(j);
-				if (cm.get(a).contains(b))
-					cMat[i][j] = 1;
-			}
-
-		getCCC(s, cMat, new int[] { 1, 2 }, new int[] { 0, 2 }, new int[] { 3 }, 3);
-
 	}
 }

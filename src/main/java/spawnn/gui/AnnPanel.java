@@ -66,7 +66,7 @@ public class AnnPanel extends JPanel implements ChangeListener, ActionListener {
 		super();
 		this.parent = parent;
 		setLayout( new MigLayout("") );
-		
+				
 		tpANN = new JTabbedPane();
 		tpANN.setBorder( BorderFactory.createTitledBorder("Self-Organizing Neural Network") );
 		

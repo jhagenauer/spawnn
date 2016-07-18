@@ -54,23 +54,24 @@ public class GraphPanel extends NeuronVisPanel<double[]> implements ItemListener
 	private VisualizationViewer<double[], double[]> vv;
 	private int[] ga = null;
 
+	// Edge weight layout modes
+	public static String NONE = "None", DIST = "Distance", DIST_GEO = "Distance (geo)", COUNT = "Count";
+	
 	enum Layout {
 		Circle, FruchteReingo, Geo, KamadaKawai
 	}
 	
-	// Edge weight layout modes
-	public static String NONE = "None", DIST = "Distance", DIST_GEO = "Distance (geo)", COUNT = "Count";
+	Layout curLayout = Layout.KamadaKawai;
+	
 
-	AbstractLayout<double[], double[]> al = null;
-
-	GraphPanel(Graph<double[], double[]> graph, int[] ga) {
+	GraphPanel( Graph<double[], double[]> graph, int[] ga, Layout curLayout ) {
 		super();
 
 		this.graph = graph;
 		this.ga = ga;
-
-		al = new KKLayout<double[], double[]>(graph);
-		vv = new VisualizationViewer<double[], double[]>(al);
+		this.curLayout = curLayout;
+		
+		vv = new VisualizationViewer<double[], double[]>(getGraphLayout());
 		vv.getRenderContext().setEdgeShapeTransformer(new EdgeShape.Line<double[], double[]>());
 
 		DefaultModalGraphMouse<double[], String> gm = new DefaultModalGraphMouse<double[], String>();
@@ -164,16 +165,26 @@ public class GraphPanel extends NeuronVisPanel<double[]> implements ItemListener
 		repaint();
 		vv.repaint();
 	}
+	
+	public void setGraphLayout( Layout lm ) {
+		this.curLayout = lm;
+		
+		// update
+		vv.setSize(getSize()); // necessary, because getGraphLayout uses vv.getSize()
+		AbstractLayout<double[],double[]> al = getGraphLayout();		
+		vv.setGraphLayout(al);
+	}
 
-	public void setGraphLayout(Layout lm) {
-		if (lm == Layout.KamadaKawai) {
+	private AbstractLayout<double[],double[]> getGraphLayout() {
+		AbstractLayout<double[],double[]> al = null;
+		if (curLayout == Layout.KamadaKawai) {
 			al = new KKLayout<double[], double[]>(graph);
-		} else if (lm == Layout.Circle) {
+		} else if (curLayout == Layout.Circle) {
 			al = new CircleLayout<double[], double[]>(graph);
-		} else if (lm == Layout.FruchteReingo) {
+		} else if (curLayout == Layout.FruchteReingo) {
 			al = new FRLayout<double[], double[]>(graph);
-		} else if (lm == Layout.Geo) {
-			int margin = 0; //FIXME margin does not work as exspected
+		} else if (curLayout == Layout.Geo) {
+			int margin = 0; //FIXME margin does not work as expected
 			Dimension dim = vv.getSize();
 
 			double minX = Double.POSITIVE_INFINITY, minY = Double.POSITIVE_INFINITY, maxX = Double.NEGATIVE_INFINITY, maxY = Double.NEGATIVE_INFINITY;
@@ -192,7 +203,7 @@ public class GraphPanel extends NeuronVisPanel<double[]> implements ItemListener
 				s2 = dim.getHeight();
 			}
 			s2 -= 2*margin;
-			
+						
 			Map<double[], Point2D> map = new HashMap<double[], Point2D>();
 			for (double[] d : graph.getVertices()) {
 				// keep aspect ratio
@@ -201,12 +212,11 @@ public class GraphPanel extends NeuronVisPanel<double[]> implements ItemListener
 						s2 * (-d[ga[1]] - minY) / s1 + margin
 						));
 			}
-			
+					
 			Transformer<double[], Point2D> vertexLocations = TransformerUtils.mapTransformer(map);
-			al = new StaticLayout<double[], double[]>(graph, vertexLocations);
+			al = new StaticLayout<double[], double[]>(graph, vertexLocations,vv.getSize());
 		}
-		vv.setGraphLayout(al);
-		log.debug(vv.getSize()+","+getSize());
+		return al;
 	}
 
 	@Override
@@ -301,6 +311,7 @@ public class GraphPanel extends NeuronVisPanel<double[]> implements ItemListener
 
 		double minX = Double.POSITIVE_INFINITY, maxX = Double.NEGATIVE_INFINITY;
 		double minY = Double.POSITIVE_INFINITY, maxY = Double.NEGATIVE_INFINITY;
+		AbstractLayout<double[],double[]> al = getGraphLayout();
 		for (double[] d : graph.getVertices()) {
 			minX = Math.min(minX, al.getX(d));
 			minY = Math.min(minY, al.getY(d));
@@ -336,26 +347,20 @@ public class GraphPanel extends NeuronVisPanel<double[]> implements ItemListener
 
 	@Override
 	public void componentResized(ComponentEvent e) {
-		vv.setSize(getSize());
-		al.setSize(getSize());
-		//vv.setGraphLayout(al);
+		vv.setSize(getSize()); // necessary, because getGraphLayout uses vv.getSize()
+		AbstractLayout<double[],double[]> al = getGraphLayout();		
+		vv.setGraphLayout(al);
 	}
 
 	@Override
 	public void componentHidden(ComponentEvent e) {
-		// TODO Auto-generated method stub
-		
 	}
 
 	@Override
 	public void componentMoved(ComponentEvent e) {
-		// TODO Auto-generated method stub
-		
 	}
 
 	@Override
 	public void componentShown(ComponentEvent e) {
-		// TODO Auto-generated method stub
-		
 	}
 }

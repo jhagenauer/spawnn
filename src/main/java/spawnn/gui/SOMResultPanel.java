@@ -35,6 +35,7 @@ import spawnn.dist.Dist;
 import spawnn.gui.ClusterDialogGrid.ClusterAlgorithm;
 import spawnn.gui.DistanceDialog.DistMode;
 import spawnn.gui.DistanceDialog.StatMode;
+import spawnn.gui.GraphPanel.Layout;
 import spawnn.gui.NeuronVisPanel.ImageMode;
 import spawnn.som.grid.Grid2D;
 import spawnn.som.grid.Grid2DHex;
@@ -147,13 +148,12 @@ public class SOMResultPanel extends ResultPanel<GridPos> {
 		}
 
 		gridPanel = new GridPanel(grid, fDist);
-		graphPanel = new GraphPanel(graph, ga);
-
+		
+		graphPanel = new GraphPanel( graph, ga, GraphPanel.Layout.Circle );
 		if (ga != null && ga.length == 2) {
 			graphPanel.setGraphLayout(GraphPanel.Layout.Geo);
 		}
 
-		// maybe it would be nicer to use a MapPanel and to draw the network on a "real" map
 		class NSL implements NeuronSelectedListener<double[]> {
 			Grid2D<double[]> grid;
 
@@ -350,6 +350,7 @@ public class SOMResultPanel extends ResultPanel<GridPos> {
 
 		} else if (e.getSource() == gridModeComboBox) {
 			CardLayout cl = (CardLayout) (cards.getLayout());
+			graphPanel.setGraphLayout(Layout.Geo);
 			cl.show(cards, (String) gridModeComboBox.getSelectedItem());
 		} else if (e.getSource() == btnExpGrid) {
 			JFileChooser fc = new JFileChooser("output");

@@ -57,7 +57,7 @@ public class NGResultPanel extends ResultPanel<double[]> {
 	private static final long serialVersionUID = -4518072006960672609L;
 
 	private JComboBox<String> vertexComboBox;
-	private JComboBox edgeComboBox, layoutComboBox;
+	private JComboBox edgeComboBox, gridLayoutComboBox;
 	private JButton btnExpGraph;
 	private GraphPanel graphPanel;
 
@@ -123,20 +123,20 @@ public class NGResultPanel extends ResultPanel<double[]> {
 		edgeComboBox.addActionListener(this);
 		edgeComboBox.setBorder(BorderFactory.createTitledBorder("Edge"));
 
-		layoutComboBox = new JComboBox();
-		layoutComboBox.setModel(new DefaultComboBoxModel(GraphPanel.Layout.values()));
+		gridLayoutComboBox = new JComboBox();
+		gridLayoutComboBox.setModel(new DefaultComboBoxModel(GraphPanel.Layout.values()));
 		if (ga == null || ga.length != 2) {
-			layoutComboBox.removeItem(GraphPanel.Layout.Geo);
+			gridLayoutComboBox.removeItem(GraphPanel.Layout.Geo);
 		}
-		layoutComboBox.setSelectedItem(GraphPanel.Layout.KamadaKawai);
-		layoutComboBox.setToolTipText("Select graph layout.");
-		layoutComboBox.addActionListener(this);
-		layoutComboBox.setBorder(BorderFactory.createTitledBorder("Graph layout"));
+		gridLayoutComboBox.setSelectedItem(GraphPanel.Layout.KamadaKawai);
+		gridLayoutComboBox.setToolTipText("Select graph layout.");
+		gridLayoutComboBox.addActionListener(this);
+		gridLayoutComboBox.setBorder(BorderFactory.createTitledBorder("Graph layout"));
 
 		btnExpGraph = new JButton("Network...");
 		btnExpGraph.addActionListener(this);
 
-		graphPanel = new GraphPanel(g, ga);
+		graphPanel = new GraphPanel(g, ga, GraphPanel.Layout.KamadaKawai);
 		graphPanel.addNeuronSelectedListener(this);
 
 		actionPerformed(new ActionEvent(vertexComboBox, 0, RANDOM));
@@ -156,8 +156,8 @@ public class NGResultPanel extends ResultPanel<double[]> {
 		selectPanel.setBorder(BorderFactory.createTitledBorder("Selection"));
 		add(selectPanel,"growy");
 		
-		add(edgeComboBox,"");
-		add(layoutComboBox, "pushx");
+		add(gridLayoutComboBox, "");
+		add(edgeComboBox,"pushx");
 						
 		JPanel exportPanel = new JPanel(new MigLayout("insets 0, gapy 0"));
 		exportPanel.add(btnExpGraph,"");
@@ -176,8 +176,8 @@ public class NGResultPanel extends ResultPanel<double[]> {
 
 	@Override
 	public void actionPerformed(ActionEvent e) {
-		if (e.getSource() == layoutComboBox) {
-			graphPanel.setGraphLayout((GraphPanel.Layout) layoutComboBox.getSelectedItem());
+		if (e.getSource() == gridLayoutComboBox) {
+			graphPanel.setGraphLayout((GraphPanel.Layout) gridLayoutComboBox.getSelectedItem());
 		} else if (e.getSource() == btnExpGraph) {
 			JFileChooser fc = new JFileChooser("output");
 
