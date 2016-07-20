@@ -4,7 +4,6 @@ import java.util.Random;
 
 import org.apache.log4j.Logger;
 
-import cern.colt.Arrays;
 import nnet.activation.Constant;
 import nnet.activation.Function;
 import nnet.activation.SoftMax;
@@ -42,7 +41,7 @@ public class NNet implements SupervisedNet {
 				this.weights[i][j] = new double[layer[i+1].length-notConstant];
 				
 				for( int k = 0; k < this.weights[i][j].length; k++ ) 
-					this.weights[i][j][k] = r.nextDouble();	
+					this.weights[i][j][k] = r.nextDouble()-0.5;	
 			}
 		}
 								
@@ -108,16 +107,17 @@ public class NNet implements SupervisedNet {
 		// get error of last layer
 		error[ll] = new double[layer[ll].length];
 		for (int j = 0; j < layer[ll].length; j++)
-			if( layer[ll][j] instanceof SoftMax )
-				error[ll][j] = (desired[j] - out[ll][j]) * ((SoftMax)layer[ll][j]).fDevFOut(out[ll],j,desired);
-			else
-				error[ll][j] = (desired[j] - out[ll][j]) * layer[ll][j].fDevFOut(out[ll][j]);
+			if( layer[ll][j] instanceof SoftMax ) {
+				error[ll][j] = out[ll][j] - desired[j]; 
+			} else
+				error[ll][j] = (out[ll][j] - desired[j]) * layer[ll][j].fDevFOut(out[ll][j]);
 		
 		// change weights of last layer
 		for (int j = 0; j < layer[ll - 1].length; j++)
 			for (int k = 0; k < layer[ll].length; k++)
-				weights[ll - 1][j][k] += eta * error[ll][k] * out[ll - 1][j]; // delta-rule
+				weights[ll - 1][j][k] -= eta * error[ll][k] * out[ll - 1][j]; // delta-rule
 		
+		// get error and change weights of hidden layer
 		for (int i = ll - 1; i > 0; i--) {
 			// get error
 			error[i] = new double[layer[i].length];
@@ -128,7 +128,7 @@ public class NNet implements SupervisedNet {
 					s += error[i + 1][k] * weights[i][j][k];
 				
 				if( layer[i][j] instanceof SoftMax )
-					error[i][j] = s * ((SoftMax)layer[i][j]).fDevFOut(out[i],j,desired);
+					throw new RuntimeException("SoftMax not allowed in hidden layer!");
 				else
 					error[i][j] = s * layer[i][j].fDevFOut(out[i][j]);
 			}
@@ -136,7 +136,7 @@ public class NNet implements SupervisedNet {
 			// change weights
 			for (int j = 0; j < weights[i - 1].length; j++)
 				for (int k = 0; k < weights[i - 1][j].length; k++)
-					weights[i - 1][j][k] += eta * /*(double)(ll-i)/ll **/ error[i][k] * out[i - 1][j];
+					weights[i - 1][j][k] -= eta * /*(double)(ll-i)/ll **/ error[i][k] * out[i - 1][j];
 		}
 	}
 	
