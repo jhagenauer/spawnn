@@ -13,6 +13,9 @@ import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import java.awt.event.MouseMotionListener;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
@@ -50,7 +53,7 @@ public class GraphPanel extends NeuronVisPanel<double[]> implements ItemListener
 	private static final long serialVersionUID = -7684883263291420601L;
 
 	private Graph<double[], double[]> graph;
-	private PickedState<double[]> ps;
+	private PickedState<double[]> pickedState;
 	private VisualizationViewer<double[], double[]> vv;
 	private int[] ga = null;
 
@@ -58,7 +61,7 @@ public class GraphPanel extends NeuronVisPanel<double[]> implements ItemListener
 	public static String NONE = "None", DIST = "Distance", DIST_GEO = "Distance (geo)", COUNT = "Count";
 	
 	enum Layout {
-		Circle, FruchteReingo, Geo, KamadaKawai
+		Circle, FruchteReingo, Geo, KamadaKawai,
 	}
 	
 	Layout curLayout = Layout.KamadaKawai;
@@ -71,16 +74,15 @@ public class GraphPanel extends NeuronVisPanel<double[]> implements ItemListener
 		this.ga = ga;
 		this.curLayout = curLayout;
 		
-		vv = new VisualizationViewer<double[], double[]>(getGraphLayout());
-		vv.getRenderContext().setEdgeShapeTransformer(new EdgeShape.Line<double[], double[]>());
-
 		DefaultModalGraphMouse<double[], String> gm = new DefaultModalGraphMouse<double[], String>();
 		gm.setMode(ModalGraphMouse.Mode.PICKING);
-
+				
+		vv = new VisualizationViewer<double[], double[]>(getGraphLayout());
+		vv.getRenderContext().setEdgeShapeTransformer(new EdgeShape.Line<double[], double[]>());
 		vv.setGraphMouse(gm);
 
-		ps = vv.getPickedVertexState();
-		ps.addItemListener(this);
+		pickedState = vv.getPickedVertexState();
+		pickedState.addItemListener(this);
 		add(vv);
 		
 		addComponentListener(this);
@@ -91,9 +93,9 @@ public class GraphPanel extends NeuronVisPanel<double[]> implements ItemListener
 		Object subject = e.getItem();
 		if (subject instanceof double[]) {
 			double[] vertex = (double[]) subject;
-			if (ps.isPicked(vertex)) {
+			if (pickedState.isPicked(vertex)) {
 				fireNeuronSelectedEvent(new NeuronSelectedEvent<double[]>(this, vertex));
-				ps.clear();
+				pickedState.clear();
 			}
 		}
 	}
@@ -184,38 +186,8 @@ public class GraphPanel extends NeuronVisPanel<double[]> implements ItemListener
 		} else if (curLayout == Layout.FruchteReingo) {
 			al = new FRLayout<double[], double[]>(graph);
 		} else if (curLayout == Layout.Geo) {
-			int margin = 0; //FIXME margin does not work as expected
-			Dimension dim = vv.getSize();
-
-			double minX = Double.POSITIVE_INFINITY, minY = Double.POSITIVE_INFINITY, maxX = Double.NEGATIVE_INFINITY, maxY = Double.NEGATIVE_INFINITY;
-			for (double[] d : graph.getVertices()) {
-				minX = Math.min(minX, d[ga[0]]);
-				maxX = Math.max(maxX, d[ga[0]]);
-				minY = Math.min(minY, -d[ga[1]]);
-				maxY = Math.max(maxY, -d[ga[1]]);
-			}
-			double s1 , s2;
-			if( maxX - minX > maxY - minY ) {
-				s1 = maxX - minX;
-				s2 = dim.getWidth();
-			} else {
-				s1 = maxY - minY;
-				s2 = dim.getHeight();
-			}
-			s2 -= 2*margin;
-						
-			Map<double[], Point2D> map = new HashMap<double[], Point2D>();
-			for (double[] d : graph.getVertices()) {
-				// keep aspect ratio
-				map.put(d, new Point2D.Double(
-						s2 * ( d[ga[0]] - minX) / s1 + margin, 
-						s2 * (-d[ga[1]] - minY) / s1 + margin
-						));
-			}
-					
-			Transformer<double[], Point2D> vertexLocations = TransformerUtils.mapTransformer(map);
-			al = new StaticLayout<double[], double[]>(graph, vertexLocations,vv.getSize());
-		}
+			al = new GeoLayout<>(graph, ga);
+		} 
 		return al;
 	}
 
