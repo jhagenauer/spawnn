@@ -1,5 +1,8 @@
 package spawnn.utils;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.AbstractMap;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
@@ -237,5 +240,27 @@ public class GraphUtils {
 			}
 		}
 		return distMap;
+	}
+
+	public static void writeContiguityMap( Map<double[], Set<double[]>> cm, List<double[]> samples, String fn ) {
+		BufferedWriter bw = null;
+		try {
+			 bw = new BufferedWriter( new FileWriter(fn ) );
+			 bw.write("id1,id2\n");
+			 for( double[] a : cm.keySet() ) 
+				 for( double[] b : cm.get(a) ) 
+					 bw.write(samples.indexOf(a)+","+samples.indexOf(b)+"\n");
+				 
+		} catch (IOException e) {
+			e.printStackTrace();
+		} finally {
+			try {
+				bw.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+	
+		
 	}
 }

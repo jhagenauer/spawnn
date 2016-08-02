@@ -29,7 +29,6 @@ import org.apache.commons.math3.linear.Array2DRowRealMatrix;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.SingularValueDecomposition;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
-import org.apache.commons.math3.stat.descriptive.StatisticalSummary;
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 import org.apache.log4j.Logger;
 import org.geotools.data.DataStore;
@@ -1155,9 +1154,9 @@ public class DataUtils {
 	};
 
 	public static void transform(List<double[]> samples, int[] fa, Transform t) {
-		SummaryStatistics[] ds = new SummaryStatistics[fa.length];
+		DescriptiveStatistics[] ds = new DescriptiveStatistics[fa.length];
 		for (int i = 0; i < fa.length; i++)
-			ds[i] = new SummaryStatistics();
+			ds[i] = new DescriptiveStatistics();
 		for (double[] d : samples)
 			for (int i = 0; i < fa.length; i++)
 				ds[i].addValue(d[fa[i]]);
@@ -1178,7 +1177,7 @@ public class DataUtils {
 					d[fa[i]] = (d[fa[i]] - ds[i].getMin()) / (ds[i].getMax() - ds[i].getMin());
 			}
 	}
-
+	
 	public static void transform(List<double[]> samples, Transform t) {
 		int[] fa = new int[samples.get(0).length];
 		for (int i = 0; i < fa.length; i++)

@@ -103,7 +103,16 @@ public class LegendPanel<T> extends NeuronVisPanel<T> {
 				return Double.compare(neuronValues.get(o1), neuronValues.get(o2) );
 			}
 		});
-				
+		
+		/*double m = 0;
+		for( double d : neuronValues.values() )
+			m += d;
+		m /= neuronValues.size();
+		T meanNeuron = null;
+		for( T t : neurons )
+			if( meanNeuron == null || Math.abs(neuronValues.get(t)-m) < Math.abs(neuronValues.get(meanNeuron) - m ) )
+				meanNeuron = t;*/
+						
 		DecimalFormat df = new DecimalFormat("#0.00");
 		int xMargin = 18;
 		double width = getWidth() - 2 * xMargin;
@@ -116,7 +125,7 @@ public class LegendPanel<T> extends NeuronVisPanel<T> {
 			g.setColor(colorMap.get(t));
 			g.fillRect( (int)Math.round(x), 0, (int)Math.round(cellWidth), cellHeight);
 						
-			if (i == 0 || i == neurons.size()-1 || i == neurons.size()/2 ) {
+			if (i == 0 || i == neurons.size()-1 || i == neurons.size()/2 /*|| t == meanNeuron*/ ) {
 				g.setColor(Color.BLACK);
 				g.drawLine((int) Math.round( x + 0.5 * cellWidth), cellHeight, (int) Math.round(x + 0.5 * cellWidth), (int) Math.round(cellHeight + cellHeight/4.0) );
 												
