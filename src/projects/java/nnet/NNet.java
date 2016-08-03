@@ -136,7 +136,7 @@ public class NNet implements SupervisedNet {
 			// change weights
 			for (int j = 0; j < weights[i - 1].length; j++)
 				for (int k = 0; k < weights[i - 1][j].length; k++)
-					weights[i - 1][j][k] -= eta * /*(double)(ll-i)/ll **/ error[i][k] * out[i - 1][j];
+					weights[i - 1][j][k] -= eta * /*(double)(ll-i)/(ll-1) **/ error[i][k] * out[i - 1][j];
 		}
 	}
 	
