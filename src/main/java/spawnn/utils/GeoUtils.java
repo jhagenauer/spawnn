@@ -343,7 +343,7 @@ public class GeoUtils {
 				E_I,
 				Var_I,
 				zScore,
-				2*nd.density(-Math.abs(zScore)) 
+				2*nd.density(-Math.abs(zScore)), //TODO correct? shouln't we use cum dens?
 			};
 	}
 	

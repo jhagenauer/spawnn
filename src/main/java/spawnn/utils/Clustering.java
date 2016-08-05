@@ -93,7 +93,7 @@ public class Clustering {
 				medoids.add(bestMedoid);
 			}
 						
-			if( noImpro++ == 100 )
+			if( noImpro++ == 200 )
 				break;	
 		}
 		return bestCluster;
@@ -205,7 +205,7 @@ public class Clustering {
 	}
 	
 	// Gets contents of leafs for node
-	private static Set<double[]> getContents( TreeNode node ) {
+	public static Set<double[]> getContents( TreeNode node ) {
 		Set<double[]> contents = new HashSet<>();
 		List<TreeNode> l = new ArrayList<>();
 		l.add(node);
@@ -434,6 +434,7 @@ public class Clustering {
 		int length = getContents(leafLayer.get(0)).iterator().next().length;
 		int age = 0;
 		for( TreeNode tn : leafLayer ) {
+			
 			age = Math.max( age, tn.age );
 			tree.add(tn);
 			
@@ -533,23 +534,15 @@ public class Clustering {
 			union.addAll(curLayer.remove(c2));	
 			mergeNode.age = ++age;
 			mergeNode.children = Arrays.asList(new TreeNode[]{ c1, c2 });
+			mergeNode.cost = sMin;
 			
-			// calculate/update cost
-			double ss = 0;
+			// update cache
 			if( type == HierarchicalClusteringType.ward ) {
-				ss = unionCache.get(c1).get(c2);
-				for( TreeNode s : curLayer.keySet() )
-					ss += ssCache.get(s);
-				
-				// update caches
 				ssCache.remove(c1);
 				ssCache.remove(c2);
 				ssCache.put( mergeNode, unionCache.get(c1).get(c2) );
-			
 				unionCache.remove(c1);
-			} else
-				ss = sMin;
-			mergeNode.cost = ss;
+			} 
 									
 			// add nodes
 			curLayer.put(mergeNode,union);

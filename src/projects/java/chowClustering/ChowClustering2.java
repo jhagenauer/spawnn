@@ -30,6 +30,7 @@ import nnet.SupervisedUtils;
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
 import spawnn.utils.Clustering;
+import spawnn.utils.Clustering.HierarchicalClusteringType;
 import spawnn.utils.Clustering.TreeNode;
 import spawnn.utils.DataUtils;
 import spawnn.utils.DataUtils.Transform;
@@ -37,11 +38,11 @@ import spawnn.utils.Drawer;
 import spawnn.utils.GraphUtils;
 import spawnn.utils.SpatialDataFrame;
 
-public class ChowClustering {
+public class ChowClustering2 {
 
-	private static Logger log = Logger.getLogger(ChowClustering.class);
-
-	static List<TreeNode> getHierarchicalClusterTree(List<TreeNode> leafLayer, Map<TreeNode, Set<TreeNode>> cm, int[] fa, int ta, int threads) {
+	private static Logger log = Logger.getLogger(ChowClustering2.class);
+	
+	private static List<TreeNode> getHierarchicalClusterTreeInit(List<TreeNode> leafLayer, Map<TreeNode, Set<TreeNode>> cm, Dist<double[]> dist, int minSize, int threads) {
 
 		class FlatSet<T> extends HashSet<T> {
 			private static final long serialVersionUID = -1960947872875758352L;
@@ -68,8 +69,10 @@ public class ChowClustering {
 		List<TreeNode> tree = new ArrayList<>();
 		Map<TreeNode, Set<double[]>> curLayer = new HashMap<>();
 
-		Map<TreeNode, Double> ssCache = new ConcurrentHashMap<TreeNode, Double>();
+		Map<TreeNode, Double> ssCache = new HashMap<TreeNode, Double>();
+		Map<TreeNode, Map<TreeNode,Double>> unionCache = new HashMap<>();
 
+		int length = Clustering.getContents(leafLayer.get(0)).iterator().next().length;
 		int age = 0;
 		for (TreeNode tn : leafLayer) {
 			age = Math.max(age, tn.age);
@@ -77,6 +80,7 @@ public class ChowClustering {
 
 			Set<double[]> content = Clustering.getContents(tn);
 			curLayer.put(tn, content);
+			ssCache.put(tn, DataUtils.getSumOfSquares(content, dist));
 		}
 
 		// copy of connected map
@@ -100,7 +104,8 @@ public class ChowClustering {
 					@Override
 					public double[] call() throws Exception {
 						int c1 = -1, c2 = -1;
-						double sMin = Double.MAX_VALUE;
+						double bestCost = Double.MAX_VALUE;
+						int bestSize = Integer.MAX_VALUE;
 
 						for (int i = T; i < cl.size() - 1; i += threads) {
 							TreeNode l1 = cl.get(i);
@@ -110,29 +115,51 @@ public class ChowClustering {
 
 								if (!connected.containsKey(l1) || !connected.get(l1).contains(l2)) // disjoint
 									continue;
-								
-								List<double[]> s1 = new ArrayList<>(curLayer.get(l1));
-								if( !ssCache.containsKey(l1) )
-									ssCache.put(l1, getSumOfSquares(getResidualsLM(null, s1, s1, fa, ta)));
 																
-								List<double[]> s2 = new ArrayList<>(curLayer.get(l2));
-								if( !ssCache.containsKey(l2) )
-									ssCache.put( l2,getSumOfSquares(getResidualsLM(null, s2, s2, fa, ta)));
+								if (!unionCache.containsKey(l1) || !unionCache.get(l1).containsKey(l2)) {
+									
+									// calculate mean and sum of squares, slightly faster than actually forming a union
+									double[] mean = new double[length];
+									for (int l = 0; l < length; l++) {
+										for (double[] d : curLayer.get(l1) )
+											mean[l] += d[l];
+										for (double[] d : curLayer.get(l2) )
+											mean[l] += d[l];
+									}
+																
+									for (int l = 0; l < length; l++)
+										mean[l] /= curLayer.get(l1).size()+curLayer.get(l2).size();
+									
+									double ssUnion = 0;
+									for( double[] d : curLayer.get(l1) ) {
+										double di = dist.dist(mean, d);
+										ssUnion += di * di;
+									}
+									for( double[] d : curLayer.get(l2) ) {
+										double di = dist.dist(mean, d);
+										ssUnion += di * di;
+									}
+									
+									if (!unionCache.containsKey(l1))
+										unionCache.put( l1, new HashMap<TreeNode, Double>() );
+									unionCache.get(l1).put(l2, ssUnion);
+								}													
+								double cost = unionCache.get(l1).get(l2) - ( ssCache.get(l1) + ssCache.get(l2) );					
+								int unionSize = curLayer.get(l1).size()+curLayer.get(l2).size();			
 								
-								Set<double[]> union = new HashSet<>(s1);
-								union.addAll(s2);
-								List<double[]> u = new ArrayList<>(union);
-								double uResi = getSumOfSquares(getResidualsLM(null, u, u, fa, ta));
-								
-								double s = chowTest(uResi, ssCache.get(l1), ssCache.get(l2), s1.size(), s2.size(), fa.length)[0];
-								if (s < sMin) {
+								if ( (cost < bestCost && unionSize < minSize ) // if size ok, dist matters
+										|| ( bestSize > minSize && unionSize < bestSize )  
+										|| ( bestSize > minSize && unionSize == bestSize  && cost < bestCost ) ) {
+								/*if ( (unionSize < bestSize )	
+										|| ( unionSize == bestSize && cost < bestCost ) ) {*/
 									c1 = i;
 									c2 = j;
-									sMin = s;
+									bestCost = cost;
+									bestSize = unionSize;
 								}
 							}
 						}
-						return new double[] { c1, c2, sMin };
+						return new double[] { c1, c2, bestCost };
 					}
 				}));
 			}
@@ -151,6 +178,13 @@ public class ChowClustering {
 			} catch (ExecutionException e) {
 				e.printStackTrace();
 			}
+			
+			boolean allMinSize = true;
+			for( Set<double[]> s : curLayer.values() )
+				if( s.size() < minSize )
+					allMinSize = false;
+			if( allMinSize )
+				return tree;
 
 			if (c1 == null && c2 == null) { // no connected clusters present anymore
 				log.debug("only non-connected clusters present! " + curLayer.size());
@@ -164,12 +198,14 @@ public class ChowClustering {
 			union.addAll(curLayer.remove(c2));
 			mergeNode.age = ++age;
 			mergeNode.children = Arrays.asList(new TreeNode[] { c1, c2 });
+			mergeNode.cost = sMin;
+						
+			// update caches
 			ssCache.remove(c1);
 			ssCache.remove(c2);
-
-			// calculate/update cost
-			mergeNode.cost = sMin;
-
+			ssCache.put( mergeNode, unionCache.get(c1).get(c2) );
+			unionCache.remove(c1);
+			
 			// add nodes
 			curLayer.put(mergeNode, union);
 			tree.add(mergeNode);
@@ -190,128 +226,12 @@ public class ChowClustering {
 					}
 				}
 			}
-
+			log.debug(curLayer.size());
 		}
 		return tree;
 	}
 
-	static double getSumOfSquares(List<Double> residuals ) {
-		double s = 0;
-		for( double d : residuals )
-			s += Math.pow(d, 2);
-		return s;
-	}
-	
-	static double getR2(double ssRes, List<double[]> samples, int ta ) {		
-		SummaryStatistics ss = new SummaryStatistics();
-		for (double[] d : samples)
-			ss.addValue(d[ta]);
-		
-		double mean = 0;
-		for (double[] d : samples)
-			mean += d[ta];
-		mean /= samples.size();
-
-		double ssTot = 0;
-		for (double[] d : samples )
-			ssTot += Math.pow(d[ta] - mean, 2);
-		
-		return 1.0 - ssRes / ssTot;
-		
-	}
-
-	private static double[] chowTest(double s, double sA, double sB, int nA, int nB, int k) {
-		double T = ((s - (sA + sB)) / k) / ( (sA + sB) / (nA + nB - 2 * k) );
-		FDistribution fd = new FDistribution(k, nA + nB - 2 * k);
-		return new double[] { T, 1 - fd.cumulativeProbability(T) // p-Value < 0.5, H0(equivalence) rejected, A and B not equal
-		};
-	}
-
-	public static double[] getStripped(double[] d, int[] fa) {
-		double[] nd = new double[fa.length];
-		for (int i = 0; i < fa.length; i++)
-			nd[i] = d[fa[i]];
-		return nd;
-	}
-	
-	// Yeah, yeah... not optimal, I know
-	public static List<Double> getResidualsLM( List<Set<double[]>> cluster, List<double[]> samplesTrain, List<double[]> samplesVal, int[] fa, int ta ) {
-		// check that all samples are assigned to a cluster
-		if( cluster != null ) {
-			Set<double[]> all = new HashSet<double[]>();
-			int sumSize = 0;
-			for( Set<double[]> s : cluster ) {
-				sumSize+=s.size();
-				all.addAll(s);
-			}
-			if( sumSize != all.size() )
-				throw new RuntimeException("Cluster overlap!");
-			
-			if( !all.containsAll(samplesTrain) || !all.containsAll(samplesVal) )
-				throw new RuntimeException("Some samples not assigend to cluster!");
-		}
-						
-		double[] y = new double[samplesTrain.size()];
-		for (int i = 0; i < samplesTrain.size(); i++)
-			y[i] = samplesTrain.get(i)[ta];
-
-		double[][] x = new double[samplesTrain.size()][];
-		for (int i = 0; i < samplesTrain.size(); i++) {
-			double[] d = samplesTrain.get(i);
-			x[i] = getStripped(d, fa);
-					
-			if( cluster != null ) {
-				int length = x[i].length;
-				x[i] = Arrays.copyOf(x[i], length + cluster.size() - 1);
-				for( int idx = 0; idx < cluster.size()-1; idx++ ) {
-					if( cluster.get(idx).contains(d) ) {
-						x[i][length + idx] = 1;
-						break;
-					}
-				}				
-			}
-		}
-					
-		// training
-		double[] beta = null;
-		try {
-			OLSMultipleLinearRegression ols = new OLSMultipleLinearRegression();
-			ols.setNoIntercept(false);
-			ols.newSampleData(y, x);
-			beta = ols.estimateRegressionParameters();
-						
-		} catch( Exception e ) {
-			e.printStackTrace();
-			System.exit(1);
-		}
-				
-		List<Double> residuals = new ArrayList<>();
-		for (int i = 0; i < samplesVal.size(); i++) {
-			double[] d = samplesVal.get(i);
-			double[] xi = getStripped(d, fa);
-			
-			if( cluster != null ) {
-				int length = xi.length;
-				xi = Arrays.copyOf(xi, length + cluster.size() - 1);
-				for( int idx = 0; idx < cluster.size(); idx++ ) {			
-					if( cluster.get(idx).contains(d) ) {
-						if( idx < cluster.size()-1 )
-							xi[length+idx] = 1;
-						break;
-					}
-				}
-			}
-			
-			double p = beta[0]; // intercept at beta[0]
-			for (int j = 1; j < beta.length; j++)
-				p += beta[j] * xi[j - 1];
-			residuals.add( samplesVal.get(i)[ta] - p );
-		}
-		return residuals;
-	}
-
 	public static void main(String[] args) {
-		Random r = new Random();
 		int threads = 3;
 		
 		SpatialDataFrame sdf = DataUtils.readSpatialDataFrameFromShapefile(new File("data/gemeinden/gem_dat.shp"), true);
@@ -323,45 +243,81 @@ public class ChowClustering {
 		int[] fa = new int[]{ 4,5,6,7,9};
 		int ta = 12;
 		DataUtils.transform(samples, new int[]{4}, Transform.log );
-
-		Map<double[], Set<double[]>> kmCluster = Clustering.kMeans(samples, 700, gDist);
-		Drawer.geoDrawCluster(kmCluster.values(), samples, geoms, "output/km_cluster.png",true);
-				
-		{
-		SummaryStatistics ss = new SummaryStatistics();
-		for (Set<double[]> s : kmCluster.values())
-			ss.addValue( s.size() );
-		log.debug(ss.getMin()+","+ss.getMean()+","+ss.getMax());
-		}
-
-		List<TreeNode> curLayer = new ArrayList<>();
-		for (Set<double[]> s : kmCluster.values()) {
-			TreeNode cn = new TreeNode();
-			cn.age = 0;
-			cn.cost = 0;
-			cn.contents = s;
-			curLayer.add(cn);
-		}
 		
 		Map<double[], Set<double[]>> cm = GraphUtils.deriveQueenContiguitiyMap(samples, geoms, false);
-		Map<TreeNode, Set<TreeNode>> ncm = new HashMap<>();
-		for (TreeNode tnA : curLayer) {
+		
+		Set<double[]> set = new HashSet<double[]>();
+		for( Entry<double[],Set<double[]>> e : cm.entrySet() ) {
+			set.add(e.getKey());
+			set.addAll(e.getValue());
+		}
+				
+		List<TreeNode> l = new ArrayList<TreeNode>();
+		for( double[] d : set ) {
+			TreeNode tn = new TreeNode();
+			tn.age = 0;
+			tn.cost = 0;
+			tn.contents = new HashSet<>();
+			tn.contents.add(d);
+			l.add(tn);
+		}
+
+		Map<TreeNode,Set<TreeNode>> ncm = new HashMap<>();
+		for( TreeNode tnA : l ) {
+			double[] a = tnA.contents.iterator().next();
+			
 			Set<TreeNode> s = new HashSet<>();
-			for (double[] a : tnA.contents)
-				for (double[] nb : cm.get(a))
-					for (TreeNode tnB : curLayer)
-						if (tnB.contents.contains(nb))
-							s.add(tnB);
+			for( double[] b : cm.get(a) )
+				for( TreeNode tnB : l )
+					if( tnB.contents.contains(b) )
+						s.add(tnB);
 			ncm.put(tnA, s);
+		}
+		List<Set<double[]>> kmCluster = new ArrayList<>();
+		List<TreeNode> tr = getHierarchicalClusterTreeInit(l, ncm, gDist, 12, 3);
+		
+		List<TreeNode> leafLayer = new ArrayList<>();
+		for( TreeNode tnA : tr ) {
+			boolean isChild = false;
+			for( TreeNode tnB : tr )
+				if( tnB.children.contains(tnA) )
+					isChild = true;
+			if( !isChild ) {
+				leafLayer.add(tnA);
+				kmCluster.add( Clustering.getContents(tnA));
+			}
+		}
+		
+		Map<TreeNode,Set<TreeNode>> llCm = new HashMap<>();
+		for( TreeNode tnA : leafLayer ) {
+			Set<double[]> sa = Clustering.getContents(tnA);
+			
+			Set<TreeNode> s = new HashSet<>();
+			for( TreeNode tnB : leafLayer ) {
+				if( tnA == tnB )
+					continue;
+				Set<double[]> sb = Clustering.getContents(tnB);
+				for( double[] a : sa )
+					for( double[] nb : cm.get(a) )
+						if( sb.contains(nb) )
+							s.add(tnB);
+			}
+			llCm.put(tnA, s);
+		}
+		
+		Drawer.geoDrawCluster(kmCluster, samples, geoms, "output/hcClust.png", true);
+							
+		{
+		SummaryStatistics ss = new SummaryStatistics();
+		for (Set<double[]> s : kmCluster)
+			ss.addValue( s.size() );
+		log.debug(ss.getMin()+","+ss.getMean()+","+ss.getMax());
 		}
 		
 		List<Entry<List<Integer>, List<Integer>>> cvList = SupervisedUtils.getCVList(10, 20, samples.size());
 		
 		long time = System.currentTimeMillis();
-		
-		log.debug("Build tree...");
-		List<TreeNode> tree = getHierarchicalClusterTree(curLayer, ncm, fa, ta, threads);
-		log.debug("done.");
+		List<TreeNode> tree = ChowClustering.getHierarchicalClusterTree(leafLayer, llCm, fa, ta, threads);
 				
 		int minNr = -1;
 		double minError = Double.MAX_VALUE;
@@ -384,7 +340,7 @@ public class ChowClustering {
 							for( int k : cvEntry.getValue() )
 								samplesVal.add(samples.get(k));
 							
-							double ss = getSumOfSquares( getResidualsLM( ct, samplesTrain, samplesVal, fa, ta) );
+							double ss = ChowClustering.getSumOfSquares( ChowClustering.getResidualsLM( ct, samplesTrain, samplesVal, fa, ta) );
 							return new double[]{ Math.sqrt(ss/samplesVal.size()) }; // RMSE	
 						}
 					}));
@@ -405,10 +361,10 @@ public class ChowClustering {
 					e.printStackTrace();
 				}
 			
-			double ss = getSumOfSquares( getResidualsLM( ct, samples, samples, fa, ta) );
+			double ss = ChowClustering.getSumOfSquares( ChowClustering.getResidualsLM( ct, samples, samples, fa, ta) );
 			double rmse = Math.sqrt(ss/samples.size()); 	
 						
-			log.debug("Nr: " + ct.size()+", CV: "+ds.getMean()+", full: "+rmse+", R2: "+getR2(ss, samples, ta) );
+			log.debug("Nr: " + ct.size()+", CV: "+ds.getMean()+", full: "+rmse+", R2: "+ChowClustering.getR2(ss, samples, ta) );
 		}
 		log.debug("Min: "+minNr+":"+minError);
 		log.debug("Took: " + (System.currentTimeMillis() - time) / 1000.0);

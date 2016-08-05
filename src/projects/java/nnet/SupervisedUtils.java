@@ -3,8 +3,11 @@ package nnet;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map.Entry;
+
+import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 
 public class SupervisedUtils {
 	public static List<Entry<List<Integer>, List<Integer>>> getCVList(int numFolds, int numRepeats, int numSamples) {
@@ -58,6 +61,10 @@ public class SupervisedUtils {
 		double ssRes = 0;
 		for (int i = 0; i < response.size(); i++)
 			ssRes += Math.pow(desired.get(i)[0] - response.get(i)[0], 2);
+		
+		SummaryStatistics ss = new SummaryStatistics();
+		for ( double[] d : desired )
+			ss.addValue(d[0]);
 
 		double mean = 0;
 		for (double[] d : desired)
@@ -65,9 +72,9 @@ public class SupervisedUtils {
 		mean /= desired.size();
 
 		double ssTot = 0;
-		for (int i = 0; i < desired.size(); i++)
-			ssTot += Math.pow(desired.get(i)[0] - mean, 2);
-
+		for (double[] d : desired )
+			ssTot += Math.pow(d[0] - mean, 2);
+		
 		return 1.0 - ssRes / ssTot;
 	}
 
@@ -104,6 +111,18 @@ public class SupervisedUtils {
 
 		return a / (b * c);
 	}
+	
+	public static double getMultiLogLoss(List<double[]> response, List<double[]> desired ) {
+		 double eps = Math.pow(10, -15);
+		 double ll = 0;
+		 for( int i = 0; i < response.size(); i++ ) 
+			 for( int j = 0; j < response.get(i).length; j++ ) {
+				 double a = desired.get(i)[j];
+				 double p = Math.min(Math.max(eps, response.get(i)[j]), 1.0-eps);
+				 ll += a*Math.log(p) + (1.0-a)*Math.log(1.0-p);
+			 }
+		 return ll * -1.0/desired.size();
+	}
 
 	public static double getAIC(double mse, int nrParams, int nrSamples) {
 		return nrSamples * Math.log(mse) + 2 * nrParams;
@@ -116,5 +135,22 @@ public class SupervisedUtils {
 
 	public static double getBIC(double mse, int nrParams, int nrSamples) {
 		return nrSamples * Math.log(mse) + nrParams * Math.log(nrSamples);
+	}
+	
+	// TODO
+	public static double getAUC(List<double[]> response, List<double[]> desired ) {
+		List<double[]> l = new ArrayList<>(response);
+		Collections.sort(l, new Comparator<double[]>() {
+			@Override
+			public int compare(double[] o1, double[] o2) {
+				return Double.compare(o1[0], o2[0]);
+			}			
+		});
+		double width = 1.0/l.size();
+		double auc = 0;
+		for( int i = 0; i < l.size(); i++ ) {
+			
+		}
+		return 0;
 	}
 }

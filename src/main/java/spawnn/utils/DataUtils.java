@@ -392,6 +392,21 @@ public class DataUtils {
 			r[i] /= cluster.size();
 		return r;
 	}
+	
+	public static RealMatrix toRealMatrix( List<double[]> samples ) {
+		double[][] m = new double[samples.size()][];
+		for( int i = 0; i < samples.size(); i++ )
+			m[i] = samples.get(i);
+		
+		return new Array2DRowRealMatrix(m);
+	}
+	
+	public static List<double[]> toSamples( RealMatrix rm ) {
+		List<double[]> l = new ArrayList<>();
+		for( int i = 0; i < rm.getRowDimension(); i++ )
+			l.add(rm.getRow(i));
+		return l;
+	}
 
 	public static double getSumOfSquares(Map<double[], Set<double[]>> clusters, Dist<double[]> dist) {
 		double totalSum = 0;
@@ -1154,9 +1169,9 @@ public class DataUtils {
 	};
 
 	public static void transform(List<double[]> samples, int[] fa, Transform t) {
-		DescriptiveStatistics[] ds = new DescriptiveStatistics[fa.length];
+		SummaryStatistics[] ds = new SummaryStatistics[fa.length];
 		for (int i = 0; i < fa.length; i++)
-			ds[i] = new DescriptiveStatistics();
+			ds[i] = new SummaryStatistics();
 		for (double[] d : samples)
 			for (int i = 0; i < fa.length; i++)
 				ds[i].addValue(d[fa[i]]);
@@ -1222,7 +1237,7 @@ public class DataUtils {
 		}
 		return ns;
 	}
-
+	
 	public static List<double[]> retainColumns(List<double[]> samples, int[] r) {
 		int n = samples.get(0).length;
 

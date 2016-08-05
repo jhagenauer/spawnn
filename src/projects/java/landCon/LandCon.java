@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -62,7 +63,7 @@ public class LandCon {
 		Map<TreeNode, Set<double[]>> curLayer = new HashMap<>();
 
 		Map<TreeNode, Double> ssCache = new HashMap<>();
-		Map<TreeNode, Map<TreeNode, Double>> unionCache = new HashMap<>();
+		Map<TreeNode, Map<TreeNode, Double>> unionCache = new ConcurrentHashMap<>();
 
 		int age = 0;
 		for (double[] d : samples) {
@@ -83,7 +84,7 @@ public class LandCon {
 		final Map<TreeNode, Set<TreeNode>> connected = new HashMap<TreeNode, Set<TreeNode>>();
 		for (TreeNode a : curLayer.keySet())
 			for (TreeNode b : curLayer.keySet())
-				if (a != b && cm.get(a.contents).contains(b.contents)) {
+				if (a != b && cm.get(a.contents.iterator().next()).contains(b.contents.iterator().next())) {
 					if (!connected.containsKey(a))
 						connected.put(a, new HashSet<TreeNode>());
 					connected.get(a).add(b);
@@ -118,7 +119,8 @@ public class LandCon {
 								double s = Double.NaN;
 								if (HierarchicalClusteringType.ward == type) {
 									// get error sum of squares
-									if (!unionCache.containsKey(l1) || !unionCache.get(l1).containsKey(l2)) {
+									if ( !unionCache.containsKey(l1) || 
+											!unionCache.get(l1).containsKey(l2) ) {
 
 										// calculate mean and sum of squares,
 										// slightly faster than actually forming
@@ -279,7 +281,9 @@ public class LandCon {
 
 		int[][] r = new int[numCluster.length][sa.size()];
 		for (int i = 0; i < numCluster.length; i++) {
+						
 			List<Set<double[]>> cluster = Clustering.cutTree(tree, numCluster[i]);
+						
 			for (int j = 0; j < sa.size(); j++) {
 				for (int k = 0; k < cluster.size(); k++) {
 					if (cluster.get(k).contains(sa.get(j)))
@@ -318,14 +322,14 @@ public class LandCon {
 		log.debug(samples.size());
 
 		int nrCluster = 7;
-		{ // old
+		/*{ // old
 			long time = System.currentTimeMillis();
 			List<TreeNode> tree = Clustering.getHierarchicalClusterTree(cm, dist, HierarchicalClusteringType.ward);
 			List<Set<double[]>> ct = Clustering.cutTree(tree, nrCluster);
 			log.debug("Nr cluster: " + ct.size());
 			log.debug("Within sum of squares: " + DataUtils.getWithinSumOfSquares(ct, dist) + ", took: " + (System.currentTimeMillis() - time) / 1000.0);
 			Drawer.geoDrawCluster(ct, samples, geoms, "output/clustering.png", true);
-		}
+		}*/
 
 		{ // threaded
 			long time = System.currentTimeMillis();
