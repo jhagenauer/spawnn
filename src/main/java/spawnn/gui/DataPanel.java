@@ -66,7 +66,7 @@ public class DataPanel extends JPanel implements ActionListener, TableModelListe
 	private BoxPlotPanel boxPlotPnl;
 	private JTextField infoField;
 	
-	enum norm {none, scale, zScore};
+	enum norm {none, scale01, zScore};
 	final int ATTRIBUTE = 0, NORM = 1, COORDINATE = 2, USE = 3;
 	
 	protected SpatialDataFrame sdf = null;
@@ -299,13 +299,13 @@ public class DataPanel extends JPanel implements ActionListener, TableModelListe
 		boolean geoNormed = false;
 		for( int i = 0; i < dataTable.getRowCount(); i++ ) {
 			if( !(Boolean)dataTable.getValueAt(i, COORDINATE) ) {
-				if( dataTable.getValueAt(i, NORM) == norm.scale )
+				if( dataTable.getValueAt(i, NORM) == norm.scale01 )
 					DataUtils.normalizeColumn(normedSamples, i);
 				else if( dataTable.getValueAt(i, NORM) == norm.zScore )
 					DataUtils.zScoreColumn(normedSamples, i);
 			} else if( !geoNormed && (Boolean)dataTable.getValueAt(i, COORDINATE) ) { // only once
 				int[] ga = getGA(true);
-				if( dataTable.getValueAt(i, NORM) == norm.scale )
+				if( dataTable.getValueAt(i, NORM) == norm.scale01 )
 					DataUtils.normalizeGeoColumns(normedSamples, ga );
 				else if( dataTable.getValueAt(i, NORM) == norm.zScore  )
 					DataUtils.zScoreGeoColumns(normedSamples, ga, new EuclideanDist(ga) );

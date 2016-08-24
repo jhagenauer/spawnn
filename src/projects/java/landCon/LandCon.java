@@ -34,7 +34,7 @@ public class LandCon {
 
 	private static Logger log = Logger.getLogger(LandCon.class);
 
-	private static List<TreeNode> getHierarchicalClusterTree(Collection<double[]> samples, Map<double[], Set<double[]>> cm, Dist<double[]> dist, HierarchicalClusteringType type, int threads) {
+	public static List<TreeNode> getHierarchicalClusterTree(Collection<double[]> samples, Map<double[], Set<double[]>> cm, Dist<double[]> dist, HierarchicalClusteringType type, int threads) {
 		int length = samples.iterator().next().length;
 
 		class FlatSet<T> extends HashSet<T> {
@@ -67,9 +67,7 @@ public class LandCon {
 
 		int age = 0;
 		for (double[] d : samples) {
-			TreeNode cn = new TreeNode();
-			cn.age = age;
-			cn.cost = 0;
+			TreeNode cn = new TreeNode(age,0);
 			cn.contents = new FlatSet<double[]>();
 			cn.contents.add(d);
 			tree.add(cn);
@@ -197,18 +195,17 @@ public class LandCon {
 				e.printStackTrace();
 			}
 
-			if (c1 == null && c2 == null) { // no connected clusters present
-											// anymore
+			if (c1 == null && c2 == null) { 
 				log.debug("only non-connected clusters present! " + curLayer.size());
 				return tree;
 			}
 
 			// create merge node, remove c1,c2
-			TreeNode mergeNode = new TreeNode();
 			Set<double[]> union = new FlatSet<double[]>();
 			union.addAll(curLayer.remove(c1));
 			union.addAll(curLayer.remove(c2));
-			mergeNode.age = ++age;
+
+			TreeNode mergeNode = new TreeNode(++age,-1);
 			mergeNode.children = Arrays.asList(new TreeNode[] { c1, c2 });
 
 			// calculate/update cost
@@ -302,38 +299,21 @@ public class LandCon {
 		final Map<double[], Set<double[]>> cm = RegionUtils.readContiguitiyMap(samples, "data/redcap/Election/election2004_Queen.ctg");
 		final Dist<double[]> dist = new EuclideanDist(fa);
 
-		/*
-		 * SpatialDataFrame sdf =
-		 * DataUtils.readSpatialDataFrameFromShapefile(new
-		 * File("R:/data/gemeinden.shp"), true); List<Geometry> geoms =
-		 * sdf.geoms.subList(0, 4000); List<double[]> samples =
-		 * sdf.samples.subList(0, 4000); int[] fa = new int[] { 4, 5, 6, 7, 8, 9
-		 * }; Set<double[]> rmSamples = new HashSet<>(); Set<Geometry> rmGeoms =
-		 * new HashSet<>(); for (int i = 0; i < samples.size(); i++) { double[]
-		 * d = samples.get(i); for (int j : fa) if (Double.isNaN(d[j])) {
-		 * rmSamples.add(d); rmGeoms.add(geoms.get(i)); } }
-		 * samples.removeAll(rmSamples); geoms.removeAll(rmGeoms);
-		 * DataUtils.transform(samples, fa, Transform.zScore); Map<double[],
-		 * Set<double[]>> cm = GraphUtils.deriveQueenContiguitiyMap(samples,
-		 * geoms, false); GraphUtils.writeContiguityMap(cm, samples,
-		 * "output/gemeinden.ctg"); final Dist<double[]> dist = new
-		 * EuclideanDist(fa);
-		 */
 		log.debug(samples.size());
 
 		int nrCluster = 7;
-		/*{ // old
+		{ // old
 			long time = System.currentTimeMillis();
-			List<TreeNode> tree = Clustering.getHierarchicalClusterTree(cm, dist, HierarchicalClusteringType.ward);
+			List<TreeNode> tree = Clustering.getHierarchicalClusterTree(cm, dist, HierarchicalClusteringType.average_linkage);
 			List<Set<double[]>> ct = Clustering.cutTree(tree, nrCluster);
 			log.debug("Nr cluster: " + ct.size());
 			log.debug("Within sum of squares: " + DataUtils.getWithinSumOfSquares(ct, dist) + ", took: " + (System.currentTimeMillis() - time) / 1000.0);
 			Drawer.geoDrawCluster(ct, samples, geoms, "output/clustering.png", true);
-		}*/
+		}
 
 		{ // threaded
 			long time = System.currentTimeMillis();
-			List<TreeNode> tree = getHierarchicalClusterTree(samples, cm, dist, HierarchicalClusteringType.ward, 4);
+			List<TreeNode> tree = getHierarchicalClusterTree(samples, cm, dist, HierarchicalClusteringType.average_linkage, 4);
 			List<Set<double[]>> ct = Clustering.cutTree(tree, nrCluster);
 			log.debug("Nr cluster: " + ct.size());
 			log.debug("Within sum of squares: " + DataUtils.getWithinSumOfSquares(ct, dist) + ", took: " + (System.currentTimeMillis() - time) / 1000.0);

@@ -479,9 +479,7 @@ public class SubmarketsByClusterLM {
 		}
 				
 		for( Set<double[]> s : leafLayer ) {
-			TreeNode cn = new TreeNode();
-			cn.age = age;
-			cn.cost = curCost;
+			TreeNode cn = new TreeNode(age,curCost);
 			tree.put(s,cn);
 		}
 		
@@ -574,10 +572,8 @@ public class SubmarketsByClusterLM {
 			}
 			curCost += selIncrease;
 			
-			TreeNode cn = new TreeNode();
-			cn.cost = curCost;
+			TreeNode cn = new TreeNode(++age,curCost);
 			cn.children = Arrays.asList( new TreeNode[]{ tree.get(c1), tree.get(c2) } );
-			cn.age = ++age;
 			tree.put(union, cn);
 		}
 		return tree;

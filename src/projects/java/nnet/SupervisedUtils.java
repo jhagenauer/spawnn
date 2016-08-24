@@ -137,20 +137,33 @@ public class SupervisedUtils {
 		return nrSamples * Math.log(mse) + nrParams * Math.log(nrSamples);
 	}
 	
-	// TODO
-	public static double getAUC(List<double[]> response, List<double[]> desired ) {
-		List<double[]> l = new ArrayList<>(response);
+	// TODO Check, not sure if correct
+	public static double getAUC(List<double[]> props, List<double[]> desired ) {
+		List<double[]> l = new ArrayList<>(props);
 		Collections.sort(l, new Comparator<double[]>() {
 			@Override
 			public int compare(double[] o1, double[] o2) {
 				return Double.compare(o1[0], o2[0]);
 			}			
 		});
-		double width = 1.0/l.size();
+		
+		int posTotal = 0;
+		for( double[] d : desired )
+			if( d[0] == 1 )
+				posTotal++;
+		
 		double auc = 0;
+		double preP = 0;
 		for( int i = 0; i < l.size(); i++ ) {
+			double p = l.get(i)[0]; // <= p  is 0
 			
+			int posCor = 0;
+			for( int j = i; j <= desired.size(); j++ )
+				if( desired.get(j)[0] == 1 )
+					posCor++;
+			auc += (p-preP) * (double)posCor/posTotal; // width * height
+			preP = p;
 		}
-		return 0;
+		return auc;
 	}
 }

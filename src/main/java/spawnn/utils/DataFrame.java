@@ -8,7 +8,7 @@ public class DataFrame {
 	};
 
 	public List<double[]> samples;
-	public List<String> names; // is String[] better?!
+	public List<String> names; // String would be better! Refactor!
 	public List<binding> bindings;
 	
 	public String[] getNames() {

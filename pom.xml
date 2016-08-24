@@ -81,7 +81,17 @@
 						<archive>
 							<manifest>
 								<mainClass>spawnn.gui.SpawnnGui</mainClass>
+								
+								<addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+								<addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
+								
 							</manifest>
+
+							<manifestEntries>
+								<Specification-Vendor>MyCompany</Specification-Vendor>
+								<Implementation-Vendor>MyCompany</Implementation-Vendor>
+							</manifestEntries>
+
 						</archive>
 						<appendAssemblyId>true</appendAssemblyId>
 						<archiverConfig>
@@ -123,7 +133,7 @@
 		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-math3</artifactId>
-			<version>3.2</version>
+			<version>3.6.1</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.commons</groupId>
@@ -145,9 +155,8 @@
 			<artifactId>gt-swing</artifactId>
 			<version>${geotools.version}</version>
 		</dependency>
-		<!--<dependency> <groupId>com.miglayout</groupId> 
-		<artifactId>miglayout-swing</artifactId> 
-		<version>5.0</version> </dependency>-->
+		<!--<dependency> <groupId>com.miglayout</groupId> <artifactId>miglayout-swing</artifactId> 
+			<version>5.0</version> </dependency> -->
 		<dependency>
 			<groupId>org.jfree</groupId>
 			<artifactId>jfreechart</artifactId>
