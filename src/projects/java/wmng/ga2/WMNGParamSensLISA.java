@@ -37,6 +37,7 @@ import spawnn.ng.sorter.SorterWMC;
 import spawnn.ng.utils.NGUtils;
 import spawnn.som.decay.DecayFunction;
 import spawnn.som.decay.PowerDecay;
+import spawnn.utils.ClusterValidation;
 import spawnn.utils.ColorBrewer;
 import spawnn.utils.ColorUtils;
 import spawnn.utils.DataUtils;
@@ -151,7 +152,7 @@ public class WMNGParamSensLISA {
 							r.m.put("ctxMean", ds2.getMean() );
 							r.m.put("ctxVar", ds2.getVariance() );
 							r.m.put("sameCluster", WMNGParamSensREDCAP_sameCluster.sameCluster(bmus, new double[][]{a,	b,} ) ? 1.0 : 0.0 );
-							r.m.put("nmi",DataUtils.getNormalizedMutualInformation(ref.values(), bmus.values()));
+							r.m.put("nmi",ClusterValidation.getNormalizedMutualInformation(ref.values(), bmus.values()));
 							return r;
 						}
 					}));

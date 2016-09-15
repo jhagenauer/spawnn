@@ -27,6 +27,7 @@ import com.vividsolutions.jts.geom.Geometry;
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
 import spawnn.ng.Connection;
+import spawnn.utils.ClusterValidation;
 import spawnn.utils.Clustering;
 import spawnn.utils.Clustering.HierarchicalClusteringType;
 import spawnn.utils.Clustering.TreeNode;
@@ -160,7 +161,7 @@ public class GrowingCNG_Clustering {
 												ng.getConections().size(), 
 												DataUtils.getMeanQuantizationError(mapping, gDist), 
 												DataUtils.getMeanQuantizationError(mapping, fDist), 
-												DataUtils.getNormalizedMutualInformation(m.values(), cluster)
+												ClusterValidation.getNormalizedMutualInformation(m.values(), cluster)
 												};
 										
 										/*double[] r = new double[qes.size()];

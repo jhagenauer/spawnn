@@ -1,5 +1,6 @@
 package spawnn.dist;
 
+import java.util.Arrays;
 
 public class EuclideanDist implements Dist<double[]> {
 	private int[] idx;
@@ -46,5 +47,9 @@ public class EuclideanDist implements Dist<double[]> {
 			dist += (a[i + offsetA] - b[i + offsetB])*(a[i + offsetA] - b[i + offsetB]);
 		return Math.sqrt( dist );
 	}
-
+	
+	@Override 
+	public String toString() {
+		return Arrays.toString(idx);
+	}
 }

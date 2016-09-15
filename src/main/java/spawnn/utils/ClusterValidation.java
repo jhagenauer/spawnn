@@ -13,10 +13,6 @@ import spawnn.dist.Dist;
 
 public class ClusterValidation {
 	
-	public static double getNormalizedMutualInformation(Collection<Set<double[]>> u1, Collection<Set<double[]>> v1) {
-		return DataUtils.getNormalizedMutualInformation(u1, v1);
-	}
-
 	// works identically to R-cluster package
 	public static double getSilhouetteCoefficient(Map<double[], Set<double[]>> cluster, Dist<double[]> dist) {
 		int sum = 0;
@@ -166,6 +162,38 @@ public class ClusterValidation {
 		}
 		
 		return nns.get(nns.size()-1);
+	}
+
+	// strehl and gosh 2002
+	public static <T> double getNormalizedMutualInformation(Collection<Set<T>> u1, Collection<Set<T>> v1) {
+		List<Set<T>> u = new ArrayList<>(u1);
+		List<Set<T>> v = new ArrayList<>(v1);
+	
+		int n = 0;
+		for (Set<T> l : u)
+			n += l.size();
+	
+		double iuv = 0;
+		for (int i = 0; i < u.size(); i++) {
+			for (int j = 0; j < v.size(); j++) {
+				List<T> intersection = new ArrayList<>(u.get(i));
+				intersection.retainAll(v.get(j));
+				if (intersection.size() > 0)
+					iuv += intersection.size() * Math.log((double) n * intersection.size() / (u.get(i).size() * v.get(j).size()));
+			}
+		}
+	
+		double hu = 0;
+		for (int i = 0; i < u.size(); i++)
+			if (u.get(i).size() > 0)
+				hu += u.get(i).size() * Math.log((double) u.get(i).size() / n);
+	
+		double hv = 0;
+		for (int j = 0; j < v.size(); j++)
+			if (v.get(j).size() > 0)
+				hv += v.get(j).size() * Math.log((double) v.get(j).size() / n);
+	
+		return iuv / Math.sqrt(hu * hv);
 	}
 
 }

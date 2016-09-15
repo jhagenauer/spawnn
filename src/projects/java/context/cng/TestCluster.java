@@ -28,6 +28,7 @@ import spawnn.som.grid.Grid2DHex;
 import spawnn.som.kernel.GaussKernel;
 import spawnn.som.net.SOM;
 import spawnn.som.utils.SomUtils;
+import spawnn.utils.ClusterValidation;
 import spawnn.utils.DataUtils;
 
 public class TestCluster {
@@ -180,7 +181,7 @@ public class TestCluster {
 																
 						double qe = DataUtils.getMeanQuantizationError( cluster, fDist );
 						double ge = DataUtils.getMeanQuantizationError( cluster, geoDist );
-						double nmi = DataUtils.getNormalizedMutualInformation(cluster.values(), classes.values() );
+						double nmi = ClusterValidation.getNormalizedMutualInformation(cluster.values(), classes.values() );
 						double ke = SomUtils.getKangasError(samples, grid, (spawnn.som.bmu.KangasBmuGetter)bmuGetter);
 																		
 						return new double[]{ K, I, time, qe, ge, nmi, ke };
@@ -256,7 +257,7 @@ public class TestCluster {
 												
 						double qe = DataUtils.getMeanQuantizationError( cluster, fDist );
 						double ge = DataUtils.getMeanQuantizationError( cluster, geoDist );
-						double nmi = DataUtils.getNormalizedMutualInformation(cluster.values(), classes.values() );
+						double nmi = ClusterValidation.getNormalizedMutualInformation(cluster.values(), classes.values() );
 						
 						return new double[]{ K, I, time, qe, ge, nmi };
 					}

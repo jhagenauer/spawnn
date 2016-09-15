@@ -25,6 +25,7 @@ import spawnn.ng.sorter.KangasSorter;
 import spawnn.ng.sorter.Sorter;
 import spawnn.ng.sorter.SorterWMC;
 import spawnn.ng.utils.NGUtils;
+import spawnn.utils.ClusterValidation;
 import spawnn.utils.DataUtils;
 import spawnn.utils.GeoUtils;
 
@@ -107,7 +108,7 @@ public class TestCluster {
 							}
 
 							Map<double[], Set<double[]>> cluster = NGUtils.getBmuMapping(samples, ng.getNeurons(), bmuGetter);
-							double nmi = DataUtils.getNormalizedMutualInformation(cluster.values(), classes.values());
+							double nmi = ClusterValidation.getNormalizedMutualInformation(cluster.values(), classes.values());
 							return new double[] { K, nmi };
 						}
 					}));
@@ -176,7 +177,7 @@ public class TestCluster {
 
 								Map<double[], Set<double[]>> bmus = NGUtils.getBmuMapping(samples, neurons, bg);
 
-								double nmi = DataUtils.getNormalizedMutualInformation(bmus.values(), classes.values());
+								double nmi = ClusterValidation.getNormalizedMutualInformation(bmus.values(), classes.values());
 								return new double[] { ALPHA, BETA, nmi };
 							}
 						}));

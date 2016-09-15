@@ -26,6 +26,7 @@ import spawnn.ng.Connection;
 import spawnn.ng.NG;
 import spawnn.ng.sorter.KangasSorter;
 import spawnn.ng.sorter.Sorter;
+import spawnn.utils.ClusterValidation;
 import spawnn.utils.DataUtils;
 import spawnn.utils.Drawer;
 
@@ -101,7 +102,7 @@ public class NeuralGasCHL {
 		
 		System.out.println("cNG clustering results: ");
 		System.out.println("cluster: "+cluster.size());
-		System.out.println("NMI: "+DataUtils.getNormalizedMutualInformation(cluster.values(), cl.values()));
+		System.out.println("NMI: "+ClusterValidation.getNormalizedMutualInformation(cluster.values(), cl.values()));
 		
 		// get used or connected ones
 		Set<double[]> usedNeurons = new HashSet<double[]>();
@@ -198,7 +199,7 @@ public class NeuralGasCHL {
         
         System.out.println("Graph clustering results: ");
 		System.out.println("cluster: "+cluster2.size());
-		System.out.println("NMI: "+DataUtils.getNormalizedMutualInformation(cluster2, cl.values()));
+		System.out.println("NMI: "+ClusterValidation.getNormalizedMutualInformation(cluster2, cl.values()));
         
         try {
 			Drawer.geoDrawCluster(cluster2, samples, geoms, new FileOutputStream("output/ngchl_cluster2.png"), false);

@@ -26,6 +26,7 @@ import spawnn.ng.Connection;
 import spawnn.ng.NG;
 import spawnn.ng.sorter.KangasSorter;
 import spawnn.ng.sorter.Sorter;
+import spawnn.utils.ClusterValidation;
 import spawnn.utils.DataUtils;
 
 // Topology representing network
@@ -111,7 +112,7 @@ public class OptTopoClustering {
 									cluster.get(bmu).add(d);
 								}
 
-								double nmiA = DataUtils.getNormalizedMutualInformation(cluster.values(), cl.values());
+								double nmiA = ClusterValidation.getNormalizedMutualInformation(cluster.values(), cl.values());
 
 								log.debug("cons: "+cons.size());
 								
@@ -144,7 +145,7 @@ public class OptTopoClustering {
 										fCluster.add(ns);
 									}
 
-									double nmiB = DataUtils.getNormalizedMutualInformation(fCluster, cl.values());
+									double nmiB = ClusterValidation.getNormalizedMutualInformation(fCluster, cl.values());
 									
 									log.debug(N + ":" + CNS + ":" + TI + ":" + TF + ":" + toRm + ":" + nmiA + ":" + nmiB);
 								}

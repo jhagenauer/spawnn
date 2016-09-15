@@ -414,6 +414,7 @@ public class GeoUtils {
 		return getLocalMoransIMonteCarlo(samples, values, dMap, reps);
 	}
 		
+	// parameter samples necessary?
 	public static List<double[]> getLocalMoransIMonteCarlo(List<double[]> samples, Map<double[],Double> values, Map<double[], Map<double[], Double>> dMap, int reps ) {
 		Random r = new Random();
 		List<double[]> lisa = new ArrayList<double[]>();

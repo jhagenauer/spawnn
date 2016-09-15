@@ -19,7 +19,7 @@ import spawnn.ng.NG;
 import spawnn.ng.sorter.DefaultSorter;
 import spawnn.ng.sorter.KangasSorter;
 import spawnn.ng.sorter.Sorter;
-import spawnn.utils.DataUtils;
+import spawnn.utils.ClusterValidation;
 
 public class TestWeighted2 {
 
@@ -129,7 +129,7 @@ public class TestWeighted2 {
 				double[] bmu = ng.getNeurons().get(0);
 				cluster.get(bmu).add(d);
 			}
-			double nmi = DataUtils.getNormalizedMutualInformation(cluster.values(), classes.values());
+			double nmi = ClusterValidation.getNormalizedMutualInformation(cluster.values(), classes.values());
 			if( nmi > bestNmi )
 				bestNmi = nmi;
 			
@@ -177,7 +177,7 @@ public class TestWeighted2 {
 				double[] bmu = ng.getNeurons().get(0);
 				cluster.get(bmu).add(d);
 			}
-			double nmi = DataUtils.getNormalizedMutualInformation(cluster.values(), classes.values());
+			double nmi = ClusterValidation.getNormalizedMutualInformation(cluster.values(), classes.values());
 			if( nmi > bestNmi )
 				bestNmi = nmi;
 			

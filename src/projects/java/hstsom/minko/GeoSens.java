@@ -34,7 +34,7 @@ import spawnn.som.grid.GridPos;
 import spawnn.som.kernel.GaussKernel;
 import spawnn.som.net.SOM;
 import spawnn.som.utils.SomUtils;
-import spawnn.utils.DataUtils;
+import spawnn.utils.ClusterValidation;
 
 public class GeoSens {
 
@@ -150,7 +150,7 @@ public class GeoSens {
 								}
 														
 								Result r = new Result();
-								r.nmi = DataUtils.getNormalizedMutualInformation(clustersA, clustersB);
+								r.nmi = ClusterValidation.getNormalizedMutualInformation(clustersA, clustersB);
 								if (Double.isNaN(r.nmi)) {
 									r.nmi = 0;
 									log.debug(dim_x + "x" +dim_y+", r: "+K+" -> NAN");

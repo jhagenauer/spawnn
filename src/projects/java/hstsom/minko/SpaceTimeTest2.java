@@ -29,6 +29,7 @@ import spawnn.som.grid.GridPos;
 import spawnn.som.kernel.GaussKernel;
 import spawnn.som.net.SOM;
 import spawnn.som.utils.SomUtils;
+import spawnn.utils.ClusterValidation;
 import spawnn.utils.DataUtils;
 import spawnn.utils.SampleBuilder;
 
@@ -158,7 +159,7 @@ public class SpaceTimeTest2 {
 					clustersB.add(l);
 			}
 			
-			log.debug("NMI: "+DataUtils.getNormalizedMutualInformation(clustersA, clustersB));
+			log.debug("NMI: "+ClusterValidation.getNormalizedMutualInformation(clustersA, clustersB));
 			
 			gGrid = grid;
 			gBg = bmuGetter;
@@ -230,7 +231,7 @@ public class SpaceTimeTest2 {
 					clustersB.add(l);
 			}
 
-			log.debug("NMI: "+DataUtils.getNormalizedMutualInformation(clustersA, clustersB));
+			log.debug("NMI: "+ClusterValidation.getNormalizedMutualInformation(clustersA, clustersB));
 								
 			tGrid = grid;
 			tBg = bmuGetter;
@@ -326,7 +327,7 @@ public class SpaceTimeTest2 {
 					}
 				}		
 				
-				log.info( "NMI: "+DataUtils.getNormalizedMutualInformation( clustersA, clustersB ) );
+				log.info( "NMI: "+ClusterValidation.getNormalizedMutualInformation( clustersA, clustersB ) );
 								
 			} catch (FileNotFoundException e) {
 				e.printStackTrace();

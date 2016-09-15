@@ -311,38 +311,6 @@ public class DataUtils {
 		return (index - exspectedIndex) / (maxIndex - exspectedIndex);
 	}
 
-	// strehl and gosh 2002
-	public static double getNormalizedMutualInformation(Collection<Set<double[]>> u1, Collection<Set<double[]>> v1) {
-		List<Set<double[]>> u = new ArrayList<Set<double[]>>(u1);
-		List<Set<double[]>> v = new ArrayList<Set<double[]>>(v1);
-
-		int n = 0;
-		for (Set<double[]> l : u)
-			n += l.size();
-
-		double iuv = 0;
-		for (int i = 0; i < u.size(); i++) {
-			for (int j = 0; j < v.size(); j++) {
-				List<double[]> intersection = new ArrayList<double[]>(u.get(i));
-				intersection.retainAll(v.get(j));
-				if (intersection.size() > 0)
-					iuv += intersection.size() * Math.log((double) n * intersection.size() / (u.get(i).size() * v.get(j).size()));
-			}
-		}
-
-		double hu = 0;
-		for (int i = 0; i < u.size(); i++)
-			if (u.get(i).size() > 0)
-				hu += u.get(i).size() * Math.log((double) u.get(i).size() / n);
-
-		double hv = 0;
-		for (int j = 0; j < v.size(); j++)
-			if (v.get(j).size() > 0)
-				hv += v.get(j).size() * Math.log((double) v.get(j).size() / n);
-
-		return iuv / Math.sqrt(hu * hv);
-	}
-
 	public static double getDaviesBouldinIndex(Collection<Set<double[]>> clusters, Dist<double[]> dist) {
 		double sum = 0;
 

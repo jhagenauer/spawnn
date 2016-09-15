@@ -20,6 +20,7 @@ import spawnn.som.grid.Grid2D;
 import spawnn.som.grid.Grid2DHex;
 import spawnn.som.kernel.GaussKernel;
 import spawnn.som.net.SOM;
+import spawnn.utils.ClusterValidation;
 import spawnn.utils.DataUtils;
 
 public class TestClusterBuildShp {
@@ -80,7 +81,7 @@ public class TestClusterBuildShp {
 			log.debug("geosom: ");
 			log.debug("qe: "+ DataUtils.getMeanQuantizationError(cluster, fDist) );
 			log.debug("ge: "+ DataUtils.getMeanQuantizationError(cluster, geoDist) );
-			log.debug("nmi: "+ DataUtils.getNormalizedMutualInformation(cluster.values(), classes.values() ) );
+			log.debug("nmi: "+ ClusterValidation.getNormalizedMutualInformation(cluster.values(), classes.values() ) );
 			
 			/*try {
 				Drawer.geoDrawCluster(cluster.values(), samples, geoms, new FileOutputStream("output/cluster_geosom.png"), true);
@@ -129,7 +130,7 @@ public class TestClusterBuildShp {
 			log.debug("cng: ");
 			log.debug("qe: "+ DataUtils.getMeanQuantizationError(cluster, fDist) );
 			log.debug("ge: "+ DataUtils.getMeanQuantizationError(cluster, geoDist) );
-			log.debug("nmi: "+ DataUtils.getNormalizedMutualInformation(cluster.values(), classes.values() ) );
+			log.debug("nmi: "+ ClusterValidation.getNormalizedMutualInformation(cluster.values(), classes.values() ) );
 			
 			/*try {
 				Drawer.geoDrawCluster(cluster.values(), samples, geoms, new FileOutputStream("output/cluster_cng.png"), true);
