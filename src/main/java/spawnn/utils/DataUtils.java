@@ -28,6 +28,7 @@ import java.util.Set;
 import org.apache.commons.math3.linear.Array2DRowRealMatrix;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.SingularValueDecomposition;
+import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 import org.apache.log4j.Logger;
@@ -80,7 +81,7 @@ public class DataUtils {
 		}
 		return r;
 	}
-
+	
 	// pretty sucks
 	private static double sammonsStress(List<double[]> l1, Dist<double[]> a, List<double[]> l2, Dist<double[]> b) {
 		double sum = 0;
@@ -415,7 +416,7 @@ public class DataUtils {
 
 	public static void writeShape(List<double[]> samples, List<Geometry> geoms, String[] names, CoordinateReferenceSystem crs, String fn) {
 		if (names != null && samples.get(0).length != names.length)
-			throw new RuntimeException("sample-length does not match names-length: " + samples.get(0).length + "!=" + names.length);
+			throw new RuntimeException("column-length does not match names-length: " + samples.get(0).length + "!=" + names.length);
 
 		try {
 			SimpleFeatureTypeBuilder typeBuilder = new SimpleFeatureTypeBuilder();
@@ -982,14 +983,14 @@ public class DataUtils {
 			for (int i = 0; i < adl.size(); i++) {
 				AttributeDescriptor ad = adl.get(i);
 				String bin = ad.getType().getBinding().getName();
-
-				if (ignore.contains(i) || td.contains(i))
+								
+				if (ignore.contains(i) )
 					continue;
 
 				if (bin.equals("java.lang.Integer")) {
 					sd.names.add(ad.getLocalName());
 					sd.bindings.add(SpatialDataFrame.binding.Integer);
-				} else if (bin.equals("java.lang.Double")) {
+				} else if (bin.equals("java.lang.Double") || td.contains(i) ) {
 					sd.names.add(ad.getLocalName());
 					sd.bindings.add(SpatialDataFrame.binding.Double);
 				} else if (bin.equals("java.lang.Long")) {

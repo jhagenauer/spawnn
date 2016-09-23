@@ -4,7 +4,6 @@ import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.AbstractMap;
-import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -13,8 +12,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-
-import com.vividsolutions.jts.geom.Geometry;
 
 import spawnn.dist.Dist;
 
@@ -142,28 +139,6 @@ public class GraphUtils {
 		}
 		return mst;
 	}
-
-	public static Map<double[], Set<double[]>> deriveQueenContiguitiyMap(List<double[]> samples, List<Geometry> geoms, boolean withIdent) {
-		Map<double[], Set<double[]>> cm = new HashMap<double[], Set<double[]>>();
-	
-		for (int i = 0; i < samples.size(); i++) {
-			double[] a = samples.get(i);
-			Geometry ag = geoms.get(i);
-	
-			cm.put(a, new HashSet<double[]>());
-	
-			for (int j = 0; j < samples.size(); j++) {
-				if( i == j && !withIdent )
-					continue;
-				
-				double[] b = samples.get(j);
-				Geometry bg = geoms.get(j);
-				if (bg.touches(ag) || bg.intersects(ag))
-					cm.get(a).add(b);
-			}
-		}
-		return cm;
-	}
 	
 	public static List<Entry<double[],Double>> getDijkstraShortestPath( Map<double[],Map<double[],Double>> graph, double[] from, double[] to ) { 
 		Set<double[]> openList = new HashSet<double[]>();
@@ -259,8 +234,6 @@ public class GraphUtils {
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
-		}
-	
-		
+		}	
 	}
 }

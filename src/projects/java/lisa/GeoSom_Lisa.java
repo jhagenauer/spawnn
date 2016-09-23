@@ -71,7 +71,7 @@ public class GeoSom_Lisa {
 		{
 			
 			
-		Map<double[], Map<double[], Double>> dMap = GeoUtils.getRowNormedMatrix( GeoUtils.listsToWeights( GeoUtils.getKNNs(samples, gDist, 4, false) ) );
+		Map<double[], Map<double[], Double>> dMap = GeoUtils.getRowNormedMatrix( GeoUtils.listsToWeightsOld( GeoUtils.getKNNs(samples, gDist, 4, false) ) );
 	
 			
 		//Map<double[], Map<double[], Double>> dMap = GeoUtils.getRowNormedMatrix(GeoUtils.listsToWeights(GeoUtils.getContiguityMap(samples, geoms, false, false)));
@@ -149,7 +149,7 @@ public class GeoSom_Lisa {
 			
 			SomUtils.printDMatrix(grid, fDist, "output/"+k+"_dmatrix.png");
 			
-			Map<double[], Map<double[], Double>> dMap = GeoUtils.getRowNormedMatrix(GeoUtils.listsToWeights(grid.getContiguityMap()));
+			Map<double[], Map<double[], Double>> dMap = GeoUtils.getRowNormedMatrix(GeoUtils.listsToWeightsOld(grid.getContiguityMap()));
 			List<double[]> pts = new ArrayList<>(dMap.keySet());
 			
 			Map<double[],Double> v = new HashMap<double[],Double>();

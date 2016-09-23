@@ -313,7 +313,7 @@ public class PerformanceTests {
 		Map<double[], List<double[]>> r = new HashMap<double[], List<double[]>>();
 		for (Entry<double[], List<double[]>> e : knns.entrySet())
 			r.put(e.getKey(), e.getValue().subList(0, n));
-		return GeoUtils.listsToWeights(r);
+		return GeoUtils.listsToWeightsOld(r);
 	}
 
 	public static long trainNG(contextModel m, double[] params, int nrNeurons, List<double[]> samples, Map<double[], List<double[]>> knns, int[] ga, int[] fa) {

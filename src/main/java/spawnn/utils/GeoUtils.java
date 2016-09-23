@@ -190,16 +190,6 @@ public class GeoUtils {
 		return r;
 	}
 	
-	public static Map<double[], Map<double[], Double>> listsToWeights( Map<double[], List<double[]>> connectMap ) {
-		Map<double[], Map<double[], Double>> r = new HashMap<double[], Map<double[], Double>>();
-		for( double[] a : connectMap.keySet() ) {
-			r.put(a, new HashMap<double[],Double>() );
-			for( double[] nb : connectMap.get(a) )
-				r.get(a).put(nb, 1.0 );
-		}
-		return r;
-	}
-	
 	public static Map<double[], List<double[]>> getKNNs(final List<double[]> samples, final Dist<double[]> gDist, int k, boolean includeIdentity) {
 		Map<double[], List<double[]>> r = new HashMap<double[], List<double[]>>();
 				
@@ -221,28 +211,6 @@ public class GeoUtils {
 		return r;
 	}
 		
-	public static Map<double[], List<double[]>> getContiguityMap(List<double[]> samples, List<Geometry> geoms, boolean rookAdjacency, boolean includeIdentity ) {
-		Map<double[], List<double[]>> r = new HashMap<double[], List<double[]>>();
-		for( int i = 0; i < samples.size(); i++ ) {
-			Geometry a = geoms.get(i);
-			List<double[]> l = new ArrayList<double[]>();
-			for( int j = 0; j < samples.size(); j++ ) {
-				Geometry b = geoms.get(j);
-				if( !includeIdentity && a == b )
-					continue;				
-				if( !rookAdjacency ) { // queen
-					if( a.touches(b) || a.intersects(b) )
-						l.add( samples.get(j));
-				} else { // rook
-					if( a.intersection(b).getCoordinates().length > 1 ) // SLOW
-						l.add( samples.get(j));
-				}
-			}
-			r.put(samples.get(i), l);
-		}
-		return r;
-	}
-
 	// morans ------------------------------>>>
 	public static double[] getMoransIStatistics(Map<double[], Map<double[], Double>> dMap, List<double[]> samples, List<Double> values ) {
 		Map<double[],Double> m = new HashMap<double[],Double>();
@@ -539,5 +507,47 @@ public class GeoUtils {
 		log.debug( "Inv, 1, norm: "+getMoransI( getRowNormedMatrix(m1), values) ); 
 		log.debug(Arrays.toString(getMoransIStatistics(m1, values )));
 		log.debug(Arrays.toString(getMoransIStatisticsMonteCarlo(m1, values, 100000 )));
+	}
+
+	public static Map<double[], Map<double[], Double>> contiguityMapToDistanceMap( Map<double[], Set<double[]>> connectMap ) {
+		Map<double[], Map<double[], Double>> r = new HashMap<>();
+		for( double[] a : connectMap.keySet() ) {
+			r.put(a, new HashMap<double[],Double>() );
+			for( double[] nb : connectMap.get(a) )
+				r.get(a).put(nb, 1.0 );
+		}
+		return r;
+	}
+	
+	public static Map<double[], Map<double[], Double>> listsToWeightsOld( Map<double[], List<double[]>> connectMap ) {
+		Map<double[], Map<double[], Double>> r = new HashMap<>();
+		for( double[] a : connectMap.keySet() ) {
+			r.put(a, new HashMap<double[],Double>() );
+			for( double[] nb : connectMap.get(a) )
+				r.get(a).put(nb, 1.0 );
+		}
+		return r;
+	}
+
+	public static Map<double[], Set<double[]>> getContiguityMap(List<double[]> samples, List<Geometry> geoms, boolean rookAdjacency, boolean includeIdentity ) {
+		Map<double[], Set<double[]>> r = new HashMap<>();
+		for( int i = 0; i < samples.size(); i++ ) {
+			Geometry a = geoms.get(i);
+			Set<double[]> l = new HashSet<>();
+			for( int j = 0; j < samples.size(); j++ ) {
+				Geometry b = geoms.get(j);
+				if( !includeIdentity && a == b )
+					continue;				
+				if( !rookAdjacency ) { // queen
+					if( a.touches(b) || a.intersects(b) )
+						l.add( samples.get(j));
+				} else { // rook
+					if( a.intersection(b).getCoordinates().length > 1 ) // SLOW
+						l.add( samples.get(j));
+				}
+			}
+			r.put(samples.get(i), l);
+		}
+		return r;
 	}
 }

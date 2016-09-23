@@ -71,7 +71,7 @@ public class WMNGParamSensLISA {
 		final int fips = 7; // county_f basically identical to fips
 		final Dist<double[]> fDist = new EuclideanDist(new int[] { fa });
 
-		final Map<double[], Map<double[], Double>> dMap = GeoUtils.getRowNormedMatrix(GeoUtils.listsToWeights(GeoUtils.getContiguityMap(samples, geoms, false, false)));		
+		final Map<double[], Map<double[], Double>> dMap = GeoUtils.getRowNormedMatrix(GeoUtils.contiguityMapToDistanceMap(GeoUtils.getContiguityMap(samples, geoms, false, false)));		
 		final double[] a = WMNGParamSensREDCAP_sameCluster.getSampleByFips(samples, fips, 48383);
 		final double[] b = WMNGParamSensREDCAP_sameCluster.getSampleByFips(samples, fips, 48311);
 

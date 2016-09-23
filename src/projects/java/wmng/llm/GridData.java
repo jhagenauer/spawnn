@@ -18,14 +18,14 @@ public class GridData {
 
 	public GridData(Grid2D<double[]> gridTrain, Grid2D<double[]> gridVal) {
 		this.gridTrain = gridTrain;
-		dMapTrain = GeoUtils.getRowNormedMatrix(GeoUtils.listsToWeights(GeoUtils.getNeighborsFromGrid(gridTrain)));
+		dMapTrain = GeoUtils.getRowNormedMatrix(GeoUtils.listsToWeightsOld(GeoUtils.getNeighborsFromGrid(gridTrain)));
 		for (double[] d : gridTrain.getPrototypes()) {
 			samplesTrain.add(d);
 			desiredTrain.add(new double[] { d[3] });
 		}
 
 		this.gridVal = gridVal;
-		dMapVal = GeoUtils.getRowNormedMatrix(GeoUtils.listsToWeights(GeoUtils.getNeighborsFromGrid(gridVal)));
+		dMapVal = GeoUtils.getRowNormedMatrix(GeoUtils.listsToWeightsOld(GeoUtils.getNeighborsFromGrid(gridVal)));
 		for (double[] d : gridVal.getPrototypes()) {
 			samplesVal.add(d);
 			desiredVal.add(new double[] { d[d.length - 1] });

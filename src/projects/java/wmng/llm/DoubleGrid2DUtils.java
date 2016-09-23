@@ -187,7 +187,7 @@ public class DoubleGrid2DUtils {
 				Drawer.geoDrawValues(sdf, 2, ColorBrewer.Blues, "output/x1.png");
 				Drawer.geoDrawValues(sdf, 3, ColorBrewer.Blues, "output/y.png");
 				
-				Map<double[],Map<double[],Double>> dMap = GeoUtils.getRowNormedMatrix(GeoUtils.listsToWeights(GeoUtils.getNeighborsFromGrid(grid)));
+				Map<double[],Map<double[],Double>> dMap = GeoUtils.getRowNormedMatrix(GeoUtils.listsToWeightsOld(GeoUtils.getNeighborsFromGrid(grid)));
 				for( int j = 2; j <= 3; j++ ) {
 					
 					Map<double[],Double> values = new HashMap<double[],Double>();

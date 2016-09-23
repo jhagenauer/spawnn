@@ -17,6 +17,7 @@ import com.vividsolutions.jts.geom.Geometry;
 
 import spawnn.utils.DataFrame;
 import spawnn.utils.DataUtils;
+import spawnn.utils.GeoUtils;
 import spawnn.utils.GraphUtils;
 import spawnn.utils.SpatialDataFrame;
 
@@ -30,7 +31,7 @@ public class PrepareCensusDataChicago {
 		
 		SpatialDataFrame sdf = DataUtils.readSpatialDataFrameFromShapefile(new File("data/chicago/boundaries_tracts/Export_Output.shp"), new int[]{1,2,3}, true);
 				
-		Map<double[], Set<double[]>> cm = GraphUtils.deriveQueenContiguitiyMap(sdf.samples, sdf.geoms,false);
+		Map<double[], Set<double[]>> cm = GeoUtils.getContiguityMap(sdf.samples, sdf.geoms, false, false ); 
 		List<Map<double[], Set<double[]>>> sub = GraphUtils.getSubGraphs(cm);
 
 		/*Map<double[], Set<double[]>> largestSub = null;

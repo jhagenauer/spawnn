@@ -96,7 +96,7 @@ public class BostonTest_LOO {
 				vNames += ";";
 		}
 				
-		Map<double[],Map<double[],Double>> dMap = GeoUtils.getRowNormedMatrix( GeoUtils.listsToWeights(GeoUtils.getContiguityMap(samples, sdf.geoms, false, false)));
+		Map<double[],Map<double[],Double>> dMap = GeoUtils.getRowNormedMatrix( GeoUtils.contiguityMapToDistanceMap(GeoUtils.getContiguityMap(samples, sdf.geoms, false, false)));
 						
 		final int[] fa = new int[samples.get(0).length];
 		for( int i = 0; i < fa.length; i++ )

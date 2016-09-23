@@ -34,6 +34,7 @@ public class LandCon {
 
 	private static Logger log = Logger.getLogger(LandCon.class);
 
+	// just normal but threaded hierarchical clustering
 	public static List<TreeNode> getHierarchicalClusterTree(Collection<double[]> samples, Map<double[], Set<double[]>> cm, Dist<double[]> dist, HierarchicalClusteringType type, int threads) {
 		int length = samples.iterator().next().length;
 

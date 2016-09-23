@@ -93,7 +93,7 @@ public class BostonTest_FWSelect {
 				desired.add(new double[]{d[5]});
 			}
 							
-			Map<double[],Map<double[],Double>> dMap = GeoUtils.getRowNormedMatrix( GeoUtils.listsToWeights(GeoUtils.getContiguityMap(samples, sdf.geoms, false, false)));
+			Map<double[],Map<double[],Double>> dMap = GeoUtils.getRowNormedMatrix( GeoUtils.contiguityMapToDistanceMap(GeoUtils.getContiguityMap(samples, sdf.geoms, false, false)));
 			final TrainingData hd = new TrainingData( samples, desired, dMap );
 			
 			final int[] fa = new int[samples.get(0).length];

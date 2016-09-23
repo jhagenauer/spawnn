@@ -161,11 +161,11 @@ public class DistMatrixDialog extends JDialog implements ActionListener {
 			setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 			
 			if( cb.getSelectedItem() == DistMatType.Adjacency ) {
-				dMap = GeoUtils.listsToWeights( GeoUtils.getContiguityMap(samples, sdf.geoms, adjCb.getSelectedItem() == AdjMode.Rook, adjIncIdent.isSelected() ));
+				dMap = GeoUtils.contiguityMapToDistanceMap( GeoUtils.getContiguityMap(samples, sdf.geoms, adjCb.getSelectedItem() == AdjMode.Rook, adjIncIdent.isSelected() ));
 			} else if( cb.getSelectedItem() == DistMatType.InvDistance ) {
 				dMap = GeoUtils.getInverseDistanceMatrix(samples, dist, Double.parseDouble(power.getText() ) );
 			} else { // knn
-				dMap = GeoUtils.listsToWeights( GeoUtils.getKNNs(samples, dist, Integer.parseInt(knns.getText()), knnIncIdent.isSelected() ));
+				dMap = GeoUtils.listsToWeightsOld( GeoUtils.getKNNs(samples, dist, Integer.parseInt(knns.getText()), knnIncIdent.isSelected() ));
 			}
 			
 			if( rowNorm.isSelected() )

@@ -127,7 +127,7 @@ public class BostonTest {
 				vNames += ";";
 		}
 						
-		final Map<double[],Map<double[],Double>> dMap = GeoUtils.getRowNormedMatrix( GeoUtils.listsToWeights(GeoUtils.getContiguityMap(samples, sdf.geoms, false, false)));
+		final Map<double[],Map<double[],Double>> dMap = GeoUtils.getRowNormedMatrix( GeoUtils.contiguityMapToDistanceMap(GeoUtils.getContiguityMap(samples, sdf.geoms, false, false)));
 		/*Dist<double[]> gDist = new Dist<double[]>() {
 			@Override
 			public double dist(double[] a, double[] b) {

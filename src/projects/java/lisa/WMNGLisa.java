@@ -53,7 +53,7 @@ public class WMNGLisa {
 		final SpatialDataFrame sdf = DataUtils.readSpatialDataFrameFromShapefile(file, true);
 		final List<double[]> samples = sdf.samples;
 		final List<Geometry> geoms = sdf.geoms;
-		final Map<double[], Map<double[], Double>> dMap = GeoUtils.getRowNormedMatrix(GeoUtils.listsToWeights(GeoUtils.getContiguityMap(samples, geoms, false, false)));
+		final Map<double[], Map<double[], Double>> dMap = GeoUtils.getRowNormedMatrix(GeoUtils.contiguityMapToDistanceMap(GeoUtils.getContiguityMap(samples, geoms, false, false)));
 
 		final int fa = 7; // bush pct
 		DataUtils.zScoreColumn(samples, fa);
