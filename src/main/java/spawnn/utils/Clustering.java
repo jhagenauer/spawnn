@@ -519,7 +519,7 @@ public class Clustering {
 								s += dist.dist(d1, d2);
 						s /= (curLayer.get(l1).size() * curLayer.get(l2).size());
 					}
-					if (s < sMin) {
+					if ( c1 == null || s < sMin) {
 						c1 = l1;
 						c2 = l2;
 						sMin = s;
