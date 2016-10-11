@@ -127,10 +127,19 @@ public class SupervisedUtils {
 	public static double getAIC(double mse, int nrParams, int nrSamples) {
 		return nrSamples * Math.log(mse) + 2 * nrParams;
 	}
-
-	// FIXME only if model is univariate, linear and has norm-distributed residuals
+	
 	public static double getAICc(double mse, int nrParams, int nrSamples) {
 		return getAIC(mse, nrParams, nrSamples) + (2 * nrParams * (nrParams + 1)) / (nrSamples - nrParams - 1);
+	}
+	
+	// I don't know why, but that's how it is done in the GWMODEL package
+	public static double getAIC_GWMODEL(double mse, int nrParams, int nrSamples) {
+		return nrSamples * ( Math.log(mse) + Math.log(2*Math.PI) + 1 ) + 2 * nrParams;
+	}
+	
+	// I don't know why, but that's how it is done in the GWMODEL package
+	public static double getAICc_GWMODEL(double mse, int nrParams, int nrSamples) {
+		return nrSamples * ( Math.log(mse) + Math.log(2*Math.PI) + 1 ) + (2 * nrSamples * nrParams) / (nrSamples - nrParams - 3);
 	}
 
 	public static double getBIC(double mse, int nrParams, int nrSamples) {

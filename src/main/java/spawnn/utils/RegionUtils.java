@@ -72,16 +72,6 @@ public class RegionUtils {
 		return dist;
 	}
 	
-	public static boolean isContiugous( Map<double[], Set<double[]>> cm, Set<double[]> cluster ) {
-		if( cluster.isEmpty() )
-			return true;
-		
-		Set<double[]> visited = getContiugousSubcluster( cm, cluster, cluster.iterator().next() );					
-		if( visited.size() != cluster.size() ) 
-			return false;
-		else return true;
-	}
-	
 	public static Set<Set<double[]>> getAllContiguousSubcluster( Map<double[],Set<double[]>> cm, Set<double[]> cluster ) {
 		Set<Set<double[]>> all = new HashSet<Set<double[]>>();
 		Set<double[]> ds = new HashSet<double[]>(cluster);

@@ -22,6 +22,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import org.apache.commons.math3.distribution.ChiSquaredDistribution;
 import org.apache.commons.math3.distribution.FDistribution;
 import org.apache.commons.math3.distribution.TDistribution;
 import org.apache.commons.math3.exception.DimensionMismatchException;
@@ -45,7 +46,6 @@ import landCon.LandCon;
 import nnet.SupervisedUtils;
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
-import spawnn.utils.ClusterValidation;
 import spawnn.utils.Clustering;
 import spawnn.utils.Clustering.HierarchicalClusteringType;
 import spawnn.utils.Clustering.TreeNode;
@@ -54,14 +54,15 @@ import spawnn.utils.DataUtils;
 import spawnn.utils.DataUtils.Transform;
 import spawnn.utils.Drawer;
 import spawnn.utils.GeoUtils;
+import spawnn.utils.RegionUtils;
 import spawnn.utils.SpatialDataFrame;
 
 public class ChowClustering {
 
 	private static Logger log = Logger.getLogger(ChowClustering.class);
 
-	enum StructChangeTestMode {
-		Chow, Wald, AChow
+	public enum StructChangeTestMode {
+		Chow, AdjustedChow, Wald, ResiChow, ResiLikelihoodRatio, ResiSimple
 	};
 
 	enum Method {
@@ -69,48 +70,51 @@ public class ChowClustering {
 	};
 	
 	enum PreCluster {
-		Kmeans, Var
+		Kmeans, Ward
 	}
+	
+	public static int METHOD = 0, CLUST = 1, STRUCT_TEST = 2, P_VALUE = 3, DIST = 4, PRECLUST = 5, MIN_OBS = 6, RUNS = 7;
 	
 	public static void main(String[] args) {
 		int threads = Math.max(1 , Runtime.getRuntime().availableProcessors() -1 );
 		log.debug("Threads: "+threads);
 		
-		SpatialDataFrame sdf = DataUtils.readSpatialDataFrameFromShapefile(new File("R:/data/gemeinden/lc2010/gem_dat.shp"), new int[]{ 1, 2 }, true);
+		SpatialDataFrame sdf = DataUtils.readSpatialDataFrameFromShapefile(new File("R:/data/gemeinden/gem_dat.shp"), new int[]{ 1, 2 }, true);
 		List<double[]> samples = sdf.samples;
 		List<Geometry> geoms = sdf.geoms;
 		
-		int[] ga = new int[] { 3, 4 };
-		int[] fa = new int[] { 2, 6, 7, 8, 9, 11, 12 };
-		//int[] fa2 = new int[] { 20, 21, 22, 23, 24, 25}; // no intercept
-		//int[] fa3 = new int[] { 19, 20, 21, 22, 23, 24, 25 };
-		//int ta = 12; // lc2000
-		int ta = 13; // lc2010
-		//int ta = 14; // lcRate
+		/*List<double[]> samples = new ArrayList<>();
+		List<Geometry> geoms = new ArrayList<>();
+		for( int i = 0; i < sdf.samples.size(); i++ ) {
+			if( sdf.samples.get(i)[4] > 3114857.91568308 ) {
+				samples.add( sdf.samples.get(i) );
+				geoms.add( sdf.geoms.get(i) );
+			}
+		}*/
 		
+		DataUtils.transform(samples, new int[] { 2 }, Transform.sqrt );
+		DataUtils.transform(samples, new int[] { 6 }, Transform.log );
+		DataUtils.transform(samples, new int[] { 12 }, Transform.log );
+		DataUtils.transform(samples, new int[] { 13 }, Transform.log );
+		
+		int[] ga = new int[] { 3, 4 };
+		int[] fa = new int[] { 2, 6, 7, 8, 9, 11/*, 12*/ };
+		int ta = 12; // lc2000
+		//int ta = 13; // lc2010
+				
 		for( int i = 0; i < fa.length; i++ )
 			log.debug("fa "+i+": "+sdf.names.get(fa[i]));
-		/*for( int i = 0; i < fa3.length; i++ )
-			log.debug("fa3 "+i+": "+sdf.names.get(fa3[i]));*/
 		log.debug("ta: "+ta+","+sdf.names.get(ta) );
 		
 		Dist<double[]> gDist = new EuclideanDist(ga);
 		Dist<double[]> fDist = new EuclideanDist(fa);
-		/*Dist<double[]> fDist2 = new EuclideanDist(fa2);
-		Dist<double[]> fDist3 = new EuclideanDist(fa3);*/
-
-		DataUtils.transform(samples, new int[] { 2 }, Transform.sqrt);
-		DataUtils.transform(samples, new int[] { 6 }, Transform.log);
-		DataUtils.transform(samples, new int[] { ta }, Transform.log);
 
 		List<double[]> samplesOrig = new ArrayList<>();
 		for (double[] d : samples)
 			samplesOrig.add(Arrays.copyOf(d, d.length));
 
 		// clustering requires standardization
-		// DataUtils.transform(samples, new int[] { ta }, Transform.zScore); // should not be necessary
 		DataUtils.transform(samples, fa, Transform.zScore);
-		//DataUtils.transform(samples, fa3, Transform.zScore); // includes fa2
 		DataUtils.zScoreGeoColumns(samples, ga, gDist);
 		
 		Map<double[],Set<double[]>> cma = GeoUtils.getContiguityMap(samples, geoms, false, false);
@@ -123,30 +127,81 @@ public class ChowClustering {
 			e1.printStackTrace();
 		}
 
-		List<Object[]> params = new ArrayList<>();			
-		params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.Wald, gDist, null, fa.length+1, 1 }); 		
+		List<Object[]> params = new ArrayList<>();
+		
+		/*params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.Wald, 1.0, gDist, null, fa.length+1, 1 });
+		params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.Chow, 1.0, gDist, null, fa.length+1, 1 });
+		params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.ResiSimple, 1.0, gDist, null, fa.length+1, 1 });
+		
+		params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.Wald, 1.0, gDist, null, fa.length+3, 1 });
+		params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.Chow, 1.0, gDist, null, fa.length+3, 1 });
+		params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.ResiSimple, 1.0, gDist, null, fa.length+3, 1 });
+		
+		params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.Wald, 0.9, gDist, PreCluster.Kmeans, 500, 4 });
+		params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.Chow, 0.9, gDist, PreCluster.Kmeans, 500, 4 });
+		params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.ResiSimple, 0.9, gDist, PreCluster.Kmeans, 500, 4 });
+		
+		params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.Wald, 1.0, gDist, PreCluster.Kmeans, 500, 4 });
+		params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.Chow, 1.0, gDist, PreCluster.Kmeans, 500, 4 });
+		params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.ResiSimple, 1.0, gDist, PreCluster.Kmeans, 500, 4 });*/
+		
+		//params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.ResiSimple, 0.05, gDist, PreCluster.Ward, 500, 1 });
+		
+		params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.ResiSimple, 1.0, gDist, PreCluster.Kmeans, 700, 4 }); // Benchmark
+		
+		params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.ResiSimple, 1.0, gDist, null, fa.length+1, 1 });
+		params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.ResiSimple, 1.0, gDist, null, fa.length+2, 1 });
+		params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.ResiSimple, 1.0, gDist, null, fa.length+4, 1 });
+		params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.ResiSimple, 1.0, gDist, null, fa.length+6, 1 });
+		params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.ResiSimple, 1.0, gDist, null, fa.length+8, 1 });
+		params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.ResiSimple, 1.0, gDist, null, fa.length+12, 1 });
+		
+		params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.Chow, 1.0, gDist, null, fa.length+1, 1 });
+		params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.Chow, 0.95, gDist, null, fa.length+1, 1 });
+		params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.Chow, 0.9, gDist, null, fa.length+1, 1 });
+		
+		params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.Chow, 1.0, gDist, PreCluster.Kmeans, 700, 4 });
+		params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.Chow, 0.95, gDist, PreCluster.Kmeans, 700, 4 });
+		params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.Chow, 0.9, gDist, PreCluster.Kmeans, 700, 4 });
+		params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.Chow, 0.5, gDist, PreCluster.Kmeans, 700, 4 });
+		params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.Chow, 0.1, gDist, PreCluster.Kmeans, 700, 4 });
+		params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.Chow, 0.05, gDist, PreCluster.Kmeans, 700, 4 });
+		params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.Chow, 0.01, gDist, PreCluster.Kmeans, 700, 4 });
 				
-		params.add(new Object[] { Method.HC_CLUSTERING, HierarchicalClusteringType.ward, null, gDist, null, -1, 1 });
+		params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.Wald, 1.0, gDist, PreCluster.Kmeans, 700, 4 });
+		params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.Wald, 0.95, gDist, PreCluster.Kmeans, 700, 4 });
+		params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.Wald, 0.9, gDist, PreCluster.Kmeans, 700, 4 });
+		params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.Wald, 0.5, gDist, PreCluster.Kmeans, 700, 4 });
+		params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.Wald, 0.1, gDist, PreCluster.Kmeans, 700, 4 });
+		params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.Wald, 0.05, gDist, PreCluster.Kmeans, 700, 4 });
+		params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.Wald, 0.01, gDist, PreCluster.Kmeans, 700, 4 });
 		
-		params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.Chow, gDist, null, fa.length+1, 1 }); // pure chow  
+		params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.ResiLikelihoodRatio, 1.0, gDist, PreCluster.Kmeans, 700, 4 });
+		params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.ResiLikelihoodRatio, 0.95, gDist, PreCluster.Kmeans, 700, 4 });
+		params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.ResiLikelihoodRatio, 0.9, gDist, PreCluster.Kmeans, 700, 4 });
+		params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.ResiLikelihoodRatio, 0.5, gDist, PreCluster.Kmeans, 700, 4 });
+		params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.ResiLikelihoodRatio, 0.1, gDist, PreCluster.Kmeans, 700, 4 });
+		params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.ResiLikelihoodRatio, 0.05, gDist, PreCluster.Kmeans, 700, 4 });
+		params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.ResiLikelihoodRatio, 0.01, gDist, PreCluster.Kmeans, 700, 4 });
 		
-		// kmeans
-		params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.Chow, gDist, PreCluster.Kmeans, 400, 10 }); // Day
-		params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.Chow, gDist, PreCluster.Kmeans, 500, 10 }); // Day
-		params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.Wald, gDist, PreCluster.Kmeans, 400, 10 });
-		params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.Wald, gDist, PreCluster.Kmeans, 500, 10 });
-
+		params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.ResiSimple, 1.0, gDist, PreCluster.Kmeans, 700, 4 });
+		params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.ResiSimple, 1.0, gDist, PreCluster.Kmeans, 1000, 4 });
+		params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.ResiSimple, 1.0, gDist, PreCluster.Kmeans, 2000, 4 });
+		params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.ResiSimple, 1.0, gDist, PreCluster.Kmeans, 3000, 4 });
+		params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.ResiSimple, 1.0, gDist, PreCluster.Kmeans, 4000, 4 });
+		
 		Map<Integer, ClusterResult> re = new HashMap<>();
 
+		log.debug("samples: "+samples.size()+", params: "+params.size());
 		for (Object[] param : params) {
 			Clustering.r.setSeed(0);
-
+			int maxRuns = (int) param[RUNS];
+			
+			double[][] aics = new double[maxRuns][];
+			double[][] rss = new double[maxRuns][];
+			
 			ClusterResult best = null;
-
-			double[][] aics;
-
-			int maxRuns = (int) param[6];
-			aics = new double[maxRuns][];
+			double bestAICc = Double.POSITIVE_INFINITY;
 
 			String method = Arrays.toString(param);
 			log.debug(method);
@@ -154,20 +209,23 @@ public class ChowClustering {
 			for (int r = 0; r < maxRuns; r++) {
 				log.debug("r: "+r);
 
-				List<Set<double[]>> init;
-				if (param[4] != null && (PreCluster)param[4] == PreCluster.Kmeans ) {
-					init = new ArrayList<>(Clustering.kMeans(samples, (int) param[5], (Dist<double[]>) param[3]).values());
-				} else if(param[4] != null && (PreCluster)param[4] == PreCluster.Var ) {
-					Map<Integer,Set<double[]>> m = new HashMap<>();
-					for( double[] d : samples ) {
-						int c = (int)d[(int)param[5]];
-						if( !m.containsKey(c) )
-							m.put(c, new HashSet<double[]>() );
-						m.get(c).add(d);
-					}					
+				List<Set<double[]>> init = null;
+				if (param[PRECLUST] != null && (PreCluster)param[PRECLUST] == PreCluster.Kmeans ) {
+					List<Set<double[]>> l = new ArrayList<>(Clustering.kMeans(samples, (int) param[MIN_OBS], (Dist<double[]>) param[DIST]).values());
 					init = new ArrayList<>();
-					for( Set<double[]> s : m.values() )
-						init.add(s);
+					for( Set<double[]> s : l )
+						if( s.isEmpty() )
+							log.warn("Removing empty init cluster!");
+						else
+							init.add(s);					
+				} else if (param[PRECLUST] != null && (PreCluster)param[PRECLUST] == PreCluster.Ward ) {
+					List<TreeNode> tree = LandCon.getHierarchicalClusterTree(samples, cma, gDist, HierarchicalClusteringType.ward, threads );
+					int nrCluster = samples.size();
+					do 
+						init = Clustering.treeToCluster( Clustering.cutTree(tree, nrCluster--) );
+					while( minClusterSize(init) <= fa.length+1 );
+					log.debug("init size: "+init.size()+","+minClusterSize(init));
+					
 				} else {
 					init = new ArrayList<>();
 					for (double[] d : samples) {
@@ -176,14 +234,26 @@ public class ChowClustering {
 						init.add(s);
 					}
 				}
-									
+				
+				List<Set<double[]>> cInit = new ArrayList<>();
+				for( Set<double[]> s : init ) 
+					if( !GeoUtils.isContiugous(cma, s) ) 
+						cInit.addAll( RegionUtils.getAllContiguousSubcluster(cma, s) );
+					else
+						cInit.add(s);
+				if( cInit.size() != init.size() ) {
+					log.warn("Splitted non-contiguos clusters. Now "+cInit.size()+" instead of "+init.size()+" clusters");
+					init = cInit;
+				}
+				
 				{
-					SummaryStatistics ss = new SummaryStatistics();
+				SummaryStatistics ss = new SummaryStatistics();
 					for (Set<double[]> s : init)
 						ss.addValue(s.size());
-					log.debug(ss.getMin() + "," + ss.getMean() + "," + ss.getMax());
+					log.debug("1st stats: "+ss.getMin() + "," + ss.getMean() + "," + ss.getMax());
+					log.debug("1st wss: "+DataUtils.getWithinSumOfSquares(init, gDist ) );
 				}
-
+				
 				List<TreeNode> curLayer = new ArrayList<>();
 				for (Set<double[]> s : init) {
 					TreeNode cn = new TreeNode(0, 0);
@@ -202,61 +272,93 @@ public class ChowClustering {
 					ncm.put(tnA, s);
 				}
 				
-				List<Future<ClusterResult>> futures = new ArrayList<>();
-				
-				if( (Method)param[0] == Method.HC_CLUSTERING || (Method)param[0] == Method.TEST_CLUSTERING ) { // hierarchical methods
+				// HC 1
+				{
+					log.debug("hc1");
+					List<TreeNode> tree = Clustering.getHierarchicalClusterTree(curLayer, ncm, gDist, HierarchicalClusteringType.ward, threads );
+					log.debug("tree created");
 					
-					List<TreeNode> tree;
-					if ((Method) param[0] == Method.HC_CLUSTERING ) { // gwr clustering
-						tree = LandCon.getHierarchicalClusterTree(samples, cma, (Dist<double[]>) param[3], (HierarchicalClusteringType) param[1], threads);
-					} else {
-						int threshold = Math.abs((int) param[5]);
-						if (param[4] != null )
-							threshold = fa.length + 2;
-						tree = getHierarchicalClusterTree(curLayer, ncm, fa, ta, (HierarchicalClusteringType) param[1], (Dist<double[]>) param[3], threshold, (StructChangeTestMode) param[2], threads);
-					}
-					log.debug("Tree created...");
-	
-					ExecutorService es = Executors.newFixedThreadPool(threads);
-					for (int i = 1; i <= Math.min(curLayer.size(), 280); i += 1) { // error goes incredibly up for 280 >, why? 
-						final int nrCluster = i;
-						futures.add(es.submit(new Callable<ClusterResult>() {
-							@Override
-							public ClusterResult call() throws Exception {
-								List<Set<double[]>> ct = Clustering.cutTree(tree, nrCluster);
-								
-								List<Double> residuals = null;
-								int nrParams;
-								if ( minClusterSize(ct) <= fa.length + 1 ) { // needs lots of ram if many clusters
-									double[][] x = getX(ct, samples, fa );
-									double[] y = getY(samples,ta);
-									residuals = getResidualsLM(x, y, x, y);								
-									nrParams = x[0].length;
-								} else {
-									residuals = getResidualsLM(ct, samples, samples, fa, ta);
-									nrParams = ct.size() * (fa.length + 1); 
-								}
-								
-								double ss = getSumOfSquares(residuals);
-								double aic = SupervisedUtils.getAICc(ss / samples.size(), nrParams, samples.size());
-								return new ClusterResult(aic, ct, residuals, method);
-							}
-						}));
-					}
-					es.shutdown();
+					int threshold;
+					if (param[PRECLUST] != null )
+						threshold = fa.length + 1;
+					else
+						threshold = (int) param[MIN_OBS];
+					
+					List<Set<double[]>> cluster = null;
+					int nrCluster = curLayer.size();
+					do {
+						curLayer = Clustering.cutTree(tree, nrCluster--);
+						cluster = Clustering.treeToCluster(curLayer);
+					} while( minClusterSize( cluster ) < threshold );
+					
+					SummaryStatistics ss = new SummaryStatistics();
+					for (Set<double[]> s : cluster)
+						ss.addValue(s.size());
+					log.debug("hc1 stats: "+ss.getMin() + "," + ss.getMean() + "," + ss.getMax());
+					log.debug("hc1 wss: "+DataUtils.getWithinSumOfSquares(cluster, gDist ) );
 				}
-
+				
+				// HC 2
+				log.debug("hc2");
+				
+				// update curLayer/ncm
+				for( TreeNode tn : curLayer )
+					tn.contents = Clustering.getContents(tn);
+				
+				ncm = new HashMap<>();
+				for (TreeNode tnA : curLayer) {
+					Set<TreeNode> s = new HashSet<>();
+					for (double[] a : tnA.contents)
+						for (double[] nb : cma.get(a))
+							for (TreeNode tnB : curLayer)
+								if (tnB.contents.contains(nb))
+									s.add(tnB);
+					ncm.put(tnA, s);
+				}
+				
+				List<TreeNode> tree = getHierarchicalClusterTree(curLayer, ncm, fa, ta, (HierarchicalClusteringType) param[CLUST], (StructChangeTestMode) param[STRUCT_TEST], (double)param[P_VALUE],threads);
+				log.debug("tree created");
+				
+				List<Future<ClusterResult>> futures = new ArrayList<>();
+				ExecutorService es = Executors.newFixedThreadPool(threads);
+				for (int i = 1; i <= Math.min( curLayer.size(), 250); i += 1) {
+					final int nrCluster = i;
+					futures.add(es.submit(new Callable<ClusterResult>() {
+						@Override
+						public ClusterResult call() throws Exception {
+							List<Set<double[]>> ct = Clustering.treeToCluster( Clustering.cutTree(tree, nrCluster) );
+							
+							List<Double> residuals = null;
+							if ( minClusterSize(ct) >= fa.length + 1 ) 
+								residuals = getResidualsLM(ct, samples, samples, fa, ta);									
+							return new ClusterResult(ct, residuals, method);
+						}
+					}));
+				}
+				es.shutdown();
+			
 				aics[r] = new double[futures.size()];
+				rss[r] = new double[futures.size()];
 				try {
 					for (Future<ClusterResult> f : futures) {
 						ClusterResult cr = f.get();					
-						int idx = futures.indexOf(f);						
-						aics[r][idx] = cr.cost;
+						int idx = futures.indexOf(f);		
 						
-						if( param[4] != null && (PreCluster)param[4] == PreCluster.Var && (best == null || cr.cluster.size() > best.cluster.size() ) ) {
-							best = cr;
-						} else if (best == null || cr.cost < best.cost) 
-							best = cr;
+						if( cr.residuals != null ) {
+							double ss = getSumOfSquares(cr.residuals);
+							double aicc = SupervisedUtils.getAICc_GWMODEL(ss/cr.residuals.size(), cr.cluster.size() * (fa.length+1) , samples.size());
+							aics[r][idx] = aicc;
+							rss[r][idx] = ss;
+							
+							if( best == null || aicc < bestAICc ) {
+								best = cr;
+								bestAICc = aicc;
+							}
+						} else {
+							log.warn("No residuals for " +cr+", "+idx);
+							aics[r][idx] = Double.NaN;
+							rss[r][idx] = Double.NaN;
+						}
 					}
 				} catch (InterruptedException e) {
 					e.printStackTrace();
@@ -268,14 +370,16 @@ public class ChowClustering {
 			re.put(idx, best);
 
 			try {
-				String sAIC = idx + ",\"aic," + method + "\"," + Arrays.toString(getMean(aics)).replaceAll("\\[", "").replaceAll("\\]", "") + "\r\n";
-				Files.write(file, sAIC.getBytes(), StandardOpenOption.APPEND);
+				String s = "";
+				s += idx + ",aic,\"" + method + "\"," + Arrays.toString(getMean(aics)).replaceAll("\\[", "").replaceAll("\\]", "") + "\r\n";
+				s += idx + ",rss,\"" + method + "\"," + Arrays.toString(getMean(rss)).replaceAll("\\[", "").replaceAll("\\]", "") + "\r\n";
+				Files.write(file, s.getBytes(), StandardOpenOption.APPEND);
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
 		}
 		
-		log.debug("Do the rest...");
+		log.debug("... do the rest...");
 		
 		Map<double[], Map<double[], Double>> wcm2 = GeoUtils.contiguityMapToDistanceMap( cma ); 
 		GeoUtils.rowNormalizeMatrix(wcm2);
@@ -295,8 +399,8 @@ public class ChowClustering {
 			double ss = getSumOfSquares(residuals);
 			log.info(cr.method);
 			log.info("#cluster: " + cr.cluster.size());
-			log.info("sse: " + ss);
-			log.info("aicc: " + SupervisedUtils.getAICc(ss / samples.size(), cr.cluster.size() * (fa.length + 1), samples.size()));
+			log.info("rss: " + ss);
+			log.info("aicc: " + SupervisedUtils.getAICc_GWMODEL(ss / samples.size(), cr.cluster.size() * (fa.length + 1), samples.size()));
 			log.info("r2: " + getR2(ss, samples, ta));
 			log.info("moran: " + Arrays.toString( GeoUtils.getMoransIStatistics(wcm2, values)));
 			
@@ -315,7 +419,7 @@ public class ChowClustering {
 			names = Arrays.copyOf(names, names.length + 1);
 			names[names.length - 1] = "cluster";
 
-			DataUtils.writeShape(l, geoms, names, sdf.crs, "output/" + idx + ".shp");
+			//DataUtils.writeShape(l, geoms, names, sdf.crs, "output/" + idx + ".shp");
 
 			List<String> dissNames = new ArrayList<>();
 			for (int i = 0; i < fa.length; i++)
@@ -337,7 +441,7 @@ public class ChowClustering {
 				dissNames.add( "pStd"+names[fa[i]] );
 			dissNames.add(  "pStdIntrcpt" );
 			
-			PrecisionModel pm = new PrecisionModel(1000.0); 
+			PrecisionModel pm = new PrecisionModel(100000.0); 
 						
 			List<double[]> dissSamples = new ArrayList<>();
 			List<Geometry> dissGeoms = new ArrayList<>();
@@ -359,7 +463,7 @@ public class ChowClustering {
 				List<Double> dl = new ArrayList<>();
 				if( s.size() >= fa.length + 1 ) {
 					TDistribution td = new TDistribution(fa.length+2); // + intercept + error-term
-					OLSMultipleLinearRegression ols = new OLSMultipleLinearRegression();
+					OLSMultipleLinearRegression ols = new MyOLS();
 					ols.setNoIntercept(true);
 					ols.newSampleData(getY(li, ta), getX(li, fa, true));
 					double[] beta = ols.estimateRegressionParameters();
@@ -402,9 +506,9 @@ public class ChowClustering {
 				dissSamples.add(da);
 				dissGeoms.add(union);
 			}
-			DataUtils.writeShape(dissSamples, dissGeoms, dissNames.toArray(new String[]{}), sdf.crs, "output/" + idx + "_diss.shp");
+			//DataUtils.writeShape(dissSamples, dissGeoms, dissNames.toArray(new String[]{}), sdf.crs, "output/" + idx + "_diss.shp");
 						
-			Drawer.geoDrawValues( dissGeoms, dissSamples, 2*fa.length, null, ColorBrewer.Set3, "output/" + idx + "_diss.png");
+			Drawer.geoDrawValues( dissGeoms, dissSamples, 2*(fa.length+1), null, ColorBrewer.Set3, "output/" + idx + "_diss.png");
 			/*for (int i = 0; i < dissNames.size(); i++) {
 				String name = dissNames.get(i);
 				if( name.substring(0, 3).equals("std") ) {
@@ -417,7 +521,7 @@ public class ChowClustering {
 				}
 			}*/
 			
-			double ms = 0;
+			/*double ms = 0;
 			for( Geometry g : dissGeoms )
 				ms += g.getArea()/Math.pow(g.getLength(), 2);
 			log.info("A/C^2: "+(ms/dissGeoms.size()));
@@ -428,19 +532,18 @@ public class ChowClustering {
 				double r = g.getLength()/(Math.PI*2);
 				ms += a/(Math.PI*Math.PI*r);
 			}
-			log.info("Isoperimetric quotient: "+(ms/dissGeoms.size()));
-			
+			log.info("Isoperimetric quotient: "+(ms/dissGeoms.size()));*/
 		}
 		
-		for( int i : re.keySet() )
+		/*for( int i : re.keySet() )
 			for( int j : re.keySet() ) {
-				if( i == j )
+				if( i >= j )
 					continue;
 				log.info("NMI "+i+","+j+": " + ClusterValidation.getNormalizedMutualInformation(re.get(i).cluster, re.get(j).cluster) );
-			}
+			}*/
 	}
 
-	static List<TreeNode> getHierarchicalClusterTree(List<TreeNode> leafLayer, Map<TreeNode, Set<TreeNode>> cm, int[] fa, int ta, HierarchicalClusteringType hct, Dist<double[]> dist, int minSize, StructChangeTestMode sctm, int threads) {
+	static List<TreeNode> getHierarchicalClusterTree(List<TreeNode> leafLayer, Map<TreeNode, Set<TreeNode>> cm, int[] fa, int ta, HierarchicalClusteringType hct, StructChangeTestMode sctm, double pValue, int threads) {
 
 		class FlatSet<T> extends HashSet<T> {
 			private static final long serialVersionUID = -1960947872875758352L;
@@ -467,9 +570,6 @@ public class ChowClustering {
 		List<TreeNode> tree = new ArrayList<>();
 		Map<TreeNode, Set<double[]>> curLayer = new HashMap<>();
 
-		Map<TreeNode, Double> ssCache = new ConcurrentHashMap<TreeNode, Double>();
-		Map<TreeNode, Map<TreeNode, Double>> unionCache = new ConcurrentHashMap<>();
-
 		int age = 0;
 		for (TreeNode tn : leafLayer) {
 			age = Math.max(age, tn.age);
@@ -477,8 +577,6 @@ public class ChowClustering {
 
 			Set<double[]> content = Clustering.getContents(tn);
 			curLayer.put(tn, content);
-
-			ssCache.put(tn, DataUtils.getSumOfSquares(content, dist));
 		}
 
 		// copy of connected map
@@ -486,42 +584,11 @@ public class ChowClustering {
 		if (cm != null)
 			for (Entry<TreeNode, Set<TreeNode>> e : cm.entrySet())
 				connected.put(e.getKey(), new HashSet<TreeNode>(e.getValue()));
-
-		boolean firstPhase = true;
-
-		log.debug("start");
-		long time = System.currentTimeMillis();
 		
 		while (curLayer.size() > 1) {
 
-			TreeNode c1 = null, c2 = null;
-			double sMin = Double.POSITIVE_INFINITY;
-
 			List<TreeNode> cl = new ArrayList<>(curLayer.keySet());
-			if( cl.size() % 1000 == 0 ) {
-				log.debug(cl.size()+", took: "+(System.currentTimeMillis()-time)/1000.0);
-				time = System.currentTimeMillis();
-			}
-			
-			if (firstPhase) {
-				boolean b = true;
-				for (Set<double[]> s : curLayer.values())
-					if (s.size() < minSize)
-						b = false;
-				if (b) {									
-					log.debug("start second/chow phase with " + curLayer.size());
-					SummaryStatistics ss = new SummaryStatistics();
-					for (Set<double[]> s : curLayer.values())
-						ss.addValue(s.size());
-					log.debug(ss.getMin() + "," + ss.getMean() + "," + ss.getMax());
-										
-					ssCache.clear();
-					unionCache.clear();
-					firstPhase = false;
-				}
-			}
-			final boolean SEC_PHASE = !firstPhase;
-
+						
 			ExecutorService es = Executors.newFixedThreadPool(threads);
 			List<Future<double[]>> futures = new ArrayList<Future<double[]>>();
 			for (int t = 0; t < threads; t++) {
@@ -535,55 +602,30 @@ public class ChowClustering {
 
 						for (int i = T; i < cl.size() - 1; i += threads) {
 							TreeNode l1 = cl.get(i);
+							
+							if( !connected.containsKey(l1) )
+								continue;
+							Set<TreeNode> nbs = connected.get(l1);
 
 							for (int j = i + 1; j < cl.size(); j++) {
 								TreeNode l2 = cl.get(j);
 
-								if (!connected.containsKey(l1) || !connected.get(l1).contains(l2)) // disjoint
+								if (!nbs.contains(l2)) // disjoint
 									continue;
 
-								double cost = Double.NaN;
 								List<double[]> s1 = new ArrayList<>(curLayer.get(l1));
 								List<double[]> s2 = new ArrayList<>(curLayer.get(l2));
 
-								if (SEC_PHASE) {
-									cost = testStructChange(getX(s1, fa, true), getY(s1, ta), getX(s2, fa, true), getY(s2, ta), sctm);
-								} else {
-									if (hct == HierarchicalClusteringType.ward) {
-										if (!unionCache.containsKey(l1) || !unionCache.get(l1).containsKey(l2)) {
-											if (!unionCache.containsKey(l1))
-												unionCache.put(l1, new HashMap<TreeNode, Double>());
-
-											Set<double[]> union = new HashSet<>(s1);
-											union.addAll(s2);
-											unionCache.get(l1).put(l2, DataUtils.getSumOfSquares(union, dist));
-										}
-										cost = unionCache.get(l1).get(l2) - (ssCache.get(l1) + ssCache.get(l2));
-
-									} else if (HierarchicalClusteringType.single_linkage == hct) {
-										cost = Double.MAX_VALUE;
-										for (double[] d1 : s1)
-											for (double[] d2 : s2)
-												cost = Math.min(cost, dist.dist(d1, d2));
-									} else if (HierarchicalClusteringType.complete_linkage == hct) {
-										cost = Double.MIN_VALUE;
-										for (double[] d1 : s1)
-											for (double[] d2 : s2)
-												cost = Math.max(cost, dist.dist(d1, d2));
-									} else if (HierarchicalClusteringType.average_linkage == hct) {
-										cost = 0;
-										for (double[] d1 : s1)
-											for (double[] d2 : s2)
-												cost += dist.dist(d1, d2);
-										cost /= (curLayer.get(l1).size() * curLayer.get(l2).size());
-									}
-								}
-
-								if ( c1 < 0 || cost < minCost) {
+								double cost = Double.NaN;
+								double[] s = testStructChange(getX(s1, fa, true), getY(s1, ta), getX(s2, fa, true), getY(s2, ta), sctm);
+								if( s[1] <= pValue )
+									cost = s[0];
+								
+								if ( cost < minCost) {
 									c1 = i;
 									c2 = j;
 									minCost = cost;
-								}
+								} 
 							}
 						}
 						return new double[] { c1, c2, minCost };
@@ -591,11 +633,14 @@ public class ChowClustering {
 				}));
 			}
 			es.shutdown();
+			
+			TreeNode c1 = null, c2 = null;
+			double sMin = Double.POSITIVE_INFINITY;
 			try {
 				for (Future<double[]> f : futures) {
 					double[] d = f.get();
 
-					if ( c1 == null || d[2] < sMin) {
+					if ( d[0] >= 0 && ( c1 == null || d[2] < sMin ) ) {
 						c1 = cl.get((int) d[0]);
 						c2 = cl.get((int) d[1]);
 						sMin = d[2];
@@ -607,13 +652,8 @@ public class ChowClustering {
 				e.printStackTrace();
 			}
 			
-			if (c1 == null && c2 == null) { // no connected clusters present anymore
-				
-				log.debug("sMin: "+sMin);
-				log.debug("future.size: "+futures.size());
-				log.debug("only non-connected clusters present! " + curLayer.size());
-												
-				System.exit(1);				
+			if (c1 == null && c2 == null) { 
+				log.debug("Cannot merge further: "+curLayer.size());
 				return tree;
 			}
 
@@ -624,8 +664,6 @@ public class ChowClustering {
 
 			TreeNode mergeNode = new TreeNode(++age, sMin);
 			mergeNode.children = Arrays.asList(new TreeNode[] { c1, c2 });
-			ssCache.remove(c1);
-			ssCache.remove(c2);
 
 			// add nodes
 			curLayer.put(mergeNode, union);
@@ -646,11 +684,6 @@ public class ChowClustering {
 						s.add(mergeNode);
 					}
 				}
-			}
-			ssCache.remove(c1);
-			ssCache.remove(c2);
-			if (hct == HierarchicalClusteringType.ward && !SEC_PHASE) {
-				ssCache.put(mergeNode, unionCache.get(c1).get(c2));
 			}
 		}
 		return tree;
@@ -681,14 +714,6 @@ public class ChowClustering {
 
 	}
 
-	// H0: equations are equivalent
-	private static double[] chowTest(double sc, double s1, double s2, int n1, int n2, int k) {
-		double t = ((sc - (s1 + s2)) / k) / ((s1 + s2) / (n1 + n2 - 2 * k));
-		FDistribution fd = new FDistribution(k, n1 + n2 - 2 * k);
-		return new double[] { t, 1 - fd.cumulativeProbability(t) // p-Value < 0.5 H0(equivalence) rejected, A and B not equal
-		};
-	}
-
 	public static double[] getStripped(double[] d, int[] fa) {
 		double[] nd = new double[fa.length];
 		for (int i = 0; i < fa.length; i++)
@@ -705,29 +730,6 @@ public class ChowClustering {
 				stripped[stripped.length - 1] = 1;
 			}
 			x[i] = stripped;
-		}
-		return x;
-	}
-
-	@Deprecated
-	public static double[][] getX(List<Set<double[]>> cluster, List<double[]> samples, int[] fa, boolean addIntercept) {
-		double[][] x = new double[samples.size()][];
-		for (int i = 0; i < samples.size(); i++) {
-			double[] d = samples.get(i);
-
-			double[] stripped = getStripped(d, fa);
-			if (addIntercept) {
-				stripped = Arrays.copyOf(stripped, stripped.length + 1);
-				stripped[stripped.length - 1] = 1;
-			}
-
-			x[i] = new double[stripped.length * cluster.size()];
-			for (int j = 0; j < cluster.size(); j++)
-				if (cluster.get(j).contains(d)) {
-					for (int k = 0; k < stripped.length; k++)
-						x[i][stripped.length * j + k] = stripped[k];
-					break;
-				}
 		}
 		return x;
 	}
@@ -792,13 +794,12 @@ public class ChowClustering {
 			}
 		}
 	}
-
-	// Wald H0: equations are equivalent
-	public static double testStructChange(double[][] x1, double[] y1, double[][] x2, double[] y2, StructChangeTestMode sctm) {
+	
+	public static double[] testStructChange(double[][] x1, double[] y1, double[][] x2, double[] y2, StructChangeTestMode sctm) {
 		double T1 = x1.length;
 		double T2 = x2.length;
 		double T = T1 + T2;
-		double k = x1[0].length;
+		double k = x1[0].length; // == x2[0].length
 
 		boolean noIntercept = true;
 		OLSMultipleLinearRegression ols1 = new MyOLS();
@@ -818,8 +819,44 @@ public class ChowClustering {
 
 		RealMatrix m1 = MatrixUtils.inverse(X1.transpose().multiply(X1));
 		RealMatrix m2 = MatrixUtils.inverse(X2.transpose().multiply(X2));
-
-		if (sctm == StructChangeTestMode.Chow) {
+		
+		if( sctm == StructChangeTestMode.ResiChow || sctm == StructChangeTestMode.ResiLikelihoodRatio || sctm == StructChangeTestMode.ResiSimple ) {
+						
+			double[][] xAll = new double[x1.length+x2.length][];
+			for( int i = 0; i < x1.length; i++ )
+				xAll[i] = x1[i];
+			for( int i = 0; i < x2.length; i++ )
+				xAll[x1.length+i] = x2[i];
+			
+			double[] yAll = new double[y1.length+y2.length];
+			for( int i = 0; i < y1.length; i++ )
+				yAll[i] = y1[i];
+			for( int i = 0; i < y2.length; i++ )
+				yAll[i+y1.length] = y2[i];
+			
+			OLSMultipleLinearRegression olsAll = new MyOLS();
+			olsAll.setNoIntercept(noIntercept);
+			olsAll.newSampleData(yAll, xAll);
+			
+			double s1 = ols1.calculateResidualSumOfSquares();
+			double s2 = ols2.calculateResidualSumOfSquares();
+			double sc = olsAll.calculateResidualSumOfSquares();
+			
+			if( sctm == StructChangeTestMode.ResiChow ) {
+				double t = ((sc - (s1 + s2)) / k) / ((s1 + s2) / (T - 2 * k));
+				FDistribution d = new FDistribution(k, T - 2 * k);				
+				return new double[] { t, 1 - d.cumulativeProbability(t) }; // p-Value < 0.5 H0(equivalence) rejected, A and B not equal
+			} else if(sctm == StructChangeTestMode.ResiLikelihoodRatio) {
+				double base = sc; // merged
+				double full = s1+s2; // separate 
+				double t = (base - full) / full * (T - 2 * k);
+				ChiSquaredDistribution d = new ChiSquaredDistribution(k);
+				return new double[]{ t, 1-d.cumulativeProbability(t) };
+				
+			} else if( sctm == StructChangeTestMode.ResiSimple ) { // kind of similar to lrt
+				return new double[]{ sc - (s1 + s2), 0.0};
+			}
+		} else if (sctm == StructChangeTestMode.Chow) {
 			double s1 = 0;
 			for (double d : ols1.estimateResiduals())
 				s1 += d * d;
@@ -827,10 +864,12 @@ public class ChowClustering {
 			double s2 = 0;
 			for (double d : ols2.estimateResiduals())
 				s2 += d * d;
+			double t = diff.transpose().multiply(MatrixUtils.inverse(m1.add(m2))).multiply(diff).getEntry(0, 0) * (T - 2 * k) / (k * (s1 + s2)); // basic chow
 
-			double c = diff.transpose().multiply(MatrixUtils.inverse(m1.add(m2))).multiply(diff).getEntry(0, 0) * (T - 2 * k) / (k * (s1 + s2)); // basic chow
-			return c;
-		} else {
+			FDistribution d = new FDistribution(k,T - 2 * k);
+			return new double[]{ t, 1 - d.cumulativeProbability(t) };
+			
+		} else if (sctm == StructChangeTestMode.Wald || sctm == StructChangeTestMode.AdjustedChow ) {
 			double s1 = ols1.estimateErrorVariance();
 			double s2 = ols2.estimateErrorVariance();
 			double w = diff.transpose().multiply(MatrixUtils.inverse(m1.scalarMultiply(s1).add(m2.scalarMultiply(s2)))).multiply(diff).getEntry(0, 0);
@@ -838,12 +877,16 @@ public class ChowClustering {
 			if( Double.isInfinite(w) )
 				log.debug("Infinity!");
 			
-			if (sctm == StructChangeTestMode.Wald)
-				return w;
-			else if (sctm == StructChangeTestMode.AChow)
-				return w / k;
+			if (sctm == StructChangeTestMode.Wald) {
+				ChiSquaredDistribution d = new ChiSquaredDistribution(k);
+				return new double[]{ w, 1-d.cumulativeProbability(w) };
+			} else if (sctm == StructChangeTestMode.AdjustedChow) {
+				FDistribution d = new FDistribution(k,T-2*k);
+				return new double[]{w/k, 1-d.cumulativeProbability(w/k)};
+			}
+			
 		}
-		return -1;
+		return null;
 	}
 
 	public static List<Double> getResidualsLM(double[][] xTrain, double[] yTrain, double[][] xVal, double[] yVal) {
@@ -891,21 +934,19 @@ public class ChowClustering {
 	}
 
 	static class ClusterResult {
-		ClusterResult(double cost, List<Set<double[]>> cluster, List<Double> residuals, String method) {
-			this.cost = cost;
+		ClusterResult(List<Set<double[]>> cluster, List<Double> residuals, String method) {
 			this.cluster = cluster;
 			this.method = method;
 			this.residuals = residuals;
 		}
 
 		String method;
-		double cost;
 		List<Set<double[]>> cluster = null;
 		List<Double> residuals = null;
 
 		@Override
 		public String toString() {
-			return method + "," + cluster.size() + "," + cost;
+			return method + "," + cluster.size();
 		}
 	}
 	

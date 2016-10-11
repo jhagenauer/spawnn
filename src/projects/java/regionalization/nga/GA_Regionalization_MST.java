@@ -91,7 +91,7 @@ public class GA_Regionalization_MST {
 		
 		log.debug("start");
 		List<TreeNode> hcTree = Clustering.getHierarchicalClusterTree(cm, fDist, HierarchicalClusteringType.ward);
-		List<Set<double[]>> hcClusters = Clustering.cutTree(hcTree, numCluster);
+		List<Set<double[]>> hcClusters = Clustering.treeToCluster( Clustering.cutTree(hcTree, numCluster) );
 		double wardCost = DataUtils.getWithinSumOfSquares(hcClusters, fDist);
 		log.debug("ward: " + wardCost );
 				

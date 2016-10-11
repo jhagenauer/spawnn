@@ -155,7 +155,7 @@ public class TestMedoidClustering {
 						for( Object o : p[2] ) {
 							treeCutMethod tcm = (treeCutMethod)o;
 							if( tcm == treeCutMethod.cuts )
-								r.cluster.put(o, Clustering.cutTree(tree, numCluster));
+								r.cluster.put(o, Clustering.treeToCluster( Clustering.cutTree(tree, numCluster) ) );
 							else if( tcm == treeCutMethod.redcap ) {
 								r.cluster.put(o, Clustering.cutTreeREDCAP(tree, cm, type, numCluster, fDist) );
 							} else if( tcm == treeCutMethod.tabu ){

@@ -296,9 +296,9 @@ public class NGResultPanel extends ResultPanel<double[]> {
 							type = Clustering.HierarchicalClusteringType.ward;
 
 						if (cd.getConnected())
-							clusters = Clustering.cutTree( Clustering.getHierarchicalClusterTree(cm, fDist, type), cd.getNumCluster());
+							clusters = Clustering.treeToCluster( Clustering.cutTree( Clustering.getHierarchicalClusterTree(cm, fDist, type), cd.getNumCluster() ) );
 						else
-							clusters = Clustering.cutTree( Clustering.getHierarchicalClusterTree(ns, fDist, type), cd.getNumCluster());
+							clusters = Clustering.treeToCluster(  Clustering.cutTree( Clustering.getHierarchicalClusterTree(ns, fDist, type), cd.getNumCluster() ) );
 					}
 					showClusterSummary(parent, ResultPanel.prototypeClusterToDataCluster(bmus, clusters), fDist, gDist);
 					

@@ -17,6 +17,7 @@ import com.vividsolutions.jts.geom.Geometry;
 
 import spawnn.utils.DataUtils;
 import spawnn.utils.Drawer;
+import spawnn.utils.GeoUtils;
 import spawnn.utils.RegionUtils;
 
 public class GreedyRegionalization {
@@ -79,7 +80,7 @@ public class GreedyRegionalization {
 					
 				for( Set<double[]> s : map ) {
 					s.add(d);
-					if( RegionUtils.isContiugous(cm, s) && ( best == null || RegionUtils.getHeterogenity(map, fa) < bestHeterogenity ) ) {
+					if( GeoUtils.isContiugous(cm, s) && ( best == null || RegionUtils.getHeterogenity(map, fa) < bestHeterogenity ) ) {
 						best = s;
 						bestHeterogenity = RegionUtils.getHeterogenity(map, fa);
 					}

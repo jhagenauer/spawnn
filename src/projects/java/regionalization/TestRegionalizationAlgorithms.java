@@ -73,7 +73,7 @@ public class TestRegionalizationAlgorithms {
 		{
 			List<TreeNode> hcTree = Clustering.getHierarchicalClusterTree(cm, fDist, HierarchicalClusteringType.ward);
 			long time = System.currentTimeMillis();
-			List<Set<double[]>> cutsCluster = Clustering.cutTree(hcTree, numCluster);
+			List<Set<double[]>> cutsCluster = Clustering.treeToCluster( Clustering.cutTree(hcTree, numCluster) );
 			log.debug("took: "+(double)(System.currentTimeMillis()-time)/1000.0);
 			log.debug("wardCuts: " + DataUtils.getWithinSumOfSquares(cutsCluster, fDist) );
 			

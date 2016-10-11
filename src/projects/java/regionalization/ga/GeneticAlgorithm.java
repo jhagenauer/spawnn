@@ -298,7 +298,7 @@ public class GeneticAlgorithm {
 		log.debug("GA WCSS: "+ ds.getMin()+","+ds.getMean()+","+ds.getMax()+","+ds.getStandardDeviation() );
 			
 		for( HierarchicalClusteringType type : HierarchicalClusteringType.values() ) {
-			List<Set<double[]>> wardCluster = Clustering.cutTree(Clustering.getHierarchicalClusterTree(cm, fDist, HierarchicalClusteringType.ward), numRegions);
+			List<Set<double[]>> wardCluster = Clustering.treeToCluster( Clustering.cutTree(Clustering.getHierarchicalClusterTree(cm, fDist, HierarchicalClusteringType.ward), numRegions) );
 			String str = "";
 			for( Set<double[]> s : wardCluster ) {
 				int idx = Integer.MAX_VALUE;

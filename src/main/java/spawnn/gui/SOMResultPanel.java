@@ -318,7 +318,7 @@ public class SOMResultPanel extends ResultPanel<GridPos> {
 							tree = Clustering.getHierarchicalClusterTree(cm, fDist, type);
 						else
 							tree = Clustering.getHierarchicalClusterTree(prototypes, fDist, type);
-						clusters = Clustering.cutTree( tree, cd.getNumCluster() );
+						clusters = Clustering.treeToCluster( Clustering.cutTree( tree, cd.getNumCluster() ) );
 					}
 					
 					// clusters of prototype-double-vectors to gridPos-cluster

@@ -280,7 +280,7 @@ public class LandCon {
 		int[][] r = new int[numCluster.length][sa.size()];
 		for (int i = 0; i < numCluster.length; i++) {
 						
-			List<Set<double[]>> cluster = Clustering.cutTree(tree, numCluster[i]);
+			List<Set<double[]>> cluster = Clustering.treeToCluster( Clustering.cutTree(tree, numCluster[i]) );
 						
 			for (int j = 0; j < sa.size(); j++) {
 				for (int k = 0; k < cluster.size(); k++) {
@@ -306,7 +306,7 @@ public class LandCon {
 		{ // old
 			long time = System.currentTimeMillis();
 			List<TreeNode> tree = Clustering.getHierarchicalClusterTree(cm, dist, HierarchicalClusteringType.average_linkage);
-			List<Set<double[]>> ct = Clustering.cutTree(tree, nrCluster);
+			List<Set<double[]>> ct = Clustering.treeToCluster( Clustering.cutTree(tree, nrCluster) );
 			log.debug("Nr cluster: " + ct.size());
 			log.debug("Within sum of squares: " + DataUtils.getWithinSumOfSquares(ct, dist) + ", took: " + (System.currentTimeMillis() - time) / 1000.0);
 			Drawer.geoDrawCluster(ct, samples, geoms, "output/clustering.png", true);
@@ -315,7 +315,7 @@ public class LandCon {
 		{ // threaded
 			long time = System.currentTimeMillis();
 			List<TreeNode> tree = getHierarchicalClusterTree(samples, cm, dist, HierarchicalClusteringType.average_linkage, 4);
-			List<Set<double[]>> ct = Clustering.cutTree(tree, nrCluster);
+			List<Set<double[]>> ct = Clustering.treeToCluster( Clustering.cutTree(tree, nrCluster) );
 			log.debug("Nr cluster: " + ct.size());
 			log.debug("Within sum of squares: " + DataUtils.getWithinSumOfSquares(ct, dist) + ", took: " + (System.currentTimeMillis() - time) / 1000.0);
 			Drawer.geoDrawCluster(ct, samples, geoms, "output/clustering2.png", true);

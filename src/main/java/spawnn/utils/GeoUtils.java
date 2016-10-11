@@ -550,4 +550,14 @@ public class GeoUtils {
 		}
 		return r;
 	}
+
+	public static boolean isContiugous( Map<double[], Set<double[]>> cm, Set<double[]> cluster ) {
+		if( cluster.isEmpty() )
+			return true;
+		
+		Set<double[]> visited = RegionUtils.getContiugousSubcluster( cm, cluster, cluster.iterator().next() );					
+		if( visited.size() != cluster.size() ) 
+			return false;
+		else return true;
+	}
 }

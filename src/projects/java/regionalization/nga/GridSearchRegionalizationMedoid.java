@@ -118,7 +118,7 @@ public class GridSearchRegionalizationMedoid {
 		double slk = 0;
 		for( Data dt : data ) {
 			List<TreeNode> hcTree = Clustering.getHierarchicalClusterTree(dt.cm, fDist, HierarchicalClusteringType.single_linkage);
-			List<Set<double[]>> hcClusters = Clustering.cutTree(hcTree, numCluster);
+			List<Set<double[]>> hcClusters = Clustering.treeToCluster( Clustering.cutTree(hcTree, numCluster) );
 			slk += DataUtils.getWithinSumOfSquares(hcClusters, fDist);
 		}
 		log.debug("slk: "+slk/data.size());
@@ -126,7 +126,7 @@ public class GridSearchRegionalizationMedoid {
 		double avg = 0;
 		for( Data dt : data ) {
 			List<TreeNode> hcTree = Clustering.getHierarchicalClusterTree(dt.cm, fDist, HierarchicalClusteringType.average_linkage);
-			List<Set<double[]>> hcClusters = Clustering.cutTree(hcTree, numCluster);
+			List<Set<double[]>> hcClusters = Clustering.treeToCluster( Clustering.cutTree(hcTree, numCluster) );
 			avg += DataUtils.getWithinSumOfSquares(hcClusters, fDist);
 		}
 		log.debug("avg: "+avg/data.size());
@@ -134,7 +134,7 @@ public class GridSearchRegionalizationMedoid {
 		double clk = 0;
 		for( Data dt : data ) {
 			List<TreeNode> hcTree = Clustering.getHierarchicalClusterTree(dt.cm, fDist, HierarchicalClusteringType.complete_linkage);
-			List<Set<double[]>> hcClusters = Clustering.cutTree(hcTree, numCluster);
+			List<Set<double[]>> hcClusters = Clustering.treeToCluster( Clustering.cutTree(hcTree, numCluster) );
 			clk += DataUtils.getWithinSumOfSquares(hcClusters, fDist);
 		}
 		log.debug("clk: "+clk/data.size());
@@ -142,7 +142,7 @@ public class GridSearchRegionalizationMedoid {
 		double ward = 0;
 		for( Data dt : data ) {
 			List<TreeNode> hcTree = Clustering.getHierarchicalClusterTree(dt.cm, fDist, HierarchicalClusteringType.ward);
-			List<Set<double[]>> hcClusters = Clustering.cutTree(hcTree, numCluster);
+			List<Set<double[]>> hcClusters = Clustering.treeToCluster( Clustering.cutTree(hcTree, numCluster) );
 			ward += DataUtils.getWithinSumOfSquares(hcClusters, fDist);
 		}
 		log.debug("ward: "+ward/data.size());

@@ -25,10 +25,11 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import javax.xml.stream.events.Namespace;
+
 import org.apache.commons.math3.linear.Array2DRowRealMatrix;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.SingularValueDecomposition;
-import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 import org.apache.log4j.Logger;
@@ -426,7 +427,7 @@ public class DataUtils {
 					String n = names[i];
 					if (n.length() > 8) {
 						n = n.substring(0, 8);
-						log.debug("Trunkating " + names[i] + " to " + n);
+						//log.debug("Trunkating " + names[i] + " to " + n);
 					}
 					typeBuilder.add(n, Double.class);
 				} else {
@@ -773,6 +774,10 @@ public class DataUtils {
 
 			e.printStackTrace();
 		}
+	}
+	
+	public static DataFrame readDataFrameFromCSV(String file, int[] ign, boolean verbose) {
+		return  readDataFrameFromCSV(new File(file), ign,verbose);
 	}
 
 	public static DataFrame readDataFrameFromCSV(File file, int[] ign, boolean verbose) {
@@ -1134,7 +1139,7 @@ public class DataUtils {
 	}
 
 	public enum Transform {
-		pow2, log, sqrt, div, zScore, scale01
+		pow2, log, sqrt, div, zScore, scale01, pca
 	};
 
 	public static void transform(List<double[]> samples, int[] fa, Transform t) {
@@ -1144,22 +1149,37 @@ public class DataUtils {
 		for (double[] d : samples)
 			for (int i = 0; i < fa.length; i++)
 				ds[i].addValue(d[fa[i]]);
+		
+		RealMatrix v = null;
+		if( t == Transform.pca ) {
+			RealMatrix matrix = new Array2DRowRealMatrix(samples.size(), fa.length);
+			for (int i = 0; i < samples.size(); i++)
+				for( int j = 0; j < fa.length; j++ )
+					matrix.setEntry(i, j, samples.get(i)[fa[j]]);
+		
+			SingularValueDecomposition svd = new SingularValueDecomposition(matrix);
+			v = svd.getU().multiply(svd.getS());
+		}
 
-		for (double[] d : samples)
-			for (int i = 0; i < fa.length; i++) {
+		for (int i = 0; i < samples.size(); i++ ) {
+			double[] d = samples.get(i);
+			for (int j = 0; j < fa.length; j++) {
 				if (t == Transform.log)
-					d[fa[i]] = Math.log(d[fa[i]]);
+					d[fa[j]] = Math.log(d[fa[j]]);
 				else if (t == Transform.pow2)
-					d[fa[i]] = Math.pow(d[fa[i]], 2);
+					d[fa[j]] = Math.pow(d[fa[j]], 2);
 				else if (t == Transform.sqrt)
-					d[fa[i]] = Math.sqrt(d[fa[i]]);
+					d[fa[j]] = Math.sqrt(d[fa[j]]);
 				else if (t == Transform.div)
-					d[fa[i]] = 1.0 / d[fa[i]];
+					d[fa[j]] = 1.0 / d[fa[j]];
 				else if (t == Transform.zScore)
-					d[fa[i]] = (d[fa[i]] - ds[i].getMean()) / ds[i].getStandardDeviation();
+					d[fa[j]] = (d[fa[j]] - ds[j].getMean()) / ds[j].getStandardDeviation();
 				else if (t == Transform.scale01)
-					d[fa[i]] = (d[fa[i]] - ds[i].getMin()) / (ds[i].getMax() - ds[i].getMin());
+					d[fa[j]] = (d[fa[j]] - ds[j].getMin()) / (ds[j].getMax() - ds[j].getMin());
+				else if( t == Transform.pca ) 
+					d[fa[j]] = v.getEntry(i, j);
 			}
+		}
 	}
 	
 	public static void transform(List<double[]> samples, Transform t) {
@@ -1184,7 +1204,7 @@ public class DataUtils {
 			for (int i : idx)
 				s[i] = (s[i] - mean[i]) / stdDev;
 	}
-
+	
 	public static List<double[]> removeColumns(List<double[]> samples, int[] ign) {
 		List<double[]> ns = new ArrayList<double[]>();
 
@@ -1283,9 +1303,8 @@ public class DataUtils {
 		return ssq;
 	}
 
-	/*
-	 * If one wants to perform PCA on a correlation matrix (instead of a covariance matrix), then columns of X should not only be centered, but standardized as well, i.e. divided by their standard deviations. TODO signs are weird... correct?!
-	 */
+	
+	// If one wants to perform PCA on a correlation matrix (instead of a covariance matrix), then columns of X should not only be centered, but standardized as well, i.e. divided by their standard deviations. 
 	public static List<double[]> reduceDimensionByPCA(List<double[]> samples, int nrComponents) {
 		RealMatrix matrix = new Array2DRowRealMatrix(samples.size(), samples.get(0).length);
 		for (int i = 0; i < samples.size(); i++)
@@ -1300,5 +1319,15 @@ public class DataUtils {
 			ns.add(d);
 		}
 		return ns;
+	}
+	
+	public static void main( String[] args ) {
+		DataFrame df = DataUtils.readDataFrameFromCSV("data/iris.csv", new int[]{}, true);
+		
+		DataUtils.transform(df.samples, Transform.zScore);
+		DataUtils.transform(df.samples, Transform.pca);
+		
+		for( double[] d : df.samples ) 
+			log.debug(Arrays.toString(d));
 	}
 }
