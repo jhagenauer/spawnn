@@ -894,7 +894,7 @@ public class DataUtils {
 			ignore.add(i);
 
 		BufferedReader reader = null;
-		;
+		
 		try {
 			reader = new BufferedReader(new FileReader(file));
 			// header handling

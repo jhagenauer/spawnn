@@ -11,14 +11,15 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.PriorityQueue;
+import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.PriorityQueue;
-import java.util.Random;
-import java.util.Set;
 
 import org.apache.log4j.Logger;
 
@@ -26,7 +27,6 @@ import com.vividsolutions.jts.geom.Geometry;
 
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
-import spawnn.utils.Clustering.TreeNode;
 import spawnn.utils.DataUtils.Transform;
 
 public class Clustering {
@@ -416,10 +416,10 @@ public class Clustering {
 	}
 	
 	public static List<TreeNode> getHierarchicalClusterTree( List<TreeNode> leafLayer, Map<TreeNode,Set<TreeNode>> cm, Dist<double[]> dist, HierarchicalClusteringType type ) {
-		return getHierarchicalClusterTree(leafLayer, cm, dist, type, Math.max(1 , Runtime.getRuntime().availableProcessors() -1 ) );
+		return getHierarchicalClusterTree(leafLayer, cm, dist, type, Integer.MAX_VALUE, Math.max(1 , Runtime.getRuntime().availableProcessors() -1 ) );
 	}
-	
-	public static List<TreeNode> getHierarchicalClusterTree( List<TreeNode> leafLayer, final Map<TreeNode,Set<TreeNode>> cm, Dist<double[]> dist, HierarchicalClusteringType type, int threads ) {
+		
+	public static List<TreeNode> getHierarchicalClusterTree( List<TreeNode> leafLayer, final Map<TreeNode,Set<TreeNode>> cm, Dist<double[]> dist, HierarchicalClusteringType type, int minSize, int threads ) {
 						
 		class FlatSet<T> extends HashSet<T> {
 			private static final long serialVersionUID = -1960947872875758352L;
@@ -447,7 +447,7 @@ public class Clustering {
 		Map<TreeNode,Set<double[]>> curLayer = new HashMap<>();
 		
 		Map<TreeNode, Double> ssCache = new HashMap<TreeNode, Double>();
-		Map<TreeNode, Map<TreeNode,Double>> unionCache = new HashMap<>();
+		Map<TreeNode, Map<TreeNode,Double>> unionCache = new ConcurrentHashMap<>();
 					
 		int length = getContents(leafLayer.get(0)).iterator().next().length;
 		int age = 0;
@@ -468,6 +468,14 @@ public class Clustering {
 				connected.put(e.getKey(),new HashSet<TreeNode>(e.getValue()));
 				
 		while (curLayer.size() > 1 ) {
+			
+			boolean b = true;
+			for( Set<double[]> s : curLayer.values() )
+				if( s.size() < minSize )
+					b = false;
+			if( b ) 
+				return tree;
+						
 			List<TreeNode> cl = new ArrayList<>(curLayer.keySet());
 						
 			ExecutorService es = Executors.newFixedThreadPool(threads);
@@ -580,18 +588,12 @@ public class Clustering {
 				log.debug("only non-connected clusters present! " + curLayer.size());
 				return tree;
 			}
-			
-			if( c1 == null && c2 == null ) { // no connected clusters present anymore
-				log.warn("only non-connected clusters present! "+curLayer.size() );
-				return tree;
-			}
-			
+									
 			// create merge node, remove c1,c2		
 			Set<double[]> union = new FlatSet<double[]>(); 
 			union.addAll(curLayer.remove(c1));
 			union.addAll(curLayer.remove(c2));	
 			
-
 			TreeNode mergeNode = new TreeNode(++age, sMin);
 			mergeNode.children = Arrays.asList(new TreeNode[]{ c1, c2 });
 			
@@ -623,7 +625,6 @@ public class Clustering {
 					}
 				}
 			}
-
 		}
 		return tree;
 	}
@@ -788,16 +789,11 @@ public class Clustering {
 		DataUtils.transform(samples, fa, Transform.zScore);
 		final Map<double[], Set<double[]>> cm = RegionUtils.readContiguitiyMap(samples, "data/redcap/Election/election2004_Queen.ctg");
 		final Dist<double[]> dist = new EuclideanDist(fa);
-		int nrCluster = 7;
-		boolean connected = true;
+		int nrCluster = 100;
 		
 		{
 			long time = System.currentTimeMillis();
-			List<TreeNode> tree;
-			if( connected )
-				tree = Clustering.getHierarchicalClusterTree(cm, dist, HierarchicalClusteringType.ward);
-			else
-				tree = Clustering.getHierarchicalClusterTree(samples, dist, HierarchicalClusteringType.ward);
+			List<TreeNode> tree = Clustering.getHierarchicalClusterTree(cm, dist, HierarchicalClusteringType.ward);
 			List<Set<double[]>> ct = Clustering.treeToCluster( Clustering.cutTree( tree, nrCluster) );
 			log.debug("Within sum of squares: " + DataUtils.getWithinSumOfSquares(ct, dist)+", took: "+(System.currentTimeMillis()-time)/1000.0);		
 			Drawer.geoDrawCluster(ct, samples, geoms, "output/ward_clustering.png", true);
@@ -805,16 +801,28 @@ public class Clustering {
 		
 		{
 			long time = System.currentTimeMillis();
-			List<TreeNode> tree;
-			if( connected )
-				tree = Clustering.getHierarchicalClusterTree(cm, dist, HierarchicalClusteringType.average_linkage);
-			else
-				tree = Clustering.getHierarchicalClusterTree(samples, dist, HierarchicalClusteringType.average_linkage);
+			List<TreeNode> tree = Clustering.getHierarchicalClusterTree(cm, dist, HierarchicalClusteringType.single_linkage);
 			List<Set<double[]>> ct = Clustering.treeToCluster( Clustering.cutTree( tree, nrCluster) );
 			log.debug("Within sum of squares: " + DataUtils.getWithinSumOfSquares(ct, dist)+", took: "+(System.currentTimeMillis()-time)/1000.0);		
-			Drawer.geoDrawCluster(ct, samples, geoms, "output/avg_clustering.png", true);
+			Drawer.geoDrawCluster(ct, samples, geoms, "output/ward_clustering.png", true);
 		}
 		
+		{
+			long time = System.currentTimeMillis();
+			List<TreeNode> tree = Clustering.getHierarchicalClusterTree(cm, dist, HierarchicalClusteringType.average_linkage);
+			List<Set<double[]>> ct = Clustering.treeToCluster( Clustering.cutTree( tree, nrCluster) );
+			log.debug("Within sum of squares: " + DataUtils.getWithinSumOfSquares(ct, dist)+", took: "+(System.currentTimeMillis()-time)/1000.0);		
+			Drawer.geoDrawCluster(ct, samples, geoms, "output/ward_clustering.png", true);
+		}
+		
+		{
+			long time = System.currentTimeMillis();
+			List<TreeNode> tree = Clustering.getHierarchicalClusterTree(cm, dist, HierarchicalClusteringType.complete_linkage);
+			List<Set<double[]>> ct = Clustering.treeToCluster( Clustering.cutTree( tree, nrCluster) );
+			log.debug("Within sum of squares: " + DataUtils.getWithinSumOfSquares(ct, dist)+", took: "+(System.currentTimeMillis()-time)/1000.0);		
+			Drawer.geoDrawCluster(ct, samples, geoms, "output/ward_clustering.png", true);
+		}
+				
 		{
 			long time = System.currentTimeMillis();
 			List<Set<double[]>> ct = new ArrayList<>(Clustering.kMeans(samples, nrCluster, dist).values() );

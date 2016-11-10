@@ -56,6 +56,8 @@ import com.vividsolutions.jts.geom.MultiPolygon;
 import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.geom.Polygon;
 
+import spawnn.utils.ColorUtils.ColorClass;
+
 public class Drawer {
 
 	private static Logger log = Logger.getLogger(Drawer.class);
@@ -335,17 +337,25 @@ public class Drawer {
 	}
 
 	public static void geoDrawValues(List<Geometry> geoms, List<double[]> values, int fa, CoordinateReferenceSystem crs, ColorBrewer cm, String fn) {
+		geoDrawValues( geoms,  values,  fa,  crs,  cm,  ColorClass.Quantile, fn);
+	}
+	
+	public static void geoDrawValues(List<Geometry> geoms, List<double[]> values, int fa, CoordinateReferenceSystem crs, ColorBrewer cm, ColorClass cc, String fn) {
 		List<Double> l = new ArrayList<Double>();
 		for (double[] d : values)
 			l.add(d[fa]);
-		geoDrawValues(geoms, l, crs, cm, fn);
+		geoDrawValues(geoms, l, crs, cm, cc, fn);
 	}
-
-	public static void geoDrawValues(List<Geometry> geoms, List<Double> values, CoordinateReferenceSystem crs, ColorBrewer cm, String fn) {
+	
+	public static void geoDrawValues(List<Geometry> geoms, List<Double> values, CoordinateReferenceSystem crs, ColorBrewer cm, ColorClass cc, String fn) {
 		Map<Geometry, Double> valueMap = new HashMap<Geometry, Double>();
 		for (int i = 0; i < geoms.size(); i++)
 			valueMap.put(geoms.get(i), values.get(i));
-		geoDraw( ColorUtils.getColorMap(valueMap, cm), crs, fn);
+		geoDraw( ColorUtils.getColorMap(valueMap, cm, cc), crs, fn);
+	}
+
+	public static void geoDrawValues(List<Geometry> geoms, List<Double> values, CoordinateReferenceSystem crs, ColorBrewer cm, String fn) {
+		 geoDrawValues(geoms, values, crs,cm, ColorClass.Quantile, fn);
 	}
 	
 	public static void geoDraw(Map<Geometry,Color> m, CoordinateReferenceSystem crs, String fn) {

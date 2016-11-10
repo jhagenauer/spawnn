@@ -174,6 +174,8 @@ public class DataPanel extends JPanel implements ActionListener, TableModelListe
 					sdf.samples = df.samples;
 					sdf.names = df.names;
 					sdf.bindings = df.bindings;
+					
+					addCCoords.setEnabled(false);
 				}
 				
 				if( sdf.samples.isEmpty() ) {
@@ -186,7 +188,7 @@ public class DataPanel extends JPanel implements ActionListener, TableModelListe
 								
 				for( String s : sdf.names )
 			    	if( coordNames.contains(s) )
-			    		dataTable.addRow( new Object[]{s, norm.none, true, false } );
+			    		dataTable.addRow( new Object[]{s, norm.none, true, true } );
 			    	else
 			    		dataTable.addRow( new Object[]{s, norm.zScore, false, false } );
 			    			    

@@ -115,7 +115,7 @@ public class SpawnnGui extends JFrame implements PropertyChangeListener, ActionL
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		if (e.getSource() == aboutItem) {
-			JOptionPane.showMessageDialog(this, "Spatial Analysis with (Self-Organinzing) Neural Networks (SPAWNN) ©2013-2015\n\n" + "All rights reserved.\n\n" + "Julian Hagenauer", "About", JOptionPane.INFORMATION_MESSAGE);
+			JOptionPane.showMessageDialog(this, "Spatial Analysis with (Self-Organinzing) Neural Networks (SPAWNN) ©2013-2017\n\n" + "All rights reserved.\n\n" + "Julian Hagenauer (julian.hagenauer@gmx.de)", "About", JOptionPane.INFORMATION_MESSAGE);
 		} else if (e.getSource() == quitItem) {
 			if (JOptionPane.showConfirmDialog(null, "Are you sure to close the application?", "Really Closing?", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE) == JOptionPane.YES_OPTION) {
 				System.exit(0);

@@ -123,7 +123,7 @@ public class LegendPanel<T> extends NeuronVisPanel<T> {
 		for( int i = 0; i < neurons.size(); i++ ) {
 			T t = neurons.get(i);
 			g.setColor(colorMap.get(t));
-			g.fillRect( (int)Math.round(x), 0, (int)Math.round(cellWidth), cellHeight);
+			g.fillRect( (int)Math.round(x), 0, (int)Math.ceil(cellWidth), cellHeight);
 						
 			if (i == 0 || i == neurons.size()-1 || i == neurons.size()/2 /*|| t == meanNeuron*/ ) {
 				g.setColor(Color.BLACK);

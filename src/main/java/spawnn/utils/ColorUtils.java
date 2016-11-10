@@ -9,6 +9,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+
+import org.jfree.util.Log;
+
+import com.vividsolutions.jts.triangulate.quadedge.LastFoundQuadEdgeLocator;
+
 import java.util.Set;
 
 import spawnn.dist.Dist;
@@ -92,12 +97,12 @@ public class ColorUtils {
 			}
 		}
 		
-		if( colMap.size() != valueMap.size() ) {
-			for( T d : valueMap.keySet() )
-				if( !colMap.containsKey(d) )
-					System.out.println(valueMap.get(d)+" nicht drin!");
-			throw new RuntimeException("Not all elements got a color! "+colMap.size()+","+valueMap.size());
-		}
+		if( colMap.isEmpty() )
+			throw new RuntimeException("No colors found/identified! ");
+		
+		if( colMap.size() != valueMap.size() ) 
+			throw new RuntimeException("Not all elements got a color! "+colMap.size()+"; "+valueMap.size());
+		
 		return colMap;
 	}
 }

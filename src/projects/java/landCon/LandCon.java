@@ -118,8 +118,7 @@ public class LandCon {
 								double s = Double.NaN;
 								if (HierarchicalClusteringType.ward == type) {
 									// get error sum of squares
-									if ( !unionCache.containsKey(l1) || 
-											!unionCache.get(l1).containsKey(l2) ) {
+									if ( !unionCache.containsKey(l1) || !unionCache.get(l1).containsKey(l2) ) {
 
 										// calculate mean and sum of squares,
 										// slightly faster than actually forming
@@ -145,8 +144,7 @@ public class LandCon {
 											ssUnion += di * di;
 										}
 
-										// since no other thread uses l1 we do
-										// not need synchronization
+										// since no other thread uses l1 we do not need synchronization
 										if (!unionCache.containsKey(l1))
 											unionCache.put(l1, new HashMap<TreeNode, Double>());
 										unionCache.get(l1).put(l2, ssUnion);

@@ -91,19 +91,21 @@ public class NGResultPanel extends ResultPanel<double[]> {
 		});  
 		vertexComboBox.setBorder(BorderFactory.createTitledBorder("Neuron"));
 		
-		Set<Integer> fas = new HashSet<Integer>();
+		Set<Integer> used = new HashSet<Integer>();
 		for( int i : fa )
-			fas.add(i);
+			used.add(i);
+		for( int i : ga )
+			used.add(i);
 		for( int i = 0; i < orig.names.size(); i++ ) {
 			String s = orig.names.get(i);
-			if( fas.contains(i))
+			if( used.contains(i))
 				s+="*";
 			vertexComboBox.addItem(s);
 		}
 		if( wmc )
 			for( int i = 0; i < orig.names.size(); i++ ) {
 				String s = orig.names.get(i);
-				if( fas.contains(i))
+				if( used.contains(i))
 					s+="*";
 				s+= " (ctx)";
 				vertexComboBox.addItem(s);

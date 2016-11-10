@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map.Entry;
 
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
+import org.jfree.util.Log;
 
 public class SupervisedUtils {
 	public static List<Entry<List<Integer>, List<Integer>>> getCVList(int numFolds, int numRepeats, int numSamples) {
@@ -133,13 +134,17 @@ public class SupervisedUtils {
 	}
 	
 	// I don't know why, but that's how it is done in the GWMODEL package
+	//lm_AIC<-dp.n*log(lm_RSS/dp.n)+dp.n*log(2*pi)+dp.n+2*(var.n + 1)
+	//#AIC = dev + 2.0 * (double)(MGlobal + 1.0);
 	public static double getAIC_GWMODEL(double mse, int nrParams, int nrSamples) {
-		return nrSamples * ( Math.log(mse) + Math.log(2*Math.PI) + 1 ) + 2 * nrParams;
+		return nrSamples * ( Math.log(mse) + Math.log(2*Math.PI) + 1 ) + 2 * (nrParams+1);
 	}
 	
 	// I don't know why, but that's how it is done in the GWMODEL package
+	// ##AICc = 	dev + 2.0 * (double)N * ( (double)MGlobal + 1.0) / ((double)N - (double)MGlobal - 2.0);
+	//lm_AICc= dp.n*log(lm_RSS/dp.n)+dp.n*log(2*pi)+dp.n+2*dp.n*(var.n+1)/(dp.n-var.n-2)
 	public static double getAICc_GWMODEL(double mse, int nrParams, int nrSamples) {
-		return nrSamples * ( Math.log(mse) + Math.log(2*Math.PI) + 1 ) + (2 * nrSamples * nrParams) / (nrSamples - nrParams - 3);
+		return nrSamples * ( Math.log(mse) + Math.log(2*Math.PI) + 1 ) + (2 * nrSamples * ( nrParams + 1 ) ) / (nrSamples - nrParams - 2);
 	}
 
 	public static double getBIC(double mse, int nrParams, int nrSamples) {
