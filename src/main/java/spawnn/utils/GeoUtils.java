@@ -540,7 +540,7 @@ public class GeoUtils {
 					continue;				
 				if( !rookAdjacency ) { // queen
 					if( a.touches(b) || a.intersects(b) )
-						l.add( samples.get(j));
+							l.add( samples.get(j));
 				} else { // rook
 					if( a.intersection(b).getCoordinates().length > 1 ) // SLOW
 						l.add( samples.get(j));

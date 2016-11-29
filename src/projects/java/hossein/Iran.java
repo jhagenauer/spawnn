@@ -70,7 +70,7 @@ public class Iran {
 				
 		for( int run = 0; run < 10; run++ )
 		for (int n : new int[]{48} )
-			for (int l : new int[]{ 4 }) {
+			for (int l : new int[]{ 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,28,32,36,40,48 }) {
 				
 				final int[] pars = new int[]{run,n,l};
 
@@ -140,7 +140,7 @@ public class Iran {
 						for( Set<double[]> c :GraphClustering.modulMapToCluster(map) ) 
 							ptCluster.put(DataUtils.getMean(c), c);
 						
-						double sc = ClusterValidation.getSilhouetteCoefficient(ptCluster, fDist);
+						double sil = ClusterValidation.getSilhouetteCoefficient(ptCluster, fDist);
 						double mod = GraphClustering.modularity(nGraph, map);
 												
 						List<Set<double[]>> cluster = new ArrayList<>();
@@ -166,7 +166,7 @@ public class Iran {
 						DataUtils.writeShape(s, sdf.geoms, nn.toArray(new String[]{}), sdf.crs, "output/landslides1_"+pars[0]+"_"+pars[1]+"_"+pars[2]+".shp");
 						Drawer.geoDrawCluster(cluster, sdf.samples, sdf.geoms, "output/landslides1_"+pars[0]+"_"+pars[1]+"_"+pars[2]+".png", true );
 						
-						return new double[]{pars[0],pars[1],pars[2],qe,sc,mod,ptCluster.size()};
+						return new double[]{pars[0],pars[1],pars[2],qe,sqe,sil,mod,ptCluster.size()};
 					}
 				}));
 			}
@@ -175,8 +175,7 @@ public class Iran {
 		for (Future<double[]> ff : futures) {
 			try {
 				double[] e = ff.get();
-				String s = (Arrays.toString(e).replace("[", "").replace("]", "") + "\n");
-				System.out.print(s);
+				log.info("run: "+e[0]+", neurons: "+e[1]+", l: "+e[2]+", quant error: "+e[3]+", spatial quant error: "+e[4]+", silhoutte: "+e[5]+", modularity: "+e[6]+", cluster size: "+e[7]);
 			} catch (InterruptedException ex) {
 				ex.printStackTrace();
 			} catch (ExecutionException ex) {

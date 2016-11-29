@@ -20,10 +20,10 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.math3.distribution.ChiSquaredDistribution;
 import org.apache.commons.math3.distribution.FDistribution;
-import org.apache.commons.math3.distribution.TDistribution;
 import org.apache.commons.math3.exception.DimensionMismatchException;
 import org.apache.commons.math3.exception.MathIllegalArgumentException;
 import org.apache.commons.math3.exception.NoDataException;
@@ -32,7 +32,6 @@ import org.apache.commons.math3.exception.util.LocalizedFormats;
 import org.apache.commons.math3.linear.Array2DRowRealMatrix;
 import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.RealMatrix;
-import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 import org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression;
 import org.apache.log4j.Logger;
@@ -44,16 +43,21 @@ import com.vividsolutions.jts.geom.MultiPolygon;
 import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.geom.Polygon;
 
+import mltk.core.Attribute;
+import mltk.core.Instance;
+import mltk.core.Instances;
+import mltk.core.NumericalAttribute;
+import mltk.predictor.Learner.Task;
+import mltk.predictor.glm.ElasticNetLearner;
+import mltk.predictor.glm.GLM;
 import nnet.SupervisedUtils;
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
 import spawnn.utils.Clustering;
 import spawnn.utils.Clustering.HierarchicalClusteringType;
 import spawnn.utils.Clustering.TreeNode;
-import spawnn.utils.ColorBrewer;
 import spawnn.utils.DataUtils;
 import spawnn.utils.DataUtils.Transform;
-import spawnn.utils.Drawer;
 import spawnn.utils.GeoUtils;
 import spawnn.utils.RegionUtils;
 import spawnn.utils.SpatialDataFrame;
@@ -63,7 +67,7 @@ public class ChowClustering {
 	private static Logger log = Logger.getLogger(ChowClustering.class);
 
 	public enum StructChangeTestMode {
-		Chow, AdjustedChow, Wald, ResiChow, ResiLikelihoodRatio, ResiSimple, ResiAICc_GWModel, ResiAICc, ResiAIC_GWModel, ResiAIC
+		Chow, AdjustedChow, Wald, ResiChow, ResiLikelihoodRatio, ResiSimple, ResiAICc_GWModel, ResiAICc, ResiAIC_GWModel, ResiAIC, CV, F_TEST
 	};
 
 	enum Method {
@@ -75,9 +79,12 @@ public class ChowClustering {
 	}
 	
 	public static int METHOD = 0, CLUST = 1, STRUCT_TEST = 2, P_VALUE = 3, DIST = 4, MIN_OBS = 5, PRECLUST = 6, PRECLUST_OPT = 7, RUNS = 8;
-		
+	
+	static PiecewiseLM best = null;
+	static Double bestAICc = Double.POSITIVE_INFINITY;
+			
 	public static void main(String[] args) {
-		
+				
 		int threads = Math.max(1 , Runtime.getRuntime().availableProcessors() -1 );
 		log.debug("Threads: "+threads);
 		
@@ -86,7 +93,7 @@ public class ChowClustering {
 		List<Geometry> geoms = sdf.geoms;
 		
 		int[] ga = new int[] { 3, 4 };
-		int[] fa = new int[] {      7,  8,  9, 10, 19, 20 };
+		int[] fa = new int[] { 7,  8,  9, 10, 19, 20 };
 		int[] faPred = new int[] { 12, 13, 14, 15, 19, 21 };
 		int ta = 18; // bldUpRt
 				
@@ -95,16 +102,10 @@ public class ChowClustering {
 		log.debug("ta: "+ta+","+sdf.names.get(ta) );
 				
 		Dist<double[]> gDist = new EuclideanDist(ga);
-
-		List<double[]> samplesOrig = new ArrayList<>();
-		for (double[] d : samples)
-			samplesOrig.add(Arrays.copyOf(d, d.length));
-
-		// clustering requires standardization
-		DataUtils.transform(samples, fa, Transform.zScore);
-		DataUtils.zScoreGeoColumns(samples, ga, gDist);
 		
 		Map<double[],Set<double[]>> cma = GeoUtils.getContiguityMap(samples, geoms, false, false);
+		Map<double[], Map<double[], Double>> wcm2 = GeoUtils.contiguityMapToDistanceMap( cma ); 
+		GeoUtils.rowNormalizeMatrix(wcm2);
 						
 		Path file = Paths.get("output/chow.txt");
 		try {
@@ -113,19 +114,33 @@ public class ChowClustering {
 		} catch (IOException e1) {
 			e1.printStackTrace();
 		}
-				
+						
 		List<Object[]> params = new ArrayList<>();	
 		int runs = 16;
-		params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.ResiSimple, 1.0, gDist, fa.length+1, PreCluster.Kmeans, 700, runs });
-		params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.ResiSimple, 1.0, gDist, fa.length+1, PreCluster.Kmeans, 600, runs });
-		params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.ResiSimple, 1.0, gDist, fa.length+1, PreCluster.Kmeans, 800, runs });
 		
-		params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.ResiSimple, 1.0, gDist, fa.length+3, PreCluster.Kmeans, 700, runs });
-		params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.ResiSimple, 1.0, gDist, fa.length+3, PreCluster.Kmeans, 600, runs });
-		params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.ResiSimple, 1.0, gDist, fa.length+3, PreCluster.Kmeans, 800, runs });
+		params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.CV, 10.0, gDist, Math.max(10,fa.length+1), PreCluster.Kmeans, 900, runs });
+		params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.CV, 5.0, gDist, Math.max( 5, fa.length+1), PreCluster.Kmeans, 900, runs });
 		
+		params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.ResiSimple, 1.0, gDist, fa.length+1, PreCluster.Kmeans, 900, runs });
+		params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.ResiSimple, 1.0, gDist, fa.length+2, PreCluster.Kmeans, 900, runs });
+		params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.ResiSimple, 1.0, gDist, fa.length+3, PreCluster.Kmeans, 900, runs });
+		params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.ResiSimple, 1.0, gDist, fa.length+4, PreCluster.Kmeans, 900, runs });
+		params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.ResiSimple, 1.0, gDist, fa.length+5, PreCluster.Kmeans, 900, runs });
 				
-		Map<Integer, ClusterResult> re = new HashMap<>();
+		params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.Chow, 1.0, gDist, fa.length+1, PreCluster.Kmeans, 900, runs });
+		params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.Wald, 1.0, gDist, fa.length+2, PreCluster.Kmeans, 900, runs });
+		params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.ResiAICc, 1.0, gDist, fa.length+2, PreCluster.Kmeans, 900, runs });
+		params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.ResiAICc_GWModel, 1.0, gDist, fa.length+2, PreCluster.Kmeans, 900, runs }); // +2 works somehow
+		
+		/*params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.ResiSimple, 1.0, gDist, fa.length+1, PreCluster.Kmeans, 900, runs });
+		
+		params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.ResiSimple, 1.0, gDist, fa.length+1, PreCluster.Kmeans, 800, runs });
+		params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.ResiSimple, 1.0, gDist, fa.length+1, PreCluster.Kmeans, 1000, runs });
+		
+		params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.ResiSimple, 1.0, gDist, fa.length+2, PreCluster.Kmeans, 900, runs });
+		params.add(new Object[] { Method.TEST_CLUSTERING, HierarchicalClusteringType.ward, StructChangeTestMode.ResiSimple, 1.0, gDist, fa.length+3, PreCluster.Kmeans, 900, runs });*/
+						
+		Map<Integer, PiecewiseLM> re = new HashMap<>();
 
 		log.debug("samples: "+samples.size()+", params: "+params.size());
 		for (Object[] param : params) {
@@ -136,8 +151,11 @@ public class ChowClustering {
 
 			String method = Arrays.toString(param);
 			log.debug(method);
+			
+			best = null;
+			bestAICc = Double.POSITIVE_INFINITY;
 
-			List<Future<ClusterResult>> futures = new ArrayList<>();
+			List<Future<PiecewiseLM>> futures = new ArrayList<>();
 			ExecutorService es = Executors.newFixedThreadPool(threads);
 			
 			for (int r = 0; r < maxRuns; r++) {
@@ -221,7 +239,6 @@ public class ChowClustering {
 						ss.addValue(s.size());
 					log.debug("hc1 stats: "+ss.getMin() + "," + ss.getMean() + "," + ss.getMax());
 					log.debug("hc1 wss: "+DataUtils.getWithinSumOfSquares(cluster, gDist ) );
-					
 				}
 				
 				// HC 2
@@ -247,121 +264,107 @@ public class ChowClustering {
 								
 				for (int i = 1; i <= Math.min( curLayer.size(), 250); i += 1) {
 					final int nrCluster = i;
-					futures.add(es.submit(new Callable<ClusterResult>() {
+					futures.add(es.submit(new Callable<PiecewiseLM>() {
 						@Override
-						public ClusterResult call() throws Exception {
-							List<Set<double[]>> ct = Clustering.treeToCluster( Clustering.cutTree(tree, nrCluster) );
+						public PiecewiseLM call() throws Exception {
+							List<Set<double[]>> ct = Clustering.treeToCluster( Clustering.cutTree(tree, nrCluster) );	
+							PiecewiseLM cr = new PiecewiseLM(samples, ct, method, fa, ta );
+							
+							double aicc = cr.getAICc();
 														
-							List<double[]> s = new ArrayList<double[]>();
-							List<Double> residuals = new ArrayList<Double>();
-							List<Double> predictions = new ArrayList<Double>();
-
-							for (Set<double[]> c : ct) {
-								List<double[]> subSamples = new ArrayList<>(samples);
-								subSamples.retainAll(c);
-								s.addAll(subSamples);
+							Map<double[], Double> values = new HashMap<>();
+							for (int i = 0; i < samples.size(); i++)
+								values.put(samples.get(i), cr.residuals.get(i));
+							double moran = GeoUtils.getMoransI(wcm2, values);
+																	
+							double famh = 0;
+							{
+								SummaryStatistics ss = new SummaryStatistics();
+								for( double[] beta : cr.betas ) 
+									ss.addValue(beta[0]);
+								famh = ss.getMax()-ss.getMin();
+							}
+							
+							double intrcpt = 0;
+							{
+								SummaryStatistics ss = new SummaryStatistics();
+								for( double[] beta : cr.betas ) 
+									ss.addValue(beta[beta.length-1]);
+								intrcpt = ss.getMax()-ss.getMin();
+							}
+							
+							synchronized(this) {
+								if( best == null || aicc < bestAICc ) {
+									best = cr;
+									bestAICc = aicc;
+								}
 								
-								double[][] x = getX(subSamples, fa, true);
-								double[] y = getY(subSamples, ta);
-								double[][] xPred = getX(subSamples, faPred, true);
-									
-								OLSMultipleLinearRegression ols = new MyOLS();
-								ols.setNoIntercept(true);
-								ols.newSampleData(y, x);
-								double[] beta = ols.estimateRegressionParameters();
-
-								for (int i = 0; i < x.length; i++) {
-									double p = 0;
-									for (int j = 0; j < beta.length; j++)
-										p += beta[j] * x[i][j];
-									residuals.add(y[i] - p);
-											
-									double pred = 0;
-									for (int j = 0; j < beta.length; j++)
-										pred += beta[j] * xPred[i][j];
-									predictions.add(pred);
+								try {
+									String s = "";
+									s += idx + ",\"" + method + "\"," + cr.cluster.size() +","+ aicc + ","+moran+","+famh+","+intrcpt+"\r\n";
+									Files.write(file, s.getBytes(), StandardOpenOption.APPEND);
+								} catch (IOException e) {
+									e.printStackTrace();
 								}
 							}
-
-							// sort residuals
-							List<Double> sortedResiduals = new ArrayList<Double>();
-							List<Double> sortedPredictions = new ArrayList<Double>();
-							for (double[] d : samples) {
-								int idx = s.indexOf(d);
-								sortedResiduals.add(residuals.get(idx));
-								sortedPredictions.add(predictions.get(idx));
-							}		
-								
-							return new ClusterResult(ct, sortedResiduals, sortedPredictions, method, fa);
+							return null;
 						}
 					}));
 				}					
 			}
-			es.shutdown();
-			
-			ClusterResult best = null;
-			double bestAICc = Double.POSITIVE_INFINITY;
-			
-			try {	
-				for (Future<ClusterResult> f : futures) { 
-					ClusterResult cr = f.get();
-					int nrCluster = cr.cluster.size();
-																							
-					if( best == null || cr.aicc < bestAICc ) {
-						best = cr;
-						bestAICc = cr.aicc;
-					}
-						
-					try {
-						String s = "";
-						s += idx + ",\"" + method + "\"," + nrCluster +","+ cr.aicc + "\r\n";
-						Files.write(file, s.getBytes(), StandardOpenOption.APPEND);
-					} catch (IOException e) {
-						e.printStackTrace();
-					}
-				}
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			} catch (ExecutionException e) {
-				e.printStackTrace();
+			es.shutdown();	
+			try {
+				es.awaitTermination(24, TimeUnit.HOURS);
+			} catch (InterruptedException e1) {
+				e1.printStackTrace();
 			}
-						
 			re.put(idx, best);
 			System.gc();
 		}
 		
-		log.debug("... do the rest...");
-		
-		Map<double[], Map<double[], Double>> wcm2 = GeoUtils.contiguityMapToDistanceMap( cma ); 
-		GeoUtils.rowNormalizeMatrix(wcm2);
-
 		// process best results of each method
-		for (Entry<Integer, ClusterResult> e : re.entrySet()) {
+		PiecewiseLM best = null;
+		for (Entry<Integer, PiecewiseLM> e : re.entrySet()) {
 			int idx = e.getKey();
-			ClusterResult cr = e.getValue();
-
-			//Drawer.geoDrawCluster(cr.cluster, samples, geoms, "output/" + idx + ".png", false);
-
-			List<Double> residuals = cr.residuals;
-			Map<double[], Double> values = new HashMap<>();
-			for (int i = 0; i < samples.size(); i++)
-				values.put(samples.get(i), residuals.get(i));
+			PiecewiseLM cr = e.getValue();
 						
-			double ss = getSumOfSquares(residuals);
+			double aicc = cr.getAICc();
 			log.info(cr.method);
 			log.info("#cluster: " + cr.cluster.size());
-			log.info("rss: " + ss);
-			log.info("aicc: " + SupervisedUtils.getAICc_GWMODEL(ss / samples.size(), cr.cluster.size() * (fa.length + 1), samples.size()));
-			log.info("r2: " + getR2(ss, samples, ta));
+			log.info("rss: " + cr.rss);
+			log.info("aicc: " + aicc);
+			log.info("r2: " + getR2(cr.rss, samples, ta));
+			
+			if( best == null || aicc < best.getAICc() )
+				best = cr;
+						
+			Map<double[], Double> values = new HashMap<>();
+			for (int i = 0; i < samples.size(); i++)
+				values.put(samples.get(i), cr.residuals.get(i));
 			log.info("moran: " + Arrays.toString( GeoUtils.getMoransIStatistics(wcm2, values)));
 			
+			{
+				SummaryStatistics ss = new SummaryStatistics();
+				for( double[] beta : cr.betas ) 
+					ss.addValue(beta[0]);
+				log.debug("famH span: "+(ss.getMax()-ss.getMin()));
+			}
+			
+			{
+				SummaryStatistics ss = new SummaryStatistics();
+				for( double[] beta : cr.betas ) 
+					ss.addValue(beta[beta.length-1]);
+				log.debug("Intrcpt span: "+(ss.getMax()-ss.getMin()));
+			}
+			
+			List<Double> predictions = cr.getPredictions(samples, faPred);
 			List<double[]> l = new ArrayList<double[]>();
 			for (double[] d : samples) {
 				double[] ns = Arrays.copyOf(d, d.length + 3);
 
 				int i = samples.indexOf(d);
-				ns[ns.length - 3] = residuals.get(i);
-				ns[ns.length-2 ] = cr.predictions.get(i);
+				ns[ns.length - 3] = cr.residuals.get(i);
+				ns[ns.length - 2] = predictions.get(i);
 				
 				for (int j = 0; i < cr.cluster.size(); j++) { // cluster
 					if (cr.cluster.get(j).contains(d)) {
@@ -378,38 +381,31 @@ public class ChowClustering {
 			names[names.length - 3] = "residual";
 			names[names.length - 2] = "prdction";
 			names[names.length - 1] = "cluster";
-
+			
 			DataUtils.writeShape(l, geoms, names, sdf.crs, "output/" + idx + ".shp");
-
+			
 			List<String> dissNames = new ArrayList<>();
 			for (int i = 0; i < fa.length; i++)
 				dissNames.add( names[fa[i]] );
 			dissNames.add(  "Intrcpt" );
 			
-			for (int i = 0; i < fa.length; i++)
-				dissNames.add( "p"+names[fa[i]] );
-			dissNames.add(  "pIntrcpt" );
-			
+			dissNames.add(  "numObs" );
 			dissNames.add(  "cluster" );
-			dissNames.add(  "SSE" );
+			dissNames.add(  "RSS" );
 			dissNames.add(  "RMSD" );
+			dissNames.add( "R2" );
 			
 			for (int i = 0; i < fa.length; i++)
 				dissNames.add( "std"+names[fa[i]] );
 			dissNames.add(  "stdIntrcpt" );
-			
-			for (int i = 0; i < fa.length; i++)
-				dissNames.add( "pStd"+names[fa[i]] );
-			dissNames.add(  "pStdIntrcpt" );
-			dissNames.add("numObs");
-						
+									
 			List<double[]> dissSamples = new ArrayList<>();
 			List<Geometry> dissGeoms = new ArrayList<>();
 			for (Set<double[]> s : cr.cluster) {
-				int cNr = cr.cluster.indexOf(s);
 				
-				List<double[]> li = new ArrayList<>();
-				
+				if( s.size() < fa.length + 1 )
+					throw new RuntimeException();
+								
 				List<Polygon> polys = new ArrayList<>();
 				for (double[] d : s) {
 					int idx2 = samples.indexOf(d);
@@ -417,9 +413,6 @@ public class ChowClustering {
 					MultiPolygon mp = (MultiPolygon) geoms.get(idx2);
 					for( int i = 0; i < mp.getNumGeometries(); i++ )
 						polys.add( (Polygon)mp.getGeometryN(i) );
-					
-					double[] o = samplesOrig.get(idx2);
-					li.add( Arrays.copyOf(o, o.length)); // not standardized
 				}
 				
 				while( true ) {
@@ -448,48 +441,43 @@ public class ChowClustering {
 				}
 				Geometry union = new GeometryFactory().createMultiPolygon(polys.toArray(new Polygon[]{}));
 								
-				List<Double> dl = new ArrayList<>();
-				if( s.size() >= fa.length + 1 ) {
-					TDistribution td = new TDistribution(fa.length+2); // + intercept + error-term
-					OLSMultipleLinearRegression ols = new MyOLS();
-					ols.setNoIntercept(true);
-					ols.newSampleData(getY(li, ta), getX(li, fa, true));
-					double[] beta = ols.estimateRegressionParameters();
-					double[] err = ols.estimateRegressionParametersStandardErrors();
-					double[] pValue = new double[beta.length];
-					for( int i = 0; i < beta.length; i++ )
-						pValue[i] = 2*(1-td.cumulativeProbability( Math.abs( beta[i]/err[i] ) ) ); 
-									
-					for( double d : beta )
-						dl.add(d);
-					for( double d : pValue )
-						dl.add(d);
-					
-					dl.add( (double)cNr );
-					dl.add( ols.calculateResidualSumOfSquares() );
-					dl.add( Math.sqrt( ols.calculateResidualSumOfSquares()/s.size() ) );
-										
-					// standardized coefs
-					DataUtils.transform(li, fa, Transform.zScore);
-					DataUtils.transform(li, new int[]{ ta }, Transform.zScore);
-					ols.newSampleData(getY(li, ta), getX(li, fa, true));
-					double[] stdBeta = ols.estimateRegressionParameters();
-					double[] stdErr = ols.estimateRegressionParametersStandardErrors();
-					double[] stdPValue = new double[stdBeta.length];
-					for( int i = 0; i < stdBeta.length; i++ )
-						stdPValue[i] = 2*(1-td.cumulativeProbability( Math.abs( stdBeta[i]/stdErr[i] ) ) ); 
-					
-					for( double d : stdBeta )
-						dl.add( d );
-					for( double d : stdPValue )
-						dl.add( d );
-					dl.add( (double)s.size() );
-				} else {
-					log.warn("Could not calculate separate model!");
-					for( int i = 0; i < (fa.length+1)*4+3 ; i++ )
-						dl.add( Double.NaN );
-				}
+				List<double[]> li = new ArrayList<>(s);
+				List<Set<double[]>> c = new ArrayList<>();
+				c.add( new HashSet<>(li) );
 				
+				PiecewiseLM plm = new PiecewiseLM( li, c, cr.method, fa, ta);
+				
+				List<Double> dl = new ArrayList<>();		
+				for( double d : plm.betas.get(0) )
+					dl.add(d);
+								
+				double sss = getSumOfSquares(plm.residuals);			
+				dl.add( (double)s.size() );
+				dl.add( (double)cr.cluster.indexOf(s) );
+				dl.add( sss );
+				dl.add( Math.sqrt( sss/s.size() ) ); // RMSD
+				
+				double mean = 0;
+				for( double[] d : samples )
+					mean += d[ta]/samples.size();
+				double ssTot = 0;
+				for (double[] d : samples )
+					ssTot += Math.pow( d[ta] - mean, 2);
+				dl.add( 1.0 - sss / ssTot ); // R2
+				
+				List<double[]> nli = new ArrayList<>();
+				for( double[] d : li )
+					nli.add( Arrays.copyOf(d, d.length));
+				DataUtils.transform(nli, fa, Transform.zScore);
+								
+				List<Set<double[]>> nc = new ArrayList<>();
+				nc.add( new HashSet<>(nli) );
+				
+				PiecewiseLM plmStd = new PiecewiseLM( nli, nc, cr.method, fa, ta);
+				for( double d : plmStd.betas.get(0) )
+					dl.add(d);
+										
+				// dl (list) to da (array)
 				double[] da = new double[dl.size()];
 				for( int i = 0; i < dl.size(); i++ )
 					da[i] = dl.get(i);
@@ -497,17 +485,9 @@ public class ChowClustering {
 				dissSamples.add(da);
 				dissGeoms.add(union);
 			}
-			DataUtils.writeShape( dissSamples, dissGeoms, dissNames.toArray(new String[]{}), sdf.crs, "output/" + idx + "_diss.shp" );		
-			Drawer.geoDrawValues( dissGeoms, dissSamples, 2*(fa.length+1), null, ColorBrewer.Set3, "output/" + idx + "_diss.png" ); // cluster
-			Drawer.geoDrawValues( dissGeoms, dissSamples, 2*(fa.length+1)+2, null, ColorBrewer.Blues, "output/" + idx + "_rmsd.png" );
-		
-			for( int i = 0; i < fa.length+1; i++ ) {
-				DescriptiveStatistics ds = new DescriptiveStatistics();
-				for( double[] d : dissSamples ) 
-					ds.addValue(d[i]);
-				log.info(dissNames.get(i)+","+i+":"+ds.getMin()+","+ds.getMean()+","+ds.getMax()+","+ds.getStandardDeviation() );
-			}
+			DataUtils.writeShape( dissSamples, dissGeoms, dissNames.toArray(new String[]{}), sdf.crs, "output/" + idx + "_diss.shp" );	
 		}
+		log.info("best: "+best.method+", "+best.getAICc());
 	}
 
 	static List<TreeNode> getHierarchicalClusterTree(List<TreeNode> leafLayer, Map<TreeNode, Set<TreeNode>> cm, int[] fa, int ta, HierarchicalClusteringType hct, StructChangeTestMode sctm, double pValue, int threads) {
@@ -582,15 +562,85 @@ public class ChowClustering {
 
 								List<double[]> s1 = new ArrayList<>(curLayer.get(l1));
 								List<double[]> s2 = new ArrayList<>(curLayer.get(l2));
-
-								double cost = Double.NaN;
-								double[] s = testStructChange(getX(s1, fa, true), getY(s1, ta), getX(s2, fa, true), getY(s2, ta), sctm);
-								if( s[1] <= pValue )
-									cost = s[0];
 								
-								if( Double.isInfinite(cost) || Double.isNaN(cost) )
-									throw new RuntimeException();
-																								
+								int folds = (int)pValue;
+								int repeats = 4;
+								double cost = Double.NaN;
+								if( sctm == StructChangeTestMode.CV ) {
+									SummaryStatistics ss1 = new SummaryStatistics();									
+									for ( final Entry<List<Integer>, List<Integer>> cvEntry : SupervisedUtils.getCVList(folds, repeats, s1.size() ) ) {
+										List<double[]> samplesTrain = new ArrayList<double[]>();
+										for (int k : cvEntry.getKey()) 
+											samplesTrain.add(s1.get(k));
+										
+										List<double[]> samplesVal = new ArrayList<double[]>();
+										for (int k : cvEntry.getValue()) 
+											samplesVal.add(s1.get(k));
+										
+										List<Set<double[]>> l = new ArrayList<>();
+										l.add( new HashSet<>(samplesTrain));
+										PiecewiseLM plm = new PiecewiseLM(samplesTrain, l, "", fa, ta);
+										
+										List<Double> pred = plm.getPredictions(samplesVal, fa);
+										List<Double> err = new ArrayList<>();
+										for( int k = 0; k < samplesVal.size(); k++ )
+											err.add( pred.get(k) - samplesVal.get(k)[ta] );
+										ss1.addValue( ChowClustering.getSumOfSquares(err) );
+									}
+									
+									SummaryStatistics ss2 = new SummaryStatistics();									
+									for ( final Entry<List<Integer>, List<Integer>> cvEntry : SupervisedUtils.getCVList(folds, repeats, s2.size() ) ) {
+										List<double[]> samplesTrain = new ArrayList<double[]>();
+										for (int k : cvEntry.getKey()) 
+											samplesTrain.add(s2.get(k));
+										
+										List<double[]> samplesVal = new ArrayList<double[]>();
+										for (int k : cvEntry.getValue()) 
+											samplesVal.add(s2.get(k));
+										
+										List<Set<double[]>> l = new ArrayList<>();
+										l.add( new HashSet<>(samplesTrain));
+										PiecewiseLM plm = new PiecewiseLM(samplesTrain, l, "", fa, ta);
+										
+										List<Double> pred = plm.getPredictions(samplesVal, fa);
+										List<Double> err = new ArrayList<>();
+										for( int k = 0; k < samplesVal.size(); k++ )
+											err.add( pred.get(k) - samplesVal.get(k)[ta] );
+										ss2.addValue( ChowClustering.getSumOfSquares(err) );						
+									}
+									
+									SummaryStatistics ssm = new SummaryStatistics();	
+									List<double[]> merged = new ArrayList<>(s1);
+									merged.addAll(s2);
+									for ( final Entry<List<Integer>, List<Integer>> cvEntry : SupervisedUtils.getCVList(folds, repeats, merged.size() ) ) {
+										List<double[]> samplesTrain = new ArrayList<double[]>();
+										for (int k : cvEntry.getKey()) 
+											samplesTrain.add(merged.get(k));
+										
+										List<double[]> samplesVal = new ArrayList<double[]>();
+										for (int k : cvEntry.getValue()) 
+											samplesVal.add(merged.get(k));
+										
+										List<Set<double[]>> l = new ArrayList<>();
+										l.add( new HashSet<>(samplesTrain));
+										PiecewiseLM plm = new PiecewiseLM(samplesTrain, l, "", fa, ta);
+										
+										List<Double> pred = plm.getPredictions(samplesVal, fa);
+										List<Double> err = new ArrayList<>();
+										for( int k = 0; k < samplesVal.size(); k++ )
+											err.add( pred.get(k) - samplesVal.get(k)[ta] );
+										ssm.addValue( ChowClustering.getSumOfSquares(err) );
+									}
+									cost = ssm.getMean() - ( ss1.getMean() + ss2.getMean() );										
+								} else {
+									double[] s = testStructChange(getX(s1, fa, true), getY(s1, ta), getX(s2, fa, true), getY(s2, ta), sctm);
+									if( s[1] <= pValue )
+										cost = s[0];
+								}
+								
+								if( Double.isInfinite(cost) || Double.isNaN(cost) ) 
+									throw new RuntimeException(cost+"");
+																																
 								if ( cost < minCost) {
 									c1 = i;
 									c2 = j;
@@ -684,62 +734,19 @@ public class ChowClustering {
 
 	}
 
-	public static double[] getStripped(double[] d, int[] fa) {
-		double[] nd = new double[fa.length];
-		for (int i = 0; i < fa.length; i++)
-			nd[i] = d[fa[i]];
-		return nd;
-	}
-
 	public static double[][] getX(List<double[]> samples, int[] fa, boolean addIntercept) {
 		double[][] x = new double[samples.size()][];
 		for (int i = 0; i < samples.size(); i++) {
-			double[] stripped = getStripped(samples.get(i), fa);
-			if (addIntercept) {
-				stripped = Arrays.copyOf(stripped, stripped.length + 1);
-				stripped[stripped.length - 1] = 1;
-			}
-			x[i] = stripped;
+			double[] d = samples.get(i);
+			
+			x[i] = new double[fa.length + (addIntercept ? 1 : 0) ];
+			x[i][x[i].length - 1] = 1.0; // gets overwritten if !addIntercept
+			for (int j = 0; j < fa.length; j++)
+				x[i][j] = d[fa[j]];			
 		}
 		return x;
 	}
 	
-	public static double[][] getX(List<Set<double[]>> cluster, List<double[]> samples, int[] fa ) {
-		int onlyIntercept = 0;
-		for( Set<double[]> s : cluster )
-			if( s.size() == 1 )
-				onlyIntercept++;
-		
-		double[][] x = new double[samples.size()][];
-		for (int i = 0; i < samples.size(); i++) {
-			double[] d = samples.get(i);
-						
-			int curIdx = 0;
-			x[i] = new double[ ( fa.length + 1 ) * ( cluster.size() - onlyIntercept ) + onlyIntercept ];
-			for( Set<double[]> s : cluster ) { 				
-				if( s.size() == 1 ) {
-					if( s.contains(d) ) {
-						x[i][curIdx] = 1.0; // only intercept
-						break;
-					}
-					curIdx++;
-				} else {
-					if( s.contains(d) ) {
-						double[] stripped = getStripped(d, fa);
-						stripped = Arrays.copyOf(stripped, stripped.length + 1);
-						stripped[stripped.length - 1] = 1;
-						for (int k = 0; k < stripped.length; k++)
-							x[i][curIdx + k] = stripped[k];
-						break;
-					}
-					curIdx += fa.length + 1; 
-				}
-				
-			}
-		}
-		return x;
-	}
-
 	public static double[] getY(List<double[]> samples, int ta) {
 		double[] y = new double[samples.size()];
 		for (int i = 0; i < samples.size(); i++)
@@ -766,10 +773,10 @@ public class ChowClustering {
 	}
 	
 	public static double[] testStructChange(double[][] x1, double[] y1, double[][] x2, double[] y2, StructChangeTestMode sctm) {
-		double T1 = x1.length;
-		double T2 = x2.length;
-		double T = T1 + T2;
-		double k = x1[0].length; // == x2[0].length
+		int T1 = x1.length;
+		int T2 = x2.length;
+		int T = T1 + T2;
+		int k = x1[0].length; // == x2[0].length
 
 		boolean noIntercept = true;
 		OLSMultipleLinearRegression ols1 = new MyOLS();
@@ -791,14 +798,14 @@ public class ChowClustering {
 		RealMatrix m2 = MatrixUtils.inverse(X2.transpose().multiply(X2));
 		
 		if( sctm == StructChangeTestMode.ResiChow || sctm == StructChangeTestMode.ResiLikelihoodRatio || sctm == StructChangeTestMode.ResiSimple || sctm == StructChangeTestMode.ResiAICc_GWModel || sctm == StructChangeTestMode.ResiAICc 
-				|| sctm == StructChangeTestMode.ResiAIC_GWModel || sctm == StructChangeTestMode.ResiAIC ) {
+				|| sctm == StructChangeTestMode.ResiAIC_GWModel || sctm == StructChangeTestMode.ResiAIC || sctm == StructChangeTestMode.F_TEST ) {
 						
 			double[][] xAll = new double[x1.length+x2.length][];
 			for( int i = 0; i < x1.length; i++ )
 				xAll[i] = x1[i];
 			for( int i = 0; i < x2.length; i++ )
 				xAll[x1.length+i] = x2[i];
-			
+						
 			double[] yAll = new double[y1.length+y2.length];
 			for( int i = 0; i < y1.length; i++ )
 				yAll[i] = y1[i];
@@ -823,18 +830,17 @@ public class ChowClustering {
 				double t = (base - full) / full * (T - 2 * k);
 				ChiSquaredDistribution d = new ChiSquaredDistribution(k);
 				return new double[]{ t, 1-d.cumulativeProbability(t) };
-				
 			} else if( sctm == StructChangeTestMode.ResiSimple ) { // kind of similar to lrt
 				return new double[]{ sc - (s1 + s2), 0.0};
 			} else if( sctm == StructChangeTestMode.ResiAIC_GWModel ) {
-				return new double[]{ SupervisedUtils.getAIC_GWMODEL(sc/T, (int)k, (int)T) - SupervisedUtils.getAIC_GWMODEL( (s1+s2)/T , (int)(2*k), (int)T), 0 };
+				return new double[]{ SupervisedUtils.getAIC_GWMODEL(sc/T, k, T) - SupervisedUtils.getAIC_GWMODEL( (s1+s2)/T , 2*k, T), 0 };
 			} else if( sctm == StructChangeTestMode.ResiAIC ) {
-				return new double[]{ SupervisedUtils.getAIC(sc/T, (int)k, (int)T) - SupervisedUtils.getAIC( (s1+s2)/T , (int)(2*k), (int)T), 0 };
+				return new double[]{ SupervisedUtils.getAIC(sc/T, k, T) - SupervisedUtils.getAIC( (s1+s2)/T , 2*k, T), 0 };
 			} else if( sctm == StructChangeTestMode.ResiAICc_GWModel ) {
-				return new double[]{ SupervisedUtils.getAICc_GWMODEL(sc/T, (int)k, (int)T) - SupervisedUtils.getAICc_GWMODEL( (s1+s2)/T , (int)(2*k), (int)T), 0 };
+				return new double[]{ SupervisedUtils.getAICc_GWMODEL(sc/T, k, T) - SupervisedUtils.getAICc_GWMODEL( (s1+s2)/T , 2*k, T), 0 };
 			} else if( sctm == StructChangeTestMode.ResiAICc ) {
-				return new double[]{ SupervisedUtils.getAICc(sc/T, (int)k, (int)T) - SupervisedUtils.getAICc( (s1+s2)/T , (int)(2*k), (int)T), 0 };
-			}
+				return new double[]{ SupervisedUtils.getAICc(sc/T, k, T) - SupervisedUtils.getAICc( (s1+s2)/T , 2*k, T), 0 };
+			} 
 		} else if (sctm == StructChangeTestMode.Chow) {
 			double s1 = 0;
 			for (double d : ols1.estimateResiduals())
@@ -852,7 +858,7 @@ public class ChowClustering {
 			double s1 = ols1.estimateErrorVariance();
 			double s2 = ols2.estimateErrorVariance();
 			double w = diff.transpose().multiply(MatrixUtils.inverse(m1.scalarMultiply(s1).add(m2.scalarMultiply(s2)))).multiply(diff).getEntry(0, 0);
-			
+									
 			if (sctm == StructChangeTestMode.Wald) {
 				ChiSquaredDistribution d = new ChiSquaredDistribution(k);
 				return new double[]{ w, 1-d.cumulativeProbability(w) };
@@ -864,24 +870,104 @@ public class ChowClustering {
 		}
 		return null;
 	}
-
-	static class ClusterResult {
-		ClusterResult(List<Set<double[]>> cluster, List<Double> residuals, List<Double> predictions, String method, int[] fa) {
+	
+	static class PiecewiseLM {
+		String method;
+		List<Set<double[]>> cluster;
+		List<double[]> betas;
+		List<Double> residuals;
+		int[] fa;
+		int ta, maxIter;
+		double l1, lambda; // l1 0: ridge, 1: lasso, (0, 1): elastic net
+		int numParams = 0;
+		double rss;
+		
+		public PiecewiseLM(List<double[]> samples, List<Set<double[]>> cluster, String method, int[] fa, int ta ) {
 			this.cluster = cluster;
 			this.method = method;
-			this.residuals = residuals;
-			this.predictions = predictions;
+			this.fa = fa;
+			this.ta = ta;
+			boolean elasticNet = false;
 			
-			this.ss = getSumOfSquares(residuals);
-			this.aicc = SupervisedUtils.getAICc_GWMODEL(ss/residuals.size(), cluster.size() * (fa.length+1) , residuals.size());
+			this.betas = new ArrayList<>();
+			for (Set<double[]> c : cluster) {
+								
+				double[][] x = getX( new ArrayList<double[]>(c), fa, true);
+				double[] y = getY( new ArrayList<double[]>(c), ta);
+				double[] beta;
+				
+				if( !elasticNet ) {
+					OLSMultipleLinearRegression ols = new MyOLS();
+					ols.setNoIntercept(true);
+					ols.newSampleData(y, x);
+					beta = ols.estimateRegressionParameters();
+				} else {
+					ElasticNetLearner learner = new ElasticNetLearner();
+					learner.setVerbose(false);
+					learner.setTask(Task.REGRESSION);
+					learner.setLambda(lambda);
+					learner.setL1Ratio(l1);
+					learner.setMaxNumIters(maxIter);
+					
+					List<Attribute> attrs = new ArrayList<>();
+					for( int i = 0; i < fa.length; i++ )
+						attrs.add( new NumericalAttribute("i", i));
+					
+					Instances is = new Instances( attrs );
+					for( int i = 0; i < x.length; i++ )
+						is.add( new Instance(x[i], y[i]));
+					
+					GLM glm = learner.build(is);
+										
+					double[] coefs = glm.coefficients(0);
+					beta = Arrays.copyOf(coefs, coefs.length+1);
+					beta[beta.length-1] = glm.intercept(0);
+				}
+				betas.add(beta);
+			}
 			
+			// residuals
+			List<Double> predictions = getPredictions(samples, fa);
+			residuals = new ArrayList<Double>();
+			for( int i = 0; i < samples.size(); i++ )
+				residuals.add( samples.get(i)[ta] - predictions.get(i) );
+			
+			numParams = cluster.size() * (fa.length+1);
+			rss = getSumOfSquares(residuals);
 		}
-
-		String method;
-		List<Set<double[]>> cluster = null;
-		List<Double> residuals = null, predictions = null;
-		double aicc, ss;
-
+		
+		public double getAICc() {
+			return SupervisedUtils.getAICc_GWMODEL(rss/residuals.size(), numParams, residuals.size());
+		}
+				
+		public List<Double> getPredictions( List<double[]> samples, int[] faPred ) {		
+			Map<Integer,Integer> sm = new HashMap<Integer,Integer>(); // idx subsamples to idx samples
+			Double[] predictions = new Double[samples.size()];
+			
+			for (int l = 0; l < betas.size(); l++ ) {
+				Set<double[]> c = cluster.get(l);
+				List<double[]> subSamples = new ArrayList<>();
+				for( int i = 0; i < samples.size(); i++ ) {
+					double[] d = samples.get(i);
+					if( cluster.size() == 1 || c.contains( d ) ) {
+						sm.put(subSamples.size(), i);
+						subSamples.add(d);
+					}
+				}			
+				double[][] x = getX( subSamples, faPred, true);
+				
+				double[] beta = betas.get(l);
+				for (int i = 0; i < x.length; i++) {
+					double p = 0;
+					for (int j = 0; j < beta.length; j++)
+						p += beta[j] * x[i][j];
+					predictions[sm.get(i)] = p;						
+				}
+			}
+	
+			return Arrays.asList(predictions);
+		}
+		
 		@Override
 		public String toString() {
 			return method + "," + cluster.size();
@@ -893,13 +979,5 @@ public class ChowClustering {
 		for( Set<double[]> s : ct )
 			min = Math.min(s.size(), min);
 		return min;
-	}
-
-	public static double[] getMean(double[][] e) {
-		double[] mean = new double[e[0].length];
-		for (int r = 0; r < e.length; r++)
-			for (int i = 0; i < e[r].length; i++)
-				mean[i] += e[r][i] / e.length;
-		return mean;
 	}
 }

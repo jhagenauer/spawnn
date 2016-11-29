@@ -14,24 +14,20 @@ public class SupervisedUtils {
 	public static List<Entry<List<Integer>, List<Integer>>> getCVList(int numFolds, int numRepeats, int numSamples) {
 		List<Entry<List<Integer>, List<Integer>>> cvList = new ArrayList<Entry<List<Integer>, List<Integer>>>();
 		for (int repeat = 0; repeat < numRepeats; repeat++) {
+			List<Integer> l = new ArrayList<Integer>();
+			for (int i = 0; i < numSamples; i++)
+				l.add(i);
+			Collections.shuffle(l);
 			if (numFolds == 0) { // full
-				List<Integer> l = new ArrayList<Integer>();
-				for (int i = 0; i < numSamples; i++)
-					l.add(i);
-				Collections.shuffle(l);
 				List<Integer> train = new ArrayList<Integer>(l);
 				List<Integer> val = new ArrayList<Integer>(l);
 				cvList.add(new AbstractMap.SimpleEntry<List<Integer>, List<Integer>>(train, val));
 			} else { // n-fold cv
-				List<Integer> l = new ArrayList<Integer>();
-				for (int i = 0; i < numSamples; i++)
-					l.add(i);
-				Collections.shuffle(l);
 				int foldSize = numSamples / numFolds;
 				for (int fold = 0; fold < numFolds; fold++) {
 					List<Integer> val = new ArrayList<Integer>(l.subList(fold * foldSize, (fold + 1) * foldSize));
-					List<Integer> train = new ArrayList<Integer>(l);
-					train.removeAll(val);
+					List<Integer> train = new ArrayList<Integer>( l.subList(0, (fold * foldSize) ) );
+					train.addAll( l.subList( (fold + 1) * foldSize, numSamples ) );
 					cvList.add(new AbstractMap.SimpleEntry<List<Integer>, List<Integer>>(train, val));
 				}
 			}
@@ -45,6 +41,7 @@ public class SupervisedUtils {
 	}
 
 	// Mean sum of squares
+	@Deprecated
 	public static double getMSE(List<double[]> response, List<double[]> desired) {
 		if (response.size() != desired.size())
 			throw new RuntimeException("response.size() != desired.size()");
@@ -53,6 +50,10 @@ public class SupervisedUtils {
 		for (int i = 0; i < response.size(); i++)
 			mse += Math.pow(response.get(i)[0] - desired.get(i)[0], 2);
 		return mse / response.size();
+	}
+	
+	public static double getMSE(List<Double> response, List<double[]> samples, int ta) {
+		return getResidualSumOfSquares(response, samples, ta) / response.size();
 	}
 
 	public static double getR2(List<double[]> response, List<double[]> desired) {
@@ -130,21 +131,35 @@ public class SupervisedUtils {
 	}
 	
 	public static double getAICc(double mse, int nrParams, int nrSamples) {
-		return getAIC(mse, nrParams, nrSamples) + (2 * nrParams * (nrParams + 1)) / (nrSamples - nrParams - 1);
+		try {
+			return getAIC(mse, nrParams, nrSamples) + (2.0 * nrParams * (nrParams + 1)) / (nrSamples - nrParams - 1);
+		} catch( ArithmeticException e ) {
+			e.printStackTrace();
+			System.out.println(nrSamples+","+nrParams);
+			System.exit(1);
+		}
+		return Double.NaN;
 	}
 	
 	// I don't know why, but that's how it is done in the GWMODEL package
 	//lm_AIC<-dp.n*log(lm_RSS/dp.n)+dp.n*log(2*pi)+dp.n+2*(var.n + 1)
-	//#AIC = dev + 2.0 * (double)(MGlobal + 1.0);
+	//  #AIC = dev + 2.0 * (double)(MGlobal + 1.0);
 	public static double getAIC_GWMODEL(double mse, int nrParams, int nrSamples) {
 		return nrSamples * ( Math.log(mse) + Math.log(2*Math.PI) + 1 ) + 2 * (nrParams+1);
 	}
 	
 	// I don't know why, but that's how it is done in the GWMODEL package
 	// ##AICc = 	dev + 2.0 * (double)N * ( (double)MGlobal + 1.0) / ((double)N - (double)MGlobal - 2.0);
-	//lm_AICc= dp.n*log(lm_RSS/dp.n)+dp.n*log(2*pi)+dp.n+2*dp.n*(var.n+1)/(dp.n-var.n-2)
+	// lm_AICc= dp.n*log(lm_RSS/dp.n)+dp.n*log(2*pi)+dp.n+2*dp.n*(var.n+1)/(dp.n-var.n-2)
 	public static double getAICc_GWMODEL(double mse, int nrParams, int nrSamples) {
-		return nrSamples * ( Math.log(mse) + Math.log(2*Math.PI) + 1 ) + (2 * nrSamples * ( nrParams + 1 ) ) / (nrSamples - nrParams - 2);
+		try {
+			return nrSamples * ( Math.log(mse) + Math.log(2*Math.PI) + 1 ) + (2.0 * nrSamples * ( nrParams + 1 ) ) / (nrSamples - nrParams - 2);
+		} catch( ArithmeticException e ) {
+			e.printStackTrace();
+			System.out.println(nrSamples+","+nrParams);
+			System.exit(1);
+		}
+		return Double.NaN;
 	}
 
 	public static double getBIC(double mse, int nrParams, int nrSamples) {
@@ -179,5 +194,20 @@ public class SupervisedUtils {
 			preP = p;
 		}
 		return auc;
+	}
+	
+	public static void main(String[] args) {
+		List<Entry<List<Integer>, List<Integer>>> cvList = getCVList(2,1,10);
+		System.out.println(cvList);;
+	}
+
+	public static double getResidualSumOfSquares(List<Double> response, List<double[]> samples, int ta) {
+		if (response.size() != samples.size())
+			throw new RuntimeException("response.size() != samples.size()");
+
+		double rss = 0;
+		for (int i = 0; i < response.size(); i++)
+			rss += Math.pow(response.get(i) - samples.get(i)[ta], 2);
+		return rss;
 	}
 }
