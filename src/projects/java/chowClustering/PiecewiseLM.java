@@ -7,75 +7,101 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression;
+import org.apache.commons.math3.linear.Array2DRowRealMatrix;
+import org.apache.commons.math3.linear.ArrayRealVector;
+import org.apache.commons.math3.linear.MatrixUtils;
+import org.apache.commons.math3.linear.QRDecomposition;
+import org.apache.commons.math3.linear.RealMatrix;
+import org.apache.commons.math3.linear.RealVector;
+import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 
-import chowClustering.ChowClustering.MyOLS;
-import mltk.core.Attribute;
-import mltk.core.Instance;
-import mltk.core.Instances;
-import mltk.core.NumericalAttribute;
-import mltk.predictor.Learner.Task;
-import mltk.predictor.glm.ElasticNetLearner;
-import mltk.predictor.glm.GLM;
 import nnet.SupervisedUtils;
 
 public class PiecewiseLM {
 	String method;
-	List<Set<double[]>> cluster;
+	
 	List<double[]> betas;
 	private List<Double> residuals = null;
 	List<double[]> samples;
 	int[] fa;
 	int ta, maxIter;
-	double l1, lambda; // l1 0: ridge, 1: lasso, (0, 1): elastic net
-	int numParams = 0;
+	double lambda; 
+	double numParams = -1;
 	private double rss = -1;
 	
-	public PiecewiseLM(List<double[]> samples, List<Set<double[]>> cluster, String method, int[] fa, int ta ) {
+	boolean zScore;
+	List<Set<double[]>> cluster;
+	private List<double[]> means = new ArrayList<>(), sds = new ArrayList<>();
+		
+	public PiecewiseLM(List<double[]> samples, List<Set<double[]>> cluster, String method, int[] fa, int ta, boolean zScore ) {
+		this( samples, cluster, method, fa, ta, zScore, -1.0);
+	}
+		
+	public PiecewiseLM(List<double[]> samples, List<Set<double[]>> cluster, String method, int[] fa, int ta, boolean zScore, double lambda ) {
 		this.samples = samples;
 		this.cluster = cluster;
 		this.method = method;
 		this.fa = fa;
 		this.ta = ta;
-		boolean elasticNet = false;
-		
+		this.lambda = lambda;
+		this.zScore = zScore;
+				
 		this.betas = new ArrayList<>();
-		for (Set<double[]> c : cluster) {
-							
-			double[][] x = ChowClustering.getX( new ArrayList<double[]>(c), fa, true);
-			double[] y = ChowClustering.getY( new ArrayList<double[]>(c), ta);
-			double[] beta;
+		numParams = 0;
+		
+		if( lambda > 0 && !zScore )
+			System.out.println("Warning: Ridge regression without zScore "+lambda);
+				
+		for( int j = 0; j < cluster.size(); j++ ) {
+			Set<double[]> c = cluster.get(j);
 			
-			if( !elasticNet ) {
-				OLSMultipleLinearRegression ols = new MyOLS();
-				ols.setNoIntercept(true);
-				ols.newSampleData(y, x);
-				beta = ols.estimateRegressionParameters();
-			} else {
-				ElasticNetLearner learner = new ElasticNetLearner();
-				learner.setVerbose(false);
-				learner.setTask(Task.REGRESSION);
-				learner.setLambda(lambda);
-				learner.setL1Ratio(l1);
-				learner.setMaxNumIters(maxIter);
+			List<double[]> l = new ArrayList<double[]>(c);
+			double[][] x;
+			if( zScore ) {				
+				double[] mean = new double[fa.length], sd = new double[fa.length];
+				for( int i = 0; i < fa.length; i++ ) {
+					SummaryStatistics ss = new SummaryStatistics();
+					for( double[] d : c )
+						ss.addValue( d[fa[i]] );				
+					mean[i] = ss.getMean();
+					sd[i] = ss.getStandardDeviation();
+				}
+				means.add(mean);
+				sds.add(sd);					
+				x = PiecewiseLM.getX( l, fa, mean, sd, true);	
+			} else 
+				x = PiecewiseLM.getX( l, fa, true);	
+					
+			double[] y = PiecewiseLM.getY( l, ta);
+			RealMatrix X = new Array2DRowRealMatrix(x, true);
+			RealVector Y = new ArrayRealVector(y);
+			
+			if( lambda <= 0 ) {
+				QRDecomposition qr = new QRDecomposition(X); 
+				double[] beta = qr.getSolver().solve(Y).toArray();
+				betas.add(beta); 
+				numParams += fa.length+1;
+			} else { // ridge regression
+				RealMatrix XtX = X.transpose().multiply(X);				
+				for( int i = 0; i < XtX.getColumnDimension(); i++ )
+					XtX.setEntry(i, i, XtX.getEntry(i, i)+lambda);
 				
-				List<Attribute> attrs = new ArrayList<>();
-				for( int i = 0; i < fa.length; i++ )
-					attrs.add( new NumericalAttribute("i", i));
+				RealVector w = X.transpose().operate(Y);
+				QRDecomposition qr = new QRDecomposition(XtX);
+				double[] beta = qr.getSolver().solve(w).toArray();
+				betas.add(beta);
 				
-				Instances is = new Instances( attrs );
-				for( int i = 0; i < x.length; i++ )
-					is.add( new Instance(x[i], y[i]));
-				
-				GLM glm = learner.build(is);
-									
-				double[] coefs = glm.coefficients(0);
-				beta = Arrays.copyOf(coefs, coefs.length+1);
-				beta[beta.length-1] = glm.intercept(0);
+				double df = 0;
+				RealMatrix hat = X.multiply( MatrixUtils.inverse(XtX)).multiply(X.transpose()); 
+				for( int i = 0; i < hat.getColumnDimension(); i++ )
+					df += hat.getEntry(i, i);
+				numParams += df; // not sure about the error term
 			}
-			betas.add(beta);
 		}			
-		numParams = cluster.size() * (fa.length+1);
+	}
+	
+	public double getNumParams() {
+		return numParams;
 	}
 	
 	public List<Double> getResiduals() {
@@ -98,7 +124,7 @@ public class PiecewiseLM {
 	}
 	
 	public double getAICc() {
-		return SupervisedUtils.getAICc_GWMODEL(getRSS()/samples.size(), numParams, samples.size());
+		return SupervisedUtils.getAICc_GWMODEL(getRSS()/samples.size(), getNumParams(), samples.size());
 	}
 			
 	public List<Double> getPredictions( List<double[]> samples, int[] faPred ) {		
@@ -114,8 +140,13 @@ public class PiecewiseLM {
 					idxMap.put(subSamples.size(), i);
 					subSamples.add(d);
 				}
-			}			
-			double[][] x = ChowClustering.getX( subSamples, faPred, true);
+			}
+			double[][] x;
+			if( zScore )
+				x = PiecewiseLM.getX( subSamples, faPred, means.get(l), sds.get(l), true);
+			else
+				x = PiecewiseLM.getX( subSamples, faPred, true);
+			
 			double[] beta = betas.get(l);
 			for (int i = 0; i < x.length; i++) {
 				double p = 0;
@@ -130,5 +161,33 @@ public class PiecewiseLM {
 	@Override
 	public String toString() {
 		return method + "," + cluster.size();
+	}
+
+	public static double[] getY(List<double[]> samples, int ta) {
+		double[] y = new double[samples.size()];
+		for (int i = 0; i < samples.size(); i++)
+			y[i] = samples.get(i)[ta];
+		return y;
+	}
+	
+	public static double[][] getX(List<double[]> samples, int[] fa, boolean addIntercept) {
+		return getX(samples, fa, null, null, addIntercept);
+	}
+	
+	public static double[][] getX(List<double[]> samples, int[] fa, double mean[], double sd[], boolean addIntercept) {		
+		double[][] x = new double[samples.size()][];
+		for (int i = 0; i < samples.size(); i++) {
+			double[] d = samples.get(i);
+			
+			x[i] = new double[fa.length + (addIntercept ? 1 : 0) ];
+			x[i][x[i].length - 1] = 1.0; // gets overwritten if !addIntercept
+			for (int j = 0; j < fa.length; j++) {
+				if( mean != null && sd != null )
+					x[i][j] = (d[fa[j]]-mean[j])/sd[j];
+				else
+					x[i][j] = d[fa[j]];
+			}
+		}
+		return x;
 	}
 }

@@ -162,16 +162,10 @@
 			<artifactId>jfreechart</artifactId>
 			<version>1.0.19</version>
 		</dependency>
-
 		<dependency>
 			<groupId>net.imagej</groupId>
 			<artifactId>ij</artifactId>
 			<version>1.48a</version>
-		</dependency>
-		<dependency>
-			<groupId>mltk</groupId>
-			<artifactId>mltk</artifactId>
-			<version>0.0.3-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>watershed_plugin</groupId>
@@ -188,8 +182,6 @@
 			<artifactId>xmlgraphics-commons</artifactId>
 			<version>1.5</version>
 		</dependency>
-
-		
 	</dependencies>
 	<repositories>
 		<repository>
