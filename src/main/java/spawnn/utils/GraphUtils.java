@@ -16,8 +16,15 @@ import java.util.Set;
 import spawnn.dist.Dist;
 
 public class GraphUtils {
+	
+	public static Map<double[],Set<double[]>> getUnweightedGraph( Map<double[],Map<double[],Double>> graph ) {
+		Map<double[],Set<double[]>> ng = new HashMap<double[],Set<double[]>>();
+				for( double[] a : graph.keySet() ) 
+			ng.put(a, graph.get(a).keySet() );
+		return ng;
+	}
 
-	public static Map<double[],Map<double[],Double>> toWeightedGraph( Map<double[],Set<double[]>> graph, Dist<double[]> d) {
+	public static Map<double[],Map<double[],Double>> getWeightedGraph( Map<double[],Set<double[]>> graph, Dist<double[]> d) {
 		Map<double[],Map<double[],Double>> ng = new HashMap<double[],Map<double[],Double>>();
 		for( double[] a : graph.keySet() ) {
 			Map<double[],Double> m = new HashMap<double[],Double>();

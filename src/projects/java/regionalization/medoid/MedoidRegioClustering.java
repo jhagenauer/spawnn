@@ -254,7 +254,7 @@ public class MedoidRegioClustering {
 		} else if( initMode == MedoidInitMode.fDist || initMode == MedoidInitMode.gDist || initMode == MedoidInitMode.graphDist ) { //k-means++-init
 			List<double[]> samples = new ArrayList<>(GraphUtils.getNodes(cm));
 			medoids.add(samples.get(ra.nextInt(samples.size())));
-			Map<double[],Map<double[],Double>> wCm = GraphUtils.toWeightedGraph(cm,new ConstantDist<>(1.0));
+			Map<double[],Map<double[],Double>> wCm = GraphUtils.getWeightedGraph(cm,new ConstantDist<>(1.0));
 			
 			Map<double[],Map<double[],Double>> map = new HashMap<>();
 			

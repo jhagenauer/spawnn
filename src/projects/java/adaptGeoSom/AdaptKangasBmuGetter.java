@@ -75,7 +75,7 @@ public class AdaptKangasBmuGetter<T> extends BmuGetter<T> {
 		List<Geometry> geoms = new ArrayList<>();
 		Map<Integer, Set<double[]>> cls = new HashMap<>();
 
-		while (samples.size() < 4000) {
+		while (samples.size() < 1000) {
 			double x = r.nextDouble();
 			double y = r.nextDouble();
 			int z;
@@ -91,7 +91,7 @@ public class AdaptKangasBmuGetter<T> extends BmuGetter<T> {
 				c = 2;
 			}
 
-			double[] d = new double[] { x, y, z + r.nextDouble() * 0.2 - 0.1, c, 0 };
+			double[] d = new double[] { x, y, z + r.nextDouble() * 0.2 - 0.1, c };
 			if (!cls.containsKey(c))
 				cls.put(c, new HashSet<double[]>());
 			cls.get(c).add(d);
@@ -102,6 +102,9 @@ public class AdaptKangasBmuGetter<T> extends BmuGetter<T> {
 
 		Dist<double[]> gDist = new EuclideanDist(new int[] { 0, 1 });
 		Dist<double[]> fDist = new EuclideanDist(new int[] { 2 });
+		
+		DataUtils.writeCSV("output/points.csv", samples, new String[]{ "x","y","value","class"} );
+		System.exit(1);
 
 		DataUtils.transform(samples, new int[] { 2 }, Transform.zScore);
 

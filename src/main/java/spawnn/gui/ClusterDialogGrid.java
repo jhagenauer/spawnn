@@ -38,7 +38,7 @@ public class ClusterDialogGrid extends JDialog implements ActionListener {
 
 	private static final long serialVersionUID = -6577606485481195079L;
 
-	public ClusterDialogGrid(Frame parent, String string, boolean b, boolean enableWatershed) {
+	public ClusterDialogGrid(Frame parent, String string, boolean b, boolean enableWatershed ) {
 		super(parent, string, b);
 
 		setLayout(new MigLayout(""));

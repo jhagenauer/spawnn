@@ -180,7 +180,7 @@ public class SupervisedUtils {
 	// lm_AICc= dp.n*log(lm_RSS/dp.n)+dp.n*log(2*pi)+dp.n+2*dp.n*(var.n+1)/(dp.n-var.n-2)
 	public static double getAICc_GWMODEL(double mse, double nrParams, int nrSamples) {
 		if( nrSamples - nrParams - 2 <= 0 ) 
-			throw new RuntimeException("to few samples!");
+			throw new RuntimeException("too few samples!");
 		return nrSamples * ( Math.log(mse) + Math.log(2*Math.PI) + 1 ) + (2.0 * nrSamples * ( nrParams + 1 ) ) / (nrSamples - nrParams - 2);
 	}
 

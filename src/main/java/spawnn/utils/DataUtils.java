@@ -39,6 +39,7 @@ import org.geotools.data.FeatureSource;
 import org.geotools.data.FeatureStore;
 import org.geotools.data.FileDataStoreFactorySpi;
 import org.geotools.data.Transaction;
+import org.geotools.data.collection.ListFeatureCollection;
 import org.geotools.data.shapefile.ShapefileDataStore;
 import org.geotools.data.shapefile.ShapefileDataStoreFactory;
 import org.geotools.feature.DefaultFeatureCollection;
@@ -452,14 +453,15 @@ public class DataUtils {
 			else
 				throw new RuntimeException("Unkown geometry type!");
 
-			SimpleFeatureBuilder featureBuilder = new SimpleFeatureBuilder(typeBuilder.buildFeatureType());
+			SimpleFeatureType type = typeBuilder.buildFeatureType();
+			SimpleFeatureBuilder featureBuilder = new SimpleFeatureBuilder(type);
 
-			DefaultFeatureCollection fc = new DefaultFeatureCollection();
+			ListFeatureCollection fc = new ListFeatureCollection(type);
 			for (double[] d : samples) {
 				for (int i = 0; i < d.length; i++)
 					featureBuilder.add(d[i]);
 				featureBuilder.add(geoms.get(samples.indexOf(d)));
-				SimpleFeature sf = featureBuilder.buildFeature("" + fc.size());
+				SimpleFeature sf = featureBuilder.buildFeature(null);
 				fc.add(sf);
 			}
 
@@ -471,9 +473,9 @@ public class DataUtils {
 			Name name = myData.getNames().get(0);
 			FeatureStore<SimpleFeatureType, SimpleFeature> store = (FeatureStore<SimpleFeatureType, SimpleFeature>) myData.getFeatureSource(name);
 
-			// store.addFeatures(fc);
+			store.addFeatures(fc);
 
-			Transaction transaction = new DefaultTransaction("create");
+			/*Transaction transaction = new DefaultTransaction("create");
 			try {
 				store.addFeatures(fc);
 				transaction.commit();
@@ -482,7 +484,7 @@ public class DataUtils {
 				transaction.rollback();
 			} finally {
 				transaction.close();
-			}
+			}*/
 
 			myData.dispose();
 		} catch (MalformedURLException e) {

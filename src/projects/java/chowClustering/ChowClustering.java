@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -32,6 +33,8 @@ import org.apache.commons.math3.exception.util.LocalizedFormats;
 import org.apache.commons.math3.linear.Array2DRowRealMatrix;
 import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.RealMatrix;
+import org.apache.commons.math3.stat.correlation.KendallsCorrelation;
+import org.apache.commons.math3.stat.correlation.SpearmansCorrelation;
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 import org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression;
 import org.apache.log4j.Logger;
@@ -78,8 +81,10 @@ public class ChowClustering {
 				
 		int threads = Math.max(1 , Runtime.getRuntime().availableProcessors() -1 );
 		log.debug("Threads: "+threads);
-		
+
+		SpatialDataFrame sdfGWR = DataUtils.readSpatialDataFrameFromShapefile(new File("R:/data/gemeinden_gs2010/output/gwr_results.shp"), new int[]{ 1, 2 }, true);
 		SpatialDataFrame sdf = DataUtils.readSpatialDataFrameFromShapefile(new File("R:/data/gemeinden_gs2010/gem_dat.shp"), new int[]{ 1, 2 }, true);
+				
 		List<double[]> samples = sdf.samples;
 		List<Geometry> geoms = sdf.geoms;
 		
@@ -108,19 +113,15 @@ public class ChowClustering {
 						
 		List<Object[]> params = new ArrayList<>();	
 		int runs = 16;
-				
-		params.add(new Object[] { HierarchicalClusteringType.ward, StructChangeTestMode.ResiSimple, 0.0, gDist, fa.length+1, PreCluster.Kmeans, 900, runs });
-		params.add(new Object[] { HierarchicalClusteringType.ward, StructChangeTestMode.ResiSimple, 0.00000001, gDist, fa.length+1, PreCluster.Kmeans, 900, runs });
-		params.add(new Object[] { HierarchicalClusteringType.ward, StructChangeTestMode.ResiSimple, 0.0000001, gDist, fa.length+1, PreCluster.Kmeans, 900, runs });
-		params.add(new Object[] { HierarchicalClusteringType.ward, StructChangeTestMode.ResiSimple, 0.000001, gDist, fa.length+1, PreCluster.Kmeans, 900, runs });
-		params.add(new Object[] { HierarchicalClusteringType.ward, StructChangeTestMode.ResiSimple, 0.00001, gDist, fa.length+1, PreCluster.Kmeans, 900, runs });
-		params.add(new Object[] { HierarchicalClusteringType.ward, StructChangeTestMode.ResiSimple, 0.0001, gDist, fa.length+1, PreCluster.Kmeans, 900, runs });
-		params.add(new Object[] { HierarchicalClusteringType.ward, StructChangeTestMode.ResiSimple, 0.001, gDist, fa.length+1, PreCluster.Kmeans, 900, runs });
-		params.add(new Object[] { HierarchicalClusteringType.ward, StructChangeTestMode.ResiSimple, 0.01, gDist, fa.length+1, PreCluster.Kmeans, 900, runs });
-		params.add(new Object[] { HierarchicalClusteringType.ward, StructChangeTestMode.ResiSimple, 0.1, gDist, fa.length+1, PreCluster.Kmeans, 900, runs });
-		params.add(new Object[] { HierarchicalClusteringType.ward, StructChangeTestMode.ResiSimple, 1.0, gDist, fa.length+1, PreCluster.Kmeans, 900, runs });
-		params.add(new Object[] { HierarchicalClusteringType.ward, StructChangeTestMode.ResiSimple, 2.0, gDist, fa.length+1, PreCluster.Kmeans, 900, runs });
-												
+		
+		for( int plus : new int[]{0} )
+		for( int i : new int[]{900} ) {
+			params.add(new Object[] { HierarchicalClusteringType.ward, StructChangeTestMode.ResiAICc_GWModel, 1.0, gDist, fa.length+3+plus, PreCluster.Kmeans, i, runs });
+			params.add(new Object[] { HierarchicalClusteringType.ward, StructChangeTestMode.Wald, 1.0, gDist, fa.length+2+plus, PreCluster.Kmeans, i, runs });
+			params.add(new Object[] { HierarchicalClusteringType.ward, StructChangeTestMode.Chow, 1.0, gDist, fa.length+1+plus, PreCluster.Kmeans, i, runs });
+			params.add(new Object[] { HierarchicalClusteringType.ward, StructChangeTestMode.ResiSimple, 1.0, gDist, fa.length+1+plus, PreCluster.Kmeans, i, runs });
+		}
+																
 		Map<Integer, PiecewiseLM> re = new HashMap<>();
 
 		log.debug("samples: "+samples.size()+", params: "+params.size());
@@ -129,7 +130,6 @@ public class ChowClustering {
 			
 			Clustering.r.setSeed(0);
 			int maxRuns = (int) param[RUNS];
-			final double lambda = (double) param[P_VALUE];
 
 			String method = Arrays.toString(param);
 			log.debug(method);
@@ -250,7 +250,7 @@ public class ChowClustering {
 						@Override
 						public PiecewiseLM call() throws Exception {
 							List<Set<double[]>> ct = Clustering.treeToCluster( Clustering.cutTree(tree, nrCluster) );	
-							PiecewiseLM cr = new PiecewiseLM(samples, ct, method, fa, ta, lambda > 0, lambda );
+							PiecewiseLM cr = new PiecewiseLM(samples, ct, method, fa, ta, false );
 							
 							double aicc = cr.getAICc();
 														
@@ -262,19 +262,70 @@ public class ChowClustering {
 							double famh = 0;
 							{
 								SummaryStatistics ss = new SummaryStatistics();
-								for( double[] beta : cr.betas ) 
-									ss.addValue(beta[0]);
+								for( int i = 0; i < nrCluster; i++ ) 
+									ss.addValue(cr.getBeta(i)[0]); // famH
 								famh = ss.getMax()-ss.getMin();
 							}
 							
 							double intrcpt = 0;
 							{
 								SummaryStatistics ss = new SummaryStatistics();
-								for( double[] beta : cr.betas ) 
-									ss.addValue(beta[beta.length-1]);
+								for( int i = 0; i < nrCluster; i++ ) 
+									ss.addValue(cr.getBeta(i)[cr.getBeta(i).length-1]);
 								intrcpt = ss.getMax()-ss.getMin();
 							}
+														
+							double popDnsCor, famHCor;
+							{
+								double[] regSizes = new double[nrCluster];
+								double[] yArrayPopDns = new double[nrCluster];
+								double[] yArrayFamh = new double[nrCluster];
+								for( int i = 0; i < nrCluster; i++ ) {
+									regSizes[i] = cr.cluster.get(i).size();
+									yArrayPopDns[i] = cr.getBeta(i)[5]; // popDns
+									yArrayFamh[i] = cr.getBeta(i)[0]; // famH
+								}
+								popDnsCor = new KendallsCorrelation().correlation(regSizes,yArrayPopDns);
+								famHCor = new KendallsCorrelation().correlation(regSizes, yArrayFamh);
+							}
 							
+							double gwrCorPpDns, gwrCorFamH;
+							{
+								double[] xArrayPpDns = new double[samples.size()];
+								double[] xArrayFamH = new double[samples.size()];
+								
+								double[] yArrayPpDns = new double[samples.size()];
+								double[] yArrayFamH = new double[samples.size()];
+								for( int i = 0; i < samples.size(); i++ ) {
+									xArrayPpDns[i] = sdfGWR.samples.get(i)[3];
+									xArrayFamH[i] = sdfGWR.samples.get(i)[2];
+									
+									double[] d = samples.get(i);
+									for (int j = 0; j < cr.cluster.size(); j++) {
+										if ( cr.cluster.get(j).contains(d) ) {
+											yArrayPpDns[i] = cr.getBeta(j)[5]; // pop dns coef
+											yArrayFamH[i] = cr.getBeta(j)[0];
+											break;
+										}
+									}				
+								}
+								gwrCorPpDns = new KendallsCorrelation().correlation(xArrayPpDns, yArrayPpDns);
+								gwrCorFamH = new KendallsCorrelation().correlation(xArrayFamH, yArrayFamH);
+							}
+							
+							double[] xArraySize = new double[cr.cluster.size()];
+							double[] yArrayRMSD = new double[cr.cluster.size()];
+							for( int i = 0; i < cr.cluster.size(); i++ ) {
+								xArraySize[i] = cr.cluster.get(i).size();
+								
+								List<double[]> l = new ArrayList<>(cr.cluster.get(i));
+								List<Set<double[]>> c = new ArrayList<>();
+								c.add(cr.cluster.get(i));
+								PiecewiseLM subLM = new PiecewiseLM(l, c, method, faPred, ta, false);
+								yArrayRMSD[i] = Math.sqrt( subLM.getRSS()/l.size() );
+							}
+							double corRMSD = new KendallsCorrelation().correlation(xArraySize, yArrayRMSD);
+														
 							synchronized(this) {
 								if( best == null || aicc < bestAICc ) {
 									best = cr;
@@ -283,7 +334,7 @@ public class ChowClustering {
 								
 								try {
 									String s = "";
-									s += idx + ",\"" + method + "\"," + cr.cluster.size() +","+ aicc + ","+moran+","+famh+","+intrcpt+"\r\n";
+									s += idx + ",\"" + method + "\"," + cr.cluster.size() +","+ aicc + ","+moran+","+famh+","+intrcpt+","+Math.abs(famHCor)+","+Math.abs(popDnsCor)+","+gwrCorFamH+","+gwrCorPpDns+","+corRMSD+"\r\n";
 									Files.write(file, s.getBytes(), StandardOpenOption.APPEND);
 								} catch (IOException e) {
 									e.printStackTrace();
@@ -301,7 +352,7 @@ public class ChowClustering {
 				e1.printStackTrace();
 			}
 			re.put(idx, best);
-			System.gc();
+			System.gc();			
 		}
 		
 		// process best results of each method
@@ -311,7 +362,7 @@ public class ChowClustering {
 			PiecewiseLM cr = e.getValue();
 						
 			double aicc = cr.getAICc();
-			log.info(idx+": "+cr.method);
+			log.info("####### "+idx+": "+cr.method+" ########");
 			log.info("#cluster: " + cr.cluster.size());
 			log.info("rss: " + cr.getRSS());
 			log.info("aicc: " + aicc);
@@ -327,48 +378,54 @@ public class ChowClustering {
 			
 			{
 				SummaryStatistics ss = new SummaryStatistics();
-				for( double[] beta : cr.betas ) 
-					ss.addValue(beta[0]);
-				log.debug("famH span: "+(ss.getMax()-ss.getMin()));
+				for( int i = 0; i < cr.cluster.size(); i++ ) 
+					ss.addValue(cr.getBeta(i)[0]);
+				log.info("famH span: "+(ss.getMax()-ss.getMin()));
 			}
 			
 			{
 				SummaryStatistics ss = new SummaryStatistics();
-				for( double[] beta : cr.betas ) 
-					ss.addValue(beta[beta.length-1]);
-				log.debug("Intrcpt span: "+(ss.getMax()-ss.getMin()));
+				for( int i = 0; i < cr.cluster.size(); i++ ) 
+					ss.addValue(cr.getBeta(i)[cr.getBeta(i).length-1]);
+				log.info("Intrcpt span: "+( ss.getMax() - ss.getMin() ) );
 			}
 			
 			List<Double> predictions = cr.getPredictions(samples, faPred);
 			List<double[]> l = new ArrayList<double[]>();
-			for (double[] d : samples) {
-				double[] ns = Arrays.copyOf(d, d.length + 3);
+			for (double[] d : samples) {				
+				double[] ns = new double[3 + fa.length + 1];
 
 				int i = samples.indexOf(d);
-				ns[ns.length - 3] = cr.getResiduals().get(i);
-				ns[ns.length - 2] = predictions.get(i);
+				ns[0] = cr.getResiduals().get(i);
+				ns[1] = predictions.get(i);
 				
-				for (int j = 0; i < cr.cluster.size(); j++) { // cluster
-					if (cr.cluster.get(j).contains(d)) {
-						ns[ns.length - 1] = j; 
-						break;
-					}
-				}
-				
+				for (int j = 0; j < cr.cluster.size(); j++) {
+					if ( !cr.cluster.get(j).contains(d) ) 
+						continue;
+					
+					ns[2] = j;  // cluster
+						
+					double[] beta = cr.getBeta(j);
+					for( int k = 0; k < beta.length; k++ )
+						ns[3+k] = beta[k];
+					break;
+				}				
 				l.add(ns);
 			}
 			
-			String[] names = sdf.getNames();
-			names = Arrays.copyOf( names, names.length + 3 );
-			names[names.length - 3] = "residual";
-			names[names.length - 2] = "prdction";
-			names[names.length - 1] = "cluster";
+			String[] names = new String[3 + fa.length + 1];
+			names[0] = "residual";
+			names[1] = "prdction";
+			names[2] = "cluster";
+			for( int i = 0; i < fa.length; i++ )
+				names[3+i] = sdf.names.get(fa[i]);		
+			names[names.length-1] = "Intrcpt";
 			
 			DataUtils.writeShape(l, geoms, names, sdf.crs, "output/" + idx + ".shp");
 			
 			List<String> dissNames = new ArrayList<>();
 			for (int i = 0; i < fa.length; i++)
-				dissNames.add( names[fa[i]] );
+				dissNames.add( sdf.names.get(fa[i]) );
 			dissNames.add(  "Intrcpt" );
 			
 			dissNames.add(  "numObs" );
@@ -378,7 +435,7 @@ public class ChowClustering {
 			dissNames.add( "R2" );
 			
 			for (int i = 0; i < fa.length; i++)
-				dissNames.add( "std"+names[fa[i]] );
+				dissNames.add( "std"+sdf.names.get(fa[i]) );
 			dissNames.add(  "stdIntrcpt" );
 									
 			List<double[]> dissSamples = new ArrayList<>();
@@ -427,10 +484,10 @@ public class ChowClustering {
 				List<Set<double[]>> c = new ArrayList<>();
 				c.add( new HashSet<>(li) );
 				
-				PiecewiseLM plm = new PiecewiseLM( li, c, cr.method, fa, ta, cr.lambda > 0, cr.lambda);
+				PiecewiseLM plm = new PiecewiseLM( li, c, cr.method, fa, ta, false);
 				
 				List<Double> dl = new ArrayList<>();		
-				for( double d : plm.betas.get(0) )
+				for( double d : plm.getBeta(0) )
 					dl.add(d);
 								
 				double sss = plm.getRSS();			
@@ -440,8 +497,8 @@ public class ChowClustering {
 				dl.add( Math.sqrt( sss/s.size() ) ); // RMSD
 				dl.add( SupervisedUtils.getR2( plm.getResiduals(), li, ta ) );
 				
-				PiecewiseLM plmStd = new PiecewiseLM( li, c, cr.method, fa, ta, true, cr.lambda);
-				for( double d : plmStd.betas.get(0) )
+				PiecewiseLM plmStd = new PiecewiseLM( li, c, cr.method, fa, ta, true);
+				for( double d : plmStd.getBeta(0) )
 					dl.add(d);
 										
 				// dl (list) to da (array)
@@ -453,7 +510,10 @@ public class ChowClustering {
 				dissGeoms.add(union);
 			}
 			DataUtils.writeShape( dissSamples, dissGeoms, dissNames.toArray(new String[]{}), sdf.crs, "output/" + idx + "_diss.shp" );	
+			
 			Drawer.geoDrawValues(dissGeoms,dissSamples,fa.length+3,sdf.crs,ColorBrewer.Set3,ColorClass.Equal,"output/"+idx+"_cluster.png");
+			for( int i = 0; i < dissNames.size(); i++ )
+				Drawer.geoDrawValues(dissGeoms,dissSamples,i,sdf.crs,ColorBrewer.RdBu,ColorClass.Quantile,"output/"+idx+"_"+dissNames.get(i)+".png");
 		}
 		log.info("best: "+best.method+", "+best.getAICc());
 	}
@@ -500,6 +560,15 @@ public class ChowClustering {
 			for (Entry<TreeNode, Set<TreeNode>> e : cm.entrySet())
 				connected.put(e.getKey(), new HashSet<TreeNode>(e.getValue()));
 		
+		Map<TreeNode, Double> ssCache = new HashMap<TreeNode, Double>();
+		for( Entry<TreeNode,Set<double[]>> e : curLayer.entrySet() ) {
+			List<Set<double[]>> sc1 = new ArrayList<>();
+			sc1.add( e.getValue() );
+			double rss1 = new PiecewiseLM(new ArrayList<>(e.getValue()), sc1, "", fa, ta, false).getRSS();
+			ssCache.put(e.getKey(),rss1);
+		}
+		Map<TreeNode, Map<TreeNode,Double>> unionCache = new ConcurrentHashMap<>();
+		
 		while (curLayer.size() > 1) {
 
 			List<TreeNode> cl = new ArrayList<>(curLayer.keySet());
@@ -532,43 +601,39 @@ public class ChowClustering {
 								Set<double[]> s2 = curLayer.get(l2);
 								
 								double cost = Double.NaN;
-								if( sctm == StructChangeTestMode.ResiSimple ) { // here because we also want ridge regression work									
-									// misuse of pValue, but wtf
-									List<Set<double[]>> sc1 = new ArrayList<>();
-									sc1.add( s1 );
-									double rss1 = new PiecewiseLM(new ArrayList<>(s1), sc1, "", fa, ta, pValue > 0, pValue).getRSS();
-									
-									List<Set<double[]>> sc2 = new ArrayList<>();
-									sc2.add( s2 );
-									double rss2 = new PiecewiseLM( new ArrayList<>(s2), sc2, "", fa, ta, pValue > 0, pValue).getRSS();
-																
-									List<double[]> l = new ArrayList<>();
-									l.addAll(s1);
-									l.addAll(s2);
-									
-									List<Set<double[]>> sc3 = new ArrayList<>();
-									Set<double[]> s = new HashSet<>();
-									s.addAll(s1);
-									s.addAll(s2);
-									sc3.add( s );
-									
-									double rssFull = new PiecewiseLM(l, sc3, "", fa, ta, pValue > 0, pValue).getRSS();
-									cost = rssFull - (rss1 + rss2);
+								if( sctm == StructChangeTestMode.ResiSimple ) { // here because we also want ridge regression work																		
+									if( !unionCache.containsKey(l1) || !unionCache.get(l1).containsKey(l2) ) {
+										List<double[]> l = new ArrayList<>();
+										l.addAll(s1);
+										l.addAll(s2);
+										
+										List<Set<double[]>> sc3 = new ArrayList<>();
+										Set<double[]> s = new HashSet<>();
+										s.addAll(s1);
+										s.addAll(s2);
+										sc3.add( s );
+										
+										double rssFull = new PiecewiseLM(l, sc3, "", fa, ta, false).getRSS();
+										if (!unionCache.containsKey(l1))
+											unionCache.put( l1, new HashMap<TreeNode, Double>() );
+										unionCache.get(l1).put(l2, rssFull);
+									}							
+									cost = unionCache.get(l1).get(l2) - (ssCache.get(l1) + ssCache.get(l2));
 								} else {
-									if( pValue > 0 )
-										log.warn("struct test only works with linear regression!");
-									List<double[]> sl1 = new ArrayList<>(c1);
-									List<double[]> sl2 = new ArrayList<>(c2);
+									List<double[]> sl1 = new ArrayList<>(s1);
+									List<double[]> sl2 = new ArrayList<>(s2);
 									double[] s = testStructChange( PiecewiseLM.getX(sl1, fa, true), PiecewiseLM.getY(sl1, ta), PiecewiseLM.getX(sl2, fa, true), PiecewiseLM.getY(sl2, ta), sctm);
 									if( s[1] <= pValue )
 										cost = s[0];
+									else
+										cost = s[0] + 1000000;
 								}
-								
-								
-								
+																
 								// AIC can be -infi if mse == 0
-								if( Double.isInfinite(cost) || Double.isNaN(cost) ) 
+								if( Double.isInfinite(cost) || Double.isNaN(cost) ) {
 									log.warn(""+cost+","+sctm);
+									System.exit(1);
+								}
 																																
 								if ( cost < minCost) {
 									c1 = i;
@@ -613,6 +678,13 @@ public class ChowClustering {
 
 			TreeNode mergeNode = new TreeNode(++age, sMin);
 			mergeNode.children = Arrays.asList(new TreeNode[] { c1, c2 });
+			
+			if( sctm == StructChangeTestMode.ResiSimple ) {
+				ssCache.remove(c1);
+				ssCache.remove(c2);
+				ssCache.put( mergeNode, unionCache.get(c1).get(c2) );
+				unionCache.remove(c1);
+			} 
 
 			// add nodes
 			curLayer.put(mergeNode, union);
@@ -761,9 +833,8 @@ public class ChowClustering {
 			for (double d : ols2.estimateResiduals())
 				s2 += d * d;
 			double t = diff.transpose().multiply(MatrixUtils.inverse(m1.add(m2))).multiply(diff).getEntry(0, 0) * (T - 2 * k) / (k * (s1 + s2)); // basic chow
-
-			FDistribution d = new FDistribution(k,T - 2 * k);
-			return new double[]{ t, 1 - d.cumulativeProbability(t) };
+						
+			return new double[]{ t, 0 };//, 1 - new FDistribution(k,T - 2 * k).cumulativeProbability(t) };
 			
 		} else if (sctm == StructChangeTestMode.Wald || sctm == StructChangeTestMode.AdjustedChow ) {
 			double s1 = ols1.estimateErrorVariance();
@@ -777,7 +848,6 @@ public class ChowClustering {
 				FDistribution d = new FDistribution(k,T-2*k);
 				return new double[]{w/k, 1-d.cumulativeProbability(w/k)};
 			}
-			
 		}
 		return null;
 	}

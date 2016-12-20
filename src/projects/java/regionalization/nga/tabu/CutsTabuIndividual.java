@@ -92,8 +92,8 @@ public class CutsTabuIndividual extends TabuIndividual<CutsTabuIndividual> {
 		if (cuts.get(nb).isEmpty())
 			cuts.remove(nb);
 
-		Map<double[], Double> m0 = GraphUtils.getShortestDists(GraphUtils.toWeightedGraph(tree, new ConstantDist<>(1.0)), na);
-		Map<double[], Double> m1 = GraphUtils.getShortestDists(GraphUtils.toWeightedGraph(tree, new ConstantDist<>(1.0)), nb);
+		Map<double[], Double> m0 = GraphUtils.getShortestDists(GraphUtils.getWeightedGraph(tree, new ConstantDist<>(1.0)), na);
+		Map<double[], Double> m1 = GraphUtils.getShortestDists(GraphUtils.getWeightedGraph(tree, new ConstantDist<>(1.0)), nb);
 		// get candidates for new edge
 		Map<double[], Map<double[], Double>> c = new HashMap<double[], Map<double[], Double>>();
 		for (double[] a : tree.keySet()) {

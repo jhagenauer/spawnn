@@ -9,18 +9,19 @@ import java.util.Set;
 
 import org.apache.commons.math3.linear.Array2DRowRealMatrix;
 import org.apache.commons.math3.linear.ArrayRealVector;
-import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.QRDecomposition;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealVector;
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
+import org.jblas.DoubleMatrix;
+import org.jblas.Solve;
 
 import nnet.SupervisedUtils;
 
 public class PiecewiseLM {
 	String method;
 	
-	List<double[]> betas;
+	private List<DoubleMatrix> betas;
 	private List<Double> residuals = null;
 	List<double[]> samples;
 	int[] fa;
@@ -43,8 +44,8 @@ public class PiecewiseLM {
 		this.method = method;
 		this.fa = fa;
 		this.ta = ta;
-		this.lambda = lambda;
 		this.zScore = zScore;
+		this.lambda = lambda;
 				
 		this.betas = new ArrayList<>();
 		numParams = 0;
@@ -56,7 +57,7 @@ public class PiecewiseLM {
 			Set<double[]> c = cluster.get(j);
 			
 			List<double[]> l = new ArrayList<double[]>(c);
-			double[][] x;
+			DoubleMatrix X;
 			if( zScore ) {				
 				double[] mean = new double[fa.length], sd = new double[fa.length];
 				for( int i = 0; i < fa.length; i++ ) {
@@ -68,38 +69,30 @@ public class PiecewiseLM {
 				}
 				means.add(mean);
 				sds.add(sd);					
-				x = PiecewiseLM.getX( l, fa, mean, sd, true);	
+				X = new DoubleMatrix( PiecewiseLM.getX( l, fa, mean, sd, true) );	
 			} else 
-				x = PiecewiseLM.getX( l, fa, true);	
+				X = new DoubleMatrix( PiecewiseLM.getX( l, fa, true) );	
 					
-			double[] y = PiecewiseLM.getY( l, ta);
-			RealMatrix X = new Array2DRowRealMatrix(x, true);
-			RealVector Y = new ArrayRealVector(y);
+			DoubleMatrix Y = new DoubleMatrix( PiecewiseLM.getY( l, ta) );
+			DoubleMatrix Xt = X.transpose();
+			DoubleMatrix XtX = Xt.mmul(X);					
 			
 			if( lambda <= 0 ) {
-				QRDecomposition qr = new QRDecomposition(X); 
-				double[] beta = qr.getSolver().solve(Y).toArray();
-				betas.add(beta); 
 				numParams += fa.length+1;
-			} else { // ridge regression
-				RealMatrix XtX = X.transpose().multiply(X);				
-				for( int i = 0; i < XtX.getColumnDimension(); i++ )
-					XtX.setEntry(i, i, XtX.getEntry(i, i)+lambda);
-				
-				RealVector w = X.transpose().operate(Y);
-				QRDecomposition qr = new QRDecomposition(XtX);
-				double[] beta = qr.getSolver().solve(w).toArray();
-				betas.add(beta);
-				
+			} else { // ridge regression					
+				XtX.addi( DoubleMatrix.eye(XtX.columns).muli(lambda) );								
+												
 				double df = 0;
-				RealMatrix hat = X.multiply( MatrixUtils.inverse(XtX)).multiply(X.transpose()); 
-				for( int i = 0; i < hat.getColumnDimension(); i++ )
-					df += hat.getEntry(i, i);
+				DoubleMatrix hat = X.mmul( Solve.pinv( XtX ) ).mmul(Xt); 
+				for( int i = 0; i < hat.columns; i++ )
+					df += hat.get(i, i);
 				numParams += df; // not sure about the error term
+				
 			}
+			betas.add(Solve.solve(XtX, Xt.mmul(Y))); 
 		}			
 	}
-	
+		
 	public double getNumParams() {
 		return numParams;
 	}
@@ -112,6 +105,10 @@ public class PiecewiseLM {
 				residuals.add( samples.get(i)[ta] - predictions.get(i) );
 		} 
 		return residuals;	
+	}
+	
+	public double getR2(List<double[]> samples) {
+		return SupervisedUtils.getR2(getPredictions(samples, fa), samples, ta);
 	}
 	
 	public double getRSS() {
@@ -141,19 +138,16 @@ public class PiecewiseLM {
 					subSamples.add(d);
 				}
 			}
-			double[][] x;
+			DoubleMatrix X;
 			if( zScore )
-				x = PiecewiseLM.getX( subSamples, faPred, means.get(l), sds.get(l), true);
+				X = new DoubleMatrix( PiecewiseLM.getX( subSamples, faPred, means.get(l), sds.get(l), true) );
 			else
-				x = PiecewiseLM.getX( subSamples, faPred, true);
+				X = new DoubleMatrix( PiecewiseLM.getX( subSamples, faPred, true) );
 			
-			double[] beta = betas.get(l);
-			for (int i = 0; i < x.length; i++) {
-				double p = 0;
-				for (int j = 0; j < beta.length; j++)
-					p += beta[j] * x[i][j];
-				predictions[idxMap.get(i)] = p;						
-			}
+			DoubleMatrix beta = betas.get(l);
+			double[] p = X.mmul(beta).data;
+			for( int i = 0; i < p.length; i++ )
+				predictions[idxMap.get(i)] = p[i];				
 		}
 		return Arrays.asList(predictions);
 	}
@@ -189,5 +183,9 @@ public class PiecewiseLM {
 			}
 		}
 		return x;
+	}
+	
+	public double[] getBeta(int i) {
+		return betas.get(i).data;
 	}
 }

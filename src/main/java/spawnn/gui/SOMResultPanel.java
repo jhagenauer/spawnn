@@ -65,7 +65,7 @@ public class SOMResultPanel extends ResultPanel<GridPos> {
 	private List<double[]> samples;
 	
 	private static final String RANDOM = "Random", DISTANCE = "Distance...", CLUSTER = "Cluster...";
-	private static final String GRID = "SOM", GRAPH = "Neurons (Geo)";
+	private static final String GRID = "Map", GRAPH = "Neurons (Geo)";
 		
 	private Object currentGridComboBoxItem;
 

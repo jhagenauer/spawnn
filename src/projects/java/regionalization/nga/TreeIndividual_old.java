@@ -74,11 +74,11 @@ public class TreeIndividual_old extends GAIndividual<TreeIndividual_old> {
 			
 			Map<double[], Double> m0, m1;
 			if(  GraphUtils.getNodes(sub.get(0)).contains(ra) ) {
-					m0 = GraphUtils.getShortestDists( GraphUtils.toWeightedGraph(sub.get(0), new ConstantDist<>(1.0)), ra);
-					m1 = GraphUtils.getShortestDists( GraphUtils.toWeightedGraph(sub.get(1), new ConstantDist<>(1.0)), rb);
+					m0 = GraphUtils.getShortestDists( GraphUtils.getWeightedGraph(sub.get(0), new ConstantDist<>(1.0)), ra);
+					m1 = GraphUtils.getShortestDists( GraphUtils.getWeightedGraph(sub.get(1), new ConstantDist<>(1.0)), rb);
 			} else {
-				m0 = GraphUtils.getShortestDists( GraphUtils.toWeightedGraph(sub.get(0), new ConstantDist<>(1.0)), rb);
-				m1 = GraphUtils.getShortestDists( GraphUtils.toWeightedGraph(sub.get(1), new ConstantDist<>(1.0)), ra);
+				m0 = GraphUtils.getShortestDists( GraphUtils.getWeightedGraph(sub.get(0), new ConstantDist<>(1.0)), rb);
+				m1 = GraphUtils.getShortestDists( GraphUtils.getWeightedGraph(sub.get(1), new ConstantDist<>(1.0)), ra);
 			}
 			
 			// get candidates for new edge
@@ -144,8 +144,8 @@ public class TreeIndividual_old extends GAIndividual<TreeIndividual_old> {
 				
 				double[] ra, rb;
 				if( k != 0 ) { // cost based selection
-					Map<double[], Double> m0 = GraphUtils.getShortestDists( GraphUtils.toWeightedGraph(tree, new ConstantDist<>(1.0)), na );
-					Map<double[], Double> m1 = GraphUtils.getShortestDists( GraphUtils.toWeightedGraph( tree, new ConstantDist<>(1.0)), nb );
+					Map<double[], Double> m0 = GraphUtils.getShortestDists( GraphUtils.getWeightedGraph(tree, new ConstantDist<>(1.0)), na );
+					Map<double[], Double> m1 = GraphUtils.getShortestDists( GraphUtils.getWeightedGraph( tree, new ConstantDist<>(1.0)), nb );
 					// get candidates for new edge
 					Map<double[], Map<double[],Double>> c = new HashMap<double[], Map<double[],Double>>();
 					for (double[] a : tree.keySet()) {

@@ -610,7 +610,7 @@ public class Clustering {
 			tree.add(mergeNode);
 			
 			// update connected map
-			if( connected != null ) {
+			if( cm != null ) {
 				// 1. merge values of c1 and c2 and put union
 				Set<TreeNode> ns = connected.remove(c1);
 				ns.addAll( connected.remove(c2) );

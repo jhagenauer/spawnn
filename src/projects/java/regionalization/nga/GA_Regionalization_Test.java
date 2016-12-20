@@ -112,10 +112,10 @@ public class GA_Regionalization_Test {
 				log.debug(samples.size()+", bestA: "+bestA.getValue()+", bestB: "+bestB.getValue() );
 				
 				Drawer.geoDrawConnections(bestA.getTree(), bestA.getCuts(), new int[]{0,1}, null, "output/bestA_cuts.png");
-				Drawer.geoDrawWeightedConnections( GraphUtils.toWeightedGraph(bestA.getTree(),fDist), new int[]{0,1}, null, "output/bestA.png");
+				Drawer.geoDrawWeightedConnections( GraphUtils.getWeightedGraph(bestA.getTree(),fDist), new int[]{0,1}, null, "output/bestA.png");
 				
 				Drawer.geoDrawConnections(bestB.getTree(), bestB.getCuts(), new int[]{0,1}, null, "output/bestB_cuts.png");
-				Drawer.geoDrawWeightedConnections( GraphUtils.toWeightedGraph(bestB.getTree(),fDist), new int[]{0,1}, null, "output/bestB.png");
+				Drawer.geoDrawWeightedConnections( GraphUtils.getWeightedGraph(bestB.getTree(),fDist), new int[]{0,1}, null, "output/bestB.png");
 				
 				Drawer.geoDrawConnections(cm, null, new int[]{0,1}, null, "output/cm.png");
 				break;

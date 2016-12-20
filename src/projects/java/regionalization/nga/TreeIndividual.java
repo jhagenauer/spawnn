@@ -91,11 +91,11 @@ public class TreeIndividual extends GAIndividual<TreeIndividual> {
 			} else {
 				Map<double[], Double> m0, m1;
 				if(  GraphUtils.getNodes(sub.get(0)).contains(ra) ) {
-						m0 = GraphUtils.getShortestDists( GraphUtils.toWeightedGraph(sub.get(0), new ConstantDist<>(1.0)), ra);
-						m1 = GraphUtils.getShortestDists( GraphUtils.toWeightedGraph(sub.get(1), new ConstantDist<>(1.0)), rb);
+						m0 = GraphUtils.getShortestDists( GraphUtils.getWeightedGraph(sub.get(0), new ConstantDist<>(1.0)), ra);
+						m1 = GraphUtils.getShortestDists( GraphUtils.getWeightedGraph(sub.get(1), new ConstantDist<>(1.0)), rb);
 				} else {
-					m0 = GraphUtils.getShortestDists( GraphUtils.toWeightedGraph(sub.get(0), new ConstantDist<>(1.0)), rb);
-					m1 = GraphUtils.getShortestDists( GraphUtils.toWeightedGraph(sub.get(1), new ConstantDist<>(1.0)), ra);
+					m0 = GraphUtils.getShortestDists( GraphUtils.getWeightedGraph(sub.get(0), new ConstantDist<>(1.0)), rb);
+					m1 = GraphUtils.getShortestDists( GraphUtils.getWeightedGraph(sub.get(1), new ConstantDist<>(1.0)), ra);
 				}
 				
 				Map<double[], Map<double[],Double>> c = new HashMap<double[], Map<double[],Double>>();
@@ -176,8 +176,8 @@ public class TreeIndividual extends GAIndividual<TreeIndividual> {
 					rb = new ArrayList<double[]>(c.get(ra)).get(r.nextInt(c.get(ra).size()));
 				}
 			} else {
-				Map<double[], Double> m0 = GraphUtils.getShortestDists( GraphUtils.toWeightedGraph(tree, new ConstantDist<>(1.0)), na );
-				Map<double[], Double> m1 = GraphUtils.getShortestDists( GraphUtils.toWeightedGraph( tree, new ConstantDist<>(1.0)), nb );
+				Map<double[], Double> m0 = GraphUtils.getShortestDists( GraphUtils.getWeightedGraph(tree, new ConstantDist<>(1.0)), na );
+				Map<double[], Double> m1 = GraphUtils.getShortestDists( GraphUtils.getWeightedGraph( tree, new ConstantDist<>(1.0)), nb );
 				// get candidates for new edge
 				Map<double[], Map<double[],Double>> c = new HashMap<double[], Map<double[],Double>>();
 				for (double[] a : tree.keySet()) {
