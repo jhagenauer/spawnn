@@ -3,24 +3,18 @@ package chowClustering;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.commons.math3.linear.Array2DRowRealMatrix;
-import org.apache.commons.math3.linear.ArrayRealVector;
-import org.apache.commons.math3.linear.QRDecomposition;
-import org.apache.commons.math3.linear.RealMatrix;
-import org.apache.commons.math3.linear.RealVector;
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 import org.jblas.DoubleMatrix;
 import org.jblas.Solve;
 
 import nnet.SupervisedUtils;
 
-public class PiecewiseLM {
-	String method;
-	
+public class LinearModel {
 	private List<DoubleMatrix> betas;
 	private List<Double> residuals = null;
 	List<double[]> samples;
@@ -33,22 +27,34 @@ public class PiecewiseLM {
 	boolean zScore;
 	List<Set<double[]>> cluster;
 	private List<double[]> means = new ArrayList<>(), sds = new ArrayList<>();
-		
-	public PiecewiseLM(List<double[]> samples, List<Set<double[]>> cluster, String method, int[] fa, int ta, boolean zScore ) {
-		this( samples, cluster, method, fa, ta, zScore, -1.0);
+	
+	public LinearModel(List<double[]> samples, int[] fa, int ta, boolean zScore ) {
+		this( samples, null, fa, ta, zScore, -1.0);
+	}
+	
+	public LinearModel(List<double[]> samples, int[] fa, int ta, boolean zScore, double lambda ) {
+		this( samples, null, fa, ta, zScore, -1.0);
 	}
 		
-	public PiecewiseLM(List<double[]> samples, List<Set<double[]>> cluster, String method, int[] fa, int ta, boolean zScore, double lambda ) {
+	public LinearModel(List<double[]> samples, List<Set<double[]>> cluster,int[] fa, int ta, boolean zScore ) {
+		this( samples, cluster, fa, ta, zScore, -1.0);
+	}
+		
+	public LinearModel(List<double[]> samples, List<Set<double[]>> cluster, int[] fa, int ta, boolean zScore, double lambda ) {
 		this.samples = samples;
-		this.cluster = cluster;
-		this.method = method;
 		this.fa = fa;
 		this.ta = ta;
 		this.zScore = zScore;
 		this.lambda = lambda;
-				
 		this.betas = new ArrayList<>();
-		numParams = 0;
+		this.numParams = 0;
+		
+		if( cluster == null ) {
+			this.cluster = new ArrayList<>();
+			this.cluster.add( new HashSet<>(samples));
+		} else {
+			this.cluster = cluster;
+		}
 		
 		if( lambda > 0 && !zScore )
 			System.out.println("Warning: Ridge regression without zScore "+lambda);
@@ -69,16 +75,16 @@ public class PiecewiseLM {
 				}
 				means.add(mean);
 				sds.add(sd);					
-				X = new DoubleMatrix( PiecewiseLM.getX( l, fa, mean, sd, true) );	
+				X = new DoubleMatrix( LinearModel.getX( l, fa, mean, sd, true) );	
 			} else 
-				X = new DoubleMatrix( PiecewiseLM.getX( l, fa, true) );	
+				X = new DoubleMatrix( LinearModel.getX( l, fa, true) );	
 					
-			DoubleMatrix Y = new DoubleMatrix( PiecewiseLM.getY( l, ta) );
+			DoubleMatrix Y = new DoubleMatrix( LinearModel.getY( l, ta) );
 			DoubleMatrix Xt = X.transpose();
 			DoubleMatrix XtX = Xt.mmul(X);					
 			
 			if( lambda <= 0 ) {
-				numParams += fa.length+1;
+				numParams += fa.length + 1; // + intercept (+ error variance)
 			} else { // ridge regression					
 				XtX.addi( DoubleMatrix.eye(XtX.columns).muli(lambda) );								
 												
@@ -140,9 +146,9 @@ public class PiecewiseLM {
 			}
 			DoubleMatrix X;
 			if( zScore )
-				X = new DoubleMatrix( PiecewiseLM.getX( subSamples, faPred, means.get(l), sds.get(l), true) );
+				X = new DoubleMatrix( LinearModel.getX( subSamples, faPred, means.get(l), sds.get(l), true) );
 			else
-				X = new DoubleMatrix( PiecewiseLM.getX( subSamples, faPred, true) );
+				X = new DoubleMatrix( LinearModel.getX( subSamples, faPred, true) );
 			
 			DoubleMatrix beta = betas.get(l);
 			double[] p = X.mmul(beta).data;
@@ -152,11 +158,6 @@ public class PiecewiseLM {
 		return Arrays.asList(predictions);
 	}
 	
-	@Override
-	public String toString() {
-		return method + "," + cluster.size();
-	}
-
 	public static double[] getY(List<double[]> samples, int ta) {
 		double[] y = new double[samples.size()];
 		for (int i = 0; i < samples.size(); i++)

@@ -186,15 +186,8 @@ public class Clustering {
 			}
 		};
 		
-		// multiple for constrained clustering
-		Set<TreeNode> roots = new HashSet<>(tree);
-		for( TreeNode a : tree )
-			for( TreeNode b : tree )
-				if( b.children.contains(a) ) // a is children of b and therefore no root
-						roots.remove(a);
-		
 		PriorityQueue<TreeNode> pq = new PriorityQueue<TreeNode>(1, comp);
-		pq.addAll(roots);
+		pq.addAll(getRoots(tree));
 		while( pq.size() < numCluster ) { 
 			TreeNode tn = pq.poll();
 			if( tn == null )
@@ -205,6 +198,15 @@ public class Clustering {
 					pq.add(child);
 		}
 		return new ArrayList<>(pq);
+	}
+	
+	public static Set<TreeNode> getRoots( Collection<TreeNode> tree ) {
+		Set<TreeNode> roots = new HashSet<>(tree);
+		for( TreeNode a : tree )
+			for( TreeNode b : tree )
+				if( b.children.contains(a) ) // a is children of b and therefore no root
+						roots.remove(a);
+		return roots;
 	}
 	
 	public static List<Set<double[]>> treeToCluster(Collection<TreeNode> tree) {

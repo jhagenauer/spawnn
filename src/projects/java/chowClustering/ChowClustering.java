@@ -34,10 +34,12 @@ import org.apache.commons.math3.linear.Array2DRowRealMatrix;
 import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.stat.correlation.KendallsCorrelation;
-import org.apache.commons.math3.stat.correlation.SpearmansCorrelation;
+import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 import org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression;
 import org.apache.log4j.Logger;
+import org.jblas.DoubleMatrix;
+import org.jblas.Solve;
 
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
@@ -74,7 +76,7 @@ public class ChowClustering {
 	
 	public static int CLUST = 0, STRUCT_TEST = 1, P_VALUE = 2, DIST = 3, MIN_OBS = 4, PRECLUST = 5, PRECLUST_OPT = 6, RUNS = 7;
 	
-	static PiecewiseLM best = null;
+	static LinearModel best = null;
 	static Double bestAICc = Double.POSITIVE_INFINITY;
 			
 	public static void main(String[] args) {
@@ -113,31 +115,30 @@ public class ChowClustering {
 						
 		List<Object[]> params = new ArrayList<>();	
 		int runs = 16;
-		
-		for( int plus : new int[]{0} )
-		for( int i : new int[]{900} ) {
-			params.add(new Object[] { HierarchicalClusteringType.ward, StructChangeTestMode.ResiAICc_GWModel, 1.0, gDist, fa.length+3+plus, PreCluster.Kmeans, i, runs });
-			params.add(new Object[] { HierarchicalClusteringType.ward, StructChangeTestMode.Wald, 1.0, gDist, fa.length+2+plus, PreCluster.Kmeans, i, runs });
-			params.add(new Object[] { HierarchicalClusteringType.ward, StructChangeTestMode.Chow, 1.0, gDist, fa.length+1+plus, PreCluster.Kmeans, i, runs });
-			params.add(new Object[] { HierarchicalClusteringType.ward, StructChangeTestMode.ResiSimple, 1.0, gDist, fa.length+1+plus, PreCluster.Kmeans, i, runs });
+				
+		for( int i : new int[]{ 800 } ) {
+			for( double p : new double[]{1.0, 0.1, 0.05, 0.01} ) 
+				params.add(new Object[] { HierarchicalClusteringType.ward, StructChangeTestMode.Wald, p, gDist, fa.length+2, PreCluster.Kmeans, i, runs });
+
+			for( int plus : new int[]{0,1,2,3,4} )
+				params.add(new Object[] { HierarchicalClusteringType.ward, StructChangeTestMode.ResiSimple,  1.0, gDist, fa.length+2+plus, PreCluster.Kmeans, i, runs });		
 		}
-																
-		Map<Integer, PiecewiseLM> re = new HashMap<>();
+																		
+		Map<Object[], LinearModel> re = new HashMap<>();
 
 		log.debug("samples: "+samples.size()+", params: "+params.size());
-		for (Object[] param : params) {
-			int idx = params.indexOf(param);
-			
+		for (Object[] param : params) {		
 			Clustering.r.setSeed(0);
 			int maxRuns = (int) param[RUNS];
 
 			String method = Arrays.toString(param);
-			log.debug(method);
+			int idx = params.indexOf(param);
+			log.debug(idx+","+method);
 			
 			best = null;
 			bestAICc = Double.POSITIVE_INFINITY;
 
-			List<Future<PiecewiseLM>> futures = new ArrayList<>();
+			List<Future<LinearModel>> futures = new ArrayList<>();
 			ExecutorService es = Executors.newFixedThreadPool(threads);
 			
 			for (int r = 0; r < maxRuns; r++) {
@@ -206,12 +207,10 @@ public class ChowClustering {
 					ncm.put(tnA, s);
 				}
 				
-				// HC 1
+				// HC 1, maintain minobs
 				{
-					long time = System.currentTimeMillis();
 					log.debug("hc1");
 					List<TreeNode> tree = Clustering.getHierarchicalClusterTree(curLayer, ncm, gDist, HierarchicalClusteringType.ward, (int) param[MIN_OBS], threads );
-					log.debug("took: "+(System.currentTimeMillis()-time)/1000.0);
 					
 					curLayer = Clustering.cutTree(tree, 1);
 					List<Set<double[]>> cluster = Clustering.treeToCluster(curLayer);
@@ -219,6 +218,7 @@ public class ChowClustering {
 					SummaryStatistics ss = new SummaryStatistics();
 					for (Set<double[]> s : cluster)
 						ss.addValue(s.size());
+					
 					log.debug("hc1 stats: "+ss.getMin() + "," + ss.getMean() + "," + ss.getMax());
 					log.debug("hc1 wss: "+DataUtils.getWithinSumOfSquares(cluster, gDist ) );
 				}
@@ -239,19 +239,21 @@ public class ChowClustering {
 									s.add(tnB);
 					ncm.put(tnA, s);
 				}
-				
+								
 				long time = System.currentTimeMillis();
-				List<TreeNode> tree = getHierarchicalClusterTree(curLayer, ncm, fa, ta, (HierarchicalClusteringType) param[CLUST], (StructChangeTestMode) param[STRUCT_TEST], (double)param[P_VALUE], threads);
+				double pValue = (double)param[P_VALUE];
+				List<TreeNode> tree = getHierarchicalClusterTree(curLayer, ncm, fa, ta, (HierarchicalClusteringType) param[CLUST], (StructChangeTestMode) param[STRUCT_TEST], pValue, threads);
 				log.debug("took: "+(System.currentTimeMillis()-time)/1000.0);
 								
-				for (int i = 1; i <= Math.min( curLayer.size(), 250); i += 1) {
+				int minClust = Clustering.getRoots(tree).size();
+				for (int i = minClust; i <= (pValue == 1.0 ? Math.min( curLayer.size(), 250) : minClust); i++ ) {
 					final int nrCluster = i;
-					futures.add(es.submit(new Callable<PiecewiseLM>() {
+					futures.add(es.submit(new Callable<LinearModel>() {
 						@Override
-						public PiecewiseLM call() throws Exception {
+						public LinearModel call() throws Exception {
 							List<Set<double[]>> ct = Clustering.treeToCluster( Clustering.cutTree(tree, nrCluster) );	
-							PiecewiseLM cr = new PiecewiseLM(samples, ct, method, fa, ta, false );
-							
+														
+							LinearModel cr = new LinearModel(samples, ct, fa, ta, false );
 							double aicc = cr.getAICc();
 														
 							Map<double[], Double> values = new HashMap<>();
@@ -266,29 +268,7 @@ public class ChowClustering {
 									ss.addValue(cr.getBeta(i)[0]); // famH
 								famh = ss.getMax()-ss.getMin();
 							}
-							
-							double intrcpt = 0;
-							{
-								SummaryStatistics ss = new SummaryStatistics();
-								for( int i = 0; i < nrCluster; i++ ) 
-									ss.addValue(cr.getBeta(i)[cr.getBeta(i).length-1]);
-								intrcpt = ss.getMax()-ss.getMin();
-							}
 														
-							double popDnsCor, famHCor;
-							{
-								double[] regSizes = new double[nrCluster];
-								double[] yArrayPopDns = new double[nrCluster];
-								double[] yArrayFamh = new double[nrCluster];
-								for( int i = 0; i < nrCluster; i++ ) {
-									regSizes[i] = cr.cluster.get(i).size();
-									yArrayPopDns[i] = cr.getBeta(i)[5]; // popDns
-									yArrayFamh[i] = cr.getBeta(i)[0]; // famH
-								}
-								popDnsCor = new KendallsCorrelation().correlation(regSizes,yArrayPopDns);
-								famHCor = new KendallsCorrelation().correlation(regSizes, yArrayFamh);
-							}
-							
 							double gwrCorPpDns, gwrCorFamH;
 							{
 								double[] xArrayPpDns = new double[samples.size()];
@@ -321,11 +301,55 @@ public class ChowClustering {
 								List<double[]> l = new ArrayList<>(cr.cluster.get(i));
 								List<Set<double[]>> c = new ArrayList<>();
 								c.add(cr.cluster.get(i));
-								PiecewiseLM subLM = new PiecewiseLM(l, c, method, faPred, ta, false);
+								LinearModel subLM = new LinearModel(l, c, fa, ta, false);
 								yArrayRMSD[i] = Math.sqrt( subLM.getRSS()/l.size() );
 							}
 							double corRMSD = new KendallsCorrelation().correlation(xArraySize, yArrayRMSD);
-														
+							
+							DescriptiveStatistics dsRMSE = new DescriptiveStatistics();
+							{
+								List<double[]> ns = new ArrayList<double[]>();
+								for( Set<double[]> s : cr.cluster ) {
+									int i = cr.cluster.indexOf(s);
+									for( double[] d : s ) {
+										double[] nd = Arrays.copyOf(d, d.length+cr.cluster.size()-1);
+										if( i < cr.cluster.size() - 1 )
+											nd[d.length+i] = 1;
+										ns.add( nd );
+									}
+								}
+								
+								int[] nfa = Arrays.copyOf(fa, fa.length+cr.cluster.size()-1);
+								for( int i = 0; i < cr.cluster.size()-1; i++ )
+									nfa[fa.length+i] = samples.get(0).length+i;
+																
+								List<Entry<List<Integer>, List<Integer>>> cvList = SupervisedUtils.getCVList(10, 1, ns.size());
+								for (final Entry<List<Integer>, List<Integer>> cvEntry : cvList) {
+									
+									List<double[]> samplesTrain = new ArrayList<double[]>();
+									for (int k : cvEntry.getKey()) 
+										samplesTrain.add(ns.get(k));
+																	
+									DoubleMatrix X = new DoubleMatrix( LinearModel.getX( samplesTrain, nfa, true) );											
+									DoubleMatrix Y = new DoubleMatrix( LinearModel.getY( samplesTrain, ta) );
+									DoubleMatrix Xt = X.transpose();
+									DoubleMatrix XtX = Xt.mmul(X);									
+									DoubleMatrix beta = Solve.solve(XtX, Xt.mmul(Y));
+									
+									List<double[]> samplesVal = new ArrayList<double[]>();
+									for (int k : cvEntry.getValue()) 
+										samplesVal.add(ns.get(k));
+									
+									List<Double> predictions = new ArrayList<>();								
+									DoubleMatrix PX = new DoubleMatrix( LinearModel.getX( samplesVal, nfa, true) );
+									double[] p = PX.mmul(beta).data;
+									for( int i = 0; i < p.length; i++ )
+										predictions.add(p[i]);			
+									
+									dsRMSE.addValue( Math.sqrt( SupervisedUtils.getMSE(predictions, samplesVal, ta) ) );
+								}
+							}
+							
 							synchronized(this) {
 								if( best == null || aicc < bestAICc ) {
 									best = cr;
@@ -334,7 +358,7 @@ public class ChowClustering {
 								
 								try {
 									String s = "";
-									s += idx + ",\"" + method + "\"," + cr.cluster.size() +","+ aicc + ","+moran+","+famh+","+intrcpt+","+Math.abs(famHCor)+","+Math.abs(popDnsCor)+","+gwrCorFamH+","+gwrCorPpDns+","+corRMSD+"\r\n";
+									s += idx + ",\"" + method + "\"," + cr.cluster.size() +","+ aicc + ","+moran+","+famh+","+gwrCorFamH+","+gwrCorPpDns+","+corRMSD+","+dsRMSE.getMean()+"\r\n";
 									Files.write(file, s.getBytes(), StandardOpenOption.APPEND);
 								} catch (IOException e) {
 									e.printStackTrace();
@@ -351,18 +375,19 @@ public class ChowClustering {
 			} catch (InterruptedException e1) {
 				e1.printStackTrace();
 			}
-			re.put(idx, best);
+			re.put(param, best);
 			System.gc();			
 		}
 		
 		// process best results of each method
-		PiecewiseLM best = null;
-		for (Entry<Integer, PiecewiseLM> e : re.entrySet()) {
-			int idx = e.getKey();
-			PiecewiseLM cr = e.getValue();
+		LinearModel best = null;
+		for (Entry<Object[], LinearModel> e : re.entrySet()) {
+			Object[] p = e.getKey();
+			int idx = params.indexOf(p);
+			LinearModel cr = e.getValue();
 						
 			double aicc = cr.getAICc();
-			log.info("####### "+idx+": "+cr.method+" ########");
+			log.info("####### "+params.indexOf(p)+" "+Arrays.toString(p)+" ########");
 			log.info("#cluster: " + cr.cluster.size());
 			log.info("rss: " + cr.getRSS());
 			log.info("aicc: " + aicc);
@@ -421,17 +446,17 @@ public class ChowClustering {
 				names[3+i] = sdf.names.get(fa[i]);		
 			names[names.length-1] = "Intrcpt";
 			
-			DataUtils.writeShape(l, geoms, names, sdf.crs, "output/" + idx + ".shp");
+			DataUtils.writeShape(l, geoms, names, sdf.crs, "output/" + params.indexOf(p) + ".shp");
 			
 			List<String> dissNames = new ArrayList<>();
 			for (int i = 0; i < fa.length; i++)
 				dissNames.add( sdf.names.get(fa[i]) );
 			dissNames.add(  "Intrcpt" );
 			
-			dissNames.add(  "numObs" );
-			dissNames.add(  "cluster" );
-			dissNames.add(  "RSS" );
-			dissNames.add(  "RMSD" );
+			dissNames.add( "numObs" );
+			dissNames.add( "cluster" );
+			dissNames.add( "RSS" );
+			dissNames.add( "RMSD" );
 			dissNames.add( "R2" );
 			
 			for (int i = 0; i < fa.length; i++)
@@ -484,7 +509,7 @@ public class ChowClustering {
 				List<Set<double[]>> c = new ArrayList<>();
 				c.add( new HashSet<>(li) );
 				
-				PiecewiseLM plm = new PiecewiseLM( li, c, cr.method, fa, ta, false);
+				LinearModel plm = new LinearModel( li, c, fa, ta, false);
 				
 				List<Double> dl = new ArrayList<>();		
 				for( double d : plm.getBeta(0) )
@@ -497,7 +522,7 @@ public class ChowClustering {
 				dl.add( Math.sqrt( sss/s.size() ) ); // RMSD
 				dl.add( SupervisedUtils.getR2( plm.getResiduals(), li, ta ) );
 				
-				PiecewiseLM plmStd = new PiecewiseLM( li, c, cr.method, fa, ta, true);
+				LinearModel plmStd = new LinearModel( li, c, fa, ta, true);
 				for( double d : plmStd.getBeta(0) )
 					dl.add(d);
 										
@@ -510,12 +535,12 @@ public class ChowClustering {
 				dissGeoms.add(union);
 			}
 			DataUtils.writeShape( dissSamples, dissGeoms, dissNames.toArray(new String[]{}), sdf.crs, "output/" + idx + "_diss.shp" );	
+			Drawer.geoDrawValues(dissGeoms,dissSamples,fa.length+3,sdf.crs,ColorBrewer.Set3,ColorClass.Equal,"output/" + idx + "_cluster.png");
 			
-			Drawer.geoDrawValues(dissGeoms,dissSamples,fa.length+3,sdf.crs,ColorBrewer.Set3,ColorClass.Equal,"output/"+idx+"_cluster.png");
-			for( int i = 0; i < dissNames.size(); i++ )
-				Drawer.geoDrawValues(dissGeoms,dissSamples,i,sdf.crs,ColorBrewer.RdBu,ColorClass.Quantile,"output/"+idx+"_"+dissNames.get(i)+".png");
+			/*for( int i = 0; i < dissNames.size(); i++ )
+				Drawer.geoDrawValues(dissGeoms,dissSamples,i,sdf.crs,ColorBrewer.RdBu,ColorClass.Quantile,"output/"+idx+"_"+dissNames.get(i)+".png");*/
 		}
-		log.info("best: "+best.method+", "+best.getAICc());
+		log.info("best: "+best.getAICc());
 	}
 
 	static List<TreeNode> getHierarchicalClusterTree(List<TreeNode> leafLayer, Map<TreeNode, Set<TreeNode>> cm, int[] fa, int ta, HierarchicalClusteringType hct, StructChangeTestMode sctm, double pValue, int threads) {
@@ -564,7 +589,7 @@ public class ChowClustering {
 		for( Entry<TreeNode,Set<double[]>> e : curLayer.entrySet() ) {
 			List<Set<double[]>> sc1 = new ArrayList<>();
 			sc1.add( e.getValue() );
-			double rss1 = new PiecewiseLM(new ArrayList<>(e.getValue()), sc1, "", fa, ta, false).getRSS();
+			double rss1 = new LinearModel(new ArrayList<>(e.getValue()), sc1, fa, ta, false).getRSS();
 			ssCache.put(e.getKey(),rss1);
 		}
 		Map<TreeNode, Map<TreeNode,Double>> unionCache = new ConcurrentHashMap<>();
@@ -613,27 +638,29 @@ public class ChowClustering {
 										s.addAll(s2);
 										sc3.add( s );
 										
-										double rssFull = new PiecewiseLM(l, sc3, "", fa, ta, false).getRSS();
+										double rssFull = new LinearModel(l, sc3, fa, ta, false).getRSS();
 										if (!unionCache.containsKey(l1))
 											unionCache.put( l1, new HashMap<TreeNode, Double>() );
 										unionCache.get(l1).put(l2, rssFull);
-									}							
+									}					
+
 									cost = unionCache.get(l1).get(l2) - (ssCache.get(l1) + ssCache.get(l2));
+									
 								} else {
 									List<double[]> sl1 = new ArrayList<>(s1);
 									List<double[]> sl2 = new ArrayList<>(s2);
-									double[] s = testStructChange( PiecewiseLM.getX(sl1, fa, true), PiecewiseLM.getY(sl1, ta), PiecewiseLM.getX(sl2, fa, true), PiecewiseLM.getY(sl2, ta), sctm);
+									double[] s = testStructChange( LinearModel.getX(sl1, fa, true), LinearModel.getY(sl1, ta), LinearModel.getX(sl2, fa, true), LinearModel.getY(sl2, ta), sctm);
 									if( s[1] <= pValue )
 										cost = s[0];
-									else
-										cost = s[0] + 1000000;
+									/*else
+										cost = s[0] + 1000000;*/
 								}
 																
 								// AIC can be -infi if mse == 0
-								if( Double.isInfinite(cost) || Double.isNaN(cost) ) {
+								/*if( Double.isInfinite(cost) || Double.isNaN(cost) ) {
 									log.warn(""+cost+","+sctm);
 									System.exit(1);
-								}
+								}*/
 																																
 								if ( cost < minCost) {
 									c1 = i;
@@ -755,6 +782,7 @@ public class ChowClustering {
 		}
 	}
 	
+	// TODO: use jblas
 	public static double[] testStructChange(double[][] x1, double[] y1, double[][] x2, double[] y2, StructChangeTestMode sctm) {
 		int T1 = x1.length;
 		int T2 = x2.length;
