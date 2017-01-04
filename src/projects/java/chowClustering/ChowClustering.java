@@ -67,7 +67,7 @@ public class ChowClustering {
 	private static Logger log = Logger.getLogger(ChowClustering.class);
 
 	public enum StructChangeTestMode {
-		Chow, AdjustedChow, Wald, ResiChow, ResiLikelihoodRatio, ResiSimple, ResiAICc_GWModel, ResiAICc, ResiAIC_GWModel, ResiAIC, F_TEST
+		Chow, AdjustedChow, Wald, ResiChow, LogLikelihood, ResiSimple
 	};
 	
 	enum PreCluster {
@@ -116,12 +116,14 @@ public class ChowClustering {
 		List<Object[]> params = new ArrayList<>();	
 		int runs = 16;
 				
-		for( int i : new int[]{ 800 } ) {
-			for( double p : new double[]{1.0, 0.1, 0.05, 0.01} ) 
+		for( int i : new int[]{ 300,400,500,600,700,800,900,1000 } ) {
+			for( double p : new double[]{0.05} ) {
 				params.add(new Object[] { HierarchicalClusteringType.ward, StructChangeTestMode.Wald, p, gDist, fa.length+2, PreCluster.Kmeans, i, runs });
+				//params.add(new Object[] { HierarchicalClusteringType.ward, StructChangeTestMode.Chow, p, gDist, fa.length+2, PreCluster.Kmeans, i, runs });
+			}
 
-			for( int plus : new int[]{0,1,2,3,4} )
-				params.add(new Object[] { HierarchicalClusteringType.ward, StructChangeTestMode.ResiSimple,  1.0, gDist, fa.length+2+plus, PreCluster.Kmeans, i, runs });		
+			/*for( int plus : new int[]{0,1,2,3,4,5} )
+				params.add(new Object[] { HierarchicalClusteringType.ward, StructChangeTestMode.ResiSimple,  1.0, gDist, fa.length+1+plus, PreCluster.Kmeans, i, runs });*/	
 		}
 																		
 		Map<Object[], LinearModel> re = new HashMap<>();
@@ -391,7 +393,7 @@ public class ChowClustering {
 			log.info("#cluster: " + cr.cluster.size());
 			log.info("rss: " + cr.getRSS());
 			log.info("aicc: " + aicc);
-			log.info("r2: " + getR2(cr.getRSS(), samples, ta));
+			log.info("r2: " + cr.getR2(samples) );
 			
 			if( best == null || aicc < best.getAICc() )
 				best = cr;
@@ -536,9 +538,6 @@ public class ChowClustering {
 			}
 			DataUtils.writeShape( dissSamples, dissGeoms, dissNames.toArray(new String[]{}), sdf.crs, "output/" + idx + "_diss.shp" );	
 			Drawer.geoDrawValues(dissGeoms,dissSamples,fa.length+3,sdf.crs,ColorBrewer.Set3,ColorClass.Equal,"output/" + idx + "_cluster.png");
-			
-			/*for( int i = 0; i < dissNames.size(); i++ )
-				Drawer.geoDrawValues(dissGeoms,dissSamples,i,sdf.crs,ColorBrewer.RdBu,ColorClass.Quantile,"output/"+idx+"_"+dissNames.get(i)+".png");*/
 		}
 		log.info("best: "+best.getAICc());
 	}
@@ -737,31 +736,6 @@ public class ChowClustering {
 		return tree;
 	}
 
-	public static double getSumOfSquares(List<Double> residuals) {
-		double s = 0;
-		for (double d : residuals)
-			s += d*d;
-		return s;
-	}
-
-	static double getR2(double ssRes, List<double[]> samples, int ta) {
-		SummaryStatistics ss = new SummaryStatistics();
-		for (double[] d : samples)
-			ss.addValue(d[ta]);
-
-		double mean = 0;
-		for (double[] d : samples)
-			mean += d[ta];
-		mean /= samples.size();
-
-		double ssTot = 0;
-		for (double[] d : samples)
-			ssTot += Math.pow(d[ta] - mean, 2);
-
-		return 1.0 - ssRes / ssTot;
-
-	}
-
 	public static class MyOLS extends OLSMultipleLinearRegression {
 		@Override
 		protected void validateSampleData(double[][] x, double[] y) throws MathIllegalArgumentException {
@@ -808,8 +782,7 @@ public class ChowClustering {
 		RealMatrix m1 = MatrixUtils.inverse(X1.transpose().multiply(X1));
 		RealMatrix m2 = MatrixUtils.inverse(X2.transpose().multiply(X2));
 		
-		if( sctm == StructChangeTestMode.ResiChow || sctm == StructChangeTestMode.ResiLikelihoodRatio || sctm == StructChangeTestMode.ResiSimple || sctm == StructChangeTestMode.ResiAICc_GWModel || sctm == StructChangeTestMode.ResiAICc 
-				|| sctm == StructChangeTestMode.ResiAIC_GWModel || sctm == StructChangeTestMode.ResiAIC || sctm == StructChangeTestMode.F_TEST ) {
+		if( sctm == StructChangeTestMode.ResiChow || sctm == StructChangeTestMode.LogLikelihood || sctm == StructChangeTestMode.ResiSimple ) {
 						
 			double[][] xAll = new double[x1.length+x2.length][];
 			for( int i = 0; i < x1.length; i++ )
@@ -831,26 +804,16 @@ public class ChowClustering {
 			double s2 = ols2.calculateResidualSumOfSquares();
 			double sc = olsAll.calculateResidualSumOfSquares();
 			
-			if( sctm == StructChangeTestMode.ResiChow ) {
+			if( sctm == StructChangeTestMode.ResiChow ) { // F-Test
 				double t = ((sc - (s1 + s2)) / k) / ((s1 + s2) / (T - 2 * k));
 				FDistribution d = new FDistribution(k, T - 2 * k);				
 				return new double[] { t, 1 - d.cumulativeProbability(t) }; // p-Value < 0.5 H0(equivalence) rejected, A and B not equal
-			} else if(sctm == StructChangeTestMode.ResiLikelihoodRatio) {
-				double base = sc; // merged
-				double full = s1+s2; // separate 
-				double t = (base - full) / full * (T - 2 * k);
-				ChiSquaredDistribution d = new ChiSquaredDistribution(k);
+			} else if(sctm == StructChangeTestMode.LogLikelihood) { // does not work
+				double t = 2 * ( Math.log(s1+s2) - Math.log(sc) );
+				ChiSquaredDistribution d = new ChiSquaredDistribution( k );
 				return new double[]{ t, 1-d.cumulativeProbability(t) };
 			} else if( sctm == StructChangeTestMode.ResiSimple ) { // kind of similar to lrt
 				return new double[]{ sc - (s1 + s2), 0.0};
-			} else if( sctm == StructChangeTestMode.ResiAIC_GWModel ) {
-				return new double[]{ SupervisedUtils.getAIC_GWMODEL(sc/T, k, T) - SupervisedUtils.getAIC_GWMODEL( (s1+s2)/T , 2*k, T), 0 };
-			} else if( sctm == StructChangeTestMode.ResiAIC ) {
-				return new double[]{ SupervisedUtils.getAIC(sc/T, k, T) - SupervisedUtils.getAIC( (s1+s2)/T , 2*k, T), 0 };
-			} else if( sctm == StructChangeTestMode.ResiAICc_GWModel ) {
-				return new double[]{ SupervisedUtils.getAICc_GWMODEL(sc/T, k, T) - SupervisedUtils.getAICc_GWMODEL( (s1+s2)/T , 2*k, T), 0 };
-			} else if( sctm == StructChangeTestMode.ResiAICc ) {
-				return new double[]{ SupervisedUtils.getAICc(sc/T, k, T) - SupervisedUtils.getAICc( (s1+s2)/T , 2*k, T), 0 };
 			} 
 		} else if (sctm == StructChangeTestMode.Chow) {
 			double s1 = 0;
@@ -862,7 +825,7 @@ public class ChowClustering {
 				s2 += d * d;
 			double t = diff.transpose().multiply(MatrixUtils.inverse(m1.add(m2))).multiply(diff).getEntry(0, 0) * (T - 2 * k) / (k * (s1 + s2)); // basic chow
 						
-			return new double[]{ t, 0 };//, 1 - new FDistribution(k,T - 2 * k).cumulativeProbability(t) };
+			return new double[]{ t, 1 - new FDistribution(k,T - 2 * k).cumulativeProbability(t) };
 			
 		} else if (sctm == StructChangeTestMode.Wald || sctm == StructChangeTestMode.AdjustedChow ) {
 			double s1 = ols1.estimateErrorVariance();

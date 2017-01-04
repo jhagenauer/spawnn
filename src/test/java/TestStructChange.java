@@ -30,7 +30,7 @@ public class TestStructChange {
 			System.out.println("Wald: " + Arrays.toString(ChowClustering.testStructChange(x1, y1, x2, y2, StructChangeTestMode.Wald)));
 
 			System.out.println("ResiSimple: " + Arrays.toString(ChowClustering.testStructChange(x1, y1, x2, y2, StructChangeTestMode.ResiSimple)));
-			System.out.println("ResiLikelihoodRatio: " + Arrays.toString(ChowClustering.testStructChange(x1, y1, x2, y2, StructChangeTestMode.ResiLikelihoodRatio)));
+			System.out.println("ResiLikelihoodRatio: " + Arrays.toString(ChowClustering.testStructChange(x1, y1, x2, y2, StructChangeTestMode.LogLikelihood)));
 		}
 	}
 }

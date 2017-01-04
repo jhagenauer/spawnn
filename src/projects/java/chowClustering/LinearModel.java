@@ -84,7 +84,7 @@ public class LinearModel {
 			DoubleMatrix XtX = Xt.mmul(X);					
 			
 			if( lambda <= 0 ) {
-				numParams += fa.length + 1; // + intercept (+ error variance)
+				numParams += fa.length + 1;// + 1; // + intercept (+ error variance)
 			} else { // ridge regression					
 				XtX.addi( DoubleMatrix.eye(XtX.columns).muli(lambda) );								
 												
