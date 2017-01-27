@@ -14,6 +14,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
@@ -59,6 +60,7 @@ import spawnn.utils.ColorUtils.ColorClass;
 import spawnn.utils.DataUtils;
 import spawnn.utils.Drawer;
 import spawnn.utils.GeoUtils;
+import spawnn.utils.GraphUtils;
 import spawnn.utils.RegionUtils;
 import spawnn.utils.SpatialDataFrame;
 
@@ -121,9 +123,6 @@ public class ChowClustering {
 				params.add(new Object[] { HierarchicalClusteringType.ward, StructChangeTestMode.Wald, p, gDist, fa.length+2, PreCluster.Kmeans, i, runs });
 				//params.add(new Object[] { HierarchicalClusteringType.ward, StructChangeTestMode.Chow, p, gDist, fa.length+2, PreCluster.Kmeans, i, runs });
 			}
-
-			/*for( int plus : new int[]{0,1,2,3,4,5} )
-				params.add(new Object[] { HierarchicalClusteringType.ward, StructChangeTestMode.ResiSimple,  1.0, gDist, fa.length+1+plus, PreCluster.Kmeans, i, runs });*/	
 		}
 																		
 		Map<Object[], LinearModel> re = new HashMap<>();
@@ -138,7 +137,6 @@ public class ChowClustering {
 			log.debug(idx+","+method);
 			
 			best = null;
-			bestAICc = Double.POSITIVE_INFINITY;
 
 			List<Future<LinearModel>> futures = new ArrayList<>();
 			ExecutorService es = Executors.newFixedThreadPool(threads);
@@ -146,106 +144,30 @@ public class ChowClustering {
 			for (int r = 0; r < maxRuns; r++) {
 				log.debug("run "+r);
 				
-				List<Set<double[]>> init = null;
-				if (param[PRECLUST] != null && (PreCluster)param[PRECLUST] == PreCluster.Kmeans ) {
-					List<Set<double[]>> l = new ArrayList<>(Clustering.kMeans(samples, (int) param[PRECLUST_OPT], (Dist<double[]>) param[DIST]).values());
-					init = new ArrayList<>();
-					for( Set<double[]> s : l )
-						if( s.isEmpty() )
-							log.warn("Removing empty init cluster!");
-						else
-							init.add(s);					
-				} else if (param[PRECLUST] != null && (PreCluster)param[PRECLUST] == PreCluster.Ward ) {
-					List<TreeNode> tree = Clustering.getHierarchicalClusterTree( cma, gDist, HierarchicalClusteringType.ward  );
-					int nrCluster = samples.size();
-					do 
-						init = Clustering.treeToCluster( Clustering.cutTree(tree, nrCluster--) );
-					while( minClusterSize(init) <= fa.length+1 );
-					log.debug("init size: "+init.size()+","+minClusterSize(init));
+				List<Set<double[]>> init = getInitCluster(samples, cma, (PreCluster)param[PRECLUST], (int) param[PRECLUST_OPT], gDist );
 					
-				} else {
-					init = new ArrayList<>();
-					for (double[] d : samples) {
-						Set<double[]> s = new HashSet<double[]>();
-						s.add(d);
-						init.add(s);
-					}
-				}
-								
-				List<Set<double[]>> cInit = new ArrayList<>();
-				for( Set<double[]> s : init ) 
-					if( !GeoUtils.isContiugous(cma, s) ) 
-						cInit.addAll( RegionUtils.getAllContiguousSubcluster(cma, s) );
-					else
-						cInit.add(s);
-				if( cInit.size() != init.size() ) {
-					log.warn(cInit.size()+" contiguous instead of "+init.size()+" clusters");
-					init = cInit;
-				}
-				
-				{
-				SummaryStatistics ss = new SummaryStatistics();
-					for (Set<double[]> s : init)
-						ss.addValue(s.size());
-					log.debug("1st stats: "+ss.getMin() + "," + ss.getMean() + "," + ss.getMax());
-					log.debug("1st wss: "+DataUtils.getWithinSumOfSquares(init, gDist ) );
-				}
-				
 				List<TreeNode> curLayer = new ArrayList<>();
-				for (Set<double[]> s : init) {
-					TreeNode cn = new TreeNode(0, 0);
-					cn.setContents(s);
-					curLayer.add(cn);
-				}
-				
-				Map<TreeNode, Set<TreeNode>> ncm = new HashMap<>();
-				for (TreeNode tnA : curLayer) {
-					Set<TreeNode> s = new HashSet<>();
-					for (double[] a : tnA.contents)
-						for (double[] nb : cma.get(a))
-							for (TreeNode tnB : curLayer)
-								if (tnB.contents.contains(nb))
-									s.add(tnB);
-					ncm.put(tnA, s);
-				}
-				
+				for (Set<double[]> s : init) 
+					curLayer.add(new TreeNode(0, 0, s));
+								
 				// HC 1, maintain minobs
 				{
 					log.debug("hc1");
+					Map<TreeNode, Set<TreeNode>> ncm = getCMforCurLayer(curLayer, cma);
 					List<TreeNode> tree = Clustering.getHierarchicalClusterTree(curLayer, ncm, gDist, HierarchicalClusteringType.ward, (int) param[MIN_OBS], threads );
-					
 					curLayer = Clustering.cutTree(tree, 1);
-					List<Set<double[]>> cluster = Clustering.treeToCluster(curLayer);
-									
-					SummaryStatistics ss = new SummaryStatistics();
-					for (Set<double[]> s : cluster)
-						ss.addValue(s.size());
-					
-					log.debug("hc1 stats: "+ss.getMin() + "," + ss.getMean() + "," + ss.getMax());
-					log.debug("hc1 wss: "+DataUtils.getWithinSumOfSquares(cluster, gDist ) );
 				}
 				
 				// HC 2
-				log.debug("hc2");
+				log.debug("hc2");											
+				double pValue = (double)param[P_VALUE];
+				
 				// update curLayer/ncm
 				for( TreeNode tn : curLayer )
 					tn.contents = Clustering.getContents(tn);
+				Map<TreeNode, Set<TreeNode>> ncm = getCMforCurLayer(curLayer, cma);
 				
-				ncm = new HashMap<>();
-				for (TreeNode tnA : curLayer) {
-					Set<TreeNode> s = new HashSet<>();
-					for (double[] a : tnA.contents)
-						for (double[] nb : cma.get(a))
-							for (TreeNode tnB : curLayer)
-								if (tnB.contents.contains(nb))
-									s.add(tnB);
-					ncm.put(tnA, s);
-				}
-								
-				long time = System.currentTimeMillis();
-				double pValue = (double)param[P_VALUE];
-				List<TreeNode> tree = getHierarchicalClusterTree(curLayer, ncm, fa, ta, (HierarchicalClusteringType) param[CLUST], (StructChangeTestMode) param[STRUCT_TEST], pValue, threads);
-				log.debug("took: "+(System.currentTimeMillis()-time)/1000.0);
+				List<TreeNode> tree = getFunctionalClusterinTree(curLayer, ncm, fa, ta, (HierarchicalClusteringType) param[CLUST], (StructChangeTestMode) param[STRUCT_TEST], pValue, threads);
 								
 				int minClust = Clustering.getRoots(tree).size();
 				for (int i = minClust; i <= (pValue == 1.0 ? Math.min( curLayer.size(), 250) : minClust); i++ ) {
@@ -256,7 +178,7 @@ public class ChowClustering {
 							List<Set<double[]>> ct = Clustering.treeToCluster( Clustering.cutTree(tree, nrCluster) );	
 														
 							LinearModel cr = new LinearModel(samples, ct, fa, ta, false );
-							double aicc = cr.getAICc();
+							double aicc = -1; // TODO
 														
 							Map<double[], Double> values = new HashMap<>();
 							for (int i = 0; i < samples.size(); i++)
@@ -388,16 +310,16 @@ public class ChowClustering {
 			int idx = params.indexOf(p);
 			LinearModel cr = e.getValue();
 						
-			double aicc = cr.getAICc();
+			double aicc = -1; // TODO
 			log.info("####### "+params.indexOf(p)+" "+Arrays.toString(p)+" ########");
 			log.info("#cluster: " + cr.cluster.size());
 			log.info("rss: " + cr.getRSS());
 			log.info("aicc: " + aicc);
 			log.info("r2: " + cr.getR2(samples) );
 			
-			if( best == null || aicc < best.getAICc() )
-				best = cr;
-						
+			/*if( best == null || aicc < best.getAICc() )
+				best = cr;*/
+									
 			Map<double[], Double> values = new HashMap<>();
 			for (int i = 0; i < samples.size(); i++)
 				values.put(samples.get(i), cr.getResiduals().get(i));
@@ -539,10 +461,9 @@ public class ChowClustering {
 			DataUtils.writeShape( dissSamples, dissGeoms, dissNames.toArray(new String[]{}), sdf.crs, "output/" + idx + "_diss.shp" );	
 			Drawer.geoDrawValues(dissGeoms,dissSamples,fa.length+3,sdf.crs,ColorBrewer.Set3,ColorClass.Equal,"output/" + idx + "_cluster.png");
 		}
-		log.info("best: "+best.getAICc());
 	}
 
-	static List<TreeNode> getHierarchicalClusterTree(List<TreeNode> leafLayer, Map<TreeNode, Set<TreeNode>> cm, int[] fa, int ta, HierarchicalClusteringType hct, StructChangeTestMode sctm, double pValue, int threads) {
+	public static List<TreeNode> getFunctionalClusterinTree(List<TreeNode> leafLayer, Map<TreeNode, Set<TreeNode>> cm, int[] fa, int ta, HierarchicalClusteringType hct, StructChangeTestMode sctm, double pValue, int threads) {
 
 		class FlatSet<T> extends HashSet<T> {
 			private static final long serialVersionUID = -1960947872875758352L;
@@ -653,14 +574,7 @@ public class ChowClustering {
 										cost = s[0];
 									/*else
 										cost = s[0] + 1000000;*/
-								}
-																
-								// AIC can be -infi if mse == 0
-								/*if( Double.isInfinite(cost) || Double.isNaN(cost) ) {
-									log.warn(""+cost+","+sctm);
-									System.exit(1);
-								}*/
-																																
+								}																							
 								if ( cost < minCost) {
 									c1 = i;
 									c2 = j;
@@ -736,6 +650,7 @@ public class ChowClustering {
 		return tree;
 	}
 
+	@Deprecated
 	public static class MyOLS extends OLSMultipleLinearRegression {
 		@Override
 		protected void validateSampleData(double[][] x, double[] y) throws MathIllegalArgumentException {
@@ -848,5 +763,116 @@ public class ChowClustering {
 		for( Set<double[]> s : ct )
 			min = Math.min(s.size(), min);
 		return min;
+	}
+	
+	public static Map<TreeNode, Set<TreeNode>> getCMforCurLayer( Collection<TreeNode> curLayer, Map<double[],Set<double[]>> cma ) {
+		Map<TreeNode, Set<TreeNode>> ncm = new HashMap<>();
+		for (TreeNode tnA : curLayer) {
+			Set<TreeNode> s = new HashSet<>();
+			for (double[] a : tnA.contents)
+				for (double[] nb : cma.get(a))
+					for (TreeNode tnB : curLayer)
+						if (tnB.contents.contains(nb))
+							s.add(tnB);
+			ncm.put(tnA, s);
+		}
+		return ncm;
+	}
+	
+	public static List<Set<double[]>> getInitCluster( List<double[]> samples, Map<double[],Set<double[]>> cma, PreCluster pc, int pcOpt, Dist<double[]> dist ) {
+		List<Set<double[]>> init = null;
+		if (pc != null && pc == PreCluster.Kmeans ) {
+			List<Set<double[]>> l = new ArrayList<>(Clustering.kMeans(samples, pcOpt, dist ).values());
+			init = new ArrayList<>();
+			for( Set<double[]> s : l )
+				if( s.isEmpty() )
+					log.warn("Removing empty init cluster!");
+				else
+					init.add(s);					
+		} else if (pc != null && pc == PreCluster.Ward ) {
+			List<TreeNode> tree = Clustering.getHierarchicalClusterTree( cma, dist, HierarchicalClusteringType.ward  );
+			int nrCluster = samples.size();
+			do 
+				init = Clustering.treeToCluster( Clustering.cutTree(tree, nrCluster--) );
+			while( minClusterSize(init) <= pcOpt );
+			log.debug("init size: "+init.size()+","+minClusterSize(init));
+			
+		} else {
+			init = new ArrayList<>();
+			for (double[] d : samples) {
+				Set<double[]> s = new HashSet<double[]>();
+				s.add(d);
+				init.add(s);
+			}
+		}
+						
+		List<Set<double[]>> cInit = new ArrayList<>();
+		for( Set<double[]> s : init ) 
+			if( !GeoUtils.isContiugous(cma, s) ) 
+				cInit.addAll( RegionUtils.getAllContiguousSubcluster(cma, s) );
+			else
+				cInit.add(s);
+		if( cInit.size() != init.size() ) {
+			log.warn(cInit.size()+" contiguous instead of "+init.size()+" clusters");
+			init = cInit;
+		}
+		return init;
+	}
+	
+	
+	public static class ValSet {
+		List<double[]> samplesTrain, samplesVal;
+		Map<double[],Set<double[]>> cmTrain;
+	}
+	
+	private static Random r = new Random(0);
+	
+	public static ValSet getValSet( Map<double[],Set<double[]>> cm, double p) {
+		Map<double[],Set<double[]>> cmTrain = new HashMap<>();
+		for( Entry<double[],Set<double[]>> e : cm.entrySet() )
+			cmTrain.put( e.getKey(), new HashSet<double[]>(e.getValue()));
+		
+		List<double[]> samplesVal = new ArrayList<>();
+
+		while( true ) {
+			List<double[]> keys = new ArrayList<>(cmTrain.keySet());
+			double[] d = keys.get(r.nextInt(keys.size()));
+
+			// no samples which have neighbors in samplesVal
+			boolean valid = true;
+			for( double[] nb : cm.get(d) )
+				if( samplesVal.contains(nb) ) {
+					valid = false;
+					break;
+				}
+			if( !valid )
+				continue;
+
+			// copy
+			Map<double[],Set<double[]>> cmTmp = new HashMap<>();
+			for( Entry<double[],Set<double[]>> e : cmTrain.entrySet() )
+				cmTmp.put( e.getKey(), new HashSet<double[]>(e.getValue()));
+
+			cmTrain.remove(d);
+			for( Set<double[]> s : cmTrain.values() )
+				s.remove(d);
+
+			// no samples which cut graph into subgraphs
+			if( GraphUtils.getSubGraphs(cmTrain).size() > 1  ) {
+				cmTrain = cmTmp;
+				continue;
+			}
+
+			samplesVal.add(d);
+
+			if( (double)samplesVal.size()/cmTrain.size() >= p ) // % val samples
+				break;
+		}	
+		
+		ValSet vs = new ValSet();
+		vs.samplesTrain = new ArrayList<>(cmTrain.keySet());
+		vs.samplesVal = samplesVal;
+		vs.cmTrain = cmTrain;
+		return vs;
 	}
 }

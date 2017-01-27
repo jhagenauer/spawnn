@@ -59,7 +59,7 @@ public class GraphUtils {
 		return subs;
 	}
 
-	static <T> Map<T, Set<T>> getSubGraphOf(Map<T, Set<T>> cm, T initNode) {
+	public static <T> Map<T, Set<T>> getSubGraphOf(Map<T, Set<T>> cm, T initNode) {
 		Map<T, Set<T>> visited = new HashMap<T, Set<T>>(); // expanded/subgraph nodes
 		Set<T> open = new HashSet<T>();
 		open.add(initNode);

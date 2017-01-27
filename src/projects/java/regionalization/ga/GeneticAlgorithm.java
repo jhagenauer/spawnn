@@ -31,10 +31,10 @@ public class GeneticAlgorithm {
 	
 	private static Logger log = Logger.getLogger(GeneticAlgorithm.class);
 	private final static Random r = new Random();
-	int threads = 4;
+	int threads = Math.max(1 , Runtime.getRuntime().availableProcessors() -1 );;
 	
 	public int tournamentSize = 3;
-	public double recombProb = 0.6;
+	public double recombProb = 0.7;
 	
 	public static int mode = 4;
 			
@@ -48,19 +48,8 @@ public class GeneticAlgorithm {
 				
 		int maxK = 1000;
 		int k = 0;
-		while( k < maxK /*|| noImpro < 100*/ ) {
+		while( /*k < maxK /*||*/ noImpro < 100 ) {
 				
-			if( mode == 0 )
-				RegioGAIndividual.probSeedGenMod = 1 - (double)k/1000;
-			else if( mode == 1 )
-				RegioGAIndividual.probSeedGenMod = Math.pow( 0.001, (double)k/1000 ) ;
-			else if( mode == 2 )
-				RegioGAIndividual.probSeedGenMod = 1.0 - Math.pow( (double)k/1000, 2.0 ) ;
-			else if( mode == 3 )
-				RegioGAIndividual.probSeedGenMod = -1;
-			else 
-				RegioGAIndividual.probSeedGenMod = 0; // no seed ever
-			
 			// check best and increase noImpro
 			noImpro++;
 			DescriptiveStatistics ds = new DescriptiveStatistics();

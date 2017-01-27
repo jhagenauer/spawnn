@@ -21,7 +21,6 @@ public class LinearModel {
 	int[] fa;
 	int ta, maxIter;
 	double lambda; 
-	double numParams = -1;
 	private double rss = -1;
 	
 	boolean zScore;
@@ -47,7 +46,6 @@ public class LinearModel {
 		this.zScore = zScore;
 		this.lambda = lambda;
 		this.betas = new ArrayList<>();
-		this.numParams = 0;
 		
 		if( cluster == null ) {
 			this.cluster = new ArrayList<>();
@@ -59,8 +57,8 @@ public class LinearModel {
 		if( lambda > 0 && !zScore )
 			System.out.println("Warning: Ridge regression without zScore "+lambda);
 				
-		for( int j = 0; j < cluster.size(); j++ ) {
-			Set<double[]> c = cluster.get(j);
+		for( int j = 0; j < this.cluster.size(); j++ ) {
+			Set<double[]> c = this.cluster.get(j);
 			
 			List<double[]> l = new ArrayList<double[]>(c);
 			DoubleMatrix X;
@@ -83,26 +81,13 @@ public class LinearModel {
 			DoubleMatrix Xt = X.transpose();
 			DoubleMatrix XtX = Xt.mmul(X);					
 			
-			if( lambda <= 0 ) {
-				numParams += fa.length + 1;// + 1; // + intercept (+ error variance)
-			} else { // ridge regression					
-				XtX.addi( DoubleMatrix.eye(XtX.columns).muli(lambda) );								
-												
-				double df = 0;
-				DoubleMatrix hat = X.mmul( Solve.pinv( XtX ) ).mmul(Xt); 
-				for( int i = 0; i < hat.columns; i++ )
-					df += hat.get(i, i);
-				numParams += df; // not sure about the error term
-				
+			if( lambda > 0 ) { // ridge regression					
+				XtX.addi( DoubleMatrix.eye(XtX.columns).muli(lambda) );							
 			}
 			betas.add(Solve.solve(XtX, Xt.mmul(Y))); 
 		}			
 	}
-		
-	public double getNumParams() {
-		return numParams;
-	}
-	
+			
 	public List<Double> getResiduals() {
 		if( residuals == null ) {
 			List<Double> predictions = getPredictions(samples, fa);
@@ -125,16 +110,13 @@ public class LinearModel {
 		}
 		return rss;
 	}
-	
-	public double getAICc() {
-		return SupervisedUtils.getAICc_GWMODEL(getRSS()/samples.size(), getNumParams(), samples.size());
-	}
-			
+				
 	public List<Double> getPredictions( List<double[]> samples, int[] faPred ) {		
 		Double[] predictions = new Double[samples.size()];
-								
+							
 		for (int l = 0; l < betas.size(); l++ ) {
 			Set<double[]> c = cluster.get(l);
+			
 			List<double[]> subSamples = new ArrayList<>();
 			Map<Integer,Integer> idxMap = new HashMap<Integer,Integer>(); 
 			for( int i = 0; i < samples.size(); i++ ) {
@@ -144,6 +126,10 @@ public class LinearModel {
 					subSamples.add(d);
 				}
 			}
+			
+			if( subSamples.isEmpty() )
+				continue;
+									
 			DoubleMatrix X;
 			if( zScore )
 				X = new DoubleMatrix( LinearModel.getX( subSamples, faPred, means.get(l), sds.get(l), true) );
@@ -188,5 +174,9 @@ public class LinearModel {
 	
 	public double[] getBeta(int i) {
 		return betas.get(i).data;
+	}
+	
+	public List<Set<double[]>> getCluster() {
+		return cluster;
 	}
 }

@@ -9,6 +9,10 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
+import org.jfree.util.Log;
+
+import spawnn.utils.ClusterValidation;
+
 public class RegioGAIndividual implements GAIndividual {
 
 	protected List<double[]> genome;
@@ -18,6 +22,7 @@ public class RegioGAIndividual implements GAIndividual {
 
 	protected List<Set<double[]>> cluster;
 	protected double cost;
+	public double probSeedGenMod;
 
 	public List<Integer> bbs = new ArrayList<Integer>();
 
@@ -32,6 +37,8 @@ public class RegioGAIndividual implements GAIndividual {
 
 		this.cluster = decode();
 		this.cost = getCost(this.cluster);
+		
+		probSeedGenMod = -1;//(double)seedSize/genome.size() ;//-1;
 	}
 	
 	private List<Set<double[]>> decode() {
@@ -53,7 +60,7 @@ public class RegioGAIndividual implements GAIndividual {
 		while (!growth.isEmpty()) {
 			double[] cur = growth.remove(0);
 			int bestIdx = -1;
-			double lowestInc = Double.POSITIVE_INFINITY;
+			double lowestInc = Double.NaN;
 
 			// check if cluster is adjacent to cur
 			for (int idxS = 0; idxS < cluster.size(); idxS++) {
@@ -71,8 +78,6 @@ public class RegioGAIndividual implements GAIndividual {
 					continue;
 
 				s.add(cur);
-				// is ssd-cost necessary?
-				// Isn't determinism enough? does ssd lead to local maxima?
 				double inc = cc.getCost(s) - costMap.get(idxS);
 				s.remove(cur);
 
@@ -87,7 +92,7 @@ public class RegioGAIndividual implements GAIndividual {
 				nGenome.add(cur);
 				cluster.get(bestIdx).add(cur);
 				costMap.put(bestIdx, costMap.get(bestIdx) + lowestInc);
-			} else {
+			} else { // try later
 				growth.add(cur);
 			}
 		}		
@@ -96,12 +101,110 @@ public class RegioGAIndividual implements GAIndividual {
 		for( int i = 0; i < seedSize; i++ )
 			this.costFromDecode += costMap.get(i);
 				
-		/*
-		 * nGenome 25 runs:
-		 * 
-		 */
-						
-		this.genome = nGenome; // improves the results
+		this.genome = nGenome; // slightly improves the results ( 171.560 vs. 171.217 )
+		
+		// recode test, not useful probably
+		/*nGenome = new ArrayList<double[]>(genome.subList(0, seedSize ));
+		for (int i = 0; i < seedSize; i++) {
+			double[] seed = genome.get(i);
+			
+			List<double[]> s = new ArrayList<double[]>();
+			s.add(seed);
+			
+			Set<double[]> nGrowth = new HashSet<>(cluster.get(i));
+			nGrowth.remove(seed);
+			
+			while( !nGrowth.isEmpty() ) {
+								
+				Set<double[]> nbs = new HashSet<>();
+				for( double[] a : s )
+					nbs.addAll( cm.get(a) );
+				for( double[] a : nbs )
+					if( nGrowth.contains(a) ) {
+						nGrowth.remove(a);
+						s.add(a);
+					}			
+			}
+			s.remove(seed);
+			nGenome.addAll(s);
+		}
+		
+		for( double[] d : genome )
+			for( int i = 0; i < cluster.size(); i++ )
+				if( cluster.get(i).contains(d) )
+					System.out.print(i);
+		System.out.println();
+		
+		List<Set<double[]>> nCluster = toCluster(nGenome);
+		
+		for( double[] d : nGenome )
+			for( int i = 0; i < nCluster.size(); i++ )
+				if( nCluster.get(i).contains(d) )
+					System.out.print(i);
+		System.out.println();		
+		
+		System.out.println("nmi: "+ClusterValidation.getNormalizedMutualInformation(cluster, nCluster ));
+				
+		System.exit(1);
+		genome = nGenome;*/
+		
+		return cluster;
+	}
+	
+	// jsut for debug, derivate of decode
+	private List<Set<double[]>> toCluster( List<double[]> g_nome ) {
+		// stores cost calculations for speed up
+		Map<Integer, Double> costMap = new HashMap<Integer, Double>();
+
+		// decode seed
+		List<Set<double[]>>cluster = new ArrayList<Set<double[]>>();
+		for (int i = 0; i < seedSize; i++) {
+			Set<double[]> s = new HashSet<double[]>();
+			s.add(g_nome.get(i));
+			cluster.add(s);
+
+			costMap.put(i, cc.getCost(s));
+		}
+
+		List<double[]> growth = new LinkedList<double[]>(g_nome.subList(seedSize, g_nome.size()));
+		while (!growth.isEmpty()) {
+			double[] cur = growth.remove(0);
+			int bestIdx = -1;
+			double lowestInc = Double.NaN;
+
+			// check if cluster is adjacent to cur
+			for (int idxS = 0; idxS < cluster.size(); idxS++) {
+				Set<double[]> s = cluster.get(idxS);
+
+				boolean connected = false;
+				for (double[] nb : cm.get(cur)) {
+					if (s.contains(nb)) {
+						connected = true;
+						break;
+					}
+				}
+				
+				if ( !connected )
+					continue;
+
+				s.add(cur);
+				double inc = cc.getCost(s) - costMap.get(idxS);
+				s.remove(cur);
+
+				if (bestIdx < 0 || inc < lowestInc) {
+					bestIdx = idxS;
+					lowestInc = inc;
+				}
+
+			}
+
+			if (bestIdx >= 0) {
+				cluster.get(bestIdx).add(cur);
+				costMap.put(bestIdx, costMap.get(bestIdx) + lowestInc);
+			} else { // try later
+				growth.add(cur);
+			}
+		}			
 		return cluster;
 	}
 	
@@ -122,8 +225,6 @@ public class RegioGAIndividual implements GAIndividual {
 	public List<Set<double[]>> getCluster() {
 		return cluster;
 	}
-
-	public static double probSeedGenMod = -1;
 
 	// NOTE: it is essential, that seed and growth exchange genes! Maios don't do that, if restricted
 	// TODO: which one is better for complete genome?

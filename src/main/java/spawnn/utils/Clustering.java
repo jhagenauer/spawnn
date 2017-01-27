@@ -240,6 +240,11 @@ public class Clustering {
 		public double cost = 0; 
 		public List<TreeNode> children = new ArrayList<TreeNode>();
 		
+		public TreeNode( int age, double cost, Set<double[]> contents ) {
+			this(age,cost);
+			this.contents = contents;
+		}
+		
 		public TreeNode( int age, double cost ) {
 			this.age = age;
 			this.cost = cost;

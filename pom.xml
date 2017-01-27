@@ -75,8 +75,8 @@
 					<configuration>
 						<descriptors>
 							<descriptor>src/main/assembly/jar-dep.xml</descriptor>
-							<descriptor>src/main/assembly/src-zip.xml</descriptor>
-							<descriptor>src/main/assembly/bin-zip.xml</descriptor>
+							<!-- <descriptor>src/main/assembly/src-zip.xml</descriptor>
+							<descriptor>src/main/assembly/bin-zip.xml</descriptor>-->
 						</descriptors>
 						<archive>
 							<manifest>
@@ -143,11 +143,14 @@
 			<artifactId>gt-shapefile</artifactId>
 			<version>${geotools.version}</version>
 		</dependency>
+		
 		<dependency>
 			<groupId>org.geotools</groupId>
-			<artifactId>gt-epsg-extension</artifactId>
+			<!--  <artifactId>gt-epsg-extension</artifactId>-->
+			<artifactId>gt-epsg-hsql</artifactId>
 			<version>${geotools.version}</version>
 		</dependency>
+				
 		<dependency>
 			<groupId>org.geotools</groupId>
 			<artifactId>gt-swing</artifactId>
