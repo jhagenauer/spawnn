@@ -825,7 +825,7 @@ public class ChowClustering {
 		Map<double[],Set<double[]>> cmTrain;
 	}
 	
-	private static Random r = new Random(0);
+	private static Random r = new Random(10);
 	
 	public static ValSet getValSet( Map<double[],Set<double[]>> cm, double p) {
 		Map<double[],Set<double[]>> cmTrain = new HashMap<>();

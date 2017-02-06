@@ -41,18 +41,17 @@ public class ChowClustering_cv {
 
 	public static void main(String[] args) {
 
-		String outputDir = "output/";
 		int threads = Math.max(1 , Runtime.getRuntime().availableProcessors() );
 		log.debug("Threads: "+threads);
 
-		//File data = new File("data/gemeinden_gs2010/gem_dat.shp");
-		File data = new File("gem_dat.shp");
+		File data = new File("data/gemeinden_gs2010/gem_dat.shp");
+		//File data = new File("gem_dat.shp");
 		SpatialDataFrame sdf = DataUtils.readSpatialDataFrameFromShapefile(data, new int[]{ 1, 2 }, true);
 
 		int[] ga = new int[] { 3, 4 };
 		int[] fa =     new int[] {  7,  8,  9, 10, 19, 20 };
 		int ta = 18; // bldUpRt
-		int runs = 4;
+		int runs = 16;
 
 		for( int i = 0; i < fa.length; i++ )
 			log.debug("fa "+i+": "+sdf.names.get(fa[i]));
@@ -61,8 +60,9 @@ public class ChowClustering_cv {
 		Dist<double[]> gDist = new EuclideanDist(ga);
 		Map<double[],Set<double[]>> cm = GeoUtils.getContiguityMap(sdf.samples, sdf.geoms, false, false);
 
-		Path file = Paths.get(outputDir+"/chow.csv");
+		Path file = Paths.get("output/chow.csv");
 		try {
+			Files.createDirectories(file.getParent()); // create output dir
 			Files.deleteIfExists(file);
 			Files.createFile(file);
 		} catch (IOException e1) {
@@ -70,16 +70,13 @@ public class ChowClustering_cv {
 		}
 
 		List<Object[]> params = new ArrayList<>();	
-		for( int i : new int[]{ 300,400,500,600,700,800,900,1000,1100,1200 } ) {			
-			for(int j = 0; j <= 4; j++ ) {
-				for( int l : new int[]{ 0, 2, 4, 6, 8, 10 } ) {
-					params.add(new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.ResiSimple,  1.0, gDist, fa.length+2+l, PreCluster.Kmeans, i,  1, j });
-					params.add(new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.Chow,  1.0, gDist, fa.length+2+l, PreCluster.Kmeans, i,  1, j });
-					params.add(new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.Wald,  1.0, gDist, fa.length+2+l, PreCluster.Kmeans, i,  1, j });
+		for( int i : new int[]{ 800/*300, 400, 500, 600, 700, 800, 900, 1000*/ } ) 	
+			for( int j : new int[]{ 0, 1, 2, 3, 4, 5, 6, 7, 8 } )
+				for( int l : new int[]{ 4, 8 /*0,1,2,3,4,5,6,7,8,10,11,12,13,14*/ } ) {
+					//params.add(new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.Wald, 1.0, gDist, fa.length+2+l, PreCluster.Kmeans, i,  1, j });
+					params.add(new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.ResiSimple, 1.0, gDist, fa.length+2+l, PreCluster.Kmeans, i,  1, j });
 				}
-			}
-		}
-								
+				
 		for( double p : new double[]{ 0.1 } ) {
 
 		List<ValSet> vsList = new ArrayList<>();
@@ -88,7 +85,7 @@ public class ChowClustering_cv {
 			
 		// save valList
 		{
-			Path valFile = Paths.get(outputDir+"/cvList_"+runs+".csv");
+			Path valFile = Paths.get("output/cvList_"+runs+".csv");
 			try {
 				Files.deleteIfExists(valFile);
 				Files.createFile(valFile);
@@ -110,22 +107,24 @@ public class ChowClustering_cv {
 			
 			List<Double> pred = lm.getPredictions(vs.samplesVal, fa);
 			double mse = SupervisedUtils.getMSE(pred, vs.samplesVal, ta);
-			ss.addValue(mse);
+			ss.addValue( Math.sqrt(mse) );
 		}
-		log.debug("lm mse: "+ss.getMean());
+		log.debug("lm rmse: "+ss.getMean());
 		
-		for( ValSet vs : vsList )
 		for (Object[] param : params) {		
 			Clustering.r.setSeed(0);
 			
 			String method = Arrays.toString(param)+"_"+p;
 			final int idx = params.indexOf(param);
-			final int run = vsList.indexOf(vs);
 			final int assignMode = (int)param[ASSIGN_MODE];
 			final double pValue = (double)param[P_VALUE];
+			log.debug(idx+","+method);
 			
-			log.debug(run+","+idx+","+method);
-
+			for( ValSet vs : vsList ) {
+			
+			final int run = vsList.indexOf(vs);
+			log.debug(run);
+			
 			List<Future<LinearModel>> futures = new ArrayList<>();
 			ExecutorService es = Executors.newFixedThreadPool(threads);
 
@@ -149,9 +148,9 @@ public class ChowClustering_cv {
 				if( bestCurLayer == null || wss < bestWss ) {
 					bestCurLayer = curLayer;
 					bestWss = wss;
-					log.debug(i+","+bestWss);
 				}
 			}
+			log.debug("#clust after HC1: "+bestCurLayer.size());
 						
 			// HC 2
 			log.debug("hc2");
@@ -172,11 +171,11 @@ public class ChowClustering_cv {
 						LinearModel lm = new LinearModel(vs.samplesTrain, ct, fa, ta, false);
 												
 						// add val samples to cluster
-						double rmse = 0;
+						double sse = 0;
 						for( double[] d : vs.samplesVal ) {																				
 							Set<double[]> best = null;
 							
-							if( assignMode == 0 ) {
+							if( assignMode == 0 ) { // major vote
 								int bestCount = Integer.MAX_VALUE;
 								for (Set<double[]> s : ct) {
 									int count = 0;
@@ -188,7 +187,7 @@ public class ChowClustering_cv {
 										best = s;
 									}
 								}
-							} else if( assignMode == 1 ) {
+							} else if( assignMode == 1 ) { // closest gDist
 								double[] closest = null;
 								for (Set<double[]> s : ct) {
 									for( double[] nb : cm.get(d) )
@@ -197,7 +196,7 @@ public class ChowClustering_cv {
 											closest = nb;
 										}
 								}
-							} else if( assignMode == 2 ) {
+							} else if( assignMode == 2 ) { // SSE-Diff
 								double bestInc = Double.POSITIVE_INFINITY;
 								for (Set<double[]> s : ct) {
 									for (double[] nb : cm.get(d))
@@ -213,7 +212,7 @@ public class ChowClustering_cv {
 											}
 										}
 								}
-							} else if( assignMode == 3 ) {
+							} else if( assignMode == 3 ) { // mean gDist
 								double bestMean = Double.POSITIVE_INFINITY;
 								for (Set<double[]> s : ct) {
 									SummaryStatistics ss = new SummaryStatistics();
@@ -225,7 +224,7 @@ public class ChowClustering_cv {
 										best = s;
 									}
 								}
-							} else if( assignMode == 4 ) {
+							} else if( assignMode == 4 ) { // mean square gDist
 								double bestMean = Double.POSITIVE_INFINITY;
 								for (Set<double[]> s : ct) {
 									SummaryStatistics ss = new SummaryStatistics();
@@ -237,7 +236,91 @@ public class ChowClustering_cv {
 										best = s;
 									}
 								}
-							} 							
+							} else if (assignMode == 5) { // major vote + mean square gDist
+								int bestCount = -1;
+								double bestMean = Double.POSITIVE_INFINITY;
+								for (Set<double[]> s : ct) {
+									SummaryStatistics ss = new SummaryStatistics();
+									int count = 0;
+									for (double[] nb : cm.get(d))
+										if (s.contains(nb)) {
+											count++;
+											ss.addValue(Math.pow(gDist.dist(nb, d), 2));
+										}
+									if (count == 0)
+										continue;
+
+									if (best == null || count > bestCount || (count == bestCount && ss.getMean() < bestMean)) {
+										bestCount = count;
+										bestMean = ss.getMean();
+										best = s;
+									}
+								}
+							} else if (assignMode == 6) { // major vote + gDist
+								int bestCount = -1;
+								double bestMean = Double.POSITIVE_INFINITY;
+								for (Set<double[]> s : ct) {
+									SummaryStatistics ss = new SummaryStatistics();
+									int count = 0;
+									for (double[] nb : cm.get(d))
+										if (s.contains(nb)) {
+											count++;
+											ss.addValue(gDist.dist(nb, d));
+										}
+									if (count == 0)
+										continue;
+
+									if (best == null || count > bestCount || (count == bestCount && ss.getMean() < bestMean)) {
+										bestCount = count;
+										bestMean = ss.getMean();
+										best = s;
+									}
+								}
+							} else if (assignMode == 7) { // major vote + min gDist
+								int bestCount = -1;
+								double bestMean = Double.POSITIVE_INFINITY;
+								for (Set<double[]> s : ct) {
+									double dist = Double.MAX_VALUE;
+									int count = 0;
+									for (double[] nb : cm.get(d))
+										if (s.contains(nb)) {
+											count++;
+											dist = Math.min(gDist.dist(d, nb), dist);
+										}
+									if (count == 0)
+										continue;
+
+									if (best == null || count > bestCount || (count == bestCount && dist < bestMean)) {
+										bestCount = count;
+										bestMean = dist;
+										best = s;
+									}
+								}
+							} else if( assignMode == 8 ) { // major vote + min SSE
+								int bestCount = -1;
+								double bestInc = Double.POSITIVE_INFINITY;
+								for (Set<double[]> s : ct) {
+									double inc = Double.MAX_VALUE;
+									int count = 0;
+									for (double[] nb : cm.get(d))
+										if (s.contains(nb)) {
+											count++;
+											
+											double wssPre = DataUtils.getSumOfSquares(s, gDist);
+											s.add(d);
+											inc = DataUtils.getSumOfSquares(s, gDist) - wssPre;
+											s.remove(d);
+										}
+									if (count == 0)
+										continue;
+
+									if (best == null || count > bestCount || (count == bestCount && inc < bestInc)) {
+										bestCount = count;
+										bestInc = inc;
+										best = s;
+									}
+								}
+							}
 														
 							List<double[]> l = new ArrayList<>();
 							l.add(d);
@@ -245,9 +328,9 @@ public class ChowClustering_cv {
 							best.add(d);
 							double pred = lm.getPredictions(l, fa).get(0);
 							best.remove(d);
-							rmse += Math.pow( pred - d[ta], 2);
+							sse += Math.pow( pred - d[ta], 2);
 						}
-						rmse = Math.sqrt( rmse/vs.samplesVal.size() );
+						double rmse = Math.sqrt( sse/vs.samplesVal.size() );
 												
 						synchronized(this) {							
 							try {
@@ -274,5 +357,5 @@ public class ChowClustering_cv {
 		}
 	}
 	}
-
+	}
 }

@@ -425,6 +425,8 @@ public class Clustering {
 	public static List<TreeNode> getHierarchicalClusterTree( List<TreeNode> leafLayer, Map<TreeNode,Set<TreeNode>> cm, Dist<double[]> dist, HierarchicalClusteringType type ) {
 		return getHierarchicalClusterTree(leafLayer, cm, dist, type, Integer.MAX_VALUE, Math.max(1 , Runtime.getRuntime().availableProcessors() -1 ) );
 	}
+	
+	public static boolean minMode = true;
 		
 	public static List<TreeNode> getHierarchicalClusterTree( List<TreeNode> leafLayer, final Map<TreeNode,Set<TreeNode>> cm, Dist<double[]> dist, HierarchicalClusteringType type, int minSize, int threads ) {
 						
@@ -476,12 +478,17 @@ public class Clustering {
 				
 		while (curLayer.size() > 1 ) {
 			
-			boolean b = true;
-			for( Set<double[]> s : curLayer.values() )
-				if( s.size() < minSize )
-					b = false;
-			if( b ) 
-				return tree;
+			// stop when all cluster have at least size minSize
+			if( !minMode ) {
+				boolean b = true;
+				for( Set<double[]> s : curLayer.values() )
+					if( s.size() < minSize )
+						b = false;
+				if( b ) {
+					log.debug("break 1, curLayer: " + curLayer.size());
+					return tree;
+				}
+			}
 						
 			List<TreeNode> cl = new ArrayList<>(curLayer.keySet());
 						
@@ -510,6 +517,9 @@ public class Clustering {
 								TreeNode l2 = cl.get(j);
 								
 								if( nbs != null && !nbs.contains(l2) ) // disjoint
+									continue;
+								
+								if( minMode && curLayer.get(l1).size() >= minSize && curLayer.get(l2).size() >= minSize )
 									continue;
 																							
 								double s = Double.NaN;
@@ -592,7 +602,7 @@ public class Clustering {
 			}
 
 			if (c1 == null && c2 == null) { 
-				log.debug("only non-connected clusters present! " + curLayer.size());
+				log.debug("break 2, curLayer: " + curLayer.size());
 				return tree;
 			}
 									

@@ -75,8 +75,8 @@
 					<configuration>
 						<descriptors>
 							<descriptor>src/main/assembly/jar-dep.xml</descriptor>
-							<!-- <descriptor>src/main/assembly/src-zip.xml</descriptor>
-							<descriptor>src/main/assembly/bin-zip.xml</descriptor>-->
+							<descriptor>src/main/assembly/src-zip.xml</descriptor>
+							<!-- <descriptor>src/main/assembly/bin-zip.xml</descriptor>-->
 						</descriptors>
 						<archive>
 							<manifest>
