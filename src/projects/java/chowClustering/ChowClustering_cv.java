@@ -37,7 +37,7 @@ public class ChowClustering_cv {
 
 	private static Logger log = Logger.getLogger(ChowClustering_cv.class);
 
-	public static int CLUST = 0, STRUCT_TEST = 1, P_VALUE = 2, DIST = 3, MIN_OBS = 4, PRECLUST = 5, PRECLUST_OPT = 6, PRECLUST_OPT2 = 7, ASSIGN_MODE = 8;
+	public static int CLUST = 0, STRUCT_TEST = 1, P_VALUE = 2, DIST = 3, MIN_OBS = 4, PRECLUST = 5, PRECLUST_OPT = 6, PRECLUST_OPT2 = 7, PRECLUST_OPT3 = 8, ASSIGN_MODE = 9;
 
 	public static void main(String[] args) {
 
@@ -51,7 +51,7 @@ public class ChowClustering_cv {
 		int[] ga = new int[] { 3, 4 };
 		int[] fa =     new int[] {  7,  8,  9, 10, 19, 20 };
 		int ta = 18; // bldUpRt
-		int runs = 16;
+		int runs = 1;
 
 		for( int i = 0; i < fa.length; i++ )
 			log.debug("fa "+i+": "+sdf.names.get(fa[i]));
@@ -70,11 +70,12 @@ public class ChowClustering_cv {
 		}
 
 		List<Object[]> params = new ArrayList<>();	
-		for( int i : new int[]{ 800/*300, 400, 500, 600, 700, 800, 900, 1000*/ } ) 	
-			for( int j : new int[]{ 0, 1, 2, 3, 4, 5, 6, 7, 8 } )
-				for( int l : new int[]{ 4, 8 /*0,1,2,3,4,5,6,7,8,10,11,12,13,14*/ } ) {
-					//params.add(new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.Wald, 1.0, gDist, fa.length+2+l, PreCluster.Kmeans, i,  1, j });
-					params.add(new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.ResiSimple, 1.0, gDist, fa.length+2+l, PreCluster.Kmeans, i,  1, j });
+		for( int i : new int[]{ 100, 200, 300, 400, 500, 600, 800 } ) 	
+			for( int j : new int[]{ 0 /*0 , 2, 4, 5, 8*/ } )
+				for( int l : new int[]{ 0,2,4,6,8,10,12,14 } ) 
+					for( boolean b : new boolean[]{ true, false } )	{
+					params.add(new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.ResiSimple, 1.0, gDist, fa.length+2+l, PreCluster.Kmeans, i,  1, b, j });
+					params.add(new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.Wald, 1.0, gDist, fa.length+2+l, PreCluster.Kmeans, i,  1, b, j });
 				}
 				
 		for( double p : new double[]{ 0.1 } ) {
@@ -123,13 +124,15 @@ public class ChowClustering_cv {
 			for( ValSet vs : vsList ) {
 			
 			final int run = vsList.indexOf(vs);
-			log.debug(run);
+			log.debug("run: "+run);
 			
 			List<Future<LinearModel>> futures = new ArrayList<>();
 			ExecutorService es = Executors.newFixedThreadPool(threads);
 
 			List<TreeNode> bestCurLayer = null;
 			double bestWss = Double.POSITIVE_INFINITY;
+			
+			Clustering.minMode = (boolean)param[PRECLUST_OPT3];
 			for( int i = 0; i < (int) param[PRECLUST_OPT2]; i++ ) {
 				
 				List<Set<double[]>> init = ChowClustering.getInitCluster(vs.samplesTrain, vs.cmTrain, (PreCluster)param[PRECLUST], (int) param[PRECLUST_OPT], gDist );
@@ -256,7 +259,7 @@ public class ChowClustering_cv {
 										best = s;
 									}
 								}
-							} else if (assignMode == 6) { // major vote + gDist
+							} else if (assignMode == 6) { // major vote + mean gDist
 								int bestCount = -1;
 								double bestMean = Double.POSITIVE_INFINITY;
 								for (Set<double[]> s : ct) {

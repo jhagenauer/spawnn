@@ -36,7 +36,7 @@ public class Test_val {
 
 	public static void main(String[] args) {
 
-		int threads = Math.max(1, Runtime.getRuntime().availableProcessors());
+		int threads = Math.max(1, Runtime.getRuntime().availableProcessors()-1);
 		log.debug("Threads: " + threads);
 
 		SpatialDataFrame sdf = DataUtils.readSpatialDataFrameFromShapefile(new File("data/gemeinden_gs2010/gem_dat.shp"), new int[] { 1, 2 }, true);
@@ -60,9 +60,9 @@ public class Test_val {
 			e1.printStackTrace();
 		}
 
-		int kmCluster = 800;
+		int kmCluster = 300;
 		int nrCluster = 12;
-		int runs = 3;
+		int runs = 8;
 
 		for (double p : new double[] { 0.1 }) {
 			log.debug("p: " + p);
@@ -80,7 +80,7 @@ public class Test_val {
 				// HC 1, maintain minobs
 				List<TreeNode> tree1 = Clustering.getHierarchicalClusterTree(curLayer, ncm, gDist, HierarchicalClusteringType.ward, fa.length + 2, threads);
 				curLayer = Clustering.cutTree(tree1, 1);
-
+				
 				// HC 2
 				// update curLayer/ncm
 				for (TreeNode tn : curLayer)
@@ -89,16 +89,18 @@ public class Test_val {
 
 				List<TreeNode> tree = ChowClustering.getFunctionalClusterinTree(curLayer, ncm, fa, ta, HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.Wald, 1.0, threads);
 				List<Set<double[]>> ref = Clustering.treeToCluster(Clustering.cutTree(tree, nrCluster));
+				log.debug(ref.size()+", "+ClusterValidation.getWithinClusterSumOfSuqares(ref, gDist));
 				
 				vsList.put(vs, ref);
 			}
 
 			for (boolean minMode : new boolean[] { true, false }) {
+				Clustering.r.setSeed(0);
 				log.debug(minMode);
 				Clustering.minMode = minMode;
 
-				double[] nmis = new double[8];
-				double[] rmses = new double[8];
+				double[] nmis = new double[9];
+				double[] rmses = new double[9];
 
 				for (Entry<ValSet,List<Set<double[]>>> e1 : vsList.entrySet()) {
 					ValSet vs = e1.getKey();
@@ -122,8 +124,9 @@ public class Test_val {
 
 					List<TreeNode> tree = ChowClustering.getFunctionalClusterinTree(curLayer, ncm, fa, ta, HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.Wald, 1.0, threads);
 					List<Set<double[]>> ct = Clustering.treeToCluster(Clustering.cutTree(tree, nrCluster));
-
-					for (int assignMode : new int[] { 0, 1, 2, 3, 4, 5, 6, 7 }) {
+					log.debug(ct.size()+", "+ClusterValidation.getWithinClusterSumOfSuqares(ct, gDist));
+					
+					for (int assignMode : new int[] { 0, 1, 2, 3, 4, 5, 6, 7, 8 }) {
 
 						Map<Set<double[]>, Set<double[]>> m = new HashMap<>();
 
