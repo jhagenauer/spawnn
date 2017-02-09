@@ -51,7 +51,7 @@ public class ChowClustering_cv {
 		int[] ga = new int[] { 3, 4 };
 		int[] fa =     new int[] {  7,  8,  9, 10, 19, 20 };
 		int ta = 18; // bldUpRt
-		int runs = 1;
+		int runs = 6;
 
 		for( int i = 0; i < fa.length; i++ )
 			log.debug("fa "+i+": "+sdf.names.get(fa[i]));
@@ -68,16 +68,32 @@ public class ChowClustering_cv {
 		} catch (IOException e1) {
 			e1.printStackTrace();
 		}
+		
+		// lm 0.015897328776906357
 
 		List<Object[]> params = new ArrayList<>();	
-		for( int i : new int[]{ 100, 200, 300, 400, 500, 600, 800 } ) 	
-			for( int j : new int[]{ 0 /*0 , 2, 4, 5, 8*/ } )
-				for( int l : new int[]{ 0,2,4,6,8,10,12,14 } ) 
+		/*for( int i : new int[]{ 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120 } ) 	
+			for( int j : new int[]{ 0, 2, 4, 5, 8 } )
+				for( int l : new int[]{ 0,1,2,3,4,5,6,7,8,9 } ) 
 					for( boolean b : new boolean[]{ true, false } )	{
-					params.add(new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.ResiSimple, 1.0, gDist, fa.length+2+l, PreCluster.Kmeans, i,  1, b, j });
-					params.add(new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.Wald, 1.0, gDist, fa.length+2+l, PreCluster.Kmeans, i,  1, b, j });
-				}
-				
+						params.add(new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.ResiSimple, 1.0, gDist, fa.length+2+l, PreCluster.Kmeans, i,  1, b, j });
+						params.add(new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.Wald, 1.0, gDist, fa.length+2+l, PreCluster.Kmeans, i,  1, b, j });
+					}*/
+		
+		// to beat
+		/*params.add(new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.ResiSimple, 1.0, gDist, 13, PreCluster.Kmeans, 50,  1, true, 0 });
+		params.add(new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.ResiSimple, 1.0, gDist, 10, PreCluster.Kmeans, 100,  1, true, 0 });
+		params.add(new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.Wald, 1.0, gDist, 12, PreCluster.Kmeans, 800,  1, false, 0 });
+		
+		params.add(new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.ResiSimple, 1.0, gDist, 9, PreCluster.Kmeans, 80,  1, false, 0 }); // probably best
+		params.add(new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.Wald, 1.0, gDist, 8, PreCluster.Kmeans, 40,  1, false, 0 });
+		
+		params.add(new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.ResiSimple, 1.0, gDist, 9, PreCluster.Kmeans, 80,  1, true, 0 }); 
+		params.add(new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.Wald, 1.0, gDist, 15, PreCluster.Kmeans, 90,  1, true, 0 });*/
+		
+		params.add(new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.ResiSimple, 1.0, gDist, 9, PreCluster.Kmeans, 80,  1, false, 0 }); // probably best
+		params.add(new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.ResiSimple, 1.0, gDist, 9, PreCluster.Kmeans, 80,  1, true, 0 }); 
+		
 		for( double p : new double[]{ 0.1 } ) {
 
 		List<ValSet> vsList = new ArrayList<>();
@@ -119,7 +135,7 @@ public class ChowClustering_cv {
 			final int idx = params.indexOf(param);
 			final int assignMode = (int)param[ASSIGN_MODE];
 			final double pValue = (double)param[P_VALUE];
-			log.debug(idx+","+method);
+			log.debug(idx+"/"+params.size()+","+method);
 			
 			for( ValSet vs : vsList ) {
 			
@@ -135,16 +151,8 @@ public class ChowClustering_cv {
 			Clustering.minMode = (boolean)param[PRECLUST_OPT3];
 			for( int i = 0; i < (int) param[PRECLUST_OPT2]; i++ ) {
 				
-				List<Set<double[]>> init = ChowClustering.getInitCluster(vs.samplesTrain, vs.cmTrain, (PreCluster)param[PRECLUST], (int) param[PRECLUST_OPT], gDist );
-	
-				List<TreeNode> curLayer = new ArrayList<>();
-				for (Set<double[]> s : init)
-					curLayer.add(new TreeNode(0, 0, s));
-				Map<TreeNode, Set<TreeNode>> ncm = ChowClustering.getCMforCurLayer(curLayer, vs.cmTrain);
-					
-				// HC 1, maintain minobs
-				List<TreeNode> tree1 = Clustering.getHierarchicalClusterTree(curLayer, ncm, gDist, HierarchicalClusteringType.ward, (int) param[MIN_OBS], threads );
-				curLayer = Clustering.cutTree(tree1, 1);
+				List<TreeNode> curLayer = ChowClustering.getInitCluster(vs.samplesTrain, vs.cmTrain, (PreCluster)param[PRECLUST], (int) param[PRECLUST_OPT], gDist, (int) param[MIN_OBS], threads );
+				curLayer = Clustering.cutTree(curLayer, 1);
 				List<Set<double[]>> cluster = Clustering.treeToCluster(curLayer);
 				double wss = ClusterValidation.getWithinClusterSumOfSuqares(cluster, gDist);
 				
@@ -153,15 +161,8 @@ public class ChowClustering_cv {
 					bestWss = wss;
 				}
 			}
-			log.debug("#clust after HC1: "+bestCurLayer.size());
-						
-			// HC 2
-			log.debug("hc2");
-			// update curLayer/ncm
-			for( TreeNode tn : bestCurLayer )
-				tn.contents = Clustering.getContents(tn);
-			Map<TreeNode, Set<TreeNode>> ncm = ChowClustering.getCMforCurLayer(bestCurLayer, vs.cmTrain);
 			
+			Map<TreeNode, Set<TreeNode>> ncm = ChowClustering.getCMforCurLayer(bestCurLayer, vs.cmTrain);
 			List<TreeNode> tree = ChowClustering.getFunctionalClusterinTree(bestCurLayer, ncm, fa, ta, (HierarchicalClusteringType) param[CLUST], (ChowClustering.StructChangeTestMode) param[STRUCT_TEST], pValue, threads);
 			
 			int minClust = Clustering.getRoots(tree).size();

@@ -73,7 +73,7 @@ public class ChowClustering {
 	};
 	
 	enum PreCluster {
-		Kmeans, Ward
+		Kmeans, KmeansMinObs, Ward
 	}
 	
 	public static int CLUST = 0, STRUCT_TEST = 1, P_VALUE = 2, DIST = 3, MIN_OBS = 4, PRECLUST = 5, PRECLUST_OPT = 6, RUNS = 7;
@@ -144,29 +144,10 @@ public class ChowClustering {
 			for (int r = 0; r < maxRuns; r++) {
 				log.debug("run "+r);
 				
-				List<Set<double[]>> init = getInitCluster(samples, cma, (PreCluster)param[PRECLUST], (int) param[PRECLUST_OPT], gDist );
-					
-				List<TreeNode> curLayer = new ArrayList<>();
-				for (Set<double[]> s : init) 
-					curLayer.add(new TreeNode(0, 0, s));
-								
-				// HC 1, maintain minobs
-				{
-					log.debug("hc1");
-					Map<TreeNode, Set<TreeNode>> ncm = getCMforCurLayer(curLayer, cma);
-					List<TreeNode> tree = Clustering.getHierarchicalClusterTree(curLayer, ncm, gDist, HierarchicalClusteringType.ward, (int) param[MIN_OBS], threads );
-					curLayer = Clustering.cutTree(tree, 1);
-				}
+				List<TreeNode> curLayer = getInitCluster(samples, cma, (PreCluster)param[PRECLUST], (int) param[PRECLUST_OPT],  gDist, (int) param[MIN_OBS], threads );
+				Map<TreeNode, Set<TreeNode>> ncm = ChowClustering.getCMforCurLayer(curLayer, cma);
 				
-				// HC 2
-				log.debug("hc2");											
 				double pValue = (double)param[P_VALUE];
-				
-				// update curLayer/ncm
-				for( TreeNode tn : curLayer )
-					tn.contents = Clustering.getContents(tn);
-				Map<TreeNode, Set<TreeNode>> ncm = getCMforCurLayer(curLayer, cma);
-				
 				List<TreeNode> tree = getFunctionalClusterinTree(curLayer, ncm, fa, ta, (HierarchicalClusteringType) param[CLUST], (StructChangeTestMode) param[STRUCT_TEST], pValue, threads);
 								
 				int minClust = Clustering.getRoots(tree).size();
@@ -766,46 +747,65 @@ public class ChowClustering {
 	}
 	
 	public static Map<TreeNode, Set<TreeNode>> getCMforCurLayer( Collection<TreeNode> curLayer, Map<double[],Set<double[]>> cma ) {
+		Map<TreeNode,Set<double[]>> cont = new HashMap<>();
+		for( TreeNode tn : curLayer )
+			cont.put(tn, Clustering.getContents(tn));
+				
 		Map<TreeNode, Set<TreeNode>> ncm = new HashMap<>();
 		for (TreeNode tnA : curLayer) {
 			Set<TreeNode> s = new HashSet<>();
-			for (double[] a : tnA.contents)
+			for (double[] a : cont.get(tnA) )
 				for (double[] nb : cma.get(a))
 					for (TreeNode tnB : curLayer)
-						if (tnB.contents.contains(nb))
+						if (cont.get(tnB).contains(nb))
 							s.add(tnB);
 			ncm.put(tnA, s);
 		}
 		return ncm;
 	}
 	
-	public static List<Set<double[]>> getInitCluster( List<double[]> samples, Map<double[],Set<double[]>> cma, PreCluster pc, int pcOpt, Dist<double[]> dist ) {
+	public static List<TreeNode> getInitCluster( List<double[]> samples, Map<double[],Set<double[]>> cma, PreCluster pc, int pcOpt, Dist<double[]> dist, int minObs, int threads  ) {
 		List<Set<double[]>> init = null;
-		if (pc != null && pc == PreCluster.Kmeans ) {
+		if ( pc == PreCluster.Kmeans ) {
+			
+			// k-means
 			List<Set<double[]>> l = new ArrayList<>(Clustering.kMeans(samples, pcOpt, dist ).values());
 			init = new ArrayList<>();
 			for( Set<double[]> s : l )
 				if( s.isEmpty() )
 					log.warn("Removing empty init cluster!");
 				else
-					init.add(s);					
-		} else if (pc != null && pc == PreCluster.Ward ) {
-			List<TreeNode> tree = Clustering.getHierarchicalClusterTree( cma, dist, HierarchicalClusteringType.ward  );
+					init.add(s);	
+						
+		} else if ( pc == PreCluster.Ward ) { 
+			
+			Map<TreeNode,Set<TreeNode>> cm = Clustering.samplesCMtoTreeCM(cma);
+			List<TreeNode> l = new ArrayList<>( GraphUtils.getNodes(cm) );
+			List<TreeNode> tree = Clustering.getHierarchicalClusterTree( l, cm, dist, HierarchicalClusteringType.ward, Integer.MAX_VALUE, threads );
 			int nrCluster = samples.size();
 			do 
 				init = Clustering.treeToCluster( Clustering.cutTree(tree, nrCluster--) );
-			while( minClusterSize(init) <= pcOpt );
-			log.debug("init size: "+init.size()+","+minClusterSize(init));
+			while( minClusterSize(init) <= pcOpt ); // cut tree until desired cluster size
+		
+		} else if ( pc == PreCluster.KmeansMinObs ) {
+			List<Set<double[]>> l = new ArrayList<>( kMeans(samples, pcOpt, dist, minObs ).values());
 			
-		} else {
 			init = new ArrayList<>();
-			for (double[] d : samples) {
-				Set<double[]> s = new HashSet<double[]>();
-				s.add(d);
-				init.add(s);
-			}
+			for( Set<double[]> s : l )
+				if( s.isEmpty() )
+					log.warn("Removing empty init cluster!");
+				else
+					init.add(s);	
 		}
-						
+		
+		{
+			SummaryStatistics ss = new SummaryStatistics();
+			for( Set<double[]> s : init )
+				ss.addValue( s.size() );
+			log.debug("ss basic: "+ss.getMin()+","+ss.getMean()+","+ss.getMax()+","+ss.getN() );
+		}
+		
+		// to spatial contiguos cluster
 		List<Set<double[]>> cInit = new ArrayList<>();
 		for( Set<double[]> s : init ) 
 			if( !GeoUtils.isContiugous(cma, s) ) 
@@ -813,10 +813,33 @@ public class ChowClustering {
 			else
 				cInit.add(s);
 		if( cInit.size() != init.size() ) {
-			log.warn(cInit.size()+" contiguous instead of "+init.size()+" clusters");
+			//log.warn(cInit.size()+" contiguous instead of "+init.size()+" clusters");
 			init = cInit;
 		}
-		return init;
+		
+		{
+			SummaryStatistics ss = new SummaryStatistics();
+			for( Set<double[]> s : init )
+				ss.addValue( s.size() );
+			log.debug("ss conti: "+ss.getMin()+","+ss.getMean()+","+ss.getMax()+","+ss.getN() );
+		} 
+		
+		// maintain min obs 
+		List<TreeNode> curLayer = new ArrayList<>();
+		for (Set<double[]> s : init)
+			curLayer.add(new TreeNode(0, 0, s));
+		Map<TreeNode, Set<TreeNode>> ncm = ChowClustering.getCMforCurLayer(curLayer, cma);
+				
+		List<TreeNode> minObsTree = Clustering.getHierarchicalClusterTree(curLayer, ncm, dist, HierarchicalClusteringType.ward, minObs, threads);
+		
+		{
+			SummaryStatistics ss = new SummaryStatistics();
+			for( Set<double[]> s : Clustering.treeToCluster( Clustering.cutTree(minObsTree, 1) ) )
+				ss.addValue( s.size() );
+			log.debug("ss minObs: "+ss.getMin()+","+ss.getMean()+","+ss.getMax()+","+ss.getN() );
+		}
+		
+		return minObsTree;
 	}
 	
 	
@@ -875,4 +898,81 @@ public class ChowClustering {
 		vs.cmTrain = cmTrain;
 		return vs;
 	}
+	
+	public static Map<double[], Set<double[]>> kMeans(List<double[]> samples, int num, Dist<double[]> dist, int minObs ) {
+		int length = samples.iterator().next().length;
+			
+		Map<double[], Set<double[]>> clusters = null;
+		Set<double[]> centroids = new HashSet<double[]>();
+
+		// get num unique(!) indices for centroids
+		Set<Integer> indices = new HashSet<Integer>();
+		while (indices.size() < num)
+			indices.add(r.nextInt(samples.size()));
+
+		for (int i : indices) {
+			double[] d = samples.get(i);
+			centroids.add(Arrays.copyOf(d, d.length));
+		}
+
+		int j = 0;
+		boolean changed;
+		do {
+			clusters = new HashMap<double[], Set<double[]>>();
+			for (double[] v : centroids)
+				// init cluster
+				clusters.put(v, new HashSet<double[]>());
+
+			for (double[] s : samples) { // build cluster
+				double[] nearest = null;
+				double nearestCost = Double.MAX_VALUE;
+				int nearestSize = -1;
+				
+				for (double[] c : clusters.keySet()) { // find nearest centroid
+					double actCost = dist.dist(c, s);
+					int actSize = clusters.get(c).size();
+					
+					if ( nearest == null || 
+							( actSize < minObs && nearestSize >= minObs ) || // too small clusters fist
+							( actSize < minObs && nearestSize < minObs && actCost < nearestCost ) ||  
+							( actSize >= minObs && nearestSize >= minObs && actCost < nearestCost ) ) 
+					{							
+						nearestSize = actSize;
+						nearestCost = actCost;
+						nearest = c;
+					}
+				}
+				clusters.get(nearest).add(s);
+			}
+
+			changed = false;
+			for (double[] c : clusters.keySet()) {
+				Collection<double[]> s = clusters.get(c);
+
+				if (s.isEmpty())
+					continue;
+
+				// calculate new centroids
+				double[] centroid = new double[length];
+				for (double[] v : s)
+					for (int i = 0; i < v.length; i++)
+						centroid[i] += v[i];
+				for (int i = 0; i < centroid.length; i++)
+					centroid[i] /= s.size();
+
+				// update centroids
+				for (int i = 0; i < c.length; i++) {
+					if (c[i] != centroid[i]) {
+						centroids.remove(c);
+						centroids.add(centroid);
+						changed = true;
+					}
+				}
+			}
+
+			j++;
+		} while (changed && j < 1000);
+		return clusters;
+	}
+
 }

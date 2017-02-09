@@ -71,21 +71,14 @@ public class Test_val {
 			for (int i = 0; i < runs; i++) {
 				ValSet vs = ChowClustering.getValSet(cm, p);
 				
-				List<Set<double[]>> init = ChowClustering.getInitCluster(sdf.samples, cm, ChowClustering.PreCluster.Kmeans, kmCluster, gDist);
-				List<TreeNode> curLayer = new ArrayList<>();
-				for (Set<double[]> s : init)
-					curLayer.add(new TreeNode(0, 0, s));
-				Map<TreeNode, Set<TreeNode>> ncm = ChowClustering.getCMforCurLayer(curLayer, cm);
-
-				// HC 1, maintain minobs
-				List<TreeNode> tree1 = Clustering.getHierarchicalClusterTree(curLayer, ncm, gDist, HierarchicalClusteringType.ward, fa.length + 2, threads);
-				curLayer = Clustering.cutTree(tree1, 1);
+				List<TreeNode> curLayer = ChowClustering.getInitCluster(sdf.samples, cm, ChowClustering.PreCluster.Kmeans, kmCluster, gDist, fa.length+2, threads );
+				curLayer = Clustering.cutTree(curLayer, 1);
 				
 				// HC 2
 				// update curLayer/ncm
 				for (TreeNode tn : curLayer)
 					tn.contents = Clustering.getContents(tn);
-				ncm = ChowClustering.getCMforCurLayer(curLayer, cm);
+				Map<TreeNode, Set<TreeNode>> ncm = ChowClustering.getCMforCurLayer(curLayer, cm);
 
 				List<TreeNode> tree = ChowClustering.getFunctionalClusterinTree(curLayer, ncm, fa, ta, HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.Wald, 1.0, threads);
 				List<Set<double[]>> ref = Clustering.treeToCluster(Clustering.cutTree(tree, nrCluster));
@@ -106,21 +99,14 @@ public class Test_val {
 					ValSet vs = e1.getKey();
 					List<Set<double[]>> ref = e1.getValue();
 
-					List<Set<double[]>> init = ChowClustering.getInitCluster(vs.samplesTrain, vs.cmTrain, ChowClustering.PreCluster.Kmeans, kmCluster, gDist);
-					List<TreeNode> curLayer = new ArrayList<>();
-					for (Set<double[]> s : init)
-						curLayer.add(new TreeNode(0, 0, s));
-					Map<TreeNode, Set<TreeNode>> ncm = ChowClustering.getCMforCurLayer(curLayer, vs.cmTrain);
-
-					// HC 1, maintain minobs
-					List<TreeNode> tree1 = Clustering.getHierarchicalClusterTree(curLayer, ncm, gDist, HierarchicalClusteringType.ward, fa.length + 2, threads);
-					curLayer = Clustering.cutTree(tree1, 1);
+					List<TreeNode> curLayer = ChowClustering.getInitCluster(vs.samplesTrain, vs.cmTrain, ChowClustering.PreCluster.Kmeans, kmCluster, gDist, fa.length+2, threads);
+					curLayer = Clustering.cutTree(curLayer, 1);
 
 					// HC 2
 					// update curLayer/ncm
 					for (TreeNode tn : curLayer)
 						tn.contents = Clustering.getContents(tn);
-					ncm = ChowClustering.getCMforCurLayer(curLayer, vs.cmTrain);
+					Map<TreeNode, Set<TreeNode>> ncm = ChowClustering.getCMforCurLayer(curLayer, vs.cmTrain);
 
 					List<TreeNode> tree = ChowClustering.getFunctionalClusterinTree(curLayer, ncm, fa, ta, HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.Wald, 1.0, threads);
 					List<Set<double[]>> ct = Clustering.treeToCluster(Clustering.cutTree(tree, nrCluster));

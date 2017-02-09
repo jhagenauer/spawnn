@@ -191,7 +191,7 @@ public class Clustering {
 		while( pq.size() < numCluster ) { 
 			TreeNode tn = pq.poll();
 			if( tn == null )
-				throw new RuntimeException("To few observations for the desired number of clusters!");
+				throw new RuntimeException("Too few observations for the desired number of clusters!");
 			
 			for( TreeNode child : tn.children )
 				if( child != null )
@@ -378,9 +378,8 @@ public class Clustering {
 			cluster.add(GraphUtils.getNodes(s));
 		return cluster;
 	}
-						
-	// not connected
-	public static List<TreeNode> getHierarchicalClusterTree(List<double[]> samples, Dist<double[]> dist, HierarchicalClusteringType type) {
+	
+	public static List<TreeNode> samplesToTree(List<double[]> samples ) {
 		List<TreeNode> l = new ArrayList<TreeNode>();
 		for( double[] d : samples ) {
 			TreeNode tn = new TreeNode(0,0);
@@ -388,24 +387,12 @@ public class Clustering {
 			tn.contents.add(d);
 			l.add(tn);
 		}	
-		return getHierarchicalClusterTree(l, null, dist, type);
+		return l;
 	}
 	
-	// connected
-	public static List<TreeNode> getHierarchicalClusterTree(Map<double[], Set<double[]>> cm, Dist<double[]> dist, HierarchicalClusteringType type) {
-		Set<double[]> s = new HashSet<double[]>();
-		for( Entry<double[],Set<double[]>> e : cm.entrySet() ) {
-			s.add(e.getKey());
-			s.addAll(e.getValue());
-		}
-				
-		List<TreeNode> l = new ArrayList<TreeNode>();
-		for( double[] d : s ) {
-			TreeNode tn = new TreeNode(0,0);
-			tn.contents = new HashSet<>();
-			tn.contents.add(d);
-			l.add(tn);
-		}
+	public static Map<TreeNode,Set<TreeNode>> samplesCMtoTreeCM(Map<double[], Set<double[]>> cm) {
+		Set<double[]> s = GraphUtils.getNodes(cm);
+		List<TreeNode> l = samplesToTree( new ArrayList<>(s) );
 		
 		Map<TreeNode,Set<TreeNode>> ncm = new HashMap<>();
 		for( TreeNode tnA : l ) {
@@ -418,8 +405,19 @@ public class Clustering {
 						cs.add(tnB);
 			ncm.put(tnA, cs);
 		}
-				
-		return getHierarchicalClusterTree( l, ncm, dist, type);
+		return ncm;
+	}
+							
+	// not connected
+	public static List<TreeNode> getHierarchicalClusterTree(List<double[]> samples, Dist<double[]> dist, HierarchicalClusteringType type) {
+		return getHierarchicalClusterTree( samplesToTree(samples), null, dist, type);
+	}
+	
+	// connected
+	public static List<TreeNode> getHierarchicalClusterTree(Map<double[], Set<double[]>> cm, Dist<double[]> dist, HierarchicalClusteringType type) {
+		Map<TreeNode,Set<TreeNode>> ncm = samplesCMtoTreeCM(cm);
+		Set<TreeNode> l = GraphUtils.getNodes(ncm);
+		return getHierarchicalClusterTree( new ArrayList<>(l), ncm, dist, type);
 	}
 	
 	public static List<TreeNode> getHierarchicalClusterTree( List<TreeNode> leafLayer, Map<TreeNode,Set<TreeNode>> cm, Dist<double[]> dist, HierarchicalClusteringType type ) {
@@ -427,7 +425,6 @@ public class Clustering {
 	}
 	
 	public static boolean minMode = true;
-		
 	public static List<TreeNode> getHierarchicalClusterTree( List<TreeNode> leafLayer, final Map<TreeNode,Set<TreeNode>> cm, Dist<double[]> dist, HierarchicalClusteringType type, int minSize, int threads ) {
 						
 		class FlatSet<T> extends HashSet<T> {

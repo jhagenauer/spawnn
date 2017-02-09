@@ -9,7 +9,8 @@
 	<description>Spatial Analysis with Neural Networks (SPAWNN)</description>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<geotools.version>16.0</geotools.version>
+		<geotools.version>16.1</geotools.version>
+		<jung.version>2.0.1</jung.version>
 	</properties>
 	<build>
 		<plugins>
@@ -35,6 +36,7 @@
 		</plugins>
 		<pluginManagement>
 			<plugins>
+
 				<plugin>
 					<groupId>org.eclipse.m2e</groupId>
 					<artifactId>lifecycle-mapping</artifactId>
@@ -59,9 +61,11 @@
 						</lifecycleMappingMetadata>
 					</configuration>
 				</plugin>
+
 				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-compiler-plugin</artifactId>
-					<version>3.3</version>
+					<version>3.6.1</version>
 					<configuration>
 						<source>1.8</source>
 						<target>1.8</target>
@@ -69,6 +73,7 @@
 					<dependencies>
 					</dependencies>
 				</plugin>
+
 				<plugin>
 					<artifactId>maven-assembly-plugin</artifactId>
 					<version>2.5.5</version>
@@ -76,7 +81,7 @@
 						<descriptors>
 							<descriptor>src/main/assembly/jar-dep.xml</descriptor>
 							<descriptor>src/main/assembly/src-zip.xml</descriptor>
-							<!-- <descriptor>src/main/assembly/bin-zip.xml</descriptor>-->
+							<!-- <descriptor>src/main/assembly/bin-zip.xml</descriptor> -->
 						</descriptors>
 						<archive>
 							<manifest>
@@ -99,6 +104,7 @@
 						</archiverConfig>
 					</configuration>
 				</plugin>
+
 			</plugins>
 		</pluginManagement>
 	</build>
@@ -106,22 +112,22 @@
 		<dependency>
 			<groupId>net.sf.jung</groupId>
 			<artifactId>jung-graph-impl</artifactId>
-			<version>2.0.1</version>
+			<version>${jung.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>net.sf.jung</groupId>
 			<artifactId>jung-io</artifactId>
-			<version>2.0.1</version>
+			<version>${jung.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>net.sf.jung</groupId>
 			<artifactId>jung-visualization</artifactId>
-			<version>2.0.1</version>
+			<version>${jung.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>net.sf.jung</groupId>
 			<artifactId>jung-algorithms</artifactId>
-			<version>2.0.1</version>
+			<version>${jung.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>log4j</groupId>
@@ -139,18 +145,23 @@
 			<version>3.2</version>
 		</dependency>
 		<dependency>
+			<groupId>colt</groupId>
+			<artifactId>colt</artifactId>
+			<version>1.2.0</version>
+		</dependency>
+		<dependency>
 			<groupId>org.geotools</groupId>
 			<artifactId>gt-shapefile</artifactId>
 			<version>${geotools.version}</version>
 		</dependency>
-		
+
 		<dependency>
 			<groupId>org.geotools</groupId>
-			<!--  <artifactId>gt-epsg-extension</artifactId>-->
+			<!-- <artifactId>gt-epsg-extension</artifactId> -->
 			<artifactId>gt-epsg-hsql</artifactId>
 			<version>${geotools.version}</version>
 		</dependency>
-				
+
 		<dependency>
 			<groupId>org.geotools</groupId>
 			<artifactId>gt-swing</artifactId>
@@ -190,27 +201,19 @@
 	<repositories>
 		<repository>
 			<id>maven2-repository.dev.java.net</id>
-			<name>Java.net repository</name>
-			<url>http://download.java.net/maven/2</url>
+			<url>http://maven.java.net/content/repositories/releases/</url>
 		</repository>
 		<repository>
 			<id>osgeo</id>
-			<name>Open Source Geospatial Foundation Repository</name>
 			<url>http://download.osgeo.org/webdav/geotools/</url>
 		</repository>
 		<repository>
-			<snapshots>
-				<enabled>true</enabled>
-			</snapshots>
 			<id>opengeo</id>
-			<name>OpenGeo Maven Repository</name>
-			<url>http://repo.opengeo.org</url>
+			<url>http://repo.boundlessgeo.com/main/</url>
 		</repository>
 		<repository>
 			<id>central</id>
-			<name>Maven Repository Switchboard</name>
-			<layout>default</layout>
-			<url>http://repo1.maven.org/maven2</url>
+			<url>http://central.maven.org/maven2/</url>
 			<snapshots>
 				<enabled>false</enabled>
 			</snapshots>
