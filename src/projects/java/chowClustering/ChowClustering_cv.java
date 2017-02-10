@@ -72,11 +72,12 @@ public class ChowClustering_cv {
 		// lm 0.015897328776906357
 
 		List<Object[]> params = new ArrayList<>();	
-		/*for( int i : new int[]{ 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120 } ) 	
-			for( int j : new int[]{ 0, 2, 4, 5, 8 } )
-				for( int l : new int[]{ 0,1,2,3,4,5,6,7,8,9 } ) 
+		/*for( int i : new int[]{ 60, 65, 70, 75, 80, 85, 90, 95, 100 } ) 	
+			for( int j : new int[]{ 0 , 2, 4, 5, 8 } )
+				for( int l : new int[]{ 0,1,2,3,4 } ) 
 					for( boolean b : new boolean[]{ true, false } )	{
 						params.add(new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.ResiSimple, 1.0, gDist, fa.length+2+l, PreCluster.Kmeans, i,  1, b, j });
+						params.add(new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.ResiSimple, 1.0, gDist, fa.length+2+l, PreCluster.Kmeans, i,  10, b, j });
 						params.add(new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.Wald, 1.0, gDist, fa.length+2+l, PreCluster.Kmeans, i,  1, b, j });
 					}*/
 		
@@ -91,8 +92,12 @@ public class ChowClustering_cv {
 		params.add(new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.ResiSimple, 1.0, gDist, 9, PreCluster.Kmeans, 80,  1, true, 0 }); 
 		params.add(new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.Wald, 1.0, gDist, 15, PreCluster.Kmeans, 90,  1, true, 0 });*/
 		
-		params.add(new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.ResiSimple, 1.0, gDist, 9, PreCluster.Kmeans, 80,  1, false, 0 }); // probably best
-		params.add(new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.ResiSimple, 1.0, gDist, 9, PreCluster.Kmeans, 80,  1, true, 0 }); 
+		//params.add(new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.ResiSimple, 1.0, gDist, 9, PreCluster.Kmeans, 80,  1, false, 0 }); // probably best
+		//params.add(new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.ResiSimple, 1.0, gDist, 9, PreCluster.Kmeans, 80,  1, true, 0 }); 
+		
+		params.add(new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.ResiSimple, 1.0, gDist, 9, PreCluster.Kmeans, 80,  1, false, 0 });
+		params.add(new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.ResiSimple, 1.0, gDist, 9, PreCluster.Kmeans, 80,  10, false, 0 });
+		params.add(new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.ResiSimple, 1.0, gDist, 9, PreCluster.Kmeans, 80,  100, false, 0 });
 		
 		for( double p : new double[]{ 0.1 } ) {
 
