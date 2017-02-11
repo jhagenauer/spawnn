@@ -797,14 +797,7 @@ public class ChowClustering {
 				else
 					init.add(s);	
 		}
-		
-		{
-			SummaryStatistics ss = new SummaryStatistics();
-			for( Set<double[]> s : init )
-				ss.addValue( s.size() );
-			log.debug("ss basic: "+ss.getMin()+","+ss.getMean()+","+ss.getMax()+","+ss.getN() );
-		}
-		
+				
 		// to spatial contiguos cluster
 		List<Set<double[]>> cInit = new ArrayList<>();
 		for( Set<double[]> s : init ) 
@@ -816,14 +809,7 @@ public class ChowClustering {
 			//log.warn(cInit.size()+" contiguous instead of "+init.size()+" clusters");
 			init = cInit;
 		}
-		
-		{
-			SummaryStatistics ss = new SummaryStatistics();
-			for( Set<double[]> s : init )
-				ss.addValue( s.size() );
-			log.debug("ss conti: "+ss.getMin()+","+ss.getMean()+","+ss.getMax()+","+ss.getN() );
-		} 
-		
+				
 		// maintain min obs 
 		List<TreeNode> curLayer = new ArrayList<>();
 		for (Set<double[]> s : init)
@@ -831,14 +817,7 @@ public class ChowClustering {
 		Map<TreeNode, Set<TreeNode>> ncm = ChowClustering.getCMforCurLayer(curLayer, cma);
 				
 		List<TreeNode> minObsTree = Clustering.getHierarchicalClusterTree(curLayer, ncm, dist, HierarchicalClusteringType.ward, minObs, threads);
-		
-		{
-			SummaryStatistics ss = new SummaryStatistics();
-			for( Set<double[]> s : Clustering.treeToCluster( Clustering.cutTree(minObsTree, 1) ) )
-				ss.addValue( s.size() );
-			log.debug("ss minObs: "+ss.getMin()+","+ss.getMean()+","+ss.getMax()+","+ss.getN() );
-		}
-		
+				
 		return minObsTree;
 	}
 	

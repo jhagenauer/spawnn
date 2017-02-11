@@ -77,8 +77,9 @@ public class ChowClustering_Apply {
 			e1.printStackTrace();
 		}
 
-		Object[] param = new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.ResiSimple, 1.0, gDist, fa.length + 2, PreCluster.Kmeans, 800, 1, true };
-
+		Object[] param = new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.ResiSimple, 1.0, gDist, fa.length + 1, PreCluster.Kmeans, 1700, 1, true };
+		int nrCluster = 219;
+		
 		Clustering.r.setSeed(0);
 
 		String method = Arrays.toString(param);
@@ -103,7 +104,6 @@ public class ChowClustering_Apply {
 		Map<TreeNode, Set<TreeNode>> ncm = ChowClustering.getCMforCurLayer(bestCurLayer, cm);
 		List<TreeNode> tree = ChowClustering.getFunctionalClusterinTree(bestCurLayer, ncm, fa, ta, (HierarchicalClusteringType) param[CLUST], (ChowClustering.StructChangeTestMode) param[STRUCT_TEST],	pValue, threads);
 
-		int nrCluster = 123;
 		List<Set<double[]>> ct = Clustering.treeToCluster(Clustering.cutTree(tree, nrCluster));
 		LinearModel lm = new LinearModel(sdf.samples, ct, fa, ta, false);
 		double mse = SupervisedUtils.getMSE(lm.getPredictions(sdf.samples, fa), sdf.samples, ta);

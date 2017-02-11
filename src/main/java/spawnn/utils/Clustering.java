@@ -482,7 +482,7 @@ public class Clustering {
 					if( s.size() < minSize )
 						b = false;
 				if( b ) {
-					log.debug("break 1, curLayer: " + curLayer.size());
+					//log.debug("break 1, curLayer: " + curLayer.size());
 					return tree;
 				}
 			}
@@ -599,7 +599,7 @@ public class Clustering {
 			}
 
 			if (c1 == null && c2 == null) { 
-				log.debug("break 2, curLayer: " + curLayer.size());
+				//log.debug("break 2, curLayer: " + curLayer.size());
 				return tree;
 			}
 									

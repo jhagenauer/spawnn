@@ -8,6 +8,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -37,9 +38,13 @@ public class ChowClustering_AIC {
 
 	public static int CLUST = 0, STRUCT_TEST = 1, P_VALUE = 2, DIST = 3, MIN_OBS = 4, PRECLUST = 5, PRECLUST_OPT = 6, PRECLUST_OPT2 = 7, PRECLUST_OPT3 = 8;
 
+
+	public static double best = Double.MAX_VALUE;	
+	public static double best2 = Double.MAX_VALUE;	
+	
 	public static void main(String[] args) {
 
-		int threads = Math.max(1 , Runtime.getRuntime().availableProcessors() );
+		int threads = Math.max(1 , Runtime.getRuntime().availableProcessors()-1 );
 		log.debug("Threads: "+threads);
 
 		File data = new File("data/gemeinden_gs2010/gem_dat.shp");
@@ -67,13 +72,14 @@ public class ChowClustering_AIC {
 		}
 		
 		List<Object[]> params = new ArrayList<>();	
-		for( int i : new int[]{ 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000 } ) 	
+		for( int i : new int[]{ 700, 800, 900, 1000, 1100, 1200, 1300, 1600, 1650, 1700, 1750, 1800, 1850, 1900 } ) 	
 			for( int l : new int[]{ 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14 } ) 
 				for( boolean b : new boolean[]{ true, false } )	{
-					params.add(new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.ResiSimple, 1.0, gDist, fa.length+2+l, PreCluster.Kmeans, i,  1, b});
+					params.add(new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.ResiSimple, 1.0, gDist, fa.length+1+l, PreCluster.Kmeans, i,  1, b});
 					params.add(new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.Chow, 1.0, gDist, fa.length+2+l, PreCluster.Kmeans, i,  1, b });
 					params.add(new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.Wald, 1.0, gDist, fa.length+2+l, PreCluster.Kmeans, i,  1, b });
 				}
+		Collections.shuffle(params);
 				
 		{
 			LinearModel lm = new LinearModel( sdf.samples, fa, ta, false);
@@ -81,7 +87,7 @@ public class ChowClustering_AIC {
 			double mse = SupervisedUtils.getMSE(pred, sdf.samples, ta);
 			log.debug("lm aic: "+SupervisedUtils.getAICc_GWMODEL(mse, fa.length+1, sdf.samples.size()) ); // lm aic: -61856.98209268832
 		}
-		
+			
 		for (Object[] param : params) {		
 			Clustering.r.setSeed(0);
 			
@@ -124,7 +130,22 @@ public class ChowClustering_AIC {
 						double mse = SupervisedUtils.getMSE( lm.getPredictions(sdf.samples, fa), sdf.samples, ta);
 						double aic = SupervisedUtils.getAICc_GWMODEL(mse, ct.size()*(fa.length+1), sdf.samples.size());
 												
-						synchronized(this) {							
+						synchronized(this) {	
+							
+							if( aic < best ) {
+								log.info("best "+aic+":"+method+","+nrCluster);
+								best = aic;
+							}
+							
+							
+							double maxIc = Double.MIN_VALUE;	
+							for( int i = 0; i < lm.cluster.size(); i++ ) 
+									maxIc = Math.max( maxIc,  Math.abs( lm.getBeta(i)[lm.getBeta(i).length-1]) ); 
+							if( aic < best2 && maxIc < 2.0 ) {
+								log.info("best2 "+aic+":"+method+","+nrCluster);
+								best2 = aic;
+							}
+							
 							try {
 								String s = "";
 								s += idx + ",\"" + method + "\"," + ct.size() + ","+aic+"\r\n";
