@@ -44,7 +44,7 @@ public class ChowClustering_AIC {
 	
 	public static void main(String[] args) {
 
-		int threads = Math.max(1 , Runtime.getRuntime().availableProcessors()-1 );
+		int threads = Math.max(1 , Runtime.getRuntime().availableProcessors() );
 		log.debug("Threads: "+threads);
 
 		File data = new File("data/gemeinden_gs2010/gem_dat.shp");
@@ -72,12 +72,12 @@ public class ChowClustering_AIC {
 		}
 		
 		List<Object[]> params = new ArrayList<>();	
-		for( int i : new int[]{ 700, 800, 900, 1000, 1100, 1200, 1300, 1600, 1650, 1700, 1750, 1800, 1850, 1900 } ) 	
-			for( int l : new int[]{ 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14 } ) 
-				for( boolean b : new boolean[]{ true, false } )	{
+		for( int i : new int[]{ 1650, 1700, 1750, 1950, 2000, 2050 } ) 	
+			for( int l : new int[]{ 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16 } ) 
+				for( boolean b : new boolean[]{ true /*, false*/ } )	{
 					params.add(new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.ResiSimple, 1.0, gDist, fa.length+1+l, PreCluster.Kmeans, i,  1, b});
-					params.add(new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.Chow, 1.0, gDist, fa.length+2+l, PreCluster.Kmeans, i,  1, b });
-					params.add(new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.Wald, 1.0, gDist, fa.length+2+l, PreCluster.Kmeans, i,  1, b });
+					/*params.add(new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.Chow, 1.0, gDist, fa.length+2+l, PreCluster.Kmeans, i,  1, b });
+					params.add(new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.Wald, 1.0, gDist, fa.length+2+l, PreCluster.Kmeans, i,  1, b });*/
 				}
 		Collections.shuffle(params);
 				
@@ -94,7 +94,7 @@ public class ChowClustering_AIC {
 			String method = Arrays.toString(param);
 			final int idx = params.indexOf(param);
 			final double pValue = (double)param[P_VALUE];
-			log.debug(idx+"/"+params.size()+","+method);
+			log.debug( (idx+1)+"/"+params.size()+","+method);
 						
 			List<Future<LinearModel>> futures = new ArrayList<>();
 			ExecutorService es = Executors.newFixedThreadPool(threads);
@@ -141,7 +141,7 @@ public class ChowClustering_AIC {
 							double maxIc = Double.MIN_VALUE;	
 							for( int i = 0; i < lm.cluster.size(); i++ ) 
 									maxIc = Math.max( maxIc,  Math.abs( lm.getBeta(i)[lm.getBeta(i).length-1]) ); 
-							if( aic < best2 && maxIc < 2.0 ) {
+							if( aic < best2 && maxIc < 1.0 ) {
 								log.info("best2 "+aic+":"+method+","+nrCluster);
 								best2 = aic;
 							}

@@ -77,8 +77,16 @@ public class ChowClustering_Apply {
 			e1.printStackTrace();
 		}
 
-		Object[] param = new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.ResiSimple, 1.0, gDist, fa.length + 1, PreCluster.Kmeans, 1700, 1, true };
+		// GWR, fixed, gaussian AIC -64091
+		// GWR, adapt, gaussian AIC -63857.01
+		
+		// AIC -73175.45122826115
+		Object[] param = new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.ResiSimple, 1.0, gDist, 7, PreCluster.Kmeans, 1700, 1, true };
 		int nrCluster = 219;
+		
+		// AIC -65590.03721526502
+		// Object[] param = new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.ResiSimple, 1.0, gDist, 18, PreCluster.Kmeans, 2000, 1, true };
+		// int nrCluster = 87;
 		
 		Clustering.r.setSeed(0);
 
