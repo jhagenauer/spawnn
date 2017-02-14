@@ -88,7 +88,7 @@ public class SupervisedUtils {
 	
 	public static double getR2(List<Double> response, List<double[]> samples, int ta) {
 		if (response.size() != samples.size())
-			throw new RuntimeException();
+			throw new RuntimeException("response size != samples size ("+response.size()+"!="+samples.size()+")" );
 
 		double ssRes = 0;
 		for (int i = 0; i < response.size(); i++)

@@ -39,8 +39,7 @@ public class ChowClustering_AIC {
 	public static int CLUST = 0, STRUCT_TEST = 1, P_VALUE = 2, DIST = 3, MIN_OBS = 4, PRECLUST = 5, PRECLUST_OPT = 6, PRECLUST_OPT2 = 7, PRECLUST_OPT3 = 8;
 
 
-	public static double best = Double.MAX_VALUE;	
-	public static double best2 = Double.MAX_VALUE;	
+	public static double best = Double.MAX_VALUE;		
 	
 	public static void main(String[] args) {
 
@@ -72,12 +71,13 @@ public class ChowClustering_AIC {
 		}
 		
 		List<Object[]> params = new ArrayList<>();	
-		for( int i : new int[]{ 1650, 1700, 1750, 1950, 2000, 2050 } ) 	
-			for( int l : new int[]{ 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16 } ) 
+		for( int i : new int[]{ 1700, 1750, 1800, 1850, 1900 } ) 	
+			for( int l : new int[]{ 1/*,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16*/ } ) 
 				for( boolean b : new boolean[]{ true /*, false*/ } )	{
 					params.add(new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.ResiSimple, 1.0, gDist, fa.length+1+l, PreCluster.Kmeans, i,  1, b});
-					/*params.add(new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.Chow, 1.0, gDist, fa.length+2+l, PreCluster.Kmeans, i,  1, b });
-					params.add(new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.Wald, 1.0, gDist, fa.length+2+l, PreCluster.Kmeans, i,  1, b });*/
+					//params.add(new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.Chow, 1.0, gDist, fa.length+1+l, PreCluster.Kmeans, i,  1, b});
+					//params.add(new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.Wald, 1.0, gDist, fa.length+1+l, PreCluster.Kmeans, i,  1, b});
+					
 				}
 		Collections.shuffle(params);
 				
@@ -120,7 +120,7 @@ public class ChowClustering_AIC {
 			List<TreeNode> tree = ChowClustering.getFunctionalClusterinTree(bestCurLayer, ncm, fa, ta, (HierarchicalClusteringType) param[CLUST], (ChowClustering.StructChangeTestMode) param[STRUCT_TEST], pValue, threads);
 			
 			int minClust = Clustering.getRoots(tree).size();
-			for (int i = minClust; i <= (pValue == 1.0 ? Math.min( bestCurLayer.size(), 250) : minClust); i++ ) {
+			for (int i = minClust; i <= (pValue == 1.0 ? Math.min( bestCurLayer.size(), 350) : minClust); i++ ) {
 				final int nrCluster = i;
 				futures.add(es.submit(new Callable<LinearModel>() {
 					@Override
@@ -135,15 +135,6 @@ public class ChowClustering_AIC {
 							if( aic < best ) {
 								log.info("best "+aic+":"+method+","+nrCluster);
 								best = aic;
-							}
-							
-							
-							double maxIc = Double.MIN_VALUE;	
-							for( int i = 0; i < lm.cluster.size(); i++ ) 
-									maxIc = Math.max( maxIc,  Math.abs( lm.getBeta(i)[lm.getBeta(i).length-1]) ); 
-							if( aic < best2 && maxIc < 1.0 ) {
-								log.info("best2 "+aic+":"+method+","+nrCluster);
-								best2 = aic;
 							}
 							
 							try {

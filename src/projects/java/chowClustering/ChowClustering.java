@@ -296,7 +296,6 @@ public class ChowClustering {
 			log.info("#cluster: " + cr.cluster.size());
 			log.info("rss: " + cr.getRSS());
 			log.info("aicc: " + aicc);
-			log.info("r2: " + cr.getR2(samples) );
 			
 			/*if( best == null || aicc < best.getAICc() )
 				best = cr;*/

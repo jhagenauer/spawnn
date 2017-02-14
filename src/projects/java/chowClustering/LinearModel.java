@@ -9,15 +9,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.commons.math3.linear.LUDecomposition;
-import org.apache.commons.math3.linear.QRDecomposition;
-import org.apache.commons.math3.linear.RealMatrix;
-import org.apache.commons.math3.linear.RealVector;
+import org.apache.commons.math3.distribution.TDistribution;
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
-import org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression;
-import org.apache.commons.math3.util.FastMath;
-import org.jblas.Decompose;
 import org.jblas.DoubleMatrix;
+import org.jblas.MatrixFunctions;
 import org.jblas.Solve;
 
 import nnet.SupervisedUtils;
@@ -58,6 +53,8 @@ public class LinearModel {
 			Set<double[]> c = this.cluster.get(j);
 			
 			List<double[]> l = new ArrayList<double[]>(c);
+			
+			DoubleMatrix Y = new DoubleMatrix( LinearModel.getY( l, ta) );
 			DoubleMatrix X;
 			if( zScore ) {				
 				double[] mean = new double[fa.length], sd = new double[fa.length];
@@ -73,23 +70,22 @@ public class LinearModel {
 				X = new DoubleMatrix( LinearModel.getX( l, fa, mean, sd, true) );	
 			} else 
 				X = new DoubleMatrix( LinearModel.getX( l, fa, true) );	
-					
-			// calculate beta
-			DoubleMatrix Y = new DoubleMatrix( LinearModel.getY( l, ta) );
-			DoubleMatrix Xt = X.transpose();
-			DoubleMatrix XtX = Xt.mmul(X);				
-			betas.add(Solve.solve(XtX, Xt.mmul(Y))); 	
 			
-			// calculate beta variance
-			Decompose.QRDecomposition<DoubleMatrix> qr = new Decompose().qr(X);
+			// calculate beta
+			DoubleMatrix Xt = X.transpose();
+			DoubleMatrix XtX = Xt.mmul(X);
+			DoubleMatrix beta = Solve.solve(XtX, Xt.mmul(Y));
+			betas.add(beta);
 						
-			/*int p = getX().getColumnDimension();
-	        RealMatrix Raug = qr.getR().getSubMatrix(0, p - 1 , 0, p - 1);
-	        RealMatrix Rinv = new LUDecomposition(Raug).getSolver().getInverse();
-	        return Rinv.multiply(Rinv.transpose());*/
+			// calculate std beta error, not here because expsensive and rarely needed
+			/*DoubleMatrix betaVar = Solve.pinv(XtX);			
+			DoubleMatrix residuals = Y.sub( X.mmul(beta) ); // predictions
+			
+			double sigma = residuals.dot(residuals)/(X.rows-X.columns);
+			DoubleMatrix stdBetaError = MatrixFunctions.sqrt( betaVar.diag().mul(sigma) );*/
 		}			
 	}
-			
+				
 	public List<Double> getResiduals() {
 		if( residuals == null ) {
 			List<Double> predictions = getPredictions(samples, fa);
@@ -99,11 +95,7 @@ public class LinearModel {
 		} 
 		return residuals;	
 	}
-	
-	public double getR2(List<double[]> samples) {
-		return SupervisedUtils.getR2(getPredictions(samples, fa), samples, ta);
-	}
-	
+		
 	public double getRSS() {
 		if( rss < 0 ) {
 			rss = 0;
@@ -111,6 +103,12 @@ public class LinearModel {
 				rss += d*d;
 		}
 		return rss;
+	}
+	
+	public double getRSS( int i ) {
+		List<double[]> l = new ArrayList<>(cluster.get(i));
+		List<Double> pred = getPredictions(l, fa);
+		return SupervisedUtils.getResidualSumOfSquares(pred, l, ta);
 	}
 				
 	public List<Double> getPredictions( List<double[]> samples, int[] faPred ) {		
@@ -131,7 +129,7 @@ public class LinearModel {
 			
 			if( subSamples.isEmpty() )
 				continue;
-									
+							
 			DoubleMatrix X;
 			if( zScore )
 				X = new DoubleMatrix( LinearModel.getX( subSamples, faPred, means.get(l), sds.get(l), true) );
@@ -178,6 +176,24 @@ public class LinearModel {
 		return betas.get(i).data;
 	}
 	
+	public double[] getBetaStdError(int i) {
+		List<double[]> l = new ArrayList<>(cluster.get(i));
+		DoubleMatrix Y = new DoubleMatrix( LinearModel.getY( l, ta) );
+		DoubleMatrix X;
+		if( zScore )
+			X = new DoubleMatrix( LinearModel.getX( l, fa, means.get(i), sds.get(i), true) );
+		else
+			X = new DoubleMatrix( LinearModel.getX( l, fa, true) );
+		DoubleMatrix XtX = X.transpose().mmul(X);
+		
+		DoubleMatrix betaVar = Solve.pinv(XtX);			
+		DoubleMatrix residuals = Y.sub( X.mmul(betas.get(i)) ); // predictions
+					
+		double sigma = residuals.dot(residuals)/(X.rows-X.columns);
+		DoubleMatrix stdBetaError = MatrixFunctions.sqrt( betaVar.diag().mul(sigma) );
+		return stdBetaError.data;
+	}
+		
 	public List<Set<double[]>> getCluster() {
 		return cluster;
 	}
@@ -189,37 +205,13 @@ public class LinearModel {
 		
 		LinearModel lm = new LinearModel(df.samples, new int[]{3,5,9}, 0, false);
 		double[] beta = lm.getBeta(0);
-		double sigma = lm.getRSS()/(df.samples.size()-beta.length);
+		double[] stdError = lm.getBetaStdError(0);
+		
+		TDistribution td = new TDistribution(df.samples.size()-beta.length); 
 		for( int i = 0; i < beta.length; i++ ) {
-			System.out.println(i);
-			System.out.println("estim: "+beta[i] );		        
-	
-			
-			/*Decompose.QRDecomposition<DoubleMatrix> qr = Decompose.qr(lm.betas.get(0));
-			DoubleMatrix r = qr.r;*/
-			
-			/*double[][] betaVariance = RealMatrix calculateBetaVariance() {
-			        int p = getX().getColumnDimension();
-			        RealMatrix Raug = qr.getR().getSubMatrix(0, p - 1 , 0, p - 1);
-			        RealMatrix Rinv = new LUDecomposition(Raug).getSolver().getInverse();
-			        return Rinv.multiply(Rinv.transpose());
-			    }
-			
-			
-			double sigma = RealVector residuals = calculateResiduals();
-	        return residuals.dotProduct(residuals) /
-	                (xMatrix.getRowDimension() - xMatrix.getColumnDimension());
-	        int length = betaVariance[0].length;
-	        double[] result = new double[length];
-	        for (int i = 0; i < length; i++) {
-	            result[i] = FastMath.sqrt(sigma * betaVariance[i][i]);
-	        }*/
-	        
-			/*OLSMultipleLinearRegression l = new OLSMultipleLinearRegression();
-			l.estimateRegressionParameters();
-			l.estimateRegressionParametersStandardErrors();*/
-			
-			QRDecomposition qr;
+			double tValue = beta[i]/stdError[i];
+			double pValue = 2*(td.cumulativeProbability(-Math.abs(tValue) ) );
+			System.out.println(beta[i]+" "+tValue+" "+pValue);
 		}
 	}
 }

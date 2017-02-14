@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.commons.math3.distribution.TDistribution;
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 import org.apache.log4j.Logger;
 
@@ -84,10 +85,10 @@ public class ChowClustering_Apply {
 		//Object[] param = new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.ResiSimple, 1.0, gDist, 7, PreCluster.Kmeans, 1700, 1, true };
 		//int nrCluster = 219;
 		
-		// AIC -65590.03721526502, moran: 0.052678270827162046***
-		Object[] param = new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.ResiSimple, 1.0, gDist, 18, PreCluster.Kmeans, 2000, 1, true };
-		int nrCluster = 87;
-		
+		// AIC -70918.65187915557
+		Object[] param = new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.ResiSimple, 1.0, gDist, 8, PreCluster.Kmeans, 1700, 1, true };
+		int nrCluster = 191;
+				
 		Clustering.r.setSeed(0);
 
 		String method = Arrays.toString(param);
@@ -179,24 +180,20 @@ public class ChowClustering_Apply {
 		for (int i = 0; i < fa.length; i++)
 			dissNames.add( sdf.names.get(fa[i]) );
 		dissNames.add(  "Intrcpt" );
+						
+		for (int i = 0; i < fa.length; i++)
+			dissNames.add( "p_"+sdf.names.get(fa[i]) );
+		dissNames.add(  "p_Intrcpt" );
 		
 		dissNames.add( "numObs" );
 		dissNames.add( "cluster" );
-		dissNames.add( "RSS" );
-		dissNames.add( "RMSD" );
-		dissNames.add( "R2" );
-		
-		for (int i = 0; i < fa.length; i++)
-			dissNames.add( "std"+sdf.names.get(fa[i]) );
-		dissNames.add(  "stdIntrcpt" );
+		dissNames.add( "mse" );
 								
 		List<double[]> dissSamples = new ArrayList<>();
 		List<Geometry> dissGeoms = new ArrayList<>();
 		for (Set<double[]> s : lm.cluster) {
-			
-			if( s.size() < fa.length + 1 )
-				throw new RuntimeException();
-							
+			int idx = lm.cluster.indexOf(s);
+										
 			List<Polygon> polys = new ArrayList<>();
 			for (double[] d : s) {
 				int idx2 = sdf.samples.indexOf(d);
@@ -236,23 +233,22 @@ public class ChowClustering_Apply {
 			List<Set<double[]>> c = new ArrayList<>();
 			c.add( new HashSet<>(li) );
 			
-			LinearModel plm = new LinearModel( li, c, fa, ta, false);
-			
-			List<Double> dl = new ArrayList<>();		
-			for( double d : plm.getBeta(0) )
+			List<Double> dl = new ArrayList<>();	
+			double[] beta = lm.getBeta(idx);
+			for( double d : beta )
 				dl.add(d);
-							
-			double sss = plm.getRSS();			
+			
+			double[] se = lm.getBetaStdError(idx);
+			TDistribution td = new TDistribution(s.size()-beta.length);
+			for( int i = 0; i < beta.length; i++ ) {
+				double tValue = beta[i]/se[i];
+				dl.add( 2*(td.cumulativeProbability(-Math.abs(tValue) ) ) );
+			}
+			
 			dl.add( (double)s.size() );
-			dl.add( (double)lm.cluster.indexOf(s) );
-			dl.add( sss );
-			dl.add( Math.sqrt( sss/s.size() ) ); // RMSD
-			dl.add( SupervisedUtils.getR2( plm.getResiduals(), li, ta ) );
-			
-			LinearModel plmStd = new LinearModel( li, c, fa, ta, true);
-			for( double d : plmStd.getBeta(0) )
-				dl.add(d);
-									
+			dl.add( (double)idx );
+			dl.add( lm.getRSS(idx)/s.size() );
+												
 			// dl (list) to da (array)
 			double[] da = new double[dl.size()];
 			for( int i = 0; i < dl.size(); i++ )
