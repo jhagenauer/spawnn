@@ -883,6 +883,7 @@ public class DataUtils {
 		return sd;
 	}
 
+	// FIXME verbose has no effect
 	public static SpatialDataFrame readSpatialDataFrameFromCSV(File file, int[] ga, int[] ign, boolean verbose) {
 		GeometryFactory gf = new GeometryFactory();
 

@@ -1,5 +1,6 @@
 package chowClustering;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -8,11 +9,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.commons.math3.linear.LUDecomposition;
+import org.apache.commons.math3.linear.QRDecomposition;
+import org.apache.commons.math3.linear.RealMatrix;
+import org.apache.commons.math3.linear.RealVector;
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
+import org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression;
+import org.apache.commons.math3.util.FastMath;
+import org.jblas.Decompose;
 import org.jblas.DoubleMatrix;
 import org.jblas.Solve;
 
 import nnet.SupervisedUtils;
+import spawnn.utils.DataFrame;
+import spawnn.utils.DataUtils;
 
 public class LinearModel {
 	private List<DoubleMatrix> betas;
@@ -20,7 +30,6 @@ public class LinearModel {
 	List<double[]> samples;
 	int[] fa;
 	int ta, maxIter;
-	double lambda; 
 	private double rss = -1;
 	
 	boolean zScore;
@@ -28,23 +37,14 @@ public class LinearModel {
 	private List<double[]> means = new ArrayList<>(), sds = new ArrayList<>();
 	
 	public LinearModel(List<double[]> samples, int[] fa, int ta, boolean zScore ) {
-		this( samples, null, fa, ta, zScore, -1.0);
+		this( samples, null, fa, ta, zScore);
 	}
 	
-	public LinearModel(List<double[]> samples, int[] fa, int ta, boolean zScore, double lambda ) {
-		this( samples, null, fa, ta, zScore, -1.0);
-	}
-		
 	public LinearModel(List<double[]> samples, List<Set<double[]>> cluster,int[] fa, int ta, boolean zScore ) {
-		this( samples, cluster, fa, ta, zScore, -1.0);
-	}
-		
-	public LinearModel(List<double[]> samples, List<Set<double[]>> cluster, int[] fa, int ta, boolean zScore, double lambda ) {
 		this.samples = samples;
 		this.fa = fa;
 		this.ta = ta;
 		this.zScore = zScore;
-		this.lambda = lambda;
 		this.betas = new ArrayList<>();
 		
 		if( cluster == null ) {
@@ -53,9 +53,6 @@ public class LinearModel {
 		} else {
 			this.cluster = cluster;
 		}
-		
-		if( lambda > 0 && !zScore )
-			System.out.println("Warning: Ridge regression without zScore "+lambda);
 				
 		for( int j = 0; j < this.cluster.size(); j++ ) {
 			Set<double[]> c = this.cluster.get(j);
@@ -77,14 +74,19 @@ public class LinearModel {
 			} else 
 				X = new DoubleMatrix( LinearModel.getX( l, fa, true) );	
 					
+			// calculate beta
 			DoubleMatrix Y = new DoubleMatrix( LinearModel.getY( l, ta) );
 			DoubleMatrix Xt = X.transpose();
-			DoubleMatrix XtX = Xt.mmul(X);					
+			DoubleMatrix XtX = Xt.mmul(X);				
+			betas.add(Solve.solve(XtX, Xt.mmul(Y))); 	
 			
-			if( lambda > 0 ) { // ridge regression					
-				XtX.addi( DoubleMatrix.eye(XtX.columns).muli(lambda) );							
-			}
-			betas.add(Solve.solve(XtX, Xt.mmul(Y))); 
+			// calculate beta variance
+			Decompose.QRDecomposition<DoubleMatrix> qr = new Decompose().qr(X);
+						
+			/*int p = getX().getColumnDimension();
+	        RealMatrix Raug = qr.getR().getSubMatrix(0, p - 1 , 0, p - 1);
+	        RealMatrix Rinv = new LUDecomposition(Raug).getSolver().getInverse();
+	        return Rinv.multiply(Rinv.transpose());*/
 		}			
 	}
 			
@@ -178,5 +180,46 @@ public class LinearModel {
 	
 	public List<Set<double[]>> getCluster() {
 		return cluster;
+	}
+	
+	public static void main(String[] args) {
+		DataFrame df = DataUtils.readDataFrameFromCSV(new File("data/mtcars.csv"), new int[]{}, true);
+		for( int i = 0; i < df.names.size(); i++ )
+			System.out.println(i+": "+df.names.get(i));
+		
+		LinearModel lm = new LinearModel(df.samples, new int[]{3,5,9}, 0, false);
+		double[] beta = lm.getBeta(0);
+		double sigma = lm.getRSS()/(df.samples.size()-beta.length);
+		for( int i = 0; i < beta.length; i++ ) {
+			System.out.println(i);
+			System.out.println("estim: "+beta[i] );		        
+	
+			
+			/*Decompose.QRDecomposition<DoubleMatrix> qr = Decompose.qr(lm.betas.get(0));
+			DoubleMatrix r = qr.r;*/
+			
+			/*double[][] betaVariance = RealMatrix calculateBetaVariance() {
+			        int p = getX().getColumnDimension();
+			        RealMatrix Raug = qr.getR().getSubMatrix(0, p - 1 , 0, p - 1);
+			        RealMatrix Rinv = new LUDecomposition(Raug).getSolver().getInverse();
+			        return Rinv.multiply(Rinv.transpose());
+			    }
+			
+			
+			double sigma = RealVector residuals = calculateResiduals();
+	        return residuals.dotProduct(residuals) /
+	                (xMatrix.getRowDimension() - xMatrix.getColumnDimension());
+	        int length = betaVariance[0].length;
+	        double[] result = new double[length];
+	        for (int i = 0; i < length; i++) {
+	            result[i] = FastMath.sqrt(sigma * betaVariance[i][i]);
+	        }*/
+	        
+			/*OLSMultipleLinearRegression l = new OLSMultipleLinearRegression();
+			l.estimateRegressionParameters();
+			l.estimateRegressionParametersStandardErrors();*/
+			
+			QRDecomposition qr;
+		}
 	}
 }
