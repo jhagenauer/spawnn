@@ -8,7 +8,6 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -85,9 +84,9 @@ public class ChowClustering_Apply {
 		//Object[] param = new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.ResiSimple, 1.0, gDist, 7, PreCluster.Kmeans, 1700, 1, true };
 		//int nrCluster = 219;
 		
-		// AIC -70918.65187915557
-		Object[] param = new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.ResiSimple, 1.0, gDist, 8, PreCluster.Kmeans, 1700, 1, true };
-		int nrCluster = 191;
+		// AIC -70907.28748833395
+		Object[] param = new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.ResiSimple, 1.0, gDist, 8, PreCluster.Kmeans, 1500, 1, true };
+		int nrCluster = 178;
 				
 		Clustering.r.setSeed(0);
 
@@ -123,6 +122,7 @@ public class ChowClustering_Apply {
 		log.info("rss: " + lm.getRSS());
 		log.info("aicc: " + aic);
 		log.info("mse: "+mse);
+		log.info("wss: "+ClusterValidation.getWithinClusterSumOfSuqares(ct, gDist));
 		
 		Map<double[], Double> values = new HashMap<>();
 		for (int i = 0; i < sdf.samples.size(); i++)
@@ -228,22 +228,21 @@ public class ChowClustering_Apply {
 				polys.add( (Polygon)a.union(b) );
 			}
 			Geometry union = new GeometryFactory().createMultiPolygon(polys.toArray(new Polygon[]{}));
-							
-			List<double[]> li = new ArrayList<>(s);
-			List<Set<double[]>> c = new ArrayList<>();
-			c.add( new HashSet<>(li) );
-			
+						
 			List<Double> dl = new ArrayList<>();	
 			double[] beta = lm.getBeta(idx);
 			for( double d : beta )
 				dl.add(d);
 			
 			double[] se = lm.getBetaStdError(idx);
-			TDistribution td = new TDistribution(s.size()-beta.length);
-			for( int i = 0; i < beta.length; i++ ) {
-				double tValue = beta[i]/se[i];
-				dl.add( 2*(td.cumulativeProbability(-Math.abs(tValue) ) ) );
-			}
+			if( s.size() > beta.length ) {
+				TDistribution td = new TDistribution(s.size()-beta.length);
+				for( int i = 0; i < beta.length; i++ ) {
+					double tValue = beta[i]/se[i];
+					dl.add( 2*(td.cumulativeProbability(-Math.abs(tValue) ) ) );
+				}
+			} else
+				dl.add( Double.NaN );
 			
 			dl.add( (double)s.size() );
 			dl.add( (double)idx );
@@ -256,6 +255,8 @@ public class ChowClustering_Apply {
 
 			dissSamples.add(da);
 			dissGeoms.add(union);
+			
+			DataUtils.writeCSV("output/"+idx+".csv", new ArrayList<>(s), sdf.names.toArray(new String[]{}));
 		}
 		DataUtils.writeShape( dissSamples, dissGeoms, dissNames.toArray(new String[]{}), sdf.crs, "output/" + method + "_diss.shp" );	
 		Drawer.geoDrawValues(dissGeoms,dissSamples,fa.length+3,sdf.crs,ColorBrewer.Set3,ColorClass.Equal,"output/" + method + "_cluster.png");

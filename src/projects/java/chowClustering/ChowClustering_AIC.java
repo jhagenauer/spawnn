@@ -71,13 +71,11 @@ public class ChowClustering_AIC {
 		}
 		
 		List<Object[]> params = new ArrayList<>();	
-		for( int i : new int[]{ 1700, 1750, 1800, 1850, 1900 } ) 	
-			for( int l : new int[]{ 1/*,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16*/ } ) 
-				for( boolean b : new boolean[]{ true /*, false*/ } )	{
-					params.add(new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.ResiSimple, 1.0, gDist, fa.length+1+l, PreCluster.Kmeans, i,  1, b});
-					//params.add(new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.Chow, 1.0, gDist, fa.length+1+l, PreCluster.Kmeans, i,  1, b});
-					//params.add(new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.Wald, 1.0, gDist, fa.length+1+l, PreCluster.Kmeans, i,  1, b});
-					
+		for( int i : new int[]{ 600, 700, 800, 900, 1000, 1100, 1200, 1300, 1400, 1400, 1500, 1600, 1700, 1800, 1900 } ) 	
+			for( int l : new int[]{ 8 } ) 
+				for( boolean b : new boolean[]{ true } )	{
+					params.add(new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.ResiSimple, 1.0, gDist, l, PreCluster.Kmeans, i,  1, b});
+					params.add(new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.Wald, 1.0, gDist, l, PreCluster.Kmeans, i,  1, b});	
 				}
 		Collections.shuffle(params);
 				
@@ -133,7 +131,7 @@ public class ChowClustering_AIC {
 						synchronized(this) {	
 							
 							if( aic < best ) {
-								log.info("best "+aic+":"+method+","+nrCluster);
+								log.info("best "+aic+":"+method+","+nrCluster+","+mse+","+ClusterValidation.getWithinClusterSumOfSuqares(ct, gDist));
 								best = aic;
 							}
 							
