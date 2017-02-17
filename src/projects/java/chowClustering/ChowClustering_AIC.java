@@ -38,7 +38,6 @@ public class ChowClustering_AIC {
 
 	public static int CLUST = 0, STRUCT_TEST = 1, P_VALUE = 2, DIST = 3, MIN_OBS = 4, PRECLUST = 5, PRECLUST_OPT = 6, PRECLUST_OPT2 = 7, PRECLUST_OPT3 = 8;
 
-
 	public static double best = Double.MAX_VALUE;		
 	
 	public static void main(String[] args) {
@@ -71,11 +70,11 @@ public class ChowClustering_AIC {
 		}
 		
 		List<Object[]> params = new ArrayList<>();	
-		for( int i : new int[]{ 600, 700, 800, 900, 1000, 1100, 1200, 1300, 1400, 1400, 1500, 1600, 1700, 1800, 1900 } ) 	
-			for( int l : new int[]{ 8 } ) 
+		for( int i : new int[]{ 1400, 1450, 1500, 1550, 1600, 1650, 1700, 1750, 1800, 1850, 1900, 1950, 2000 } ) 	
+			for( int l : new int[]{ 13 } ) 
 				for( boolean b : new boolean[]{ true } )	{
 					params.add(new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.ResiSimple, 1.0, gDist, l, PreCluster.Kmeans, i,  1, b});
-					params.add(new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.Wald, 1.0, gDist, l, PreCluster.Kmeans, i,  1, b});	
+					//params.add(new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.Wald, 1.0, gDist, l, PreCluster.Kmeans, i,  1, b});	
 				}
 		Collections.shuffle(params);
 				

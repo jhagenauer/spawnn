@@ -1,6 +1,7 @@
 package chowClustering;
 
 import java.io.File;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -42,9 +43,6 @@ public class ChowClustering_Apply {
 
 	private static Logger log = Logger.getLogger(ChowClustering_Apply.class);
 
-	public static int CLUST = 0, STRUCT_TEST = 1, P_VALUE = 2, DIST = 3, MIN_OBS = 4, PRECLUST = 5, PRECLUST_OPT = 6,
-			PRECLUST_OPT2 = 7, PRECLUST_OPT3 = 8;
-
 	public static void main(String[] args) {
 
 		int threads = Math.max(1, Runtime.getRuntime().availableProcessors());
@@ -77,28 +75,52 @@ public class ChowClustering_Apply {
 			e1.printStackTrace();
 		}
 
-		// GWR, fixed, gaussian AIC -64091
-		// GWR, adapt, gaussian AIC -63857.01
+		// GWR, fixed, gaussian AIC -64091, moran: 0.048153***, 2.874177***
+		// GWR, adapt, gaussian AIC -63857.01, moran: 0.033003***, 1.389064***
 		
-		// AIC -73175.45122826115, moran: -0.011300268866022126
-		//Object[] param = new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.ResiSimple, 1.0, gDist, 7, PreCluster.Kmeans, 1700, 1, true };
-		//int nrCluster = 219;
+		// AIC -73175.45122826115, moran: -0.011300268866022126, 12.914021672937068***
+		Object[] param = new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.ResiSimple, 1.0, gDist, 7, PreCluster.Kmeans, 1700, 1, true };
+		int nrCluster = 219;
 		
-		// AIC -70907.28748833395
-		Object[] param = new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.ResiSimple, 1.0, gDist, 8, PreCluster.Kmeans, 1500, 1, true };
-		int nrCluster = 178;
+		// AIC -70907.28748833395, moran: 7.778792774007085E-4
+		//Object[] param = new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.ResiSimple, 1.0, gDist, 8, PreCluster.Kmeans, 1500, 1, true };
+		//int nrCluster = 178;
+				
+		// AIC -68539.36737505336, moran: -2.2782177166454528E-5
+		//Object[] param = new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.ResiSimple, 1.0, gDist, 12, PreCluster.Kmeans, 1700, 1, true };
+		//int nrCluster = 129;
+		
+		// AIC -68052.24896884535, moran: 0.006397546518388429, 10.14983044066457***
+		//Object[] param = new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.ResiSimple, 1.0, gDist, 13, PreCluster.Kmeans, 1700, 1, true };
+		//int nrCluster = 124;
+		
+		// AIC -67740.42510027868, moran: 0.01761054688700368***, 10.14983044066457***
+		//Object[] param = new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.ResiSimple, 1.0, gDist, 14, PreCluster.Kmeans, 1700, 1, true };
+		//int nrCluster = 112;
+		
+		// AIC -66692.73707334675, moran: 0.030794825650655198***, 4.044384223505376
+		//Object[] param = new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.ResiSimple, 1.0, gDist, 15, PreCluster.Kmeans, 1800, 1, true };
+		//int nrCluster = 101;
+		
+		// AIC -66423.92991131304, moran: 0.03664483559323947***, 1.4365943912903678
+		//Object[] param = new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.ResiSimple, 1.0, gDist, 16, PreCluster.Kmeans, 1650, 1, true };
+		//int nrCluster = 95;
+				
+		// AIC -65728.19120224891, moran: 0.05061553040500337***, 1.4365943912903678
+		//Object[] param = new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.ResiSimple, 1.0, gDist, 20, PreCluster.Kmeans, 1400, 1, true };
+		//int nrCluster = 81;
 				
 		Clustering.r.setSeed(0);
 
 		String method = Arrays.toString(param);
-		final double pValue = (double) param[P_VALUE];
+		final double pValue = (double) param[ChowClustering.P_VALUE];
 
 		List<TreeNode> bestCurLayer = null;
 		double bestWss = Double.POSITIVE_INFINITY;
-		Clustering.minMode = (boolean) param[PRECLUST_OPT3];
-		for (int i = 0; i < (int) param[PRECLUST_OPT2]; i++) {
+		Clustering.minMode = (boolean) param[ChowClustering_AIC.PRECLUST_OPT3];
+		for (int i = 0; i < (int) param[ChowClustering_AIC.PRECLUST_OPT2]; i++) {
 
-			List<TreeNode> curLayer = ChowClustering.getInitCluster(sdf.samples, cm, (PreCluster) param[PRECLUST], (int) param[PRECLUST_OPT], gDist, (int) param[MIN_OBS], threads);
+			List<TreeNode> curLayer = ChowClustering.getInitCluster(sdf.samples, cm, (PreCluster) param[ChowClustering_AIC.PRECLUST], (int) param[ChowClustering_AIC.PRECLUST_OPT], gDist, (int) param[ChowClustering_AIC.MIN_OBS], threads);
 			curLayer = Clustering.cutTree(curLayer, 1);
 			List<Set<double[]>> cluster = Clustering.treeToCluster(curLayer);
 			double wss = ClusterValidation.getWithinClusterSumOfSuqares(cluster, gDist);
@@ -110,7 +132,7 @@ public class ChowClustering_Apply {
 		}
 
 		Map<TreeNode, Set<TreeNode>> ncm = ChowClustering.getCMforCurLayer(bestCurLayer, cm);
-		List<TreeNode> tree = ChowClustering.getFunctionalClusterinTree(bestCurLayer, ncm, fa, ta, (HierarchicalClusteringType) param[CLUST], (ChowClustering.StructChangeTestMode) param[STRUCT_TEST],	pValue, threads);
+		List<TreeNode> tree = ChowClustering.getFunctionalClusterinTree(bestCurLayer, ncm, fa, ta, (HierarchicalClusteringType) param[ChowClustering_AIC.CLUST], (ChowClustering.StructChangeTestMode) param[ChowClustering_AIC.STRUCT_TEST],	pValue, threads);
 
 		List<Set<double[]>> ct = Clustering.treeToCluster(Clustering.cutTree(tree, nrCluster));
 		LinearModel lm = new LinearModel(sdf.samples, ct, fa, ta, false);
@@ -128,21 +150,7 @@ public class ChowClustering_Apply {
 		for (int i = 0; i < sdf.samples.size(); i++)
 			values.put(sdf.samples.get(i), lm.getResiduals().get(i));
 		log.info("moran: " + Arrays.toString( GeoUtils.getMoransIStatistics(wcm, values)));
-		
-		{
-			SummaryStatistics ss = new SummaryStatistics();
-			for( int i = 0; i < lm.cluster.size(); i++ ) 
-				ss.addValue(lm.getBeta(i)[0]);
-			log.info("famH span: "+(ss.getMax()-ss.getMin()));
-		}
-		
-		{
-			SummaryStatistics ss = new SummaryStatistics();
-			for( int i = 0; i < lm.cluster.size(); i++ ) 
-				ss.addValue(lm.getBeta(i)[lm.getBeta(i).length-1]);
-			log.info("Intrcpt span: "+( ss.getMax() - ss.getMin() ) );
-		}
-		
+				
 		List<Double> predictions = lm.getPredictions(sdf.samples, faPred);
 		List<double[]> l = new ArrayList<double[]>();
 		for (double[] d : sdf.samples) {				
@@ -165,6 +173,9 @@ public class ChowClustering_Apply {
 			}				
 			l.add(ns);
 		}
+		
+		double hiFam = Double.NEGATIVE_INFINITY;
+		double pHiFam = Double.NaN;
 		
 		String[] names = new String[3 + fa.length + 1];
 		names[0] = "residual";
@@ -239,7 +250,13 @@ public class ChowClustering_Apply {
 				TDistribution td = new TDistribution(s.size()-beta.length);
 				for( int i = 0; i < beta.length; i++ ) {
 					double tValue = beta[i]/se[i];
-					dl.add( 2*(td.cumulativeProbability(-Math.abs(tValue) ) ) );
+					double pv = 2*(td.cumulativeProbability(-Math.abs(tValue) ) );
+					dl.add( pv );
+					
+					if( i == 0 && beta[i] > hiFam ) {
+						hiFam = beta[0];
+						pHiFam = pv;
+					}
 				}
 			} else
 				dl.add( Double.NaN );
@@ -256,8 +273,9 @@ public class ChowClustering_Apply {
 			dissSamples.add(da);
 			dissGeoms.add(union);
 			
-			DataUtils.writeCSV("output/"+idx+".csv", new ArrayList<>(s), sdf.names.toArray(new String[]{}));
+			//DataUtils.writeCSV("output/"+idx+".csv", new ArrayList<>(s), sdf.names.toArray(new String[]{}));
 		}
+		log.debug(hiFam+","+pHiFam);
 		DataUtils.writeShape( dissSamples, dissGeoms, dissNames.toArray(new String[]{}), sdf.crs, "output/" + method + "_diss.shp" );	
 		Drawer.geoDrawValues(dissGeoms,dissSamples,fa.length+3,sdf.crs,ColorBrewer.Set3,ColorClass.Equal,"output/" + method + "_cluster.png");
 	}
