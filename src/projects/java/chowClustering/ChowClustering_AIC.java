@@ -69,11 +69,13 @@ public class ChowClustering_AIC {
 			e1.printStackTrace();
 		}
 		
+		//TODO chow, ward, resi mehrfach wiederholung
+		
 		List<Object[]> params = new ArrayList<>();	
-		for( int i : new int[]{ 1400, 1450, 1500, 1550, 1600, 1650, 1700, 1750, 1800, 1850, 1900, 1950, 2000 } ) 	
-			for( int l : new int[]{ 13 } ) 
+		for( int i = 800; i <= 2000; i+=50 ) 	
+			for( int l : new int[]{ 8 } ) 
 				for( boolean b : new boolean[]{ true } )	{
-					params.add(new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.ResiSimple, 1.0, gDist, l, PreCluster.Kmeans, i,  1, b});
+					params.add(new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.Chow, 1.0, gDist, l, PreCluster.Kmeans, i,  1, b});
 					//params.add(new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.Wald, 1.0, gDist, l, PreCluster.Kmeans, i,  1, b});	
 				}
 		Collections.shuffle(params);

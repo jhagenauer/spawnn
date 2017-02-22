@@ -1,28 +1,26 @@
 package chowClustering;
 
 import java.io.File;
-
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import org.apache.commons.math3.distribution.TDistribution;
-import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 import org.apache.log4j.Logger;
 
 import com.vividsolutions.jts.geom.Geometry;
+import com.vividsolutions.jts.geom.GeometryCollection;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.MultiPoint;
 import com.vividsolutions.jts.geom.MultiPolygon;
 import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.geom.Polygon;
+import com.vividsolutions.jts.geom.PrecisionModel;
+import com.vividsolutions.jts.precision.EnhancedPrecisionOp;
 
 import chowClustering.ChowClustering.PreCluster;
 import nnet.SupervisedUtils;
@@ -66,52 +64,19 @@ public class ChowClustering_Apply {
 		Map<double[], Map<double[], Double>> wcm = GeoUtils.contiguityMapToDistanceMap( cm ); 
 		GeoUtils.rowNormalizeMatrix(wcm);
 
-		Path file = Paths.get("output/chow_aic.csv");
-		try {
-			Files.createDirectories(file.getParent()); // create output dir
-			Files.deleteIfExists(file);
-			Files.createFile(file);
-		} catch (IOException e1) {
-			e1.printStackTrace();
-		}
-
+		Map<Object[],Integer> params = new HashMap<>();
+		
 		// GWR, fixed, gaussian AIC -64091, moran: 0.048153***, 2.874177***
 		// GWR, adapt, gaussian AIC -63857.01, moran: 0.033003***, 1.389064***
 		
-		// AIC -73175.45122826115, moran: -0.011300268866022126, 12.914021672937068***
-		Object[] param = new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.ResiSimple, 1.0, gDist, 7, PreCluster.Kmeans, 1700, 1, true };
-		int nrCluster = 219;
-		
-		// AIC -70907.28748833395, moran: 7.778792774007085E-4
-		//Object[] param = new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.ResiSimple, 1.0, gDist, 8, PreCluster.Kmeans, 1500, 1, true };
-		//int nrCluster = 178;
+		// AIC -70907.28748833395, moran: 7.778792774007085E-4, 10.14983044050689***
+		params.put( new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.ResiSimple, 1.0, gDist, 8, PreCluster.Kmeans, 1500, 1, true }, 178 );
 				
-		// AIC -68539.36737505336, moran: -2.2782177166454528E-5
-		//Object[] param = new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.ResiSimple, 1.0, gDist, 12, PreCluster.Kmeans, 1700, 1, true };
-		//int nrCluster = 129;
-		
-		// AIC -68052.24896884535, moran: 0.006397546518388429, 10.14983044066457***
-		//Object[] param = new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.ResiSimple, 1.0, gDist, 13, PreCluster.Kmeans, 1700, 1, true };
-		//int nrCluster = 124;
-		
-		// AIC -67740.42510027868, moran: 0.01761054688700368***, 10.14983044066457***
-		//Object[] param = new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.ResiSimple, 1.0, gDist, 14, PreCluster.Kmeans, 1700, 1, true };
-		//int nrCluster = 112;
-		
-		// AIC -66692.73707334675, moran: 0.030794825650655198***, 4.044384223505376
-		//Object[] param = new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.ResiSimple, 1.0, gDist, 15, PreCluster.Kmeans, 1800, 1, true };
-		//int nrCluster = 101;
-		
-		// AIC -66423.92991131304, moran: 0.03664483559323947***, 1.4365943912903678
-		//Object[] param = new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.ResiSimple, 1.0, gDist, 16, PreCluster.Kmeans, 1650, 1, true };
-		//int nrCluster = 95;
-				
-		// AIC -65728.19120224891, moran: 0.05061553040500337***, 1.4365943912903678
-		//Object[] param = new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.ResiSimple, 1.0, gDist, 20, PreCluster.Kmeans, 1400, 1, true };
-		//int nrCluster = 81;
-				
+		for( Entry<Object[],Integer> e : params.entrySet() ) {
 		Clustering.r.setSeed(0);
-
+			
+		Object[] param = e.getKey();	
+		int nrCluster = e.getValue();
 		String method = Arrays.toString(param);
 		final double pValue = (double) param[ChowClustering.P_VALUE];
 
@@ -204,7 +169,8 @@ public class ChowClustering_Apply {
 		List<Geometry> dissGeoms = new ArrayList<>();
 		for (Set<double[]> s : lm.cluster) {
 			int idx = lm.cluster.indexOf(s);
-										
+					
+			// multipolys to list of polys
 			List<Polygon> polys = new ArrayList<>();
 			for (double[] d : s) {
 				int idx2 = sdf.samples.indexOf(d);
@@ -214,7 +180,7 @@ public class ChowClustering_Apply {
 					polys.add( (Polygon)mp.getGeometryN(i) );
 			}
 			
-			while( true ) {
+		while( true ) {
 				int bestI = -1, bestJ = -1;
 				for( int i = 0; i < polys.size() - 1 && bestI < 0; i++ ) {
 					for( int j = i+1; j < polys.size(); j++ ) {
@@ -278,5 +244,6 @@ public class ChowClustering_Apply {
 		log.debug(hiFam+","+pHiFam);
 		DataUtils.writeShape( dissSamples, dissGeoms, dissNames.toArray(new String[]{}), sdf.crs, "output/" + method + "_diss.shp" );	
 		Drawer.geoDrawValues(dissGeoms,dissSamples,fa.length+3,sdf.crs,ColorBrewer.Set3,ColorClass.Equal,"output/" + method + "_cluster.png");
+	}
 	}
 }
