@@ -72,10 +72,10 @@ public class ChowClustering_AIC {
 		//TODO chow, ward, resi mehrfach wiederholung
 		
 		List<Object[]> params = new ArrayList<>();	
-		for( int i = 800; i <= 2000; i+=50 ) 	
+		for( int i = 1500; i <= 1500; i+=50 ) 	
 			for( int l : new int[]{ 8 } ) 
 				for( boolean b : new boolean[]{ true } )	{
-					params.add(new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.Chow, 1.0, gDist, l, PreCluster.Kmeans, i,  1, b});
+					params.add(new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.ResiSimple, 1.0, gDist, l, PreCluster.Kmeans, i,  100, b});
 					//params.add(new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.Wald, 1.0, gDist, l, PreCluster.Kmeans, i,  1, b});	
 				}
 		Collections.shuffle(params);
@@ -112,6 +112,7 @@ public class ChowClustering_AIC {
 				if( bestCurLayer == null || wss < bestWss ) {
 					bestCurLayer = curLayer;
 					bestWss = wss;
+					log.debug(i+" "+wss);
 				}
 			}
 			
