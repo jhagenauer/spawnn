@@ -768,7 +768,7 @@ public class ChowClustering {
 		if ( pc == PreCluster.Kmeans ) {
 			
 			// k-means
-			List<Set<double[]>> l = new ArrayList<>(Clustering.kMeans(samples, pcOpt, dist ).values());
+			List<Set<double[]>> l = new ArrayList<>(Clustering.kMeans(samples, pcOpt, dist, 0.000001 ).values());
 			init = new ArrayList<>();
 			for( Set<double[]> s : l )
 				if( s.isEmpty() )

@@ -70,11 +70,14 @@ public class ChowClustering_Apply {
 		// GWR, adapt, gaussian AIC -63857.01, moran: 0.033003***, 1.389064***
 		
 		// AIC -70907.28748833395, moran: 7.778792774007085E-4, 10.14983044050689***
-		//params.put( new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.ResiSimple, 1.0, gDist, 8, PreCluster.Kmeans, 1500, 1, true }, 177 );
+		params.put( new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.ResiSimple, 1.0, gDist, 8, PreCluster.Kmeans, 1500, 1, true }, 177 );
 		
 		// AIC -71186.11121305655, moran: -0.012059661354476125, 15.908235171572935
 		params.put( new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.ResiSimple, 1.0, gDist, 8, PreCluster.Kmeans, 1500, 10, true }, 193 );
-				
+			
+		// AIC -71136.61923057627, moran: 0.007652237221659619, 29.186022915907913***
+		params.put( new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.ResiSimple, 1.0, gDist, 8, PreCluster.Kmeans, 1200, 10, true }, 175 );
+								
 		// AIC -68679.04349921944, moran: 6.819968752184315E-4, 10.14983044066441***
 		params.put( new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.Chow, 1.0, gDist, 8, PreCluster.Kmeans, 1500, 1, true }, 194 );
 		

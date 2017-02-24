@@ -108,6 +108,10 @@ public class Clustering {
 	public static Random r = new Random();
 	
 	public static Map<double[], Set<double[]>> kMeans(List<double[]> samples, int num, Dist<double[]> dist ) {
+		return kMeans(samples,num,dist,0.00001);
+	}
+	
+	public static Map<double[], Set<double[]>> kMeans(List<double[]> samples, int num, Dist<double[]> dist, double delta ) {
 		int length = samples.iterator().next().length;
 			
 		Map<double[], Set<double[]>> clusters = null;
@@ -123,9 +127,8 @@ public class Clustering {
 			centroids.add(Arrays.copyOf(d, d.length));
 		}
 
-		int j = 0;
-		boolean changed;
-		do {
+		long k = 0;
+		while( true) {
 			clusters = new HashMap<double[], Set<double[]>>();
 			for (double[] v : centroids)
 				// init cluster
@@ -144,7 +147,7 @@ public class Clustering {
 				clusters.get(nearest).add(s);
 			}
 
-			changed = false;
+			boolean changed = false;
 			for (double[] c : clusters.keySet()) {
 				Collection<double[]> s = clusters.get(c);
 
@@ -160,17 +163,16 @@ public class Clustering {
 					centroid[i] /= s.size();
 
 				// update centroids
-				for (int i = 0; i < c.length; i++) {
-					if (c[i] != centroid[i]) {
-						centroids.remove(c);
-						centroids.add(centroid);
-						changed = true;
-					}
-				}
+				centroids.remove(c);
+				centroids.add(centroid);
+				
+				if( !changed && dist.dist(c, centroid) > delta )
+					changed = true;				
 			}
-
-			j++;
-		} while (changed && j < 1000);
+			k++;			
+			if( !changed )
+				break;
+		} 
 		return clusters;
 	}
 
@@ -807,7 +809,14 @@ public class Clustering {
 		
 		{
 			long time = System.currentTimeMillis();
-			List<TreeNode> tree = Clustering.getHierarchicalClusterTree(cm, dist, HierarchicalClusteringType.ward);
+			List<Set<double[]>> ct = new ArrayList<>( Clustering.kMeans(samples, nrCluster, dist, 0.0000001 ).values() );
+			log.debug("Within sum of squares: " + DataUtils.getWithinSumOfSquares(ct, dist)+", took: "+(System.currentTimeMillis()-time)/1000.0);		
+			Drawer.geoDrawCluster(ct, samples, geoms, "output/kmeans_clustering.png", true);
+		}
+		
+		{
+			long time = System.currentTimeMillis();
+			List<TreeNode> tree = Clustering.getHierarchicalClusterTree(samples, dist, HierarchicalClusteringType.ward);
 			List<Set<double[]>> ct = Clustering.treeToCluster( Clustering.cutTree( tree, nrCluster) );
 			log.debug("Within sum of squares: " + DataUtils.getWithinSumOfSquares(ct, dist)+", took: "+(System.currentTimeMillis()-time)/1000.0);		
 			Drawer.geoDrawCluster(ct, samples, geoms, "output/ward_clustering.png", true);
@@ -815,10 +824,19 @@ public class Clustering {
 		
 		{
 			long time = System.currentTimeMillis();
+			List<TreeNode> tree = Clustering.getHierarchicalClusterTree(cm, dist, HierarchicalClusteringType.ward);
+			List<Set<double[]>> ct = Clustering.treeToCluster( Clustering.cutTree( tree, nrCluster) );
+			log.debug("Within sum of squares: " + DataUtils.getWithinSumOfSquares(ct, dist)+", took: "+(System.currentTimeMillis()-time)/1000.0);		
+			Drawer.geoDrawCluster(ct, samples, geoms, "output/ward_clustering_cm.png", true);
+		}
+		System.exit(1);
+		
+		{
+			long time = System.currentTimeMillis();
 			List<TreeNode> tree = Clustering.getHierarchicalClusterTree(cm, dist, HierarchicalClusteringType.single_linkage);
 			List<Set<double[]>> ct = Clustering.treeToCluster( Clustering.cutTree( tree, nrCluster) );
 			log.debug("Within sum of squares: " + DataUtils.getWithinSumOfSquares(ct, dist)+", took: "+(System.currentTimeMillis()-time)/1000.0);		
-			Drawer.geoDrawCluster(ct, samples, geoms, "output/ward_clustering.png", true);
+			Drawer.geoDrawCluster(ct, samples, geoms, "output/ward_clustering_cm.png", true);
 		}
 		
 		{
@@ -826,7 +844,7 @@ public class Clustering {
 			List<TreeNode> tree = Clustering.getHierarchicalClusterTree(cm, dist, HierarchicalClusteringType.average_linkage);
 			List<Set<double[]>> ct = Clustering.treeToCluster( Clustering.cutTree( tree, nrCluster) );
 			log.debug("Within sum of squares: " + DataUtils.getWithinSumOfSquares(ct, dist)+", took: "+(System.currentTimeMillis()-time)/1000.0);		
-			Drawer.geoDrawCluster(ct, samples, geoms, "output/ward_clustering.png", true);
+			Drawer.geoDrawCluster(ct, samples, geoms, "output/ward_clustering_cm.png", true);
 		}
 		
 		{
@@ -834,15 +852,7 @@ public class Clustering {
 			List<TreeNode> tree = Clustering.getHierarchicalClusterTree(cm, dist, HierarchicalClusteringType.complete_linkage);
 			List<Set<double[]>> ct = Clustering.treeToCluster( Clustering.cutTree( tree, nrCluster) );
 			log.debug("Within sum of squares: " + DataUtils.getWithinSumOfSquares(ct, dist)+", took: "+(System.currentTimeMillis()-time)/1000.0);		
-			Drawer.geoDrawCluster(ct, samples, geoms, "output/ward_clustering.png", true);
+			Drawer.geoDrawCluster(ct, samples, geoms, "output/ward_clustering_cm.png", true);
 		}
-				
-		{
-			long time = System.currentTimeMillis();
-			List<Set<double[]>> ct = new ArrayList<>(Clustering.kMeans(samples, nrCluster, dist).values() );
-			log.debug("Within sum of squares: " + DataUtils.getWithinSumOfSquares(ct, dist)+", took: "+(System.currentTimeMillis()-time)/1000.0);		
-			Drawer.geoDrawCluster(ct, samples, geoms, "output/kmeans_clustering.png", true);
-		}
-		
 	}
 }
