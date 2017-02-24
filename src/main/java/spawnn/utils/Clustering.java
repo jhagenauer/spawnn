@@ -127,7 +127,6 @@ public class Clustering {
 			centroids.add(Arrays.copyOf(d, d.length));
 		}
 
-		long k = 0;
 		while( true) {
 			clusters = new HashMap<double[], Set<double[]>>();
 			for (double[] v : centroids)
@@ -168,8 +167,7 @@ public class Clustering {
 				
 				if( !changed && dist.dist(c, centroid) > delta )
 					changed = true;				
-			}
-			k++;			
+			}			
 			if( !changed )
 				break;
 		} 
@@ -180,7 +178,7 @@ public class Clustering {
 		single_linkage, complete_linkage, average_linkage, ward
 	};
 		
-	public static List<TreeNode> cutTree( Collection <TreeNode> tree, int numCluster ) {
+	public static List<TreeNode> cutTree( Collection <TreeNode> roots, int numCluster ) {
 		Comparator<TreeNode> comp = new Comparator<TreeNode>() {
 			@Override
 			public int compare(TreeNode o1, TreeNode o2) {
@@ -189,7 +187,7 @@ public class Clustering {
 		};
 		
 		PriorityQueue<TreeNode> pq = new PriorityQueue<TreeNode>(1, comp);
-		pq.addAll(getRoots(tree));
+		pq.addAll( roots );
 		while( pq.size() < numCluster ) { 
 			TreeNode tn = pq.poll();
 			if( tn == null )
@@ -201,38 +199,38 @@ public class Clustering {
 		}
 		return new ArrayList<>(pq);
 	}
-	
-	public static Set<TreeNode> getRoots( Collection<TreeNode> tree ) {
-		Set<TreeNode> roots = new HashSet<>(tree);
-		for( TreeNode a : tree )
-			for( TreeNode b : tree )
-				if( b.children.contains(a) ) // a is children of b and therefore no root
-						roots.remove(a);
-		return roots;
+		
+	public static Set<TreeNode> getSubtree( TreeNode node ) {
+		Set<TreeNode> s = new HashSet<>();
+		s.add(node);
+		for( TreeNode child : node.children ) {
+			if( child == null )
+				continue;
+			s.addAll( getSubtree(child) );
+		}
+		return s;
 	}
 	
-	public static List<Set<double[]>> treeToCluster(Collection<TreeNode> tree) {
+	public static Set<TreeNode> getLeafLayer( TreeNode node ) {
+		Set<TreeNode> leafLayer = new HashSet<>();
+		for( TreeNode n : getSubtree(node) )
+			if( n.age == 0 )
+				leafLayer.add(n);
+		return leafLayer;
+	}
+	
+	public static List<Set<double[]>> treeToCluster(Collection<TreeNode> roots) {
 		List<Set<double[]>> clusters = new ArrayList<Set<double[]>>();
-		for( TreeNode t : tree )
-			clusters.add( getContents(t) );		
+		for( TreeNode r : roots ) 
+			clusters.add( getContents(r) );
 		return clusters;
 	}
 	
-	// Gets contents of leafs for node
+	// Gets contents of a node (contents of leaf nodes with node of tree with node as root node)
 	public static Set<double[]> getContents( TreeNode node ) {
 		Set<double[]> contents = new HashSet<>();
-		List<TreeNode> l = new ArrayList<>();
-		l.add(node);
-		
-		while( !l.isEmpty() ) {
-			TreeNode cur = l.remove(0);			
-			for( TreeNode child : cur.children )
-				if( child != null )
-					l.add(child);
-			
-			if( cur.age == 0 ) // leaf-layer
-				contents.addAll(cur.contents);
-		}
+		for( TreeNode n : getLeafLayer(node) )
+			contents.addAll(n.contents);
 		return contents;
 	}
 	
@@ -426,7 +424,7 @@ public class Clustering {
 		return getHierarchicalClusterTree(leafLayer, cm, dist, type, Integer.MAX_VALUE, Math.max(1 , Runtime.getRuntime().availableProcessors() -1 ) );
 	}
 	
-	public static boolean minMode = true;
+	//@return roots of one or more trees
 	public static List<TreeNode> getHierarchicalClusterTree( List<TreeNode> leafLayer, final Map<TreeNode,Set<TreeNode>> cm, Dist<double[]> dist, HierarchicalClusteringType type, int minSize, int threads ) {
 						
 		class FlatSet<T> extends HashSet<T> {
@@ -477,17 +475,8 @@ public class Clustering {
 				
 		while (curLayer.size() > 1 ) {
 			
-			// stop when all cluster have at least size minSize
-			if( !minMode ) {
-				boolean b = true;
-				for( Set<double[]> s : curLayer.values() )
-					if( s.size() < minSize )
-						b = false;
-				if( b ) {
-					//log.debug("break 1, curLayer: " + curLayer.size());
-					return tree;
-				}
-			}
+			if( curLayer.size() % 1000 == 0 )
+				log.debug(curLayer.size());
 						
 			List<TreeNode> cl = new ArrayList<>(curLayer.keySet());
 						
@@ -518,7 +507,7 @@ public class Clustering {
 								if( nbs != null && !nbs.contains(l2) ) // disjoint
 									continue;
 								
-								if( minMode && curLayer.get(l1).size() >= minSize && curLayer.get(l2).size() >= minSize )
+								if( curLayer.get(l1).size() >= minSize && curLayer.get(l2).size() >= minSize )
 									continue;
 																							
 								double s = Double.NaN;
@@ -600,11 +589,9 @@ public class Clustering {
 				e.printStackTrace();
 			}
 
-			if (c1 == null && c2 == null) { 
-				//log.debug("break 2, curLayer: " + curLayer.size());
-				return tree;
-			}
-									
+			if (c1 == null && c2 == null) 
+				return new ArrayList<TreeNode>( curLayer.keySet() );
+												
 			// create merge node, remove c1,c2		
 			Set<double[]> union = new FlatSet<double[]>(); 
 			union.addAll(curLayer.remove(c1));
@@ -642,7 +629,7 @@ public class Clustering {
 				}
 			}
 		}
-		return tree;
+		return new ArrayList<>(curLayer.keySet());
 	}
 	
 	public static List<Set<double[]>> skater(Map<double[], Set<double[]>> mst, int numCuts, Dist<double[]> dist, int minClusterSize) {
@@ -803,7 +790,7 @@ public class Clustering {
 		List<double[]> samples = DataUtils.readSamplesFromShapeFile(new File("data/redcap/Election/election2004.shp"), new int[] {}, true);
 		int[] fa = new int[] { 7 };
 		DataUtils.transform(samples, fa, Transform.zScore);
-		final Map<double[], Set<double[]>> cm = RegionUtils.readContiguitiyMap(samples, "data/redcap/Election/election2004_Queen.ctg");
+		final Map<double[], Set<double[]>> cm = GeoUtils.getContiguityMap(samples, geoms, false, false);
 		final Dist<double[]> dist = new EuclideanDist(fa);
 		int nrCluster = 100;
 		
@@ -818,6 +805,10 @@ public class Clustering {
 			long time = System.currentTimeMillis();
 			List<TreeNode> tree = Clustering.getHierarchicalClusterTree(samples, dist, HierarchicalClusteringType.ward);
 			List<Set<double[]>> ct = Clustering.treeToCluster( Clustering.cutTree( tree, nrCluster) );
+			int i = 0;
+			for( Set<double[]> s : ct )
+				i += s.size();
+			log.debug(samples.size()+":::"+i);
 			log.debug("Within sum of squares: " + DataUtils.getWithinSumOfSquares(ct, dist)+", took: "+(System.currentTimeMillis()-time)/1000.0);		
 			Drawer.geoDrawCluster(ct, samples, geoms, "output/ward_clustering.png", true);
 		}
@@ -829,7 +820,6 @@ public class Clustering {
 			log.debug("Within sum of squares: " + DataUtils.getWithinSumOfSquares(ct, dist)+", took: "+(System.currentTimeMillis()-time)/1000.0);		
 			Drawer.geoDrawCluster(ct, samples, geoms, "output/ward_clustering_cm.png", true);
 		}
-		System.exit(1);
 		
 		{
 			long time = System.currentTimeMillis();

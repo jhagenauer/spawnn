@@ -73,7 +73,7 @@ public class ChowClustering {
 	};
 	
 	enum PreCluster {
-		Kmeans, KmeansMinObs, Ward
+		Kmeans, Ward, Ward2
 	}
 	
 	public static int CLUST = 0, STRUCT_TEST = 1, P_VALUE = 2, DIST = 3, MIN_OBS = 4, PRECLUST = 5, PRECLUST_OPT = 6, RUNS = 7;
@@ -150,7 +150,7 @@ public class ChowClustering {
 				double pValue = (double)param[P_VALUE];
 				List<TreeNode> tree = getFunctionalClusterinTree(curLayer, ncm, fa, ta, (HierarchicalClusteringType) param[CLUST], (StructChangeTestMode) param[STRUCT_TEST], pValue, threads);
 								
-				int minClust = Clustering.getRoots(tree).size();
+				int minClust = tree.size();
 				for (int i = minClust; i <= (pValue == 1.0 ? Math.min( curLayer.size(), 250) : minClust); i++ ) {
 					final int nrCluster = i;
 					futures.add(es.submit(new Callable<LinearModel>() {
@@ -467,14 +467,11 @@ public class ChowClustering {
 			}
 		}
 
-		List<TreeNode> tree = new ArrayList<>();
 		Map<TreeNode, Set<double[]>> curLayer = new HashMap<>();
-
 		int age = 0;
 		for (TreeNode tn : leafLayer) {
 			age = Math.max(age, tn.age);
-			tree.add(tn);
-
+			
 			Set<double[]> content = Clustering.getContents(tn);
 			curLayer.put(tn, content);
 		}
@@ -588,7 +585,7 @@ public class ChowClustering {
 			
 			if (c1 == null && c2 == null) { 
 				log.debug("Cannot merge further: "+curLayer.size());
-				return tree;
+				return new ArrayList<>( curLayer.keySet() );
 			}
 
 			// create merge node, remove c1,c2
@@ -608,8 +605,7 @@ public class ChowClustering {
 
 			// add nodes
 			curLayer.put(mergeNode, union);
-			tree.add(mergeNode);
-
+			
 			// update connected map
 			if (connected != null) {
 				// 1. merge values of c1 and c2 and put union
@@ -627,7 +623,7 @@ public class ChowClustering {
 				}
 			}
 		}
-		return tree;
+		return new ArrayList<>(curLayer.keySet());
 	}
 
 	@Deprecated
@@ -764,6 +760,14 @@ public class ChowClustering {
 	}
 	
 	public static List<TreeNode> getInitCluster( List<double[]> samples, Map<double[],Set<double[]>> cma, PreCluster pc, int pcOpt, Dist<double[]> dist, int minObs, int threads  ) {
+		
+		// min obs and contiguos clustering
+		if( pc == PreCluster.Ward2 ) {
+			Map<TreeNode,Set<TreeNode>> cm = Clustering.samplesCMtoTreeCM(cma);
+			List<TreeNode> l = new ArrayList<>( GraphUtils.getNodes(cm) );
+			return Clustering.getHierarchicalClusterTree( l, cm, dist, HierarchicalClusteringType.ward, minObs, threads );
+		}
+				
 		List<Set<double[]>> init = null;
 		if ( pc == PreCluster.Kmeans ) {
 			
@@ -786,16 +790,9 @@ public class ChowClustering {
 				init = Clustering.treeToCluster( Clustering.cutTree(tree, nrCluster--) );
 			while( minClusterSize(init) <= pcOpt ); // cut tree until desired cluster size
 		
-		} else if ( pc == PreCluster.KmeansMinObs ) {
-			List<Set<double[]>> l = new ArrayList<>( kMeans(samples, pcOpt, dist, minObs ).values());
-			
-			init = new ArrayList<>();
-			for( Set<double[]> s : l )
-				if( s.isEmpty() )
-					log.warn("Removing empty init cluster!");
-				else
-					init.add(s);	
-		}
+		} 
+		
+		log.debug("WSS after clustering: "+DataUtils.getWithinSumOfSquares(init, dist));
 				
 		// to spatial contiguos cluster
 		List<Set<double[]>> cInit = new ArrayList<>();
@@ -808,6 +805,8 @@ public class ChowClustering {
 			//log.warn(cInit.size()+" contiguous instead of "+init.size()+" clusters");
 			init = cInit;
 		}
+		
+		log.debug("WSS after conti split: "+DataUtils.getWithinSumOfSquares(init, dist));
 				
 		// maintain min obs 
 		List<TreeNode> curLayer = new ArrayList<>();

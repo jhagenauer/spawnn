@@ -68,16 +68,14 @@ public class ChowClustering_AIC {
 		} catch (IOException e1) {
 			e1.printStackTrace();
 		}
-		
-		//TODO chow, ward, resi mehrfach wiederholung
-		
-		List<Object[]> params = new ArrayList<>();	
-		for( int i = 800; i <= 2200; i+=50 ) 	
-			for( int l : new int[]{ 8 } ) 
-				for( boolean b : new boolean[]{ true } )	{
-					params.add(new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.ResiSimple, 1.0, gDist, l, PreCluster.Kmeans, i,  10, b});
-					//params.add(new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.Wald, 1.0, gDist, l, PreCluster.Kmeans, i,  1, b});	
-				}
+				
+		List<Object[]> params = new ArrayList<>();
+		for( int i : new int[]{ 1500 /* int i = 800; i <= 2200; i+=50 */ } )
+			for( int l : new int[]{ 8 } ) {
+				params.add(new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.ResiSimple, 1.0, gDist, l, PreCluster.Kmeans, i,  1});
+				params.add(new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.Wald, 1.0, gDist, l, PreCluster.Ward, i,  1});	
+				params.add(new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.Wald, 1.0, gDist, l, PreCluster.Ward2, i,  1});	
+			}
 		Collections.shuffle(params);
 				
 		{
@@ -101,13 +99,15 @@ public class ChowClustering_AIC {
 			List<TreeNode> bestCurLayer = null;
 			double bestWss = Double.POSITIVE_INFINITY;
 			
-			Clustering.minMode = (boolean)param[PRECLUST_OPT3];
 			for( int i = 0; i < (int) param[PRECLUST_OPT2]; i++ ) {
 				
 				List<TreeNode> curLayer = ChowClustering.getInitCluster(sdf.samples, cm, (PreCluster)param[PRECLUST], (int) param[PRECLUST_OPT], gDist, (int) param[MIN_OBS], threads );
 				curLayer = Clustering.cutTree(curLayer, 1);
 				List<Set<double[]>> cluster = Clustering.treeToCluster(curLayer);
+								
 				double wss = ClusterValidation.getWithinClusterSumOfSuqares(cluster, gDist);
+				
+				log.debug("WSS after min obs: "+wss);
 				
 				if( bestCurLayer == null || wss < bestWss ) {
 					bestCurLayer = curLayer;
@@ -119,7 +119,7 @@ public class ChowClustering_AIC {
 			Map<TreeNode, Set<TreeNode>> ncm = ChowClustering.getCMforCurLayer(bestCurLayer, cm );
 			List<TreeNode> tree = ChowClustering.getFunctionalClusterinTree(bestCurLayer, ncm, fa, ta, (HierarchicalClusteringType) param[CLUST], (ChowClustering.StructChangeTestMode) param[STRUCT_TEST], pValue, threads);
 			
-			int minClust = Clustering.getRoots(tree).size();
+			int minClust = tree.size();
 			for (int i = minClust; i <= (pValue == 1.0 ? Math.min( bestCurLayer.size(), 350) : minClust); i++ ) {
 				final int nrCluster = i;
 				futures.add(es.submit(new Callable<LinearModel>() {
