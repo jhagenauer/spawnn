@@ -805,10 +805,6 @@ public class Clustering {
 			long time = System.currentTimeMillis();
 			List<TreeNode> tree = Clustering.getHierarchicalClusterTree(samples, dist, HierarchicalClusteringType.ward);
 			List<Set<double[]>> ct = Clustering.treeToCluster( Clustering.cutTree( tree, nrCluster) );
-			int i = 0;
-			for( Set<double[]> s : ct )
-				i += s.size();
-			log.debug(samples.size()+":::"+i);
 			log.debug("Within sum of squares: " + DataUtils.getWithinSumOfSquares(ct, dist)+", took: "+(System.currentTimeMillis()-time)/1000.0);		
 			Drawer.geoDrawCluster(ct, samples, geoms, "output/ward_clustering.png", true);
 		}

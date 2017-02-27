@@ -13,14 +13,11 @@ import org.apache.commons.math3.distribution.TDistribution;
 import org.apache.log4j.Logger;
 
 import com.vividsolutions.jts.geom.Geometry;
-import com.vividsolutions.jts.geom.GeometryCollection;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.MultiPoint;
 import com.vividsolutions.jts.geom.MultiPolygon;
 import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.geom.Polygon;
-import com.vividsolutions.jts.geom.PrecisionModel;
-import com.vividsolutions.jts.precision.EnhancedPrecisionOp;
 
 import chowClustering.ChowClustering.PreCluster;
 import nnet.SupervisedUtils;
@@ -70,19 +67,19 @@ public class ChowClustering_Apply {
 		// GWR, adapt, gaussian AIC -63857.01, moran: 0.033003***, 1.389064***
 		
 		// AIC -70907.28748833395, moran: 7.778792774007085E-4, 10.14983044050689***
-		params.put( new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.ResiSimple, 1.0, gDist, 8, PreCluster.Kmeans, 1500, 1 }, 177 );
+		params.put( new Object[] { ChowClustering.StructChangeTestMode.ResiSimple, 1.0, gDist, 8, PreCluster.kmeans, 1500, 1 }, 177 );
 		
 		// AIC -71186.11121305655, moran: -0.012059661354476125, 15.908235171572935
-		params.put( new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.ResiSimple, 1.0, gDist, 8, PreCluster.Kmeans, 1500, 10 }, 193 );
+		params.put( new Object[] { ChowClustering.StructChangeTestMode.ResiSimple, 1.0, gDist, 8, PreCluster.kmeans, 1500, 10 }, 193 );
 			
 		// AIC -71136.61923057627, moran: 0.007652237221659619, 29.186022915907913***
-		params.put( new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.ResiSimple, 1.0, gDist, 8, PreCluster.Kmeans, 1200, 10 }, 175 );
+		params.put( new Object[] { ChowClustering.StructChangeTestMode.ResiSimple, 1.0, gDist, 8, PreCluster.kmeans, 1200, 10 }, 175 );
 								
 		// AIC -68679.04349921944, moran: 6.819968752184315E-4, 10.14983044066441***
-		params.put( new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.Chow, 1.0, gDist, 8, PreCluster.Kmeans, 1500, 1 }, 194 );
+		params.put( new Object[] { ChowClustering.StructChangeTestMode.Chow, 1.0, gDist, 8, PreCluster.kmeans, 1500, 1 }, 194 );
 		
 		// AIC -66537.81934761541, moran: 0.02782969478626033***, 10.14983044066457***
-		params.put( new Object[] { HierarchicalClusteringType.ward, ChowClustering.StructChangeTestMode.Wald, 1.0, gDist, 8, PreCluster.Kmeans, 1500, 1 }, 274 );
+		params.put( new Object[] { ChowClustering.StructChangeTestMode.Wald, 1.0, gDist, 8, PreCluster.kmeans, 1500, 1 }, 274 );
 				
 		for( Entry<Object[],Integer> e : params.entrySet() ) {
 		Clustering.r.setSeed(0);
@@ -108,7 +105,7 @@ public class ChowClustering_Apply {
 		}
 
 		Map<TreeNode, Set<TreeNode>> ncm = ChowClustering.getCMforCurLayer(bestCurLayer, cm);
-		List<TreeNode> tree = ChowClustering.getFunctionalClusterinTree(bestCurLayer, ncm, fa, ta, (HierarchicalClusteringType) param[ChowClustering_AIC.CLUST], (ChowClustering.StructChangeTestMode) param[ChowClustering_AIC.STRUCT_TEST],	pValue, threads);
+		List<TreeNode> tree = ChowClustering.getFunctionalClusterinTree(bestCurLayer, ncm, fa, ta, (ChowClustering.StructChangeTestMode) param[ChowClustering_AIC.STRUCT_TEST],	pValue, threads);
 
 		List<Set<double[]>> ct = Clustering.treeToCluster(Clustering.cutTree(tree, nrCluster));
 		LinearModel lm = new LinearModel(sdf.samples, ct, fa, ta, false);
