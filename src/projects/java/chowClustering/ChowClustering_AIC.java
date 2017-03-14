@@ -105,8 +105,13 @@ public class ChowClustering_AIC {
 			
 			String s = "method,cluster,aic,rss,r2,moran,pValue";
 			for( int i = 0; i < fa.length; i++ )
-				s += ","+sdf.names.get(fa[i]);
-			s += ",Intercept\r\n";
+				s += ","+sdf.names.get(fa[i])+"_15";
+			s += ",Intercept_15";
+			
+			for( int i = 0; i < fa.length; i++ )
+				s += ","+sdf.names.get(fa[i])+"_30";
+			s += ",Intercept_30\r\n";
+			
 			Files.write(tabFile, s.getBytes(), StandardOpenOption.APPEND);
 		} catch (IOException e1) {
 			e1.printStackTrace();
@@ -166,6 +171,7 @@ public class ChowClustering_AIC {
 						LinearModel lm = new LinearModel(sdf.samples, ct, fa, ta, false);
 						double mse = SupervisedUtils.getMSE(lm.getPredictions(sdf.samples, fa), sdf.samples, ta);
 						double aic = SupervisedUtils.getAICc_GWMODEL(mse, ct.size() * (fa.length + 1), sdf.samples.size());
+						//double aic = SupervisedUtils.getBIC(mse, ct.size() * (fa.length + 1), sdf.samples.size());
 
 						synchronized (this) {
 
@@ -226,15 +232,24 @@ public class ChowClustering_AIC {
 							ds.addValue( lm.getBeta(j)[i] );
 						double q1 = ds.getPercentile(25);
 						double q3 = ds.getPercentile(75);
-						double mul = 3;
-						
-						int outlier = 0;
+												
+						int outlier15 = 0;
 						for( int j = 0; j < lm.getCluster().size(); j++ ) {
 							double v = lm.getBeta(j)[i];
-							if( v < q1-mul*(q3-q1) || v > q3+mul*(q3-q1) )
-								outlier++;
+							if( v < q1-1.5*(q3-q1) || v > q3+1.5*(q3-q1) ) {
+								outlier15++;
+							}
 						}
-						s += "," + outlier;
+						s += "," + (double)outlier15/ct.size();
+						
+						int outlier30 = 0;
+						for( int j = 0; j < lm.getCluster().size(); j++ ) {
+							double v = lm.getBeta(j)[i];
+							if( v < q1-3.0*(q3-q1) || v > q3+3.0*(q3-q1) ) {
+								outlier30++;
+							}
+						}
+						s += "," + (double)outlier30/ct.size();
 					}
 					s += "\r\n";
 					Files.write(tabFile, s.getBytes(), StandardOpenOption.APPEND);
