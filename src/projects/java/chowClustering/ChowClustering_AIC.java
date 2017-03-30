@@ -50,15 +50,14 @@ public class ChowClustering_AIC {
 
 	private static Logger log = Logger.getLogger(ChowClustering_AIC.class);
 
-	public static int STRUCT_TEST = 0, P_VALUE = 1, DIST = 2, MIN_OBS = 3, PRECLUST = 4, PRECLUST_OPT = 5,
-			PRECLUST_OPT2 = 6;
+	public static int STRUCT_TEST = 0, P_VALUE = 1, DIST = 2, MIN_OBS = 3, PRECLUST = 4, PRECLUST_OPT = 5, PRECLUST_OPT2 = 6;
 
 	public static double best = Double.MAX_VALUE;
 	public static LinearModel bestLm = null;
 
 	public static void main(String[] args) {
 
-		int threads = Math.max(1, Runtime.getRuntime().availableProcessors());
+		int threads = Math.max(1, Runtime.getRuntime().availableProcessors()-1);
 		log.debug("Threads: " + threads);
 
 		File data = new File("data/gemeinden_gs2010/gem_dat.shp");
@@ -91,7 +90,7 @@ public class ChowClustering_AIC {
 			Files.createDirectories(file.getParent()); // create output dir
 			Files.deleteIfExists(file);
 			Files.createFile(file);
-			String s = "method,cluster,aic\r\n";
+			String s = "method,cluster,aic,sum30\r\n";
 			Files.write(file, s.getBytes(), StandardOpenOption.APPEND);
 		} catch (IOException e1) {
 			e1.printStackTrace();
@@ -118,11 +117,12 @@ public class ChowClustering_AIC {
 		}
 
 		List<Object[]> params = new ArrayList<>();
-		for (int l : new int[] { 8, 9, 10, 11, 12 }) {
+		for (int l : new int[] { 8,9,10 }) { 
 			params.add(new Object[] { StructChangeTestMode.ResiSimple, 1.0, gDist, l, PreCluster.ward, 1, 1 });
-			//params.add(new Object[] { StructChangeTestMode.ResiSimple, 1.0, gDist, l, PreCluster.kmeans, 1700, 1});
+			params.add(new Object[] { StructChangeTestMode.Chow, 1.0, gDist, l, PreCluster.ward, 1, 1 });
+			params.add(new Object[] { StructChangeTestMode.Wald, 1.0, gDist, l, PreCluster.ward, 1, 1 });
 		}
-
+		
 		Collections.sort(params, new Comparator<Object[]>() {
 			@Override
 			public int compare(Object[] o1, Object[] o2) {
@@ -172,7 +172,22 @@ public class ChowClustering_AIC {
 						double mse = SupervisedUtils.getMSE(lm.getPredictions(sdf.samples, fa), sdf.samples, ta);
 						double aic = SupervisedUtils.getAICc_GWMODEL(mse, ct.size() * (fa.length + 1), sdf.samples.size());
 						//double aic = SupervisedUtils.getBIC(mse, ct.size() * (fa.length + 1), sdf.samples.size());
-
+						
+						int sum30 = 0;
+						for( int i = 0; i < fa.length+1; i++ ) {
+							DescriptiveStatistics ds = new DescriptiveStatistics();
+							for( int j = 0; j < lm.getCluster().size(); j++ )
+								ds.addValue( lm.getBeta(j)[i] );
+							double q1 = ds.getPercentile(25);
+							double q3 = ds.getPercentile(75);
+							
+							for( int j = 0; j < lm.getCluster().size(); j++ ) {
+								double v = lm.getBeta(j)[i];
+								if( v < q1-3.0*(q3-q1) || v > q3+3.0*(q3-q1) ) 
+									sum30++;
+							}
+						}
+						
 						synchronized (this) {
 
 							if (bestLm == null || aic < best) {
@@ -182,7 +197,7 @@ public class ChowClustering_AIC {
 
 							try {
 								String s = "";
-								s += "\"" + method + "\"," + ct.size() + "," + aic + "\r\n";
+								s += "\"" + method + "\"," + ct.size() + "," + aic + ","+sum30+"\r\n";
 								Files.write(file, s.getBytes(), StandardOpenOption.APPEND);
 							} catch (IOException e) {
 								e.printStackTrace();
@@ -240,7 +255,7 @@ public class ChowClustering_AIC {
 								outlier15++;
 							}
 						}
-						s += "," + (double)outlier15/ct.size();
+						s += "," + outlier15;
 						
 						int outlier30 = 0;
 						for( int j = 0; j < lm.getCluster().size(); j++ ) {
@@ -249,7 +264,7 @@ public class ChowClustering_AIC {
 								outlier30++;
 							}
 						}
-						s += "," + (double)outlier30/ct.size();
+						s += "," + outlier30;
 					}
 					s += "\r\n";
 					Files.write(tabFile, s.getBytes(), StandardOpenOption.APPEND);
