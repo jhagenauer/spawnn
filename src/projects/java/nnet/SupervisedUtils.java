@@ -7,8 +7,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map.Entry;
 
-import javax.management.RuntimeErrorException;
-
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 import org.apache.log4j.Logger;
 
@@ -41,8 +39,13 @@ public class SupervisedUtils {
 	}
 
 	// Maybe we should remove this function due to triviality
+	@Deprecated
 	public static double getRMSE(List<double[]> response, List<double[]> desired) {
 		return Math.sqrt(getMSE(response, desired));
+	}
+	
+	public static double getRMSE(List<Double> response, List<double[]> samples, int ta ) {
+		return Math.sqrt(getMSE(response, samples, ta));
 	}
 
 	// Mean sum of squares
@@ -142,6 +145,16 @@ public class SupervisedUtils {
 			return 0;
 
 		return a / (b * c);
+	}
+	
+	public static double getMultiLogLoss(List<Double> response, List<double[]> samples, int ta ) {
+		List<double[]> desired = new ArrayList<double[]>();
+		List<double[]> resp = new ArrayList<double[]>();
+		for( int i = 0; i < samples.size(); i++ ) {
+			resp.add( new double[]{ response.get(i) } );
+			desired.add( new double[] { samples.get(i)[ta] } );
+		}
+		return getMultiLogLoss(resp, desired);
 	}
 	
 	public static double getMultiLogLoss(List<double[]> response, List<double[]> desired ) {

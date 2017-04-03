@@ -11,7 +11,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression;
 import org.apache.log4j.Logger;
+import org.jblas.Decompose;
+import org.jblas.Decompose.QRDecomposition;
 import org.jblas.DoubleMatrix;
 import org.jblas.Solve;
 
@@ -23,6 +26,7 @@ import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
 import spawnn.utils.ColorBrewer;
 import spawnn.utils.ColorUtils.ColorClass;
+import sun.tools.tree.DoubleExpression;
 import spawnn.utils.DataUtils;
 import spawnn.utils.Drawer;
 import spawnn.utils.SpatialDataFrame;
@@ -34,13 +38,16 @@ public class GWR {
 	public static void main(String[] args) {
 		int threads = Math.max(1, Runtime.getRuntime().availableProcessors()-1);
 		
-		SpatialDataFrame sdf = DataUtils.readSpatialDataFrameFromShapefile(new File("data/Election/election2004.shp"), true);
+		SpatialDataFrame sdf = DataUtils.readSpatialDataFrameFromShapefile(new File("data/election/election2004.shp"), true);
 		for( int i = 0; i < sdf.samples.size(); i++ ) {
 			Point p = sdf.geoms.get(i).getCentroid();
 			sdf.samples.get(i)[0] = p.getX();
 			sdf.samples.get(i)[1] = p.getY();
 		}
 		Dist<double[]> gDist = new EuclideanDist(new int[]{0,1});
+		
+		sdf.geoms = sdf.geoms.subList(0, 1000);
+		sdf.samples = sdf.samples.subList(0, 1000);
 				
 		int[] fa = new int[]{52,49,10};
 		int ta = 7;
@@ -59,6 +66,7 @@ public class GWR {
 			double nrParams;
 		}
 		
+		long time = System.currentTimeMillis();
 		List<Future<GWR_loc>> futures = new ArrayList<>();
 		ExecutorService es = Executors.newFixedThreadPool(threads);
 		
@@ -97,21 +105,20 @@ public class GWR {
 							w[j][j] = Math.pow(1.0-Math.pow(d/h, 2), 2);
 					}	
 					DoubleMatrix W = new DoubleMatrix(w);
+					
 					DoubleMatrix XtW = Xt.mmul(W);
 					DoubleMatrix XtWX = XtW.mmul(X);
 					
 					DoubleMatrix beta = Solve.solve(XtWX, XtW.mmul(Y));
 										
 					DoubleMatrix hat = X.mmul( Solve.pinv(XtWX)).mmul(XtW);
-					
 					double tr = hat.diag().sum();
-					double tr2 = hat.mmul( hat.transpose() ).diag().sum();
-					double tr3 = 2*tr - tr2;
-					
+					double tr2 = hat.mmul( hat.transpose() ).diag().sum(); 
+					double tr3 = 2*tr - tr2;	
 					
 					GWR_loc gl = new GWR_loc();
 					gl.coefficients = beta.data;
-					gl.response = X.mmul( beta ).get(I); 
+					gl.response = X.getRow(I).mmul( beta ).get(0); 
 					gl.nrParams = tr3;
 					log.debug(I);
 					
@@ -145,6 +152,17 @@ public class GWR {
 		log.debug("R2: "+SupervisedUtils.getR2(response, sdf.samples, ta));
 		log.debug("AIC: "+SupervisedUtils.getAIC_GWMODEL(mse, nrParams, sdf.samples.size()));
 		log.debug("AICc: "+SupervisedUtils.getAICc_GWMODEL(mse, nrParams, sdf.samples.size()));
+		
+		log.debug("took: "+(System.currentTimeMillis()-time)/1000.0);
+		
+		/*
+2017-04-03 18:10:47,651 DEBUG [main] gwr.GWR: RSS: 41501.63538252305
+2017-04-03 18:10:47,651 DEBUG [main] gwr.GWR: MSE: 41.50163538252305
+2017-04-03 18:10:47,673 DEBUG [main] gwr.GWR: R2: 0.7658059515520563
+2017-04-03 18:10:47,673 DEBUG [main] gwr.GWR: AIC: -1100472.5970263837
+2017-04-03 18:10:47,673 DEBUG [main] gwr.GWR: AICc: 4567.213034706954
+2017-04-03 18:10:47,673 DEBUG [main] gwr.GWR: took: 231.033
+		 */
 				
 		for( int i = 0; i < fa.length; i++ )
 			Drawer.geoDrawValues(sdf.geoms, coefficients, i, sdf.crs, ColorBrewer.Blues, ColorClass.Quantile, "output/coef_"+sdf.names.get(fa[i])+".png");

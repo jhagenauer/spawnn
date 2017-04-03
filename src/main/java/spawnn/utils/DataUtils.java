@@ -25,8 +25,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import javax.xml.stream.events.Namespace;
-
 import org.apache.commons.math3.linear.Array2DRowRealMatrix;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.SingularValueDecomposition;
@@ -34,15 +32,12 @@ import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 import org.apache.log4j.Logger;
 import org.geotools.data.DataStore;
-import org.geotools.data.DefaultTransaction;
 import org.geotools.data.FeatureSource;
 import org.geotools.data.FeatureStore;
 import org.geotools.data.FileDataStoreFactorySpi;
-import org.geotools.data.Transaction;
 import org.geotools.data.collection.ListFeatureCollection;
 import org.geotools.data.shapefile.ShapefileDataStore;
 import org.geotools.data.shapefile.ShapefileDataStoreFactory;
-import org.geotools.feature.DefaultFeatureCollection;
 import org.geotools.feature.FeatureIterator;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
@@ -781,10 +776,13 @@ public class DataUtils {
 	public static DataFrame readDataFrameFromCSV(String file, int[] ign, boolean verbose) {
 		return  readDataFrameFromCSV(new File(file), ign,verbose);
 	}
-
+	
 	public static DataFrame readDataFrameFromCSV(File file, int[] ign, boolean verbose) {
+		return readDataFrameFromCSV(file, ign, verbose, ',');
+	}
+
+	public static DataFrame readDataFrameFromCSV(File file, int[] ign, boolean verbose, char sep) {
 		char quote = '"';
-		char sep = ',';
 
 		Set<Integer> ignore = new HashSet<Integer>();
 		for (int i : ign)
@@ -1332,5 +1330,12 @@ public class DataUtils {
 		
 		for( double[] d : df.samples ) 
 			log.debug(Arrays.toString(d));
+	}
+
+	public static double[] strip( double[] d, int[] fa ) {
+		double[] nd = new double[fa.length];
+		for( int j = 0; j < fa.length; j++ )
+			nd[j] = d[fa[j]];
+		return nd;
 	}
 }
