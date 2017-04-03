@@ -190,6 +190,20 @@ public class GeoUtils {
 		return r;
 	}
 	
+	public static Map<double[], Map<double[], Double>> getDistanceMatrix(Collection<double[]> samples, Dist<double[]> gDist, boolean withIdentity ) {
+		Map<double[], Map<double[], Double>> r = new HashMap<double[], Map<double[], Double>>();
+		for (double[] a : samples) {
+			Map<double[], Double> m = new HashMap<double[], Double>();
+			for (double[] b : samples) {
+				if (a == b && !withIdentity)
+					continue;
+				m.put(b, gDist.dist(a, b));
+			}
+			r.put(a, m);
+		}
+		return r;
+	}
+	
 	public static Map<double[], List<double[]>> getKNNs(final List<double[]> samples, final Dist<double[]> gDist, int k, boolean includeIdentity) {
 		Map<double[], List<double[]>> r = new HashMap<double[], List<double[]>>();
 				
