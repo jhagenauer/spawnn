@@ -547,5 +547,4 @@ public class ChowClustering {
 		} while (changed && j < 1000);
 		return clusters;
 	}
-
 }
