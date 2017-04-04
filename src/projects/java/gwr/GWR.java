@@ -11,10 +11,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression;
 import org.apache.log4j.Logger;
-import org.jblas.Decompose;
-import org.jblas.Decompose.QRDecomposition;
 import org.jblas.DoubleMatrix;
 import org.jblas.Solve;
 
@@ -26,7 +23,6 @@ import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
 import spawnn.utils.ColorBrewer;
 import spawnn.utils.ColorUtils.ColorClass;
-import sun.tools.tree.DoubleExpression;
 import spawnn.utils.DataUtils;
 import spawnn.utils.Drawer;
 import spawnn.utils.SpatialDataFrame;
@@ -63,10 +59,11 @@ public class GWR {
 		class GWR_loc {
 			double[] coefficients;
 			Double response;
-			double nrParams;
+			double[] S_row;
 		}
 		
 		long time = System.currentTimeMillis();
+		
 		List<Future<GWR_loc>> futures = new ArrayList<>();
 		ExecutorService es = Executors.newFixedThreadPool(threads);
 		
@@ -110,18 +107,13 @@ public class GWR {
 					DoubleMatrix XtWX = XtW.mmul(X);
 					
 					DoubleMatrix beta = Solve.solve(XtWX, XtW.mmul(Y));
-										
-					DoubleMatrix hat = X.mmul( Solve.pinv(XtWX)).mmul(XtW);
-					double tr = hat.diag().sum();
-					double tr2 = hat.mmul( hat.transpose() ).diag().sum(); 
-					double tr3 = 2*tr - tr2;	
+					DoubleMatrix rowI = X.getRow(I);
 					
 					GWR_loc gl = new GWR_loc();
 					gl.coefficients = beta.data;
-					gl.response = X.getRow(I).mmul( beta ).get(0); 
-					gl.nrParams = tr3;
-					log.debug(I);
-					
+					gl.response = rowI.mmul( beta ).get(0);
+					gl.S_row = rowI.mmul( Solve.pinv(XtWX) ).mmul(XtW).data;
+															
 					return gl;
 			}}));
 		}
@@ -130,14 +122,14 @@ public class GWR {
 		
 		List<double[]> coefficients = new ArrayList<>();
 		List<Double> response = new ArrayList<Double>();
-		double nrParams = 0;
-		
-		for( Future<GWR_loc> f : futures ) {
+		double[][] s = new double[futures.size()][];
+				
+		for( int i = 0; i < futures.size(); i++ ) {
 			try {
-				GWR_loc gl = f.get();
+				GWR_loc gl = futures.get(i).get();
 				coefficients.add(gl.coefficients);
 				response.add(gl.response);
-				nrParams += gl.nrParams;
+				s[i] = gl.S_row;
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			} catch (ExecutionException e) {
@@ -145,25 +137,23 @@ public class GWR {
 			}
 		}
 		
+		log.debug("took: "+(System.currentTimeMillis()-time)/1000.0);
+						
+		DoubleMatrix S = new DoubleMatrix(s);
+		double traceS = S.diag().sum();
+		double traceStS = S.transpose().mmul(S).diag().sum();
 		double rss = SupervisedUtils.getResidualSumOfSquares(response, sdf.samples, ta);
 		double mse = rss/sdf.samples.size();
-		log.debug("RSS: "+rss);
-		log.debug("MSE: "+mse);
-		log.debug("R2: "+SupervisedUtils.getR2(response, sdf.samples, ta));
-		log.debug("AIC: "+SupervisedUtils.getAIC_GWMODEL(mse, nrParams, sdf.samples.size()));
-		log.debug("AICc: "+SupervisedUtils.getAICc_GWMODEL(mse, nrParams, sdf.samples.size()));
 		
-		log.debug("took: "+(System.currentTimeMillis()-time)/1000.0);
-		
-		/*
-2017-04-03 18:10:47,651 DEBUG [main] gwr.GWR: RSS: 41501.63538252305
-2017-04-03 18:10:47,651 DEBUG [main] gwr.GWR: MSE: 41.50163538252305
-2017-04-03 18:10:47,673 DEBUG [main] gwr.GWR: R2: 0.7658059515520563
-2017-04-03 18:10:47,673 DEBUG [main] gwr.GWR: AIC: -1100472.5970263837
-2017-04-03 18:10:47,673 DEBUG [main] gwr.GWR: AICc: 4567.213034706954
-2017-04-03 18:10:47,673 DEBUG [main] gwr.GWR: took: 231.033
-		 */
-				
+		log.debug("Nr params: "+traceS);		
+		log.debug("Nr. of data points: "+sdf.samples.size());
+		log.debug("Effective nr. Params: "+(2*traceS-traceStS));
+		log.debug("Effective degrees of freedom: "+(sdf.samples.size()-2*traceS+traceStS));
+		log.debug("AICc: "+SupervisedUtils.getAICc_GWMODEL(mse, traceS, sdf.samples.size())); 
+		log.debug("AIC: "+SupervisedUtils.getAIC_GWMODEL(mse, traceS, sdf.samples.size())); 
+		log.debug("RSS: "+rss); 
+		log.debug("R2: "+SupervisedUtils.getR2(response, sdf.samples, ta));  
+						
 		for( int i = 0; i < fa.length; i++ )
 			Drawer.geoDrawValues(sdf.geoms, coefficients, i, sdf.crs, ColorBrewer.Blues, ColorClass.Quantile, "output/coef_"+sdf.names.get(fa[i])+".png");
 	}

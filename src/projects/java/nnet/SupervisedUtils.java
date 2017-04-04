@@ -182,10 +182,10 @@ public class SupervisedUtils {
 	}
 	
 	// I don't know why, but that's how it is done in the GWMODEL package
-	//lm_AIC<-dp.n*log(lm_RSS/dp.n)+dp.n*log(2*pi)+dp.n+2*(var.n + 1)
-	//  #AIC = dev + 2.0 * (double)(MGlobal + 1.0);
+	// dp.n*log(sigma.hat2) + dp.n*log(2*pi) +dp.n+tr.S
 	public static double getAIC_GWMODEL(double mse, double nrParams, int nrSamples) {
-		return nrSamples * ( Math.log(mse) + Math.log(2*Math.PI) + 1 ) + 2 * (nrParams+1);
+		return nrSamples * Math.log(mse) + nrSamples * Math.log(2*Math.PI) + nrSamples + nrParams;
+		
 	}
 	
 	// I don't know why, but that's how it is done in the GWMODEL package
