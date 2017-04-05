@@ -37,7 +37,7 @@ public class GWR {
 
 	public static void main(String[] args) {
 			
-		int threads = 5;//Math.max(1, Runtime.getRuntime().availableProcessors()-1);
+		int threads = Math.max(1, Runtime.getRuntime().availableProcessors()-1);
 		
 		SpatialDataFrame sdf = DataUtils.readSpatialDataFrameFromShapefile(new File("data/election/election2004.shp"), true);
 		for( int i = 0; i < sdf.samples.size(); i++ ) {
@@ -57,15 +57,15 @@ public class GWR {
 			
 			double[][] x2 = LinearModel.getX(sdf.samples.subList(100, 200), fa, true);
 			double[] y2 = LinearModel.getY(sdf.samples.subList(100, 200), ta);
-			log.debug("Chow: "+Arrays.toString(ChowClustering.testStructChange(x1, y1, x2, y2, StructChangeTestMode.Chow))); 
-			log.debug("ResiChow: "+Arrays.toString(ChowClustering.testStructChange(x1, y1, x2, y2, StructChangeTestMode.ResiChow))); 
+			log.debug("Chow: "+Arrays.toString(ChowClustering.testStructChange(x1, y1, x2, y2, StructChangeTestMode.Chow)));
+			log.debug("AdjustedChow: "+Arrays.toString(ChowClustering.testStructChange(x1, y1, x2, y2, StructChangeTestMode.AdjustedChow))); 
 			log.debug("Wald: "+Arrays.toString(ChowClustering.testStructChange(x1, y1, x2, y2, StructChangeTestMode.Wald))); 
 		}
 		
 		boolean gaussian = true;
 		boolean adaptive = true;
-		boolean trueAdaptive = false;
-		double bandwidth = 19;
+		boolean trueAdaptive = true;
+		double bandwidth = 7;
 		
 		DoubleMatrix Y = new DoubleMatrix( LinearModel.getY( sdf.samples, ta) );
 		DoubleMatrix X = new DoubleMatrix( LinearModel.getX( sdf.samples, fa, true) );
@@ -113,7 +113,7 @@ public class GWR {
 							for( int i = k+1; i < s.size(); i++ ) {
 								double[][] x2 = LinearModel.getX(s.subList(0, i), fa, true);
 								double[] y2 = LinearModel.getY(s.subList(0, i), ta);
-								double[] r = ChowClustering.testStructChange(x1, y1, x2, y2, StructChangeTestMode.Wald);
+								double[] r = ChowClustering.testStructChange(x1, y1, x2, y2, StructChangeTestMode.Chow);
 								
 								//log.debug(i+","+Arrays.toString(r));
 								if( r[1] < 0.5 ) {

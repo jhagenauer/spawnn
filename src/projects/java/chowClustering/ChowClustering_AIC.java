@@ -90,7 +90,7 @@ public class ChowClustering_AIC {
 			Files.createDirectories(file.getParent()); // create output dir
 			Files.deleteIfExists(file);
 			Files.createFile(file);
-			String s = "method,cluster,aic,sum30\r\n";
+			String s = "method,cluster,aic,bic,sum30\r\n";
 			Files.write(file, s.getBytes(), StandardOpenOption.APPEND);
 		} catch (IOException e1) {
 			e1.printStackTrace();
@@ -102,7 +102,7 @@ public class ChowClustering_AIC {
 			Files.deleteIfExists(tabFile);
 			Files.createFile(tabFile);
 			
-			String s = "method,cluster,aic,rss,r2,moran,pValue";
+			String s = "method,cluster,aic,bic,rss,r2,moran,pValue";
 			for( int i = 0; i < fa.length; i++ )
 				s += ","+sdf.names.get(fa[i])+"_15";
 			s += ",Intercept_15";
@@ -117,7 +117,7 @@ public class ChowClustering_AIC {
 		}
 
 		List<Object[]> params = new ArrayList<>();
-		for (int l : new int[] { 8,9,10 }) { 
+		for (int l : new int[] { 8,9,10,11 }) { 
 			params.add(new Object[] { StructChangeTestMode.ResiSimple, 1.0, gDist, l, PreCluster.ward, 1, 1 });
 			params.add(new Object[] { StructChangeTestMode.Chow, 1.0, gDist, l, PreCluster.ward, 1, 1 });
 			params.add(new Object[] { StructChangeTestMode.Wald, 1.0, gDist, l, PreCluster.ward, 1, 1 });
@@ -171,7 +171,7 @@ public class ChowClustering_AIC {
 						LinearModel lm = new LinearModel(sdf.samples, ct, fa, ta, false);
 						double mse = SupervisedUtils.getMSE(lm.getPredictions(sdf.samples, fa), sdf.samples, ta);
 						double aic = SupervisedUtils.getAICc_GWMODEL(mse, ct.size() * (fa.length + 1), sdf.samples.size());
-						//double aic = SupervisedUtils.getBIC(mse, ct.size() * (fa.length + 1), sdf.samples.size());
+						double bic = SupervisedUtils.getBIC(mse, ct.size() * (fa.length + 1), sdf.samples.size());
 						
 						int sum30 = 0;
 						for( int i = 0; i < fa.length+1; i++ ) {
@@ -190,14 +190,14 @@ public class ChowClustering_AIC {
 						
 						synchronized (this) {
 
-							if (bestLm == null || aic < best) {
-								best = aic;
+							if (bestLm == null || bic < best) {
+								best = bic;
 								bestLm = lm;
 							}
 
 							try {
 								String s = "";
-								s += "\"" + method + "\"," + ct.size() + "," + aic + ","+sum30+"\r\n";
+								s += "\"" + method + "\"," + ct.size() + "," + aic + ","+bic+","+sum30+"\r\n";
 								Files.write(file, s.getBytes(), StandardOpenOption.APPEND);
 							} catch (IOException e) {
 								e.printStackTrace();
@@ -223,6 +223,7 @@ public class ChowClustering_AIC {
 				List<Set<double[]>> ct = lm.cluster;
 				double mse = SupervisedUtils.getMSE(lm.getPredictions(sdf.samples, fa), sdf.samples, ta);
 				double aic = SupervisedUtils.getAICc_GWMODEL(mse, ct.size() * (fa.length + 1), sdf.samples.size());
+				double bic = SupervisedUtils.getBIC(mse, ct.size() * (fa.length + 1), sdf.samples.size());
 				double r2 = SupervisedUtils.getR2(lm.getPredictions(sdf.samples, fa), sdf.samples, ta);
 				
 				Map<double[], Double> values = new HashMap<>();
@@ -235,12 +236,13 @@ public class ChowClustering_AIC {
 				log.info("rss: " + lm.getRSS());
 				log.info("r2: " + r2 );
 				log.info("aicc: " + aic);
+				log.info("bic: " + bic);
 				log.info("mse: " + mse);
 				log.info("wss: " + ClusterValidation.getWithinClusterSumOfSuqares(ct, gDist));
 				log.info("moran: " + Arrays.toString(moran));
 				
 				try {
-					String s = "\"" + method + "\"," + ct.size() + "," + aic +","+lm.getRSS()+","+r2+","+moran[0]+","+moran[4];
+					String s = "\"" + method + "\"," + ct.size() + "," + aic +","+bic+","+lm.getRSS()+","+r2+","+moran[0]+","+moran[4];
 					for( int i = 0; i < fa.length+1; i++ ) {
 						DescriptiveStatistics ds = new DescriptiveStatistics();
 						for( int j = 0; j < lm.getCluster().size(); j++ )
