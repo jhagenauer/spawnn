@@ -45,8 +45,9 @@ public class GWR {
 			sdf.samples.get(i)[0] = p.getX();
 			sdf.samples.get(i)[1] = p.getY();
 		}
+				
 		Dist<double[]> gDist = new EuclideanDist(new int[]{0,1});
-						
+								
 		int[] fa = new int[]{52,49,10};
 		int ta = 7;
 		
@@ -64,8 +65,8 @@ public class GWR {
 		
 		boolean gaussian = true;
 		boolean adaptive = true;
-		boolean trueAdaptive = true;
-		double bandwidth = 7;
+		boolean trueAdaptive = false;
+		double bandwidth = 18;
 		
 		DoubleMatrix Y = new DoubleMatrix( LinearModel.getY( sdf.samples, ta) );
 		DoubleMatrix X = new DoubleMatrix( LinearModel.getX( sdf.samples, fa, true) );

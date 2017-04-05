@@ -74,15 +74,22 @@ public class ChowClustering_AIC {
 		log.debug("ta: " + ta + "," + sdf.names.get(ta));
 
 		Dist<double[]> gDist = new EuclideanDist(ga);
+		
+		// for hierarchical constraint
 		Map<double[], Set<double[]>> cm = GeoUtils.getContiguityMap(sdf.samples, sdf.geoms, false, false);
-		Map<double[], Map<double[], Double>> wcm = GeoUtils.contiguityMapToDistanceMap(cm);
+		
+		// for moran's I
+		Map<double[],Map<double[],Double>> wcm = GeoUtils.contiguityMapToDistanceMap(cm);
+		//Map<double[],Map<double[],Double>> wcm = GeoUtils.getInverseDistanceMatrix(sdf.samples, new GeometryDist(sdf.samples,sdf.geoms), 2);
 		GeoUtils.rowNormalizeMatrix(wcm);
-
+		
 		{
 			LinearModel lm = new LinearModel(sdf.samples, fa, ta, false);
 			List<Double> pred = lm.getPredictions(sdf.samples, fa);
 			double mse = SupervisedUtils.getMSE(pred, sdf.samples, ta);
-			log.debug("lm aic: " + SupervisedUtils.getAICc_GWMODEL(mse, fa.length + 1, sdf.samples.size())); // lm aic: -61856.98209268832
+			log.debug("RSS: "+SupervisedUtils.getResidualSumOfSquares(pred, sdf.samples, ta));
+			log.debug("BIC: " + SupervisedUtils.getBIC(mse, fa.length + 1, sdf.samples.size()));
+			log.debug("AICc: " + SupervisedUtils.getAICc_GWMODEL(mse, fa.length + 1, sdf.samples.size())); // lm aic: -61856.98209268832
 		}
 
 		Path file = Paths.get("output/regioclust.csv");
@@ -117,10 +124,10 @@ public class ChowClustering_AIC {
 		}
 
 		List<Object[]> params = new ArrayList<>();
-		for (int l : new int[] { 8,9,10,11 }) { 
+		for (int l : new int[] { /*8, 9,*/ 10 }) { 
 			params.add(new Object[] { StructChangeTestMode.ResiSimple, 1.0, gDist, l, PreCluster.ward, 1, 1 });
-			params.add(new Object[] { StructChangeTestMode.Chow, 1.0, gDist, l, PreCluster.ward, 1, 1 });
-			params.add(new Object[] { StructChangeTestMode.Wald, 1.0, gDist, l, PreCluster.ward, 1, 1 });
+			/*params.add(new Object[] { StructChangeTestMode.Chow, 1.0, gDist, l, PreCluster.ward, 1, 1 });
+			params.add(new Object[] { StructChangeTestMode.Wald, 1.0, gDist, l, PreCluster.ward, 1, 1 });*/
 		}
 		
 		Collections.sort(params, new Comparator<Object[]>() {
@@ -190,8 +197,8 @@ public class ChowClustering_AIC {
 						
 						synchronized (this) {
 
-							if (bestLm == null || bic < best) {
-								best = bic;
+							if (bestLm == null || aic < best) {
+								best = aic;
 								bestLm = lm;
 							}
 
@@ -232,14 +239,14 @@ public class ChowClustering_AIC {
 				double[] moran = GeoUtils.getMoransIStatistics(wcm, values);
 				
 				log.info("####### " + Arrays.toString(param) + " ########");
-				log.info("#cluster: " + lm.cluster.size());
-				log.info("rss: " + lm.getRSS());
-				log.info("r2: " + r2 );
-				log.info("aicc: " + aic);
-				log.info("bic: " + bic);
-				log.info("mse: " + mse);
-				log.info("wss: " + ClusterValidation.getWithinClusterSumOfSuqares(ct, gDist));
-				log.info("moran: " + Arrays.toString(moran));
+				log.info("#Cluster: " + lm.cluster.size());
+				log.info("RSS: " + lm.getRSS());
+				log.info("R2: " + r2 );
+				log.info("AICc: " + aic);
+				log.info("BIC: " + bic);
+				log.info("MSE: " + mse);
+				log.info("WSS: " + ClusterValidation.getWithinClusterSumOfSuqares(ct, gDist));
+				log.info("Moran: " + Arrays.toString(moran));
 				
 				try {
 					String s = "\"" + method + "\"," + ct.size() + "," + aic +","+bic+","+lm.getRSS()+","+r2+","+moran[0]+","+moran[4];

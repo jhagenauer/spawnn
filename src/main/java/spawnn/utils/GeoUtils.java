@@ -148,6 +148,20 @@ public class GeoUtils {
 		return knnM;
 	}
 	
+	public static Map<double[], Map<double[], Double>> getInverseDistanceMatrix( Map<double[],Map<double[],Double>> m, double pow ) {
+		Map<double[],Map<double[],Double>> nm = new HashMap<double[],Map<double[],Double>>();
+		for( Entry<double[],Map<double[],Double>> e1 : m.entrySet() ) {
+			Map<double[],Double> na = new HashMap<>();
+			for( Entry<double[],Double> e2 : e1.getValue().entrySet() ) { 
+				assert e2.getValue() > 0;
+				na.put(e2.getKey(), Math.pow( 1.0/e2.getValue(), pow) );
+			}
+			nm.put(e1.getKey(), na);
+		}
+		return nm;			
+	}
+	
+	@Deprecated
 	public static Map<double[], Map<double[], Double>> getInverseDistanceMatrix(Collection<double[]> samples, Dist<double[]> gDist, double pow ) {
 		return getInverseDistanceMatrix(samples, gDist, pow, Double.MAX_VALUE);
 	}
@@ -190,11 +204,11 @@ public class GeoUtils {
 		return r;
 	}
 	
-	public static Map<double[], Map<double[], Double>> getDistanceMatrix(Collection<double[]> samples, Dist<double[]> gDist, boolean withIdentity ) {
-		Map<double[], Map<double[], Double>> r = new HashMap<double[], Map<double[], Double>>();
-		for (double[] a : samples) {
-			Map<double[], Double> m = new HashMap<double[], Double>();
-			for (double[] b : samples) {
+	public static <T> Map<T, Map<T, Double>> getDistanceMatrix(Collection<T> samples, Dist<T> gDist, boolean withIdentity ) {
+		Map<T, Map<T, Double>> r = new HashMap<T, Map<T, Double>>();
+		for (T a : samples) {
+			Map<T, Double> m = new HashMap<T, Double>();
+			for (T b : samples) {
 				if (a == b && !withIdentity)
 					continue;
 				m.put(b, gDist.dist(a, b));
