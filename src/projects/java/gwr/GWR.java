@@ -1,6 +1,11 @@
 package gwr;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -51,22 +56,16 @@ public class GWR {
 		int[] fa = new int[]{52,49,10};
 		int ta = 7;
 		
-		{ // chow test
-			
-			double[][] x1 = LinearModel.getX(sdf.samples.subList(0, 100), fa, true);
-			double[] y1 = LinearModel.getY(sdf.samples.subList(0, 100), ta);
-			
-			double[][] x2 = LinearModel.getX(sdf.samples.subList(100, 200), fa, true);
-			double[] y2 = LinearModel.getY(sdf.samples.subList(100, 200), ta);
-			log.debug("Chow: "+Arrays.toString(ChowClustering.testStructChange(x1, y1, x2, y2, StructChangeTestMode.Chow)));
-			log.debug("AdjustedChow: "+Arrays.toString(ChowClustering.testStructChange(x1, y1, x2, y2, StructChangeTestMode.AdjustedChow))); 
-			log.debug("Wald: "+Arrays.toString(ChowClustering.testStructChange(x1, y1, x2, y2, StructChangeTestMode.Wald))); 
+		{ // lm
+			LinearModel lm = new LinearModel(sdf.samples, fa, ta, false);
+			List<Double> residuals = lm.getResiduals();			
+			Drawer.geoDrawValues(sdf.geoms, residuals, sdf.crs, ColorBrewer.Blues, ColorClass.Quantile, "output/lm_residuals.png");
 		}
 		
 		boolean gaussian = true;
 		boolean adaptive = true;
 		boolean trueAdaptive = false;
-		double bandwidth = 18;
+		double bandwidth = 19;
 		
 		DoubleMatrix Y = new DoubleMatrix( LinearModel.getY( sdf.samples, ta) );
 		DoubleMatrix X = new DoubleMatrix( LinearModel.getX( sdf.samples, fa, true) );
@@ -77,6 +76,17 @@ public class GWR {
 			Double response;
 			double[] S_row;
 			Double other = 0.0;
+		}
+		
+		Path file = Paths.get("output/gwr_test.csv");
+		try {
+			Files.createDirectories(file.getParent()); // create output dir
+			Files.deleteIfExists(file);
+			Files.createFile(file);
+			String s = "id,i,pValue\r\n";
+			Files.write(file, s.getBytes(), StandardOpenOption.APPEND);
+		} catch (IOException e1) {
+			e1.printStackTrace();
 		}
 		
 		long time = System.currentTimeMillis();
@@ -114,7 +124,14 @@ public class GWR {
 							for( int i = k+1; i < s.size(); i++ ) {
 								double[][] x2 = LinearModel.getX(s.subList(0, i), fa, true);
 								double[] y2 = LinearModel.getY(s.subList(0, i), ta);
-								double[] r = ChowClustering.testStructChange(x1, y1, x2, y2, StructChangeTestMode.Chow);
+								double[] r = ChowClustering.testStructChange(x1, y1, x2, y2, StructChangeTestMode.AdjustedChow);
+								
+								/*try {
+									String st = i+","+r[0]+","+r[1]+"\r\n";
+									Files.write(file, st.getBytes(), StandardOpenOption.APPEND);
+								} catch (IOException e) {
+									e.printStackTrace();
+								}*/
 								
 								//log.debug(i+","+Arrays.toString(r));
 								if( r[1] < 0.5 ) {
@@ -124,6 +141,8 @@ public class GWR {
 									break;
 								}
 							}
+							
+							//System.exit(1);
 						}
 					}
 								
@@ -139,9 +158,8 @@ public class GWR {
 						else // bisquare
 							w[j][j] = Math.pow(1.0-Math.pow(d/h, 2), 2);
 					}	
-					DoubleMatrix W = new DoubleMatrix(w);
 					
-					DoubleMatrix XtW = Xt.mmul(W);
+					DoubleMatrix XtW = Xt.mmul(new DoubleMatrix(w));
 					DoubleMatrix XtWX = XtW.mmul(X);
 					
 					DoubleMatrix beta = Solve.solve(XtWX, XtW.mmul(Y));

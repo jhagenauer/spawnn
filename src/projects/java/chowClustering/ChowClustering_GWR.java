@@ -127,9 +127,8 @@ public class ChowClustering_GWR {
 							else // bisquare
 								w[j][j] = Math.pow(1.0 - Math.pow(d / h, 2), 2);
 						}
-						DoubleMatrix W = new DoubleMatrix(w);
-
-						DoubleMatrix XtW = Xt.mmul(W);
+						
+						DoubleMatrix XtW = Xt.mmul(new DoubleMatrix(w));
 						DoubleMatrix XtWX = XtW.mmul(X);
 
 						DoubleMatrix beta = Solve.solve(XtWX, XtW.mmul(Y));
