@@ -177,7 +177,7 @@ public class Drawer {
 			Rectangle imageBounds = null;
 			try {
 				double heightToWidth = maxBounds.getSpan(1) / maxBounds.getSpan(0);
-				int imageWidth = 3000;
+				int imageWidth = 2000;
 
 				imageBounds = new Rectangle(0, 0, imageWidth, (int) Math.round(imageWidth * heightToWidth));
 				// imageBounds = new Rectangle( 0, 0, mp.getWidth(), (int) Math.round(mp.getWidth() * heightToWidth));

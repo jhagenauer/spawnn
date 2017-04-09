@@ -7,10 +7,13 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -24,8 +27,6 @@ import org.jblas.Solve;
 
 import com.vividsolutions.jts.geom.Point;
 
-import chowClustering.ChowClustering;
-import chowClustering.ChowClustering.StructChangeTestMode;
 import chowClustering.LinearModel;
 import nnet.SupervisedUtils;
 import spawnn.dist.Dist;
@@ -34,6 +35,7 @@ import spawnn.utils.ColorBrewer;
 import spawnn.utils.ColorUtils.ColorClass;
 import spawnn.utils.DataUtils;
 import spawnn.utils.Drawer;
+import spawnn.utils.GeoUtils;
 import spawnn.utils.SpatialDataFrame;
 
 public class GWR {
@@ -60,16 +62,61 @@ public class GWR {
 			LinearModel lm = new LinearModel(sdf.samples, fa, ta, false);
 			List<Double> residuals = lm.getResiduals();			
 			Drawer.geoDrawValues(sdf.geoms, residuals, sdf.crs, ColorBrewer.Blues, ColorClass.Quantile, "output/lm_residuals.png");
+			
+			double mean = 0;
+			Map<double[],Double> values = new HashMap<>();
+			for( int i = 0; i < sdf.samples.size(); i++ ) {
+				values.put(sdf.samples.get(i),residuals.get(i));
+				mean += residuals.get(i);
+			}
+			mean /= residuals.size();
+			
+			Map<double[], Set<double[]>> cm = GeoUtils.getContiguityMap(sdf.samples, sdf.geoms, false, false);
+			Map<double[], Map<double[],Double>> dMap =GeoUtils.contiguityMapToDistanceMap(cm);
+			List<double[]> lisa = GeoUtils.getLocalMoransIMonteCarlo(sdf.samples, values, dMap, 999);
+			Drawer.geoDrawValues(sdf.geoms, lisa, 0, sdf.crs, ColorBrewer.Blues, ColorClass.Quantile, "output/lm_lisa.png");
+			
+			final Map<Integer, Set<double[]>> lisaCluster = new HashMap<Integer, Set<double[]>>();
+			for (int i = 0; i < sdf.samples.size(); i++) {
+				double[] l = lisa.get(i);
+				double d = residuals.get(i);
+				int clust = -1;
+
+				if (l[4] > 0.05) // not significant
+					clust = 0;
+				else if (l[0] > 0 && d > mean)
+					clust = 1; // high-high
+				else if (l[0] > 0 && d < mean)
+					clust = 2; // low-low
+				else if (l[0] < 0 && d > mean)
+					clust = 3; // high-low
+				else if (l[0] < 0 && d < mean)
+					clust = 4; // low-high
+				else
+					clust = 5; // unknown
+
+				if (!lisaCluster.containsKey(clust))
+					lisaCluster.put(clust, new HashSet<double[]>());
+				lisaCluster.get(clust).add(sdf.samples.get(i));
+			}
+			Drawer.geoDrawCluster(lisaCluster.values(), sdf.samples, sdf.geoms, "output/lm_lisa_clust.png", true);
+					
+			double rss = lm.getRSS();
+			double mse = rss/sdf.samples.size();
+			log.debug("LM");
+			log.debug("Nr params: "+(fa.length+1));		
+			log.debug("AICc: "+SupervisedUtils.getAICc_GWMODEL(mse, fa.length+1, sdf.samples.size()));
+			log.debug("AIC: "+SupervisedUtils.getAIC_GWMODEL(mse, fa.length+1, sdf.samples.size()));
+			log.debug("RSS: "+rss);
+			log.debug("R2: "+SupervisedUtils.getR2(lm.getPredictions(sdf.samples, fa), sdf.samples, ta));
 		}
 		
 		boolean gaussian = true;
 		boolean adaptive = true;
-		boolean trueAdaptive = false;
 		double bandwidth = 19;
 		
 		DoubleMatrix Y = new DoubleMatrix( LinearModel.getY( sdf.samples, ta) );
 		DoubleMatrix X = new DoubleMatrix( LinearModel.getX( sdf.samples, fa, true) );
-		DoubleMatrix Xt = X.transpose();
 		
 		class GWR_loc {
 			double[] coefficients;
@@ -93,16 +140,17 @@ public class GWR {
 		
 		List<Future<GWR_loc>> futures = new ArrayList<>();
 		ExecutorService es = Executors.newFixedThreadPool(threads);
-		
+								
+		// estimate coefficients
 		for( int i = 0; i < sdf.samples.size(); i++ ) {
 			final int I = i;
 			
 			futures.add(es.submit(new Callable<GWR_loc>() {
 				@Override
 				public GWR_loc call() throws Exception {
-					GWR_loc gl = new GWR_loc();
 					double[] a = sdf.samples.get(I);
 					
+					// calculate bandwidths
 					double h;
 					if( !adaptive )
 						h = bandwidth;
@@ -116,65 +164,35 @@ public class GWR {
 							}
 						});
 						h = gDist.dist( s.get( k-1 ), a);
-						
-						if( trueAdaptive ) {							
-							double[][] x1 = LinearModel.getX(s.subList(0, k), fa, true);
-							double[] y1 = LinearModel.getY(s.subList(0, k), ta);
-							
-							for( int i = k+1; i < s.size(); i++ ) {
-								double[][] x2 = LinearModel.getX(s.subList(0, i), fa, true);
-								double[] y2 = LinearModel.getY(s.subList(0, i), ta);
-								double[] r = ChowClustering.testStructChange(x1, y1, x2, y2, StructChangeTestMode.AdjustedChow);
-								
-								/*try {
-									String st = i+","+r[0]+","+r[1]+"\r\n";
-									Files.write(file, st.getBytes(), StandardOpenOption.APPEND);
-								} catch (IOException e) {
-									e.printStackTrace();
-								}*/
-								
-								//log.debug(i+","+Arrays.toString(r));
-								if( r[1] < 0.5 ) {
-									h = gDist.dist( s.get( i-1 ), a);
-									gl.other = (double)(i-1);
-									log.debug(I+","+i+","+Arrays.toString(r));
-									break;
-								}
-							}
-							
-							//System.exit(1);
-						}
-					}
-								
-					double[][] w = new double[sdf.samples.size()][sdf.samples.size()];						
-					for( int j = 0; j < sdf.samples.size(); j++ ) {
+					}				
+										
+					DoubleMatrix XtW = new DoubleMatrix(X.getColumns(),X.getRows());		
+					for( int j = 0; j < X.getRows(); j++ ) {
 						double[] b = sdf.samples.get(j);
-						
 						double d = gDist.dist( a, b);
-						
-						// Gaussian
-						if( gaussian )
-							w[j][j] = Math.exp(-0.5*Math.pow(d/h,2));
+												
+						double w;
+						if( gaussian ) // Gaussian
+							w = Math.exp(-0.5*Math.pow(d/h,2));
 						else // bisquare
-							w[j][j] = Math.pow(1.0-Math.pow(d/h, 2), 2);
+							w = Math.pow(1.0-Math.pow(d/h, 2), 2);
+						XtW.putColumn(j, X.getRow(j).mul(w));
 					}	
 					
-					DoubleMatrix XtW = Xt.mmul(new DoubleMatrix(w));
-					DoubleMatrix XtWX = XtW.mmul(X);
-					
+					DoubleMatrix XtWX = XtW.mmul(X);				
 					DoubleMatrix beta = Solve.solve(XtWX, XtW.mmul(Y));
 					DoubleMatrix rowI = X.getRow(I);
 					
+					GWR_loc gl = new GWR_loc();
 					gl.coefficients = beta.data;
-					gl.response = rowI.mmul( beta ).get(0);
-					gl.S_row = rowI.mmul( Solve.pinv(XtWX) ).mmul(XtW).data;
+					gl.response = rowI.mmul(beta).get(0);
+					gl.S_row = rowI.mmul(Solve.pinv(XtWX)).mmul(XtW).data;
 															
 					return gl;
 			}}));
 		}
 		es.shutdown();
-		
-		
+				
 		List<double[]> coefficients = new ArrayList<>();
 		List<Double> response = new ArrayList<Double>();
 		List<Double> other = new ArrayList<>();
@@ -202,6 +220,7 @@ public class GWR {
 		double rss = SupervisedUtils.getResidualSumOfSquares(response, sdf.samples, ta);
 		double mse = rss/sdf.samples.size();
 		
+		log.debug("GWR");
 		log.debug("Nr params: "+traceS);		
 		log.debug("Nr. of data points: "+sdf.samples.size());
 		log.debug("Effective nr. Params: "+(2*traceS-traceStS));
