@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.Random;
 
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 import org.apache.log4j.Logger;
@@ -15,12 +16,14 @@ public class SupervisedUtils {
 	private static Logger log = Logger.getLogger(SupervisedUtils.class);
 
 	public static List<Entry<List<Integer>, List<Integer>>> getCVList(int numFolds, int numRepeats, int numSamples) {
+		Random r = new Random(0);
+		
 		List<Entry<List<Integer>, List<Integer>>> cvList = new ArrayList<Entry<List<Integer>, List<Integer>>>();
 		for (int repeat = 0; repeat < numRepeats; repeat++) {
 			List<Integer> l = new ArrayList<Integer>();
 			for (int i = 0; i < numSamples; i++)
 				l.add(i);
-			Collections.shuffle(l);
+			Collections.shuffle(l,r);
 			if (numFolds == 0) { // full
 				List<Integer> train = new ArrayList<Integer>(l);
 				List<Integer> val = new ArrayList<Integer>(l);
@@ -238,7 +241,7 @@ public class SupervisedUtils {
 
 	public static double getResidualSumOfSquares(List<Double> response, List<double[]> samples, int ta) {
 		if (response.size() != samples.size())
-			throw new RuntimeException("response.size() != samples.size()");
+			throw new RuntimeException("response.size() != samples.size() "+response.size()+","+samples.size());
 
 		double rss = 0;
 		for (int i = 0; i < response.size(); i++)
