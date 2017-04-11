@@ -329,6 +329,7 @@ public class ChowClustering_AIC {
 				dissNames.add("numObs");
 				dissNames.add("cluster");
 				dissNames.add("mse");
+				dissNames.add("r2");
 
 				List<double[]> dissSamples = new ArrayList<>();
 				List<Geometry> dissGeoms = new ArrayList<>();
@@ -395,7 +396,10 @@ public class ChowClustering_AIC {
 					dl.add((double) set.size());
 					dl.add((double) idx);
 					dl.add(lm.getRSS(idx) / set.size());
-
+					
+					List<double[]> ll = new ArrayList<>(set);
+					dl.add( SupervisedUtils.getR2( lm.getPredictions(ll, fa), ll, ta));
+					
 					// dl (list) to da (array)
 					double[] da = new double[dl.size()];
 					for (int i = 0; i < dl.size(); i++)

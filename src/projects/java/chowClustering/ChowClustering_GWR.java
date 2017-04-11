@@ -34,7 +34,7 @@ public class ChowClustering_GWR {
 
 	public static void main(String[] args) {
 
-		int threads = 4;//Math.max(1, Runtime.getRuntime().availableProcessors() - 1);
+		int threads = Math.max(1, Runtime.getRuntime().availableProcessors() - 1);
 		log.debug("Threads: " + threads);
 
 		File data = new File("data/gemeinden_gs2010/gem_dat.shp");
@@ -69,8 +69,7 @@ public class ChowClustering_GWR {
 
 		DoubleMatrix Y = new DoubleMatrix(LinearModel.getY(sdf.samples, ta));
 		DoubleMatrix X = new DoubleMatrix(LinearModel.getX(sdf.samples, fa, true));
-		DoubleMatrix Xt = X.transpose();
-
+		
 		class GWR_loc {
 			double[] coefficients;
 			Double response;
@@ -81,9 +80,7 @@ public class ChowClustering_GWR {
 		boolean gaussian = true;
 		boolean adaptive = true;
 
-		long time = System.currentTimeMillis();
-
-		for (int bw = 5; bw <= 30; bw++) {
+		for (int bw = 8; bw <= 30; bw++) {
 			final int bandwidth = bw;
 			List<Future<GWR_loc>> futures = new ArrayList<>();
 			
@@ -115,20 +112,19 @@ public class ChowClustering_GWR {
 							h = gDist.dist(s.get(k - 1), a);
 						}
 
-						double[][] w = new double[sdf.samples.size()][sdf.samples.size()];
-						for (int j = 0; j < sdf.samples.size(); j++) {
+						DoubleMatrix XtW = new DoubleMatrix(X.getColumns(),X.getRows());		
+						for( int j = 0; j < X.getRows(); j++ ) {
 							double[] b = sdf.samples.get(j);
-
-							double d = gDist.dist(a, b);
-
-							// Gaussian
-							if (gaussian)
-								w[j][j] = Math.exp(-0.5 * Math.pow(d / h, 2));
+							double d = gDist.dist( a, b);
+													
+							double w;
+							if( gaussian ) // Gaussian
+								w = Math.exp(-0.5*Math.pow(d/h,2));
 							else // bisquare
-								w[j][j] = Math.pow(1.0 - Math.pow(d / h, 2), 2);
-						}
+								w = Math.pow(1.0-Math.pow(d/h, 2), 2);
+							XtW.putColumn(j, X.getRow(j).mul(w));
+						}	
 						
-						DoubleMatrix XtW = Xt.mmul(new DoubleMatrix(w));
 						DoubleMatrix XtWX = XtW.mmul(X);
 
 						DoubleMatrix beta = Solve.solve(XtWX, XtW.mmul(Y));
@@ -164,8 +160,6 @@ public class ChowClustering_GWR {
 					e.printStackTrace();
 				}
 			}
-
-			log.debug("took: " + (System.currentTimeMillis() - time) / 1000.0);
 
 			DoubleMatrix S = new DoubleMatrix(s);
 			double traceS = S.diag().sum();
