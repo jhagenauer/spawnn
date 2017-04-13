@@ -98,12 +98,12 @@ public class GWR {
 		DoubleMatrix Y = new DoubleMatrix( LinearModel.getY( samples, ta) );
 		DoubleMatrix X = new DoubleMatrix( LinearModel.getX( samples, fa, true) );
 										
-		for( double bw : new double[]{ 9 } ) {
+		for( double bw : new double[]{ 4,5,6,7,8,9,10,11,12,13,14,15 } ) {
 			
 			// estimate coefficients
 			List<Double> responseTrain = new ArrayList<Double>();
-			DoubleMatrix betas = new DoubleMatrix(samples.size(),fa.length+1);
-			DoubleMatrix S = new DoubleMatrix(samples.size(),samples.size());
+			DoubleMatrix betas = new DoubleMatrix(X.getRows(),X.getColumns() );
+			DoubleMatrix S = new DoubleMatrix( X.getRows(), X.getRows() );
 			
 			Map<double[],Double> bandwidth = new HashMap<>();
 			for( double[] a : samples ) {

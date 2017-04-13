@@ -14,4 +14,8 @@ public class DataFrame {
 	public String[] getNames() {
 		return names.toArray(new String[]{});
 	}
+	
+	public int size() {
+		return samples.size();
+	}
 }
