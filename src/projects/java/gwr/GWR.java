@@ -128,7 +128,7 @@ public class GWR {
 				DoubleMatrix XtW = new DoubleMatrix(X.getColumns(),X.getRows());		
 				for( int j = 0; j < X.getRows(); j++ ) {
 					double[] b = samples.get(j);
-					double d = gDist.dist( a, b);
+					double d = gDist.dist( a, b );
 											
 					double w;
 					if( gaussian ) // Gaussian
