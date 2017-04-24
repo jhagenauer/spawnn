@@ -62,22 +62,23 @@ public class IncLLM implements SupervisedNet {
 	
 	public int maxNeurons = Integer.MAX_VALUE;
 	
-	private void train( double[] neuron, double[] x, double[] desired, double a, double aLn ) {
-		double[] response = getResponse(x, neuron);
+	private void train( double[] w, double[] x, double[] desired, double adapt, double adapt2 ) {
+		double[] r = getResponse(x, w);
+				
 		// adapt prototype
-		for( int i = 0; i < neuron.length; i++ )
-			neuron[i] += a * ( x[i] - neuron[i] );
+		for( int i = 0; i < w.length; i++ )
+			w[i] += adapt * ( x[i] - w[i] );
 		
 		// adapt output Vector
-		double[] o = output.get(neuron); 
+		double[] o = output.get(w); 
 		for( int i = 0; i < desired.length; i++ )
-			o[i] += aLn * (desired[i] - o[i]);
+			o[i] += adapt2 * (desired[i] - o[i]);
 									
 		// adapt matrix
-		double[][] m = matrix.get(neuron);
+		double[][] m = matrix.get(w);
 		for( int i = 0; i < m.length; i++ )  // row
-			for( int j = 0; j < m[i].length; j++ ) // column, nr of attributes
-				m[i][j] += aLn * (desired[i] - response[i]) * (x[fa[j]] - neuron[fa[j]]); // outer product
+			for( int j = 0; j < fa.length; j++ ) // column, nr of attributes
+				m[i][j] += adapt2 * (desired[i] - r[i]) * (x[fa[j]] - w[fa[j]]); // outer product
 	}
 		
 	@Override
@@ -118,12 +119,13 @@ public class IncLLM implements SupervisedNet {
 		neurons.retainAll(neuronsToKeep);
 		errors.keySet().retainAll(neuronsToKeep);
 		
-		if( t % lambda == 0 && neurons.size() < maxNeurons ) {
+		if( (t+1) % lambda == 0 && neurons.size() < maxNeurons ) {
+			
 			double[] q = null;
 			for( double[] n : neurons )
 				if( q == null || errors.get(q) < errors.get(n) ) 
 					q = n;
-			
+						
 			double[] f = null;
 			for( double[] n : Connection.getNeighbors(cons.keySet(), q, 1) )
 				if( f == null || errors.get(f) < errors.get(n) )
