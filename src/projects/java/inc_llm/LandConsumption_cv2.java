@@ -1,8 +1,16 @@
 package inc_llm;
 
+import java.awt.Color;
+import java.awt.Graphics2D;
+import java.awt.Rectangle;
+import java.awt.RenderingHints;
+import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -12,12 +20,29 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
+import javax.imageio.ImageIO;
+
 import org.apache.log4j.Logger;
+import org.geotools.feature.DefaultFeatureCollection;
+import org.geotools.feature.simple.SimpleFeatureBuilder;
+import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
+import org.geotools.geometry.jts.ReferencedEnvelope;
+import org.geotools.map.FeatureLayer;
+import org.geotools.map.MapContent;
+import org.geotools.renderer.GTRenderer;
+import org.geotools.renderer.lite.StreamingRenderer;
+import org.geotools.styling.Mark;
+import org.geotools.styling.SLD;
+import org.geotools.styling.StyleBuilder;
 import org.jblas.DoubleMatrix;
 import org.jblas.Solve;
-import org.jfree.data.function.PowerFunction2D;
 
+import com.vividsolutions.jts.geom.Coordinate;
+import com.vividsolutions.jts.geom.Geometry;
+import com.vividsolutions.jts.geom.GeometryFactory;
+import com.vividsolutions.jts.geom.MultiPolygon;
 import com.vividsolutions.jts.geom.Point;
+import com.vividsolutions.jts.geom.Polygon;
 
 import chowClustering.LinearModel;
 import nnet.SupervisedUtils;
@@ -27,8 +52,9 @@ import spawnn.ng.sorter.DefaultSorter;
 import spawnn.ng.sorter.Sorter;
 import spawnn.ng.utils.NGUtils;
 import spawnn.som.decay.ConstantDecay;
-import spawnn.som.decay.PowerDecay;
 import spawnn.utils.Clustering;
+import spawnn.utils.ColorBrewer;
+import spawnn.utils.ColorUtils;
 import spawnn.utils.DataUtils;
 import spawnn.utils.DataUtils.Transform;
 import spawnn.utils.SpatialDataFrame;
@@ -74,38 +100,38 @@ public class LandConsumption_cv2 {
 		boolean adaptive = true;
 
 		int t_max = 1000000;
-		int initNeurons = 4;
 
-		double lrB = 0.001;
-		double lrBln = 0.00001;
-		double lrN = 0;
-		double lrNln = 0;
-
-		int aMax = t_max;
-		int lambda = t_max;
+		int aMax = 100;
+		int lambda = 200;
 		double alpha = 0.5;
 		double beta = 0.000005;
 
 		List<double[]> neurons = new ArrayList<double[]>();
-		for (int i = 0; i < initNeurons; i++) {
+		for (int i = 0; i < 2; i++) {
 			double[] d = samples.get(r.nextInt(samples.size()));
 			neurons.add(Arrays.copyOf(d, d.length));
 		}
 
 		Sorter<double[]> sorter = new DefaultSorter<double[]>(gDist);
 
+		/*IncLLM llm = new IncLLM(neurons, 
+				new PowerDecay(0.01,0.0001), 
+				new ConstantDecay(0.001), 
+				new PowerDecay(0.001,0.00001),  
+				new ConstantDecay(0.00001), 
+				sorter, aMax, lambda, alpha, beta, fa, 1, t_max);*/
+		
 		IncLLM llm = new IncLLM(neurons, 
-				new PowerDecay(0.1,0.0001), 
-				new ConstantDecay(0), 
-				new PowerDecay(0.01,0.0001),  
-				new ConstantDecay(0), 
+				new ConstantDecay(0.01), 
+				new ConstantDecay(0.001), 
+				new ConstantDecay(0.001),  
+				new ConstantDecay(0.0001), 
 				sorter, aMax, lambda, alpha, beta, fa, 1, t_max);
-		//IncLLM llm = new IncLLM(neurons, lrB, lrBln, lrN, lrNln, sorter, aMax, lambda, alpha, beta, fa, 1);
-		int t = 0;
-		for (; t < t_max; t++) {
+		
+		for (int t = 0; t < t_max; t++) {
 			int idx = r.nextInt(samplesTrain.size());
 			llm.train(t, samplesTrain.get(idx), desiredTrain.get(idx));
-			
+			 
 			if( t % 10000 == 0 ) {
 				List<double[]> responseVal = new ArrayList<double[]>();
 				for (int i = 0; i < samplesVal.size(); i++)
@@ -113,9 +139,10 @@ public class LandConsumption_cv2 {
 				log.debug(t+" " + SupervisedUtils.getRMSE(responseVal, desiredVal));
 				
 				
-				Map<double[],Set<double[]>> mTrain = NGUtils.getBmuMapping(samplesTrain, neurons, sorter);
-				Map<double[],Set<double[]>> mVal = NGUtils.getBmuMapping(samplesVal, neurons, sorter);
+				Map<double[],Set<double[]>> mTrain = NGUtils.getBmuMapping(samplesTrain, llm.neurons, sorter);
+				Map<double[],Set<double[]>> mVal = NGUtils.getBmuMapping(samplesVal, llm.neurons, sorter);
 				log.debug(t+" " + DataUtils.getMeanQuantizationError(mTrain, gDist) + "\t" + DataUtils.getMeanQuantizationError(mVal, gDist));
+				log.debug(t+" "+llm.neurons.size());
 			}
 		}
 
@@ -124,7 +151,34 @@ public class LandConsumption_cv2 {
 			responseVal.add(llm.present(samplesVal.get(i)));
 
 		log.debug("incLLM RMSE: " + SupervisedUtils.getRMSE(responseVal, desiredVal));
-
+		
+		{
+			Map<double[],Set<double[]>> mTrain = NGUtils.getBmuMapping(samplesTrain, llm.neurons, sorter);
+			Map<double[],Set<double[]>> mVal = NGUtils.getBmuMapping(samplesVal, llm.neurons, sorter);
+					
+			List<Set<double[]>> lTrain = new ArrayList<>();
+			List<Set<double[]>> lVal = new ArrayList<>();
+			for( double[] d : mTrain.keySet() ) { 
+				lTrain.add(mTrain.get(d));
+				lVal.add(mVal.get(d));
+			}			
+			LinearModel lm = new LinearModel( samplesTrain, lTrain, fa, ta, false);
+			List<Double> pred = lm.getPredictions(samplesVal, lVal, fa);
+			log.debug("incLLM-LM RMSE: "+SupervisedUtils.getRMSE(pred, samplesVal, ta));
+		}
+		
+		
+		log.debug("neurons: "+llm.neurons.size());
+		
+		geoDrawWithOverlay(sdf.geoms, llm.neurons, ga, "data/incllm.png");
+		
+		/*for( double[] n : llm.neurons ) {
+			List<double[]> nbs = new ArrayList<>(Connection.getNeighbors(llm.cons.keySet(), n, 1));
+			log.debug("n: "+n.hashCode());
+			for( int i = 0; i < nbs.size(); i++ )
+				log.debug(i+" "+nbs.get(i).hashCode() );
+		}*/
+				
 		for (double bw : new double[]{ 8 }) {
 
 			Map<double[], Double> bandwidth = new HashMap<>();
@@ -183,7 +237,7 @@ public class LandConsumption_cv2 {
 		// k-means ------------
 		
 		{
-			Map<double[], Set<double[]>> mTrain = Clustering.kMeans(samplesTrain, initNeurons, gDist, 0.000001);
+			Map<double[], Set<double[]>> mTrain = Clustering.kMeans(samplesTrain, llm.neurons.size(), gDist, 0.000001);
 			Map<double[],Set<double[]>> mVal = new HashMap<>();
 			for( double[] d : samplesVal ) {
 				double[] bestK = null;
@@ -205,6 +259,101 @@ public class LandConsumption_cv2 {
 			LinearModel lm = new LinearModel( samplesTrain, lTrain, fa, ta, false);
 			List<Double> pred = lm.getPredictions(samplesVal, lVal, fa);
 			log.debug("kMeans LM: "+SupervisedUtils.getRMSE(pred, samplesVal, ta));
+		}
+	}
+	
+	public static void geoDrawWithOverlay( List<Geometry> geoms, List<double[]> fg, int[] ga, String fn ) {
+
+		try {
+			
+			
+			StyleBuilder sb = new StyleBuilder();
+			MapContent map = new MapContent();
+			ReferencedEnvelope maxBounds = null;
+			
+			{ // background
+				SimpleFeatureTypeBuilder typeBuilder = new SimpleFeatureTypeBuilder();
+				typeBuilder.setName("bg");
+				typeBuilder.setCRS(null);
+	
+				if (geoms.get(0) instanceof Polygon)
+					typeBuilder.add("the_geom", Polygon.class);
+				else if (geoms.get(0) instanceof Point)
+					typeBuilder.add("the_geom", Point.class);
+				else if (geoms.get(0) instanceof MultiPolygon)
+					typeBuilder.add("the_geom", MultiPolygon.class);
+				else
+					throw new RuntimeException("Unknown Geometry type: " + geoms.get(0));
+				SimpleFeatureBuilder featureBuilder = new SimpleFeatureBuilder(typeBuilder.buildFeatureType());
+				
+				DefaultFeatureCollection fc = new DefaultFeatureCollection();
+				for (int i = 0; i < geoms.size(); i++ ) {
+					featureBuilder.add(geoms.get(i));
+					fc.add(featureBuilder.buildFeature("" + fc.size()));
+				}			
+				maxBounds = fc.getBounds();
+	
+				Color color = Color.GRAY;
+				if (geoms.get(0) instanceof Polygon || geoms.get(0) instanceof MultiPolygon)
+					map.addLayer(new FeatureLayer(fc, SLD.wrapSymbolizers(sb.createPolygonSymbolizer(color, Color.BLACK, 1.0))));
+				else if (geoms.get(0) instanceof Point) {
+					Mark mark = sb.createMark(StyleBuilder.MARK_CIRCLE, color);
+					map.addLayer(new FeatureLayer(fc, SLD.wrapSymbolizers(sb.createPointSymbolizer(sb.createGraphic(null, mark, null)))));
+				} else
+					throw new RuntimeException("No layer for geometry type added");
+			}
+			
+			{ // foreground
+				SimpleFeatureTypeBuilder typeBuilder = new SimpleFeatureTypeBuilder();
+				typeBuilder.setName("bg");
+				typeBuilder.setCRS(null);
+				typeBuilder.add("the_geom", Point.class);
+				SimpleFeatureBuilder featureBuilder = new SimpleFeatureBuilder(typeBuilder.buildFeatureType());
+				
+				DefaultFeatureCollection fc = new DefaultFeatureCollection();
+				GeometryFactory gf = new GeometryFactory();
+				for (double[] d : fg ) {
+					featureBuilder.add(gf.createPoint( new Coordinate(d[ga[0]], d[ga[1]])) );
+					fc.add(featureBuilder.buildFeature("" + fc.size()));
+				}			
+				maxBounds.expandToInclude(fc.getBounds());
+	
+				Color color = Color.RED;
+				Mark mark = sb.createMark(StyleBuilder.MARK_CIRCLE, color);
+				map.addLayer(new FeatureLayer(fc, SLD.wrapSymbolizers(sb.createPointSymbolizer(sb.createGraphic(null, mark, null)))));
+			}
+
+			GTRenderer renderer = new StreamingRenderer();
+			RenderingHints hints = new RenderingHints(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+			hints.put(RenderingHints.KEY_ALPHA_INTERPOLATION, RenderingHints.VALUE_ALPHA_INTERPOLATION_QUALITY);
+			hints.put(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_SPEED);
+			renderer.setMapContent(map);
+
+			Rectangle imageBounds = null;
+			try {
+				double heightToWidth = maxBounds.getSpan(1) / maxBounds.getSpan(0);
+				int imageWidth = 2000;
+
+				imageBounds = new Rectangle(0, 0, imageWidth, (int) Math.round(imageWidth * heightToWidth));
+				// imageBounds = new Rectangle( 0, 0, mp.getWidth(), (int) Math.round(mp.getWidth() * heightToWidth));
+
+				BufferedImage image = new BufferedImage(imageBounds.width, imageBounds.height, BufferedImage.TYPE_INT_RGB);
+
+				// png
+				Graphics2D gr = image.createGraphics();
+				gr.setPaint(Color.WHITE);
+				gr.fill(imageBounds);
+
+				renderer.paint(gr, imageBounds, maxBounds);
+
+				ImageIO.write(image, "png", new FileOutputStream(fn));
+				image.flush();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			map.dispose();
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
 	}
 }

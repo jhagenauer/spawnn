@@ -31,16 +31,44 @@ public class IncLLM implements SupervisedNet {
 	int t_max = 0;
 	boolean useDf = false;
 	
+	// more than 2 neurons are removed immediately
 	public IncLLM( Collection<double[]> neurons, DecayFunction dfB, DecayFunction dfBln, DecayFunction dfN, DecayFunction dfNln, Sorter<double[]> sorter, int aMax, int lambda, double alpha, double beta, int[] fa, int outDim, int t_max ) {
-		this(neurons,0,0,0,0,sorter,aMax,lambda,alpha,beta,fa,outDim);
 		this.dfB = dfB;
 		this.dfBln = dfBln;
 		this.dfN = dfN;
 		this.dfNln = dfNln;
 		this.useDf = true;
 		this.t_max = t_max;
+		
+		this.cons = new HashMap<Connection,Integer>();
+		this.aMax = aMax;
+		this.lambda = lambda;
+		this.alpha = alpha;
+		this.beta = beta;
+		this.sorter = sorter;
+		this.neurons = new ArrayList<double[]>(neurons);
+		this.fa = fa;
+		
+		this.errors = new HashMap<double[],Double>();
+		for( double[] n : this.neurons )
+			this.errors.put( n, 0.0 );
+		
+		Random r = new Random();
+		for( double[] d : neurons ) {
+			double[] o = new double[outDim];
+			for( int i = 0; i < o.length; i++ )
+				o[i] = r.nextDouble();
+			output.put( d, o );
+			
+			double[][] m = new double[outDim][this.fa.length]; // m x n
+			for (int i = 0; i < m.length; i++)
+				for (int j = 0; j < m[i].length; j++)
+					m[i][j] = r.nextDouble();
+			matrix.put(d, m);
+		}
 	}
 	
+	@Deprecated
 	public IncLLM( Collection<double[]> neurons, double lrB, double lrBln, double lrN, double lrNln, Sorter<double[]> sorter, int aMax, int lambda, double alpha, double beta, int[] fa, int outDim ) {
 		this.lrB = lrB;
 		this.lrBln = lrBln;
@@ -60,7 +88,7 @@ public class IncLLM implements SupervisedNet {
 			this.errors.put( n, 0.0 );
 		
 		Random r = new Random();
-		for( double[] d : getNeurons() ) {
+		for( double[] d : neurons ) {
 			double[] o = new double[outDim];
 			for( int i = 0; i < o.length; i++ )
 				o[i] = r.nextDouble();
@@ -132,15 +160,15 @@ public class IncLLM implements SupervisedNet {
 			if( cons.get(c) > aMax )
 				consToRemove.add(c);
 		cons.keySet().removeAll(consToRemove);
-		
-		Set<double[]> neuronsToKeep = new HashSet<double[]>();
+				
+		Set<double[]> neuronsToRetain = new HashSet<double[]>();
 		for( Connection c : cons.keySet() ) {
-			neuronsToKeep.add(c.getA());
-			neuronsToKeep.add(c.getB());
+			neuronsToRetain.add(c.getA());
+			neuronsToRetain.add(c.getB());
 		}
-		neurons.retainAll(neuronsToKeep);
-		errors.keySet().retainAll(neuronsToKeep);
-		
+		neurons.retainAll(neuronsToRetain);
+		errors.keySet().retainAll(neuronsToRetain);
+				
 		if( (t+1) % lambda == 0 && neurons.size() < maxNeurons ) {
 			
 			double[] q = null;
