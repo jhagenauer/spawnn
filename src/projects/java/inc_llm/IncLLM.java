@@ -12,6 +12,7 @@ import java.util.Set;
 import spawnn.SupervisedNet;
 import spawnn.ng.Connection;
 import spawnn.ng.sorter.Sorter;
+import spawnn.som.decay.DecayFunction;
 
 public class IncLLM implements SupervisedNet {
 	
@@ -26,7 +27,20 @@ public class IncLLM implements SupervisedNet {
 	public Map<double[],double[]> output = new HashMap<double[],double[]>(); // intercept
 	public Map<double[],double[][]> matrix = new HashMap<double[],double[][]>(); // slope, jacobian matrix (m(output-dim) x n(input-dim) ), m rows, n columns
 	
-		
+	private DecayFunction dfB, dfBln, dfN, dfNln;
+	int t_max = 0;
+	boolean useDf = false;
+	
+	public IncLLM( Collection<double[]> neurons, DecayFunction dfB, DecayFunction dfBln, DecayFunction dfN, DecayFunction dfNln, Sorter<double[]> sorter, int aMax, int lambda, double alpha, double beta, int[] fa, int outDim, int t_max ) {
+		this(neurons,0,0,0,0,sorter,aMax,lambda,alpha,beta,fa,outDim);
+		this.dfB = dfB;
+		this.dfBln = dfBln;
+		this.dfN = dfN;
+		this.dfNln = dfNln;
+		this.useDf = true;
+		this.t_max = t_max;
+	}
+	
 	public IncLLM( Collection<double[]> neurons, double lrB, double lrBln, double lrN, double lrNln, Sorter<double[]> sorter, int aMax, int lambda, double alpha, double beta, int[] fa, int outDim ) {
 		this.lrB = lrB;
 		this.lrBln = lrBln;
@@ -99,11 +113,19 @@ public class IncLLM implements SupervisedNet {
 			cons.put(c, cons.get(c)+1 );
 		
 		// train best neuron
-		train(s_1, x, desired, lrB, lrBln);
+		double nt = (double)t/t_max;
+		if( useDf )
+			train(s_1, x, desired, dfB.getValue(nt), dfBln.getValue(nt) );
+		else
+			train(s_1, x, desired, lrB, lrBln);
 		
 		// train neighbors
-		for( double[] n : Connection.getNeighbors(cons.keySet(), s_1, 1) )
-			train(n, x, desired, lrN, lrNln);
+		for( double[] n : Connection.getNeighbors(cons.keySet(), s_1, 1) ) {
+			if( useDf )
+				train(n, x, desired, dfN.getValue(nt), dfNln.getValue(nt) );
+			else
+				train(n, x, desired, lrN, lrNln);
+		}			
 		
 		Set<Connection> consToRemove = new HashSet<Connection>();
 		for( Connection c : cons.keySet() )
