@@ -110,18 +110,18 @@ public class LinearModel {
 		List<Double> pred = getPredictions(l, fa);
 		return SupervisedUtils.getResidualSumOfSquares(pred, l, ta);
 	}
-				
-	public List<Double> getPredictions( List<double[]> samples, int[] faPred ) {		
+	
+	public List<Double> getPredictions( List<double[]> samples, List<Set<double[]>> cl, int[] faPred ) {	
 		Double[] predictions = new Double[samples.size()];
-							
+		
 		for (int l = 0; l < betas.size(); l++ ) {
-			Set<double[]> c = cluster.get(l);
+			Set<double[]> c = cl.get(l);
 			
 			List<double[]> subSamples = new ArrayList<>();
 			Map<Integer,Integer> idxMap = new HashMap<Integer,Integer>(); 
 			for( int i = 0; i < samples.size(); i++ ) {
 				double[] d = samples.get(i);
-				if( cluster.size() == 1 || c.contains( d ) ) {
+				if( cl.size() == 1 || c.contains( d ) ) {
 					idxMap.put(subSamples.size(), i);
 					subSamples.add(d);
 				}
@@ -142,6 +142,11 @@ public class LinearModel {
 				predictions[idxMap.get(i)] = p[i];				
 		}
 		return Arrays.asList(predictions);
+	}
+				
+	// assumes that all samples are assigned to some cluster!
+	public List<Double> getPredictions( List<double[]> samples, int[] faPred ) {		
+		return getPredictions(samples, cluster, faPred);
 	}
 	
 	public static double[] getY(List<double[]> samples, int ta) {

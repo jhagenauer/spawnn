@@ -86,17 +86,13 @@
 						<archive>
 							<manifest>
 								<mainClass>spawnn.gui.SpawnnGui</mainClass>
-
 								<addDefaultImplementationEntries>true</addDefaultImplementationEntries>
 								<addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
-
 							</manifest>
-
 							<manifestEntries>
 								<Specification-Vendor>MyCompany</Specification-Vendor>
 								<Implementation-Vendor>MyCompany</Implementation-Vendor>
 							</manifestEntries>
-
 						</archive>
 						<appendAssemblyId>true</appendAssemblyId>
 						<archiverConfig>

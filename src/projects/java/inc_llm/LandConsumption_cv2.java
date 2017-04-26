@@ -174,22 +174,37 @@ public class LandConsumption_cv2 {
 		
 		// lm --------------
 		
+		{
 		LinearModel lm = new LinearModel(samplesTrain, fa, ta, false);
 		List<Double> pred = lm.getPredictions(samplesVal, fa);
 		log.debug("LM: "+SupervisedUtils.getRMSE(pred, samplesVal, ta));
+		}
 		
 		// k-means ------------
-		Map<double[], Set<double[]>> mTrain = Clustering.kMeans(samplesTrain, initNeurons, gDist, 0.000001);
-		Map<double[],Set<double[]>> mVal = new HashMap<>();
-		for( double[] d : samplesVal ) {
-			double[] bestK = null;
-			for( double[] k : mTrain.keySet() )
-				if( bestK == null || gDist.dist(d, k) < gDist.dist( d, bestK ) )
-					bestK = k;
-			if( !mVal.containsKey( bestK ))
-				mVal.put(bestK, new HashSet<double[]>() );
-			mVal.get(bestK).add(d);
+		
+		{
+			Map<double[], Set<double[]>> mTrain = Clustering.kMeans(samplesTrain, initNeurons, gDist, 0.000001);
+			Map<double[],Set<double[]>> mVal = new HashMap<>();
+			for( double[] d : samplesVal ) {
+				double[] bestK = null;
+				for( double[] k : mTrain.keySet() )
+					if( bestK == null || gDist.dist(d, k) < gDist.dist( d, bestK ) )
+						bestK = k;
+				if( !mVal.containsKey( bestK ))
+					mVal.put(bestK, new HashSet<double[]>() );
+				mVal.get(bestK).add(d);
+			}
+			log.debug("kMeans: " + DataUtils.getMeanQuantizationError(mTrain, gDist) + "\t" + DataUtils.getMeanQuantizationError(mVal, gDist));
+					
+			List<Set<double[]>> lTrain = new ArrayList<>();
+			List<Set<double[]>> lVal = new ArrayList<>();
+			for( double[] d : mTrain.keySet() ) { 
+				lTrain.add(mTrain.get(d));
+				lVal.add(mVal.get(d));
+			}			
+			LinearModel lm = new LinearModel( samplesTrain, lTrain, fa, ta, false);
+			List<Double> pred = lm.getPredictions(samplesVal, lVal, fa);
+			log.debug("kMeans LM: "+SupervisedUtils.getRMSE(pred, samplesVal, ta));
 		}
-		log.debug("kMeans: " + DataUtils.getMeanQuantizationError(mTrain, gDist) + "\t" + DataUtils.getMeanQuantizationError(mVal, gDist));
 	}
 }
