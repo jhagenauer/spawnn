@@ -10,7 +10,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -52,9 +51,8 @@ import spawnn.ng.sorter.DefaultSorter;
 import spawnn.ng.sorter.Sorter;
 import spawnn.ng.utils.NGUtils;
 import spawnn.som.decay.ConstantDecay;
+import spawnn.som.decay.PowerDecay;
 import spawnn.utils.Clustering;
-import spawnn.utils.ColorBrewer;
-import spawnn.utils.ColorUtils;
 import spawnn.utils.DataUtils;
 import spawnn.utils.DataUtils.Transform;
 import spawnn.utils.SpatialDataFrame;
@@ -102,7 +100,7 @@ public class LandConsumption_cv2 {
 		int t_max = 1000000;
 
 		int aMax = 100;
-		int lambda = 200;
+		int lambda = 1000;
 		double alpha = 0.5;
 		double beta = 0.000005;
 
@@ -114,19 +112,19 @@ public class LandConsumption_cv2 {
 
 		Sorter<double[]> sorter = new DefaultSorter<double[]>(gDist);
 
-		/*IncLLM llm = new IncLLM(neurons, 
-				new PowerDecay(0.01,0.0001), 
-				new ConstantDecay(0.001), 
-				new PowerDecay(0.001,0.00001),  
-				new ConstantDecay(0.00001), 
-				sorter, aMax, lambda, alpha, beta, fa, 1, t_max);*/
-		
 		IncLLM llm = new IncLLM(neurons, 
+				new PowerDecay(0.01, 0.0001), 
+				new PowerDecay(0.01, 0.0001), 
+				new PowerDecay(0.001, 0.00001),  
+				new PowerDecay(0.001, 0.00001), 
+				sorter, aMax, lambda, alpha, beta, fa, 1, t_max);
+		
+		/*IncLLM llm = new IncLLM(neurons, 
 				new ConstantDecay(0.01), 
 				new ConstantDecay(0.001), 
 				new ConstantDecay(0.001),  
 				new ConstantDecay(0.0001), 
-				sorter, aMax, lambda, alpha, beta, fa, 1, t_max);
+				sorter, aMax, lambda, alpha, beta, fa, 1, t_max);*/
 		
 		for (int t = 0; t < t_max; t++) {
 			int idx = r.nextInt(samplesTrain.size());

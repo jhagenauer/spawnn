@@ -12,12 +12,13 @@ import java.util.Set;
 import spawnn.SupervisedNet;
 import spawnn.ng.Connection;
 import spawnn.ng.sorter.Sorter;
+import spawnn.som.decay.ConstantDecay;
 import spawnn.som.decay.DecayFunction;
 
 public class IncLLM implements SupervisedNet {
 	
 	protected List<double[]> neurons = null;
-	protected double lrB, lrBln, lrN, lrNln, alpha, beta;
+	protected double alpha, beta;
 	protected Sorter<double[]> sorter;
 	protected Map<Connection,Integer> cons;
 	protected Map<double[],Double> errors;
@@ -70,36 +71,7 @@ public class IncLLM implements SupervisedNet {
 	
 	@Deprecated
 	public IncLLM( Collection<double[]> neurons, double lrB, double lrBln, double lrN, double lrNln, Sorter<double[]> sorter, int aMax, int lambda, double alpha, double beta, int[] fa, int outDim ) {
-		this.lrB = lrB;
-		this.lrBln = lrBln;
-		this.lrN = lrN;
-		this.lrNln = lrNln;
-		this.cons = new HashMap<Connection,Integer>();
-		this.aMax = aMax;
-		this.lambda = lambda;
-		this.alpha = alpha;
-		this.beta = beta;
-		this.sorter = sorter;
-		this.neurons = new ArrayList<double[]>(neurons);
-		this.fa = fa;
-		
-		this.errors = new HashMap<double[],Double>();
-		for( double[] n : this.neurons )
-			this.errors.put( n, 0.0 );
-		
-		Random r = new Random();
-		for( double[] d : neurons ) {
-			double[] o = new double[outDim];
-			for( int i = 0; i < o.length; i++ )
-				o[i] = r.nextDouble();
-			output.put( d, o );
-			
-			double[][] m = new double[outDim][this.fa.length]; // m x n
-			for (int i = 0; i < m.length; i++)
-				for (int j = 0; j < m[i].length; j++)
-					m[i][j] = r.nextDouble();
-			matrix.put(d, m);
-		}
+		this( neurons, new ConstantDecay(lrB), new ConstantDecay(lrBln), new ConstantDecay(lrN), new ConstantDecay(lrNln), sorter, aMax, lambda, alpha, beta, fa, 1, 0);
 	}
 	
 	public int maxNeurons = Integer.MAX_VALUE;
@@ -142,19 +114,12 @@ public class IncLLM implements SupervisedNet {
 		
 		// train best neuron
 		double nt = (double)t/t_max;
-		if( useDf )
-			train(s_1, x, desired, dfB.getValue(nt), dfBln.getValue(nt) );
-		else
-			train(s_1, x, desired, lrB, lrBln);
+		train(s_1, x, desired, dfB.getValue(nt), dfBln.getValue(nt) );
 		
 		// train neighbors
-		for( double[] n : Connection.getNeighbors(cons.keySet(), s_1, 1) ) {
-			if( useDf )
-				train(n, x, desired, dfN.getValue(nt), dfNln.getValue(nt) );
-			else
-				train(n, x, desired, lrN, lrNln);
-		}			
-		
+		for( double[] n : Connection.getNeighbors(cons.keySet(), s_1, 1) )
+			train(n, x, desired, dfN.getValue(nt), dfNln.getValue(nt) );
+				
 		Set<Connection> consToRemove = new HashSet<Connection>();
 		for( Connection c : cons.keySet() )
 			if( cons.get(c) > aMax )
