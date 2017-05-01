@@ -27,7 +27,7 @@ public class GeneticAlgorithm {
 	
 	private static Logger log = Logger.getLogger(GeneticAlgorithm.class);
 	private final static Random r = new Random();
-	int threads = Math.max(1 , Runtime.getRuntime().availableProcessors() -1 );;
+	int threads = 5;//Math.max(1 , Runtime.getRuntime().availableProcessors() -1 );;
 	
 	public int tournamentSize = 2;
 	public double recombProb = 0.7;

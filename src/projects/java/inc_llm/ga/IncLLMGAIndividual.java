@@ -4,9 +4,10 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Random;
 
-import org.jfree.util.Log;
+import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 
 import com.vividsolutions.jts.geom.Point;
 
@@ -38,14 +39,10 @@ public class IncLLMGAIndividual extends GAIndividual {
 	static int ta = 7;
 	static Dist<double[]> gDist = new EuclideanDist(ga);
 	static Sorter<double[]> sorter = new DefaultSorter<double[]>(gDist);
-	
-	static List<double[]> samplesTrain = new ArrayList<>();
-	static List<double[]> desiredTrain = new ArrayList<>();
-	static List<double[]> samplesVal = new ArrayList<>();
-	static List<double[]> desiredVal = new ArrayList<>();
-
+	static List<Entry<List<Integer>, List<Integer>>> cvList;
+	static List<double[]> samples;
 	static Random r = new Random(0);
-	
+
 	static {
 		
 		SpatialDataFrame sdf = DataUtils.readSpatialDataFrameFromShapefile(new File("data/election/election2004.shp"), true);
@@ -55,18 +52,10 @@ public class IncLLMGAIndividual extends GAIndividual {
 			sdf.samples.get(i)[1] = p.getY();
 		}
 
-		List<double[]> samples = sdf.samples;
+		samples = sdf.samples;
 		DataUtils.transform(samples, fa, Transform.zScore);
-
-		for (double[] d : samples) {
-			if (r.nextDouble() < 0.8) {
-				samplesTrain.add(d);
-				desiredTrain.add(new double[] { d[ta] });
-			} else {
-				samplesVal.add(d);
-				desiredVal.add(new double[] { d[ta] });
-			}
-		}
+		
+		cvList = SupervisedUtils.getCVList(10, 1, samples.size());
 	}
 	
 	enum mode {con,lin,pow};
@@ -132,13 +121,7 @@ public class IncLLMGAIndividual extends GAIndividual {
 	public double getCost() {
 		if( !Double.isNaN(cost) )
 			return cost;
-		
-		List<double[]> neurons = new ArrayList<double[]>();
-		for (int i = 0; i < 2; i++) {
-			double[] d = samplesTrain.get(r.nextInt(samplesTrain.size()));
-			neurons.add(Arrays.copyOf(d, d.length));
-		}
-		
+				
 		DecayFunction[] df = new DecayFunction[4];
 		for( int i = 0; i < df.length; i++ ) {
 			if( a[i] < a[i+4] ) {
@@ -155,20 +138,44 @@ public class IncLLMGAIndividual extends GAIndividual {
 			}
 		}
 		
-		IncLLM llm = new IncLLM(neurons, 
-				df[0],df[1],df[2],df[3],
-				sorter, aMax, lambda, alpha, beta, fa, 1, IncLLMGAIndividual.t_max);
+		SummaryStatistics ss = new SummaryStatistics();
+		for (final Entry<List<Integer>, List<Integer>> cvEntry : cvList) {
+			List<double[]> samplesTrain = new ArrayList<double[]>();
+			List<double[]> desiredTrain = new ArrayList<double[]>();
+			for( int k : cvEntry.getKey() ) {
+				samplesTrain.add(samples.get(k));
+				desiredTrain.add(new double[]{samples.get(k)[ta]});
+			}
+			
+			List<double[]> samplesVal = new ArrayList<double[]>();
+			List<double[]> desiredVal = new ArrayList<double[]>();
+			for( int k : cvEntry.getValue() ) {
+				samplesVal.add(samples.get(k));
+				desiredVal.add(new double[]{samples.get(k)[ta]});
+			}
 				
-		for (int t = 0; t < t_max; t++) {
-			int idx = r.nextInt(samplesTrain.size());
-			llm.train(t, samplesTrain.get(idx), desiredTrain.get(idx));
+			List<double[]> neurons = new ArrayList<double[]>();
+			for (int i = 0; i < 2; i++) {
+				double[] d = samplesTrain.get(r.nextInt(samplesTrain.size()));
+				neurons.add(Arrays.copyOf(d, d.length));
+			}
+			
+			IncLLM llm = new IncLLM(neurons, 
+					df[0],df[1],df[2],df[3],
+					sorter, aMax, lambda, alpha, beta, fa, 1, IncLLMGAIndividual.t_max);
+					
+			for (int t = 0; t < t_max; t++) {
+				int idx = r.nextInt(samplesTrain.size());
+				llm.train(t, samplesTrain.get(idx), desiredTrain.get(idx));
+			}
+	
+			List<double[]> responseVal = new ArrayList<double[]>();
+			for (int i = 0; i < samplesVal.size(); i++)
+				responseVal.add(llm.present(samplesVal.get(i)));
+	
+			ss.addValue(SupervisedUtils.getRMSE(responseVal, desiredVal));
 		}
-
-		List<double[]> responseVal = new ArrayList<double[]>();
-		for (int i = 0; i < samplesVal.size(); i++)
-			responseVal.add(llm.present(samplesVal.get(i)));
-
-		this.cost = SupervisedUtils.getRMSE(responseVal, desiredVal);
+		this.cost = ss.getMean();
 		return cost;
 	}
 	
