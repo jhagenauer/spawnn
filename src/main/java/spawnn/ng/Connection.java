@@ -62,6 +62,8 @@ public class Connection {
 	
 	public static Set<double[]> getNeighbors( Collection<Connection> cons, double[] d, int depth ) {
 		Set<double[]> l = new HashSet<double[]>();
+		if( depth == 0 )
+			return l;
 						
 		for( Connection c : cons ) {
 			double[] a = c.getA();
@@ -75,7 +77,7 @@ public class Connection {
 			else 
 				continue;
 						
-			if( !l.contains(nb ) && depth > 0 ) {
+			if( !l.contains(nb ) ) {
 				l.add( nb );
 				l.addAll( getNeighbors( cons, nb, depth-1));
 			}

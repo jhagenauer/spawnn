@@ -180,10 +180,6 @@ public class IncLLM implements SupervisedNet {
 		return neurons;
 	}
 	
-	public Map<Connection, Integer> getConections() {
-		return cons;
-	}
-
 	@Override
 	public double[] present( double[] x ) {
 		sorter.sort(x, neurons);

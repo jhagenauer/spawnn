@@ -43,6 +43,7 @@ public class GeneticAlgorithm {
 		int maxK = 1000;
 		int k = 0;
 		while( /*k < maxK /*||*/ noImpro < 100 ) {
+			long time = System.currentTimeMillis();
 				
 			// check best and increase noImpro
 			noImpro++;
@@ -110,6 +111,7 @@ public class GeneticAlgorithm {
 			}
 			
 			k++;
+			log.debug("took: "+(System.currentTimeMillis()-time)/1000);
 		}		
 		log.debug(k);
 		return best;

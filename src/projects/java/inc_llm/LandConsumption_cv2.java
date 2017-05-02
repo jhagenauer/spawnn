@@ -112,18 +112,20 @@ public class LandConsumption_cv2 {
 
 		Sorter<double[]> sorter = new DefaultSorter<double[]>(gDist);
 
-		IncLLM llm = new IncLLM(neurons, 
+		//IncLLM llm = new IncLLM(neurons, 
+		IncLLM2 llm = new IncLLM2(neurons, 
 				new ConstantDecay(0.005), 
 				new ConstantDecay(0.005), 
 				new PowerDecay(0.1, 0.000001),  
 				new PowerDecay(0.1, 0.000001), 
 				sorter, aMax, lambda, alpha, beta, fa, 1, t_max);
 		
+		long time = System.currentTimeMillis();
 		for (int t = 0; t < t_max; t++) {
 			int idx = r.nextInt(samplesTrain.size());
 			llm.train(t, samplesTrain.get(idx), desiredTrain.get(idx));
 			 
-			if( t % 10000 == 0 ) {
+			/*if( t % 10000 == 0 ) {
 				List<double[]> responseVal = new ArrayList<double[]>();
 				for (int i = 0; i < samplesVal.size(); i++)
 					responseVal.add(llm.present(samplesVal.get(i)));
@@ -134,14 +136,17 @@ public class LandConsumption_cv2 {
 				Map<double[],Set<double[]>> mVal = NGUtils.getBmuMapping(samplesVal, llm.neurons, sorter);
 				log.debug(t+" " + DataUtils.getMeanQuantizationError(mTrain, gDist) + "\t" + DataUtils.getMeanQuantizationError(mVal, gDist));
 				log.debug(t+" "+llm.neurons.size());
-			}
+			}*/
 		}
 
 		List<double[]> responseVal = new ArrayList<double[]>();
 		for (int i = 0; i < samplesVal.size(); i++)
 			responseVal.add(llm.present(samplesVal.get(i)));
 
+		log.debug( (System.currentTimeMillis()-time)/1000);
 		log.debug("incLLM RMSE: " + SupervisedUtils.getRMSE(responseVal, desiredVal));
+		
+		System.exit(1);
 		
 		{
 			Map<double[],Set<double[]>> mTrain = NGUtils.getBmuMapping(samplesTrain, llm.neurons, sorter);
@@ -254,10 +259,7 @@ public class LandConsumption_cv2 {
 	}
 	
 	public static void geoDrawWithOverlay( List<Geometry> geoms, List<double[]> fg, int[] ga, String fn ) {
-
-		try {
-			
-			
+		try {			
 			StyleBuilder sb = new StyleBuilder();
 			MapContent map = new MapContent();
 			ReferencedEnvelope maxBounds = null;

@@ -154,7 +154,7 @@ public class OptimizeIncLLM_CV {
 							return new double[] {
 									t,
 									llm.getNeurons().size(),
-									llm.getConections().size(),
+									0,//llm.getConections().size(),
 									Meuse.getRMSE(responseVal, desiredVal),
 									Meuse.getR2(responseVal, desiredVal)
 									};

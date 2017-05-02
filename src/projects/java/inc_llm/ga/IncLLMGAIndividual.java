@@ -44,7 +44,6 @@ public class IncLLMGAIndividual extends GAIndividual {
 	static Random r = new Random(0);
 
 	static {
-		
 		SpatialDataFrame sdf = DataUtils.readSpatialDataFrameFromShapefile(new File("data/election/election2004.shp"), true);
 		for (int i = 0; i < sdf.samples.size(); i++) {
 			Point p = sdf.geoms.get(i).getCentroid();
@@ -160,6 +159,7 @@ public class IncLLMGAIndividual extends GAIndividual {
 				neurons.add(Arrays.copyOf(d, d.length));
 			}
 			
+			//IncLLM2 llm = new IncLLM2(neurons, 
 			IncLLM llm = new IncLLM(neurons, 
 					df[0],df[1],df[2],df[3],
 					sorter, aMax, lambda, alpha, beta, fa, 1, IncLLMGAIndividual.t_max);
