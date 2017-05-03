@@ -1,6 +1,5 @@
 package inc_llm.ga;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -13,15 +12,6 @@ import java.util.concurrent.Future;
 
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.log4j.Logger;
-import org.jblas.DoubleMatrix;
-
-import com.vividsolutions.jts.geom.Point;
-
-import chowClustering.LinearModel;
-import spawnn.dist.Dist;
-import spawnn.dist.EuclideanDist;
-import spawnn.utils.DataUtils;
-import spawnn.utils.SpatialDataFrame;
 
 public class GeneticAlgorithm {
 	
@@ -42,9 +32,7 @@ public class GeneticAlgorithm {
 				
 		int maxK = 1000;
 		int k = 0;
-		while( /*k < maxK /*||*/ noImpro < 100 ) {
-			long time = System.currentTimeMillis();
-				
+		while( /*k < maxK /*||*/ noImpro < 100 ) {				
 			// check best and increase noImpro
 			noImpro++;
 			DescriptiveStatistics ds = new DescriptiveStatistics();
@@ -109,9 +97,7 @@ public class GeneticAlgorithm {
 					e.printStackTrace();
 				}
 			}
-			
 			k++;
-			log.debug("took: "+(System.currentTimeMillis()-time)/1000);
 		}		
 		log.debug(k);
 		return best;

@@ -3,14 +3,13 @@ package inc_llm;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.Set;
+
+import org.jfree.util.Log;
 
 import spawnn.SupervisedNet;
-import spawnn.ng.Connection;
 import spawnn.ng.sorter.Sorter;
 import spawnn.som.decay.ConstantDecay;
 import spawnn.som.decay.DecayFunction;
@@ -20,7 +19,7 @@ public class IncLLM implements SupervisedNet {
 	protected List<double[]> neurons = null;
 	protected double alpha, beta;
 	protected Sorter<double[]> sorter;
-	protected Map<Connection,Integer> cons;
+	protected ConnectionsIncLLM cons;
 	protected Map<double[],Double> errors;
 	protected int aMax, lambda;
 	protected int[] fa;
@@ -41,7 +40,7 @@ public class IncLLM implements SupervisedNet {
 		this.useDf = true;
 		this.t_max = t_max;
 		
-		this.cons = new HashMap<Connection,Integer>();
+		this.cons = new ConnectionsIncLLM();
 		this.aMax = aMax;
 		this.lambda = lambda;
 		this.alpha = alpha;
@@ -97,11 +96,15 @@ public class IncLLM implements SupervisedNet {
 		
 	@Override
 	public void train( double t, double[] x, double[] desired ) {
-		sorter.sort(x, neurons);
+		/*sorter.sort(x, neurons);
 		double[] s_1 = neurons.get(0);
-		double[] s_2 = neurons.get(1);
-		
-		cons.put(new Connection(s_1, s_2),0);
+		double[] s_2 = neurons.get(1);*/
+		double[] s_1 = sorter.getBMU(x, neurons);
+		neurons.remove(s_1);
+		double[] s_2 = sorter.getBMU(x, neurons);
+		neurons.add(s_1);
+				
+		cons.add(s_1, s_2);
 		
 		double[] r = getResponse(x, s_1);
 		double error = 0;
@@ -109,30 +112,20 @@ public class IncLLM implements SupervisedNet {
 			error += Math.pow( r[i] - desired[i], 2);
 		errors.put(s_1, errors.get(s_1) + error );
 		
-		for( Connection c : cons.keySet() )
-			cons.put(c, cons.get(c)+1 );
+		cons.increase(1);
 		
 		// train best neuron
 		double nt = (double)t/t_max;
 		train(s_1, x, desired, dfB.getValue(nt), dfBln.getValue(nt) );
 		
 		// train neighbors
-		for( double[] n : Connection.getNeighbors(cons.keySet(), s_1, 1) )
+		for( double[] n : cons.getNeighbors(s_1, 1) )
 			train(n, x, desired, dfN.getValue(nt), dfNln.getValue(nt) );
 				
-		Set<Connection> consToRemove = new HashSet<Connection>();
-		for( Connection c : cons.keySet() )
-			if( cons.get(c) > aMax )
-				consToRemove.add(c);
-		cons.keySet().removeAll(consToRemove);
+		cons.purge(aMax);
 				
-		Set<double[]> neuronsToRetain = new HashSet<double[]>();
-		for( Connection c : cons.keySet() ) {
-			neuronsToRetain.add(c.getA());
-			neuronsToRetain.add(c.getB());
-		}
-		neurons.retainAll(neuronsToRetain);
-		errors.keySet().retainAll(neuronsToRetain);
+		neurons.retainAll(cons.getVertices());
+		errors.keySet().retainAll(cons.getVertices());
 				
 		if( (t+1) % lambda == 0 && neurons.size() < maxNeurons ) {
 			
@@ -142,7 +135,7 @@ public class IncLLM implements SupervisedNet {
 					q = n;
 						
 			double[] f = null;
-			for( double[] n : Connection.getNeighbors(cons.keySet(), q, 1) )
+			for( double[] n : cons.getNeighbors(q, 1) )
 				if( f == null || errors.get(f) < errors.get(n) )
 					f = n;
 						
@@ -151,9 +144,9 @@ public class IncLLM implements SupervisedNet {
 				nn[i] = (q[i]+f[i])/2;
 			neurons.add(nn);
 						
-			cons.put( new Connection(q, nn), 0 );
-			cons.put( new Connection(f, nn), 0 );
-			cons.remove( new Connection( q, f ) );
+			cons.add( q, nn );
+			cons.add( f, nn );
+			cons.remove( q, f );
 			
 			errors.put(q, errors.get(q) - alpha*errors.get(q) );
 			errors.put(f, errors.get(f) - alpha*errors.get(f) );

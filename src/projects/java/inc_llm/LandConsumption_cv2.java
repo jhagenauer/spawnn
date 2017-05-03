@@ -111,16 +111,13 @@ public class LandConsumption_cv2 {
 		}
 
 		Sorter<double[]> sorter = new DefaultSorter<double[]>(gDist);
-
-		//IncLLM llm = new IncLLM(neurons, 
-		IncLLM2 llm = new IncLLM2(neurons, 
+		
+		IncLLM llm = new IncLLM(neurons, 
 				new ConstantDecay(0.005), 
 				new ConstantDecay(0.005), 
 				new PowerDecay(0.1, 0.000001),  
 				new PowerDecay(0.1, 0.000001), 
 				sorter, aMax, lambda, alpha, beta, fa, 1, t_max);
-		
-		long time = System.currentTimeMillis();
 		for (int t = 0; t < t_max; t++) {
 			int idx = r.nextInt(samplesTrain.size());
 			llm.train(t, samplesTrain.get(idx), desiredTrain.get(idx));
@@ -143,11 +140,8 @@ public class LandConsumption_cv2 {
 		for (int i = 0; i < samplesVal.size(); i++)
 			responseVal.add(llm.present(samplesVal.get(i)));
 
-		log.debug( (System.currentTimeMillis()-time)/1000);
 		log.debug("incLLM RMSE: " + SupervisedUtils.getRMSE(responseVal, desiredVal));
-		
-		System.exit(1);
-		
+				
 		{
 			Map<double[],Set<double[]>> mTrain = NGUtils.getBmuMapping(samplesTrain, llm.neurons, sorter);
 			Map<double[],Set<double[]>> mVal = NGUtils.getBmuMapping(samplesVal, llm.neurons, sorter);
