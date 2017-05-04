@@ -114,10 +114,10 @@ public class LandConsumption_cv2 {
 		Sorter<double[]> sorter = new DefaultSorter<double[]>(gDist);
 		
 		IncLLM llm = new IncLLM(neurons, 
-				new ConstantDecay(0.001), 
 				new ConstantDecay(0.01), 
+				new ConstantDecay(0.001), 
 				new PowerDecay(0.1, 5.0E-5),  
-				new LinearDecay(0.1, 1.0E-5), 
+				new PowerDecay(0.01, 1.0E-5), 
 				sorter, aMax, lambda, alpha, beta, fa, 1, t_max);
 		for (int t = 0; t < t_max; t++) {
 			int idx = r.nextInt(samplesTrain.size());

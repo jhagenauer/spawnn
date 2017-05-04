@@ -50,7 +50,7 @@ public class IncLLM implements SupervisedNet {
 		for( double[] n : this.neurons )
 			this.errors.put( n, 0.0 );
 		
-		Random r = new Random();
+		Random r = new Random(0);
 		for( double[] d : neurons ) {
 			double[] o = new double[outDim];
 			for( int i = 0; i < o.length; i++ )
@@ -91,17 +91,18 @@ public class IncLLM implements SupervisedNet {
 		double[] s_1 = sorter.getBMU(x, neurons);
 		neurons.remove(s_1);
 		double[] s_2 = sorter.getBMU(x, neurons);
-		neurons.add(s_1);
-				
+		neurons.add(s_1);	
 		cons.add(s_1, s_2);
 		
 		double[] r = getResponse(x, s_1);
 		double error = 0;
 		for( int i = 0; i < desired.length; i++ )
-			error += Math.pow( r[i] - desired[i], 2);
-		errors.put(s_1, errors.get(s_1) + error );
+			error += Math.pow( r[i] - desired[i], 2 );
+		errors.put( s_1, errors.get(s_1) + error );
 		
-		cons.increase(1);
+		cons.incAndPurge(aMax);
+		neurons.retainAll(cons.getVertices());
+		errors.keySet().retainAll(cons.getVertices());
 		
 		// train best neuron
 		double nt = (double)t/t_max;
@@ -110,12 +111,7 @@ public class IncLLM implements SupervisedNet {
 		// train neighbors
 		for( double[] n : cons.getNeighbors(s_1, 1) )
 			train(n, x, desired, dfN.getValue(nt), dfNln.getValue(nt) );
-				
-		cons.purge(aMax);
-				
-		neurons.retainAll(cons.getVertices());
-		errors.keySet().retainAll(cons.getVertices());
-				
+								
 		if( (t+1) % lambda == 0 && neurons.size() < maxNeurons ) {
 			
 			double[] q = null;

@@ -77,7 +77,7 @@ public class PerformanceTest {
 		}
 
 		long time = System.currentTimeMillis();
-		for( int j = 0; j < 20; j++ ) {
+		for( int j = 0; j < 10; j++ ) {
 			IncLLM llm = new IncLLM(neurons, 
 					new ConstantDecay(0.005), 
 					new ConstantDecay(0.005), 
