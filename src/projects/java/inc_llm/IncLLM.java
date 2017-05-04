@@ -7,11 +7,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-import org.jfree.util.Log;
-
 import spawnn.SupervisedNet;
 import spawnn.ng.sorter.Sorter;
-import spawnn.som.decay.ConstantDecay;
 import spawnn.som.decay.DecayFunction;
 
 public class IncLLM implements SupervisedNet {
@@ -31,7 +28,7 @@ public class IncLLM implements SupervisedNet {
 	int t_max = 0;
 	boolean useDf = false;
 	
-	// more than 2 neurons are removed immediately
+	// more than 2 neurons are removed immediately because they are not connected
 	public IncLLM( Collection<double[]> neurons, DecayFunction dfB, DecayFunction dfBln, DecayFunction dfN, DecayFunction dfNln, Sorter<double[]> sorter, int aMax, int lambda, double alpha, double beta, int[] fa, int outDim, int t_max ) {
 		this.dfB = dfB;
 		this.dfBln = dfBln;
@@ -67,12 +64,7 @@ public class IncLLM implements SupervisedNet {
 			matrix.put(d, m);
 		}
 	}
-	
-	@Deprecated
-	public IncLLM( Collection<double[]> neurons, double lrB, double lrBln, double lrN, double lrNln, Sorter<double[]> sorter, int aMax, int lambda, double alpha, double beta, int[] fa, int outDim ) {
-		this( neurons, new ConstantDecay(lrB), new ConstantDecay(lrBln), new ConstantDecay(lrN), new ConstantDecay(lrNln), sorter, aMax, lambda, alpha, beta, fa, 1, 0);
-	}
-	
+		
 	public int maxNeurons = Integer.MAX_VALUE;
 	
 	private void train( double[] w, double[] x, double[] desired, double adapt, double adapt2 ) {
@@ -96,9 +88,6 @@ public class IncLLM implements SupervisedNet {
 		
 	@Override
 	public void train( double t, double[] x, double[] desired ) {
-		/*sorter.sort(x, neurons);
-		double[] s_1 = neurons.get(0);
-		double[] s_2 = neurons.get(1);*/
 		double[] s_1 = sorter.getBMU(x, neurons);
 		neurons.remove(s_1);
 		double[] s_2 = sorter.getBMU(x, neurons);
@@ -175,8 +164,7 @@ public class IncLLM implements SupervisedNet {
 	
 	@Override
 	public double[] present( double[] x ) {
-		sorter.sort(x, neurons);
-		return getResponse(x, getNeurons().get(0) );
+		return getResponse(x, sorter.getBMU(x, neurons) );
 	}
 	
 	@Override

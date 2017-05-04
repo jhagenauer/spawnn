@@ -190,13 +190,4 @@ public class GeneticAlgorithm {
 		}
 		return l;
 	}
-	
-	public static void main(String[] args) {			
-		List<GAIndividual> init = new ArrayList<GAIndividual>();
-		while( init.size() < 20 )
-			init.add( new IncLLMGAIndividual() );
-		GeneticAlgorithm gen = new GeneticAlgorithm();
-		IncLLMGAIndividual result = (IncLLMGAIndividual)gen.search( init );
-		
-	}
 }

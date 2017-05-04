@@ -59,7 +59,7 @@ public class IncLLMGAIndividual extends GAIndividual {
 	
 	enum mode {con,lin,pow};
 	
-	static double[] values = { 0.2, 0.1, 0.05, 0.01, 0.05, 0.001, 0.005, 0.0001, 0.0005, 0.00001, 0.00005, 0.000001 };
+	static double[] values = { 0.2, 0.1, 0.05, 0.01, 0.005, 0.001, 0.0005, 0.0001, 0.00005, 0.00001, 0.000005, 0.000001 };
 
 	double[] a = new double[8];
 	mode[] m = new mode[4];
@@ -159,7 +159,6 @@ public class IncLLMGAIndividual extends GAIndividual {
 				neurons.add(Arrays.copyOf(d, d.length));
 			}
 			
-			//IncLLM2 llm = new IncLLM2(neurons, 
 			IncLLM llm = new IncLLM(neurons, 
 					df[0],df[1],df[2],df[3],
 					sorter, aMax, lambda, alpha, beta, fa, 1, IncLLMGAIndividual.t_max);
@@ -181,5 +180,14 @@ public class IncLLMGAIndividual extends GAIndividual {
 	
 	public String toString() {
 		return Arrays.toString(a)+":::"+Arrays.toString(m);
+	}
+		
+	public static void main(String[] args) {			
+		List<GAIndividual> init = new ArrayList<GAIndividual>();
+		while( init.size() < 20 ) 
+			init.add( new IncLLMGAIndividual() );
+		GeneticAlgorithm gen = new GeneticAlgorithm();
+		IncLLMGAIndividual result = (IncLLMGAIndividual)gen.search( init );
+		
 	}
 }
