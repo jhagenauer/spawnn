@@ -29,6 +29,7 @@ import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
 import spawnn.utils.ColorBrewer;
 import spawnn.utils.ColorUtils.ColorClass;
+import spawnn.utils.GeoUtils.GWKernel;
 import spawnn.utils.DataUtils;
 import spawnn.utils.Drawer;
 import spawnn.utils.GeoUtils;
@@ -73,7 +74,7 @@ public class GWR_CV {
 		Map<double[], Map<double[], Double>> dMap = GeoUtils.contiguityMapToDistanceMap(cm);
 		List<double[]> lisa = GeoUtils.getLocalMoransIMonteCarlo(sdf.samples, values, dMap, 999);
 		
-		boolean gaussian = true;
+		GWKernel k = GWKernel.gaussian;
 		boolean adaptive = true;
 
 		List<double[]> samples = sdf.samples;
@@ -82,32 +83,7 @@ public class GWR_CV {
 
 		for (double bw = 5; bw < 15; bw++ ) {
 
-			Map<double[], Double> bandwidth = new HashMap<>();
-			for (double[] a : samples) {
-				if (!adaptive)
-					bandwidth.put(a, bw);
-				else {
-					int k = (int) bw;
-					List<double[]> s = new ArrayList<>(samples);
-					Collections.sort(s, new Comparator<double[]>() {
-						@Override
-						public int compare(double[] o1, double[] o2) {
-							return Double.compare(gDist.dist(o1, a), gDist.dist(o2, a));
-						}
-					});
-					
-					/*int idx = samples.indexOf(a);
-					double[] l = lisa.get( idx );
-					double d = residuals.get(idx);
-					if( l[4] < 0.05 ) {
-						if (l[0] > 0 && d > mean)
-							k--; // high-high
-						else if (l[0] > 0 && d < mean)
-							k++; // low-low
-					}*/				
-					bandwidth.put(a, gDist.dist(s.get(k - 1), a));
-				}
-			}
+			Map<double[], Double> bandwidth = GeoUtils.getBandwidth(samples, gDist, bw, adaptive);
 
 			List<Future<Double>> futures = new ArrayList<>();
 			ExecutorService es = Executors.newFixedThreadPool(threads);
@@ -138,12 +114,8 @@ public class GWR_CV {
 							for (int j = 0; j < X.getRows(); j++) {
 								double[] b = samplesTrain.get(j);
 								double d = gDist.dist(a, b);
-
-								double w;
-								if (gaussian) // Gaussian
-									w = Math.exp(-0.5 * Math.pow(d / bandwidth.get(a), 2));
-								else // bisquare
-									w = Math.pow(1.0 - Math.pow(d / bandwidth.get(a), 2), 2);
+								double w = GeoUtils.getKernelValue(k, d, bandwidth.get(a));
+								
 								XtW.putColumn(j, X.getRow(j).mul(w));
 							}
 							DoubleMatrix XtWX = XtW.mmul(X);

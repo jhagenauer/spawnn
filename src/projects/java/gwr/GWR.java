@@ -26,6 +26,7 @@ import spawnn.utils.Drawer;
 import spawnn.utils.GeoUtils;
 import spawnn.utils.SpatialDataFrame;
 import spawnn.utils.ColorUtils.ColorClass;
+import spawnn.utils.GeoUtils.GWKernel;
 
 public class GWR {
 	
@@ -90,7 +91,7 @@ public class GWR {
 				
 		Drawer.geoDrawCluster(lisaCluster.values(), sdf.samples, sdf.geoms, "output/lm_lisa_clust.png", true);
 			
-		boolean gaussian = true;
+		GWKernel k = GWKernel.gaussian;
 		boolean adaptive = true;
 				
 		List<double[]> samples = sdf.samples;
@@ -105,22 +106,7 @@ public class GWR {
 			DoubleMatrix betas = new DoubleMatrix(X.getRows(),X.getColumns() );
 			DoubleMatrix S = new DoubleMatrix( X.getRows(), X.getRows() );
 			
-			Map<double[],Double> bandwidth = new HashMap<>();
-			for( double[] a : samples ) {
-				if( !adaptive )
-					bandwidth.put(a, bw);
-				else {
-					int k = (int)bw;
-					List<double[]> s = new ArrayList<>(samples); 
-					Collections.sort(s, new Comparator<double[]>() {
-						@Override
-						public int compare(double[] o1, double[] o2) { 
-							return Double.compare( gDist.dist(o1, a), gDist.dist(o2, a)); 
-						}
-					});
-					bandwidth.put(a, gDist.dist( s.get( k-1 ), a) );
-				}				
-			}
+			Map<double[],Double> bandwidth = GeoUtils.getBandwidth(samples, gDist, bw, adaptive);
 						
 			for( int i = 0; i < samples.size(); i++ ) {
 				double[] a = samples.get(i);
@@ -128,13 +114,9 @@ public class GWR {
 				DoubleMatrix XtW = new DoubleMatrix(X.getColumns(),X.getRows());		
 				for( int j = 0; j < X.getRows(); j++ ) {
 					double[] b = samples.get(j);
-					double d = gDist.dist( a, b );
-											
-					double w;
-					if( gaussian ) // Gaussian
-						w = Math.exp(-0.5*Math.pow(d/bandwidth.get(a),2));
-					else // bisquare
-						w = Math.pow(1.0-Math.pow(d/bandwidth.get(a), 2), 2);
+					double d = gDist.dist( a, b );											
+					double w = GeoUtils.getKernelValue(k, d, bandwidth.get(a));
+					
 					XtW.putColumn(j, X.getRow(j).mul(w));
 				}	
 				

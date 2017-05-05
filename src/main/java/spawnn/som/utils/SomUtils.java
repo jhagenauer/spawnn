@@ -365,15 +365,24 @@ public class SomUtils {
 		}
 		return cluster.values();
 	}
+	
+	@Deprecated
+	public static Map<GridPos, Set<double[]>> getBmuMapping(List<double[]> samples, Grid<double[]> grid, BmuGetter<double[]> b ) {
+		return getBmuMapping( samples, grid, b, true );
+	}
 
-	public static Map<GridPos, Set<double[]>> getBmuMapping(List<double[]> samples, Grid<double[]> grid, BmuGetter<double[]> b) {
-		Map<GridPos, Set<double[]>> r = new HashMap<GridPos, Set<double[]>>();
-		for (GridPos gp : grid.getPositions())
-			r.put(gp, new HashSet<double[]>());
+	public static Map<GridPos, Set<double[]>> getBmuMapping(List<double[]> samples, Grid<double[]> grid, BmuGetter<double[]> b, boolean includeEmpty ) {
+		Map<GridPos, Set<double[]>> r = new HashMap<GridPos, Set<double[]>>();	
 		for (double[] s : samples) {
 			GridPos bmu = b.getBmuPos(s, grid);
+			if( !r.containsKey(bmu) )
+				r.put(bmu, new HashSet<double[]>() );
 			r.get(bmu).add(s);
 		}
+		if( includeEmpty )
+			for( GridPos p : grid.getPositions() )
+				if( !r.containsKey(p) )
+					r.put(p, new HashSet<double[]>() );
 		return r;
 	}
 

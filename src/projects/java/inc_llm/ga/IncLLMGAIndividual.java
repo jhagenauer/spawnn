@@ -59,7 +59,7 @@ public class IncLLMGAIndividual extends GAIndividual {
 	
 	enum mode {con,lin,pow};
 	
-	static double[] values = { 0.2, 0.1, 0.05, 0.01, 0.005, 0.001, 0.0005, 0.0001, 0.00005, 0.00001, 0.000005, 0.000001 };
+	static double[] values = { 0.2, 0.1, 0.05, 0.01, 0.005, 0.001, 0.0005, 0.0001, 0.00005, 0.00001, 0.000005, 0.000001, 0 };
 
 	double[] a = new double[8];
 	mode[] m = new mode[4];

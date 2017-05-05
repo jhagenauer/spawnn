@@ -348,17 +348,17 @@ public class DataUtils {
 		return sum / clusters.size();
 	}
 
-	public static double[] getMean(Collection<double[]> cluster) {
-		int l = cluster.iterator().next().length;
+	public static double[] getMean(Collection<double[]> c) {
+		int l = c.iterator().next().length;
 		double[] r = new double[l];
-		for (double[] d : cluster)
+		for (double[] d : c)
 			for (int i = 0; i < l; i++)
 				r[i] += d[i];
 		for (int i = 0; i < l; i++)
-			r[i] /= cluster.size();
+			r[i] /= c.size();
 		return r;
 	}
-	
+		
 	public static RealMatrix toRealMatrix( List<double[]> samples ) {
 		double[][] m = new double[samples.size()][];
 		for( int i = 0; i < samples.size(); i++ )
