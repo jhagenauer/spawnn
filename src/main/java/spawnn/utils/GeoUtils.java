@@ -7,7 +7,6 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -64,26 +63,27 @@ public class GeoUtils {
 		double w;
 		if (k==GWKernel.gaussian) 
 			w = Math.exp(-0.5 * Math.pow(d / bw, 2));
-		else if( k==GWKernel.bisquare ) 
+		else if( k==GWKernel.bisquare )
 			w = Math.pow(1.0 - Math.pow(d / bw, 2), 2);
 		else if( k==GWKernel.boxcar)
 			w = d < bw ? 1 : 0;
 		else
 			throw new RuntimeException("No valid kernel given");
+		if( Double.isNaN(w) )
+			log.warn("NaN kernel value");
 		return w;
 	}
 	
-	public static double[] getGWMean(Collection<double[]> c, double[] uv, Dist<double[]> dist, GWKernel k, double bw ) {
-		int vLength = c.iterator().next().length;
+	public static double[] getGWMean(Collection<double[]> samples, double[] uv, Dist<double[]> dist, GWKernel k, double bw ) {
+		int vLength = samples.iterator().next().length;
 		double[] a = new double[vLength];
 		double b = 0;
-		for (double[] x_i : c) {
+		for (double[] x_i : samples) {
 			double w_i = getKernelValue(k, dist.dist(uv, x_i), bw);
 			for( int j = 0; j < vLength; j++ ) 
-				a[j] += x_i[j] * w_i;
+				a[j] += (x_i[j] * w_i);
 			b += w_i;			
-		}
-		
+		}		
 		for( int i = 0; i < vLength; i++ )
 			a[i] /= b;
 		return a;

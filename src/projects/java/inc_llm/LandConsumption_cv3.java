@@ -64,7 +64,7 @@ public class LandConsumption_cv3 {
 		double alpha = 0.5;
 		double beta = 0.000005;
 		
-		List<Entry<List<Integer>, List<Integer>>> cvList = SupervisedUtils.getCVList(10, 1, samples.size());
+		List<Entry<List<Integer>, List<Integer>>> cvList = SupervisedUtils.getCVList(10, 12, samples.size());
 		
 		SummaryStatistics ssIncLLM = new SummaryStatistics();
 		SummaryStatistics ssIncLLM_LM = new SummaryStatistics();
@@ -95,12 +95,50 @@ public class LandConsumption_cv3 {
 
 			Sorter<double[]> sorter = new DefaultSorter<double[]>(gDist);
 			
+			
+			/*2017-05-08 07:49:17,502 DEBUG [main] inc_llm.LandConsumption_cv3: IncLLM: 9.411802702512432
+			2017-05-08 07:49:17,502 DEBUG [main] inc_llm.LandConsumption_cv3: IncLLM_LM: 9.196530013012227
+			2017-05-08 07:49:17,502 DEBUG [main] inc_llm.LandConsumption_cv3: GWR: 7.269787952781136
+			2017-05-08 07:49:17,502 DEBUG [main] inc_llm.LandConsumption_cv3: LM: 11.482098798409755
+			2017-05-08 07:49:17,502 DEBUG [main] inc_llm.LandConsumption_cv3: kMeans-LM: 8.941026905713562*/
+			/*IncLLM llm = new IncLLM(neurons, 
+					new ConstantDecay(0.005), 
+					new ConstantDecay(0.005), 
+					new LinearDecay(5.0E-4, 5.0E-6),  
+					new LinearDecay(1.0E-5, 5.0E-6), 
+					sorter, aMax, lambda, alpha, beta, fa, 1, t_max);*/
+			
+			/*2017-05-08 11:36:15,059 DEBUG [main] inc_llm.LandConsumption_cv3: IncLLM: 9.530422491288482
+			2017-05-08 11:36:15,059 DEBUG [main] inc_llm.LandConsumption_cv3: IncLLM_LM: 9.25580271227574
+			2017-05-08 11:36:15,059 DEBUG [main] inc_llm.LandConsumption_cv3: GWR: 7.269787952781136
+			2017-05-08 11:36:15,059 DEBUG [main] inc_llm.LandConsumption_cv3: LM: 11.482098798409755
+			2017-05-08 11:36:15,059 DEBUG [main] inc_llm.LandConsumption_cv3: kMeans-LM: 8.98633112230049*/
+			/*IncLLM llm = new IncLLM(neurons, 
+					new ConstantDecay(0.005), 
+					new ConstantDecay(0.005), 
+					new ConstantDecay(0.001),  
+					new LinearDecay(1.0E-5, 5.0E-6), 
+					sorter, aMax, lambda, alpha, beta, fa, 1, t_max);*/
+			
+			/*2017-05-08 11:52:43,015 DEBUG [main] inc_llm.LandConsumption_cv3: IncLLM: 1.346492143323006E148
+			2017-05-08 11:52:43,015 DEBUG [main] inc_llm.LandConsumption_cv3: IncLLM_LM: 9.196069398637118
+			2017-05-08 11:52:43,015 DEBUG [main] inc_llm.LandConsumption_cv3: GWR: 7.269787952781136
+			2017-05-08 11:52:43,015 DEBUG [main] inc_llm.LandConsumption_cv3: LM: 11.482098798409755
+			2017-05-08 11:52:43,015 DEBUG [main] inc_llm.LandConsumption_cv3: kMeans-LM: 8.99854390373231*/
+			/*IncLLM llm = new IncLLM(neurons, 
+					new ConstantDecay(0.005), 
+					new PowerDecay(0.005,0.005), 
+					new LinearDecay(0.001, 1.0E-4),  
+					new PowerDecay(0.2,  5.0E-6), 
+					sorter, aMax, lambda, alpha, beta, fa, 1, t_max);*/
+			
 			IncLLM llm = new IncLLM(neurons, 
 					new ConstantDecay(0.01), 
 					new ConstantDecay(0.005), 
-					new PowerDecay(0.01, 5.0E-6),  
-					new LinearDecay(0.005, 5.0E-6), 
+					new LinearDecay(5.0E-4, 5.0E-6),  
+					new LinearDecay(1.0E-5, 5.0E-6), 
 					sorter, aMax, lambda, alpha, beta, fa, 1, t_max);
+			
 			for (int t = 0; t < t_max; t++) {
 				int idx = r.nextInt(samplesTrain.size());
 				llm.train(t, samplesTrain.get(idx), desiredTrain.get(idx));
@@ -185,14 +223,14 @@ public class LandConsumption_cv3 {
 			
 			{
 				Map<double[], Set<double[]>> mTrain = Clustering.kMeans(samplesTrain, llm.neurons.size(), gDist, 0.000001);
-				Map<double[],Set<double[]>> mVal = new HashMap<>();
+				Map<double[],Set<double[]>> mVal = new HashMap<>(); // assign val to k-centroids
+				for( double[] k : mTrain.keySet() )
+					mVal.put( k, new HashSet<>() );				
 				for( double[] d : samplesVal ) {
 					double[] bestK = null;
 					for( double[] k : mTrain.keySet() )
 						if( bestK == null || gDist.dist(d, k) < gDist.dist( d, bestK ) )
 							bestK = k;
-					if( !mVal.containsKey( bestK ))
-						mVal.put(bestK, new HashSet<double[]>() );
 					mVal.get(bestK).add(d);
 				}
 						

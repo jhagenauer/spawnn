@@ -54,7 +54,7 @@ public class IncLLMGAIndividual extends GAIndividual {
 		samples = sdf.samples;
 		DataUtils.transform(samples, fa, Transform.zScore);
 		
-		cvList = SupervisedUtils.getCVList(10, 1, samples.size());
+		cvList = SupervisedUtils.getCVList(10, 4, samples.size());
 	}
 	
 	enum mode {con,lin,pow};

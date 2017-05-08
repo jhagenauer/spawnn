@@ -116,6 +116,8 @@ public class LinearModel {
 		
 		for (int l = 0; l < betas.size(); l++ ) {
 			Set<double[]> c = cl.get(l);
+			if( c == null )
+				throw new RuntimeException("c == null... why?!"+betas.size()+","+cl.size());
 			
 			List<double[]> subSamples = new ArrayList<>();
 			Map<Integer,Integer> idxMap = new HashMap<Integer,Integer>(); 
