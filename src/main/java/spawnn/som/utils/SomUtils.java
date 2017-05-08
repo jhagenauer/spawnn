@@ -402,7 +402,16 @@ public class SomUtils {
 			e.printStackTrace();
 		}
 	}
+	
+	public static void printClassDist(Map<double[], Integer> classes, Map<GridPos, Set<double[]>> mapping, Grid2D<double[]> grid, String fn) {
+		try {
+			printClassDist(classes, mapping, grid, new FileOutputStream(fn));
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
+	}
 
+	@Deprecated
 	public static void printClassDist(Map<double[], Integer> classes, Map<GridPos, Set<double[]>> mapping, Grid2D<double[]> grid, OutputStream os) {
 		if (grid instanceof Grid2DHex)
 			printImage(getHexClassDistImage(getClassDist(classes, mapping, grid), (Grid2DHex<double[]>) grid, 5), os);
@@ -1333,7 +1342,7 @@ public class SomUtils {
 	}
 
 	public static void initRandom(Grid<double[]> grid, List<double[]> samples) {
-		Random r = new Random();
+		Random r = new Random(0);
 		for (GridPos p : grid.getPositions()) {
 			double[] d = samples.get(r.nextInt(samples.size()));
 			grid.setPrototypeAt(p, Arrays.copyOf(d, d.length));

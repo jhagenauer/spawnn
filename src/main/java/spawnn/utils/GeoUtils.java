@@ -83,6 +83,7 @@ public class GeoUtils {
 				a[j] += x_i[j] * w_i;
 			b += w_i;			
 		}
+		
 		for( int i = 0; i < vLength; i++ )
 			a[i] /= b;
 		return a;

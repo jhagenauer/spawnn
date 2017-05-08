@@ -34,7 +34,7 @@ public class DefaultBmuGetter<T> extends BmuGetter<T> {
 		}
 		
 		if( bmu == null ) 
-			throw new RuntimeException("No bmu found: "+grid);
+			throw new RuntimeException("No bmu found");
 							
 		return bmu;
 	}

@@ -1,6 +1,7 @@
 package spawnn.som.net;
 
 import java.io.File;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -71,6 +72,7 @@ public class BatchSOM implements UnsupervisedNet {
 		}
 	}
 	
+	// Kann nicht funktionieren, weil bmuGetter ist default bmuGetter
 	public void train( double t, List<double[]> samples, Dist<double[]> gDist, GWKernel kernel, double bw ) {
 		int vLength = samples.get(0).length;
 		Map<GridPos,Set<double[]>> bmus = SomUtils.getBmuMapping(samples, grid, bmuGetter,false);
@@ -94,6 +96,7 @@ public class BatchSOM implements UnsupervisedNet {
 			double[] v = new double[vLength];
 			for( int j = 0; j < v.length; j++ ) 
 				v[j] = a[j]/b[j];		
+						
 			grid.setPrototypeAt( p, v );
 		}
 	}
@@ -111,8 +114,6 @@ public class BatchSOM implements UnsupervisedNet {
 			Point p = sdf.geoms.get(i).getCentroid();
 			sdf.samples.get(i)[0] = p.getX();
 			sdf.samples.get(i)[1] = p.getY();
-			if( i < 10 )
-				log.debug(sdf.samples.get(i)[0]+":"+sdf.samples.get(i)[1]);
 		}
 
 		int[] ga = new int[] { 0, 1 };
@@ -126,6 +127,22 @@ public class BatchSOM implements UnsupervisedNet {
 		
 		int T_MAX = 35*samples.size();
 		int T_MAX2 = 35;
+		
+
+		// Batch GWSom
+		for( double bw : new double[]{ 5 } ){
+			Grid2DHex<double[]> grid = new Grid2DHex<double[]>(15, 20);
+			SomUtils.initRandom(grid, samples);
+			BmuGetter<double[]> bmuGetter = new DefaultBmuGetter<double[]>(fDist);
+
+			BatchSOM som = new BatchSOM(new GaussKernel(new LinearDecay(grid.getMaxDist(), 1)), grid, bmuGetter);
+			for (int t = 0; t < T_MAX2; t++) 
+				som.train((double) t / T_MAX2, samples,gDist,GWKernel.gaussian,bw);
+			log.debug("Batch GWSOM "+bw+": ");
+			log.debug("fqe: " + SomUtils.getMeanQuantError(grid, bmuGetter, fDist, samples));
+			log.debug("sqe: " + SomUtils.getMeanQuantError(grid, bmuGetter, gDist, samples));
+			log.debug("te: " + SomUtils.getTopoError(grid, bmuGetter, samples));
+		}
 		
 		// Online SOM
 		{
@@ -158,21 +175,6 @@ public class BatchSOM implements UnsupervisedNet {
 			log.debug("took: "+(System.currentTimeMillis()-time));
 			log.debug("Batch SOM:");
 			log.debug("fqe: " + SomUtils.getMeanQuantError(grid, bmuGetter, fDist, samples));
-			log.debug("te: " + SomUtils.getTopoError(grid, bmuGetter, samples));
-		}
-		
-		// Batch GWSom
-		for( double bw : new double[]{ 0.001, 0.01, 0.05, 0.1, 0.5, 1.0 } ){
-			Grid2DHex<double[]> grid = new Grid2DHex<double[]>(15, 20);
-			SomUtils.initRandom(grid, samples);
-			BmuGetter<double[]> bmuGetter = new DefaultBmuGetter<double[]>(fDist);
-
-			BatchSOM som = new BatchSOM(new GaussKernel(new LinearDecay(grid.getMaxDist(), 1)), grid, bmuGetter);
-			for (int t = 0; t < T_MAX2; t++) 
-				som.train((double) t / T_MAX2, samples,gDist,GWKernel.gaussian,bw);
-			log.debug("Batch GWSOM "+bw+": ");
-			log.debug("fqe: " + SomUtils.getMeanQuantError(grid, bmuGetter, fDist, samples));
-			log.debug("sqe: " + SomUtils.getMeanQuantError(grid, bmuGetter, gDist, samples));
 			log.debug("te: " + SomUtils.getTopoError(grid, bmuGetter, samples));
 		}
 	}
