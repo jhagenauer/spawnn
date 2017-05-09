@@ -18,6 +18,7 @@ import com.vividsolutions.jts.geom.GeometryFactory;
 import nnet.SupervisedUtils;
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
+import spawnn.dist.WeightedDist;
 import spawnn.som.decay.LinearDecay;
 import spawnn.som.grid.Grid;
 import spawnn.som.grid.Grid2DHex;
@@ -120,13 +121,14 @@ public class GWBmuGetter extends BmuGetter<double[]> {
 		Dist<double[]> gDist = new EuclideanDist(ga);
 
 		DataUtils.transform(samples, fa, Transform.zScore);
-		//DataUtils.writeCSV("output/test.csv", samples,new String[]{"x","y","z"});
-		
-		GWKernel ke = GWKernel.gaussian;
+		//DataUtils.writeCSV("output/squares.csv", samples,new String[]{"x","y","z"});
+			
+		List<Entry<List<Integer>, List<Integer>>> cvList = SupervisedUtils.getCVList(2, 10, samples.size());
+				
 		boolean adaptive = false;		
 		
-		List<Entry<List<Integer>, List<Integer>>> cvList = SupervisedUtils.getCVList(10, 1, samples.size());
-		for( double bw : new double[]{ 0.01, 0.05, 0.1, 0.15, 0.2 } ) {
+		for( GWKernel ke : new GWKernel[]{ GWKernel.gaussian } )
+		for( double bw : new double[]{ 0.01, 0.02, 0.03, 0.04, 0.05, 0.1, 0.2 } ) {
 			
 			SummaryStatistics ss = new SummaryStatistics();
 			for (final Entry<List<Integer>, List<Integer>> cvEntry : cvList) {
@@ -146,17 +148,24 @@ public class GWBmuGetter extends BmuGetter<double[]> {
 			}			
 			
 			Map<double[], Double> bandwidth = GeoUtils.getBandwidth(samples, gDist, bw, adaptive);
-			
 			List<double[]> values = new ArrayList<>();
-			for( double[] d : samples )
-				values.add( GeoUtils.getGWMean(samples, d, gDist, ke, bandwidth.get(d) ) );
-			Drawer.geoDrawValues(geoms, values, fa[0], null, ColorBrewer.Blues, "output/gwmean_"+bw+".png");
-			log.debug("bw: "+bw+","+ss.getMean());
+			double d = 0;
+			for( double[] x : samples ) {
+				double[] v = GeoUtils.getGWMean(samples, x, gDist, ke, bandwidth.get(x) );
+				values.add( v );
+				d += fDist.dist(v, x);
+			}
+			
+			Drawer.geoDrawValues(geoms, values, fa[0], null, ColorBrewer.Spectral, "output/gwmean_"+ke+"_"+bw+".png");
+			//DataUtils.writeCSV("output/gwmean_"+ke+"_"+bw+".csv", values,new String[]{"x","y","z"});
+			
+			log.debug(ke+", "+bw+","+ss.getMean()+","+(d/samples.size()));
 		}
-		System.exit(1);
 		
 		log.debug("GWSOM");
-		for (double bw : new double[] { 0.01, 0.1, 0.2 }) {
+		//for( GWKernel ke : GWKernel.values() )
+		for( GWKernel ke : new GWKernel[]{ GWKernel.gaussian } )
+		for (double bw : new double[] { 0.01, 0.02, 0.03, 0.04, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9 }) { // fqe sinkt, sqe steigt mit steigender bw, sudden increase of sqe below 0.03.. why?
 			
 			Grid2DHex<double[]> grid = new Grid2DHex<double[]>(15, 20);
 			SomUtils.initRandom(grid, samples);
@@ -164,29 +173,29 @@ public class GWBmuGetter extends BmuGetter<double[]> {
 			Map<double[], Double> bandwidth = GeoUtils.getBandwidth(samples, gDist, bw, adaptive);
 			BmuGetter<double[]> bmuGetter = new GWBmuGetter(gDist, fDist, ke, bandwidth);
 
-			SOM som = new SOM(new GaussKernel(new LinearDecay(grid.getMaxDist(), 1)), new LinearDecay(1.0, 0.0), grid, bmuGetter);
+			SOM som = new SOM(new GaussKernel(new LinearDecay(10, 1 )), new LinearDecay(1.0, 0.0), grid, bmuGetter);
 			for (int t = 0; t < T_MAX; t++) {
 				double[] x = samples.get(r.nextInt(samples.size()));
 				som.train((double) t / T_MAX, x);
 			}
 
-			log.debug("bw: " + bw);
+			log.debug(ke+","+ bw);
 			log.debug("fqe: " + SomUtils.getMeanQuantError(grid, bmuGetter, fDist, samples));
 			log.debug("sqe: " + SomUtils.getMeanQuantError(grid, bmuGetter, gDist, samples));
 			log.debug("te: " + SomUtils.getTopoError(grid, bmuGetter, samples));
 			
 			Map<GridPos,Set<double[]>> mapping = SomUtils.getBmuMapping(samples, grid, bmuGetter,true);
-			SomUtils.printDMatrix(grid, fDist, "output/gwsom_dmat_"+bw+".png");
-			SomUtils.printClassDist(classes, mapping, grid, "output/gwsom_class_"+bw+".png");
+			SomUtils.printDMatrix(grid, fDist, "output/gwsom_dmat_"+ke+"_"+bw+".png");
+			SomUtils.printClassDist(classes, mapping, grid, "output/gwsom_class_"+ke+"_"+bw+".png");
 		}
 		
 		log.debug("GeoSOM");
-		for (int k : new int[]{ 1,3 }) {
+		for (int k : new int[]{ 1,2,3 }) {
 			Grid2DHex<double[]> grid = new Grid2DHex<double[]>(15, 20);
 			SomUtils.initRandom(grid, samples);
 			BmuGetter<double[]> bmuGetter = new KangasBmuGetter<double[]>(gDist, fDist, k);
 
-			SOM som = new SOM(new GaussKernel(new LinearDecay(grid.getMaxDist(), 1)), new LinearDecay(1.0, 0.0), grid, bmuGetter);
+			SOM som = new SOM(new GaussKernel(new LinearDecay(10, 1)), new LinearDecay(1.0, 0.0), grid, bmuGetter);
 			for (int t = 0; t < T_MAX; t++) {
 				double[] x = samples.get(r.nextInt(samples.size()));
 				som.train((double) t / T_MAX, x);
@@ -197,11 +206,37 @@ public class GWBmuGetter extends BmuGetter<double[]> {
 			log.debug("sqe: " + SomUtils.getMeanQuantError(grid, bmuGetter, gDist, samples));
 			log.debug("te: " + SomUtils.getTopoError(grid, bmuGetter, samples));
 			
-			Map<double[], Double> bandwidth = GeoUtils.getBandwidth(samples, gDist, 0.1, adaptive);
-			bmuGetter = new GWBmuGetter(gDist, fDist, ke, bandwidth);
 			Map<GridPos,Set<double[]>> mapping = SomUtils.getBmuMapping(samples, grid, bmuGetter,true);
 			SomUtils.printDMatrix(grid, fDist, "output/geosom_dmat_"+k+".png");
 			SomUtils.printClassDist(classes, mapping, grid, "output/geosom_class_"+k+".png");
+			
+		}
+		
+		log.debug("WeightedSOM");
+		for (double w : new double[]{}) {
+			Grid2DHex<double[]> grid = new Grid2DHex<double[]>(15, 20);
+			SomUtils.initRandom(grid, samples);
+			
+			Map<Dist<double[]>,Double> m = new HashMap<>();
+			m.put(gDist, w);
+			m.put(fDist, 1.0-w);
+			Dist<double[]> wDist = new WeightedDist<>(m);
+			BmuGetter<double[]> bmuGetter = new DefaultBmuGetter<>(wDist);
+
+			SOM som = new SOM(new GaussKernel(new LinearDecay(10, 1)), new LinearDecay(1.0, 0.0), grid, bmuGetter);
+			for (int t = 0; t < T_MAX; t++) {
+				double[] x = samples.get(r.nextInt(samples.size()));
+				som.train((double) t / T_MAX, x);
+			}
+
+			log.debug("w: " + w);
+			log.debug("fqe: " + SomUtils.getMeanQuantError(grid, bmuGetter, fDist, samples));
+			log.debug("sqe: " + SomUtils.getMeanQuantError(grid, bmuGetter, gDist, samples));
+			log.debug("te: " + SomUtils.getTopoError(grid, bmuGetter, samples));
+			
+			Map<GridPos,Set<double[]>> mapping = SomUtils.getBmuMapping(samples, grid, bmuGetter,true);
+			SomUtils.printDMatrix(grid, fDist, "output/weightedsom_dmat_"+w+".png");
+			SomUtils.printClassDist(classes, mapping, grid, "output/weightedsom_class_"+w+".png");
 			
 		}
 	}

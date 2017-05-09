@@ -7,12 +7,12 @@ import spawnn.dist.Dist;
 import spawnn.som.grid.Grid;
 import spawnn.som.grid.GridPos;
 
-public class WeightedSumBmuGetter extends BmuGetter<double[]> {
+public class WeightedSumBmuGetter<T> extends BmuGetter<T> {
 	
 	private double a,b;
-	private Dist d1,d2;
+	private Dist<T> d1,d2;
 	
-	public WeightedSumBmuGetter( Dist d1, Dist d2, double a, double b ) {
+	public WeightedSumBmuGetter( Dist<T> d1, Dist<T> d2, double a, double b ) {
 		this.d1 = d1;
 		this.d2 = d2;
 		this.a = a;
@@ -20,7 +20,7 @@ public class WeightedSumBmuGetter extends BmuGetter<double[]> {
 	}
 	
 	@Override
-	public GridPos getBmuPos( double[] x, Grid<double[]> grid, Set<GridPos> ign ) {
+	public GridPos getBmuPos( T x, Grid<T> grid, Set<GridPos> ign ) {
 		
 		double dist = Double.POSITIVE_INFINITY;
 		GridPos bmu = null;
@@ -29,7 +29,7 @@ public class WeightedSumBmuGetter extends BmuGetter<double[]> {
 			if( ign.contains(p) )
 				continue;
 			
-			double[] v = grid.getPrototypeAt(p);
+			T v = grid.getPrototypeAt(p);
 			double d = a * d1.dist(v,x) + b*d2.dist(v,x);
 			if( d < dist ) {
 				dist = d;

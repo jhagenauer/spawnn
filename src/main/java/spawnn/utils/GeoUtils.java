@@ -26,6 +26,7 @@ import org.apache.log4j.Logger;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.Point;
 
+import cern.colt.Arrays;
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
 import spawnn.som.grid.Grid;
