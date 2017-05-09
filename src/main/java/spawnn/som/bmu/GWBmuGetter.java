@@ -120,13 +120,13 @@ public class GWBmuGetter extends BmuGetter<double[]> {
 		Dist<double[]> gDist = new EuclideanDist(ga);
 
 		DataUtils.transform(samples, fa, Transform.zScore);
-		DataUtils.writeCSV("output/test.csv", samples,new String[]{"x","y","z"});
+		//DataUtils.writeCSV("output/test.csv", samples,new String[]{"x","y","z"});
 		
-		GWKernel ke = GWKernel.bisquare;
+		GWKernel ke = GWKernel.gaussian;
 		boolean adaptive = false;		
 		
 		List<Entry<List<Integer>, List<Integer>>> cvList = SupervisedUtils.getCVList(10, 1, samples.size());
-		for( double bw : new double[]{ 0.1 } ) {
+		for( double bw : new double[]{ 0.01, 0.05, 0.1, 0.15, 0.2 } ) {
 			
 			SummaryStatistics ss = new SummaryStatistics();
 			for (final Entry<List<Integer>, List<Integer>> cvEntry : cvList) {
@@ -152,19 +152,8 @@ public class GWBmuGetter extends BmuGetter<double[]> {
 				values.add( GeoUtils.getGWMean(samples, d, gDist, ke, bandwidth.get(d) ) );
 			Drawer.geoDrawValues(geoms, values, fa[0], null, ColorBrewer.Blues, "output/gwmean_"+bw+".png");
 			log.debug("bw: "+bw+","+ss.getMean());
-			
-			/*		    
-		    bisquare:
-		    Min.   1st Qu.    Median      Mean   3rd Qu.      Max. 
-			-1.611000 -0.996000  0.634900  0.002368  0.653400  0.717800 
-		    */ 
-			
-			SummaryStatistics ss2 = new SummaryStatistics();
-			for( double[] d : values )
-				ss2.addValue(d[fa[0]]);
-			log.debug(ss2);
-			System.exit(1);
 		}
+		System.exit(1);
 		
 		log.debug("GWSOM");
 		for (double bw : new double[] { 0.01, 0.1, 0.2 }) {

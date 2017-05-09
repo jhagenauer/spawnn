@@ -64,7 +64,7 @@ public class GeoUtils {
 		if (k==GWKernel.gaussian) 
 			w = Math.exp(-0.5 * Math.pow(d / bw, 2));
 		else if( k==GWKernel.bisquare )
-			w = Math.pow(1.0 - Math.pow(d / bw, 2), 2);
+			w = d < bw ? Math.pow(1.0 - Math.pow(d / bw, 2), 2) : 0;
 		else if( k==GWKernel.boxcar)
 			w = d < bw ? 1 : 0;
 		else
@@ -79,11 +79,11 @@ public class GeoUtils {
 		double[] a = new double[vLength];
 		double b = 0;
 		for (double[] x_i : samples) {
-			double w_i = getKernelValue(k, dist.dist(uv, x_i), bw);
+			double w_i = getKernelValue(k, dist.dist(uv, x_i), bw);			
 			for( int j = 0; j < vLength; j++ ) 
 				a[j] += (x_i[j] * w_i);
 			b += w_i;			
-		}		
+		}	
 		for( int i = 0; i < vLength; i++ )
 			a[i] /= b;
 		return a;
