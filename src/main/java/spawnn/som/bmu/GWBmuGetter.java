@@ -92,7 +92,7 @@ public class GWBmuGetter extends BmuGetter<double[]> {
 		List<double[]> samples = new ArrayList<>();
 		List<Geometry> geoms = new ArrayList<>();
 		Map<double[],Integer> classes = new HashMap<>();
-		while( samples.size() < 1000 ) {
+		while( samples.size() < 500 ) {
 			double x = r.nextDouble();
 			double y = r.nextDouble();
 			double z;
@@ -143,7 +143,7 @@ public class GWBmuGetter extends BmuGetter<double[]> {
 				Map<double[], Double> bandwidth = GeoUtils.getBandwidth(samplesVal, gDist, bw, adaptive);
 				double d = 0;
 				for( double[] uv : samplesVal ) 
-					d += fDist.dist(uv, GeoUtils.getGWMean(samplesTrain, uv, gDist, ke, bandwidth.get(uv) ) );
+					d += Math.pow(fDist.dist(uv, GeoUtils.getGWMean(samplesTrain, uv, gDist, ke, bandwidth.get(uv) ) ),2);
 				ss.addValue(d);
 			}			
 			
@@ -153,10 +153,10 @@ public class GWBmuGetter extends BmuGetter<double[]> {
 			for( double[] x : samples ) {
 				double[] v = GeoUtils.getGWMean(samples, x, gDist, ke, bandwidth.get(x) );
 				values.add( v );
-				d += fDist.dist(v, x);
+				d += Math.pow(fDist.dist(v, x),2);
 			}
 			
-			Drawer.geoDrawValues(geoms, values, fa[0], null, ColorBrewer.Spectral, "output/gwmean_"+ke+"_"+bw+".png");
+			Drawer.geoDrawValues(geoms, values, fa[0], null, ColorBrewer.Blues, "output/gwmean_"+ke+"_"+bw+".png");
 			//DataUtils.writeCSV("output/gwmean_"+ke+"_"+bw+".csv", values,new String[]{"x","y","z"});
 			
 			log.debug(ke+", "+bw+","+ss.getMean()+","+(d/samples.size()));
@@ -185,6 +185,7 @@ public class GWBmuGetter extends BmuGetter<double[]> {
 			log.debug("te: " + SomUtils.getTopoError(grid, bmuGetter, samples));
 			
 			Map<GridPos,Set<double[]>> mapping = SomUtils.getBmuMapping(samples, grid, bmuGetter,true);
+			SomUtils.printGeoGrid(ga, grid, "output/gwsom_grid_"+ke+"_"+bw+".png");
 			SomUtils.printDMatrix(grid, fDist, "output/gwsom_dmat_"+ke+"_"+bw+".png");
 			SomUtils.printClassDist(classes, mapping, grid, "output/gwsom_class_"+ke+"_"+bw+".png");
 		}
@@ -207,6 +208,7 @@ public class GWBmuGetter extends BmuGetter<double[]> {
 			log.debug("te: " + SomUtils.getTopoError(grid, bmuGetter, samples));
 			
 			Map<GridPos,Set<double[]>> mapping = SomUtils.getBmuMapping(samples, grid, bmuGetter,true);
+			SomUtils.printGeoGrid(ga, grid, "output/geosom_grid_"+k+".png");			
 			SomUtils.printDMatrix(grid, fDist, "output/geosom_dmat_"+k+".png");
 			SomUtils.printClassDist(classes, mapping, grid, "output/geosom_class_"+k+".png");
 			
@@ -235,6 +237,7 @@ public class GWBmuGetter extends BmuGetter<double[]> {
 			log.debug("te: " + SomUtils.getTopoError(grid, bmuGetter, samples));
 			
 			Map<GridPos,Set<double[]>> mapping = SomUtils.getBmuMapping(samples, grid, bmuGetter,true);
+			SomUtils.printGeoGrid(ga, grid, "output/weightedsom_grid_"+w+".png");
 			SomUtils.printDMatrix(grid, fDist, "output/weightedsom_dmat_"+w+".png");
 			SomUtils.printClassDist(classes, mapping, grid, "output/weightedsom_class_"+w+".png");
 			
