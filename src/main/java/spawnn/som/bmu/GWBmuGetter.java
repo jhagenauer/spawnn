@@ -8,7 +8,6 @@ import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
 
-import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 import org.apache.log4j.Logger;
 
 import com.vividsolutions.jts.geom.Coordinate;
@@ -76,17 +75,6 @@ public class GWBmuGetter extends BmuGetter<double[]> {
 	public static void main(String[] args) {
 		Random r = new Random();
 		int T_MAX = 100000;
-
-		/*SpatialDataFrame sdf = DataUtils.readSpatialDataFrameFromShapefile(new File("data/election/election2004.shp"), true);
-		for (int i = 0; i < sdf.samples.size(); i++) {
-			Point p = sdf.geoms.get(i).getCentroid();
-			sdf.samples.get(i)[0] = p.getX();
-			sdf.samples.get(i)[1] = p.getY();
-		}
-		List<double[]> samples = sdf.samples;
-
-		int[] ga = new int[] { 0, 1 };
-		int[] fa = new int[] { 21, 32, 54, 63, 49 };*/
 		
 		GeometryFactory gf = new GeometryFactory();
 		List<double[]> samples = new ArrayList<>();
@@ -98,11 +86,11 @@ public class GWBmuGetter extends BmuGetter<double[]> {
 			double z;
 			int c;
 			double noise = r.nextDouble()*0.1-0.05;
-			if( x < 0.3  ) {
+			if( x < 0.33  ) {
 				z=1;
 				c=0;
-			} else if ( x > 0.6 ) {
-				z = 1;
+			} else if ( x > 0.66 ) {
+				z=1;
 				c=1;
 			} else {
 				z=0;
@@ -123,14 +111,15 @@ public class GWBmuGetter extends BmuGetter<double[]> {
 		DataUtils.transform(samples, fa, Transform.zScore);
 		//DataUtils.writeCSV("output/squares.csv", samples,new String[]{"x","y","z"});
 			
-		List<Entry<List<Integer>, List<Integer>>> cvList = SupervisedUtils.getCVList(2, 10, samples.size());
+		List<Entry<List<Integer>, List<Integer>>> cvList = SupervisedUtils.getCVList(10, 10, samples.size());
 				
 		boolean adaptive = false;		
 		
-		for( GWKernel ke : new GWKernel[]{ GWKernel.gaussian } )
-		for( double bw : new double[]{ 0.01, 0.02, 0.03, 0.04, 0.05, 0.1, 0.2 } ) {
-			
-			SummaryStatistics ss = new SummaryStatistics();
+		for( GWKernel ke : new GWKernel[]{ GWKernel.gaussian, GWKernel.bisquare, GWKernel.boxcar } )
+		for( double bw : new double[]{ 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1, 0.2 } ) {
+						
+			double sumValError = 0;
+			int nrValSamples = 0;
 			for (final Entry<List<Integer>, List<Integer>> cvEntry : cvList) {
 				List<double[]> samplesTrain = new ArrayList<double[]>();
 				for( int k : cvEntry.getKey() ) 
@@ -141,31 +130,30 @@ public class GWBmuGetter extends BmuGetter<double[]> {
 					samplesVal.add(samples.get(k));
 				
 				Map<double[], Double> bandwidth = GeoUtils.getBandwidth(samplesVal, gDist, bw, adaptive);
-				double d = 0;
 				for( double[] uv : samplesVal ) 
-					d += Math.pow(fDist.dist(uv, GeoUtils.getGWMean(samplesTrain, uv, gDist, ke, bandwidth.get(uv) ) ),2);
-				ss.addValue(d);
+					sumValError += Math.pow(uv[fa[0]]-GeoUtils.getGWMean(samplesTrain, uv, gDist, ke, bandwidth.get(uv) )[fa[0]],2);
+				nrValSamples += samplesVal.size();
 			}			
 			
 			Map<double[], Double> bandwidth = GeoUtils.getBandwidth(samples, gDist, bw, adaptive);
 			List<double[]> values = new ArrayList<>();
-			double d = 0;
-			for( double[] x : samples ) {
-				double[] v = GeoUtils.getGWMean(samples, x, gDist, ke, bandwidth.get(x) );
-				values.add( v );
-				d += Math.pow(fDist.dist(v, x),2);
+			double totError = 0;
+			for( double[] uv : samples ) {
+				double[] m = GeoUtils.getGWMean(samples, uv, gDist, ke, bandwidth.get(uv) );
+				values.add( m );			
+				totError += Math.pow(m[fa[0]]-uv[fa[0]],2);
 			}
 			
 			Drawer.geoDrawValues(geoms, values, fa[0], null, ColorBrewer.Blues, "output/gwmean_"+ke+"_"+bw+".png");
 			//DataUtils.writeCSV("output/gwmean_"+ke+"_"+bw+".csv", values,new String[]{"x","y","z"});
 			
-			log.debug(ke+", "+bw+","+ss.getMean()+","+(d/samples.size()));
+			log.debug(ke+", "+bw+","+(sumValError/nrValSamples)+","+(totError/samples.size())+"\t" );
 		}
 		
 		log.debug("GWSOM");
 		//for( GWKernel ke : GWKernel.values() )
-		for( GWKernel ke : new GWKernel[]{ GWKernel.gaussian } )
-		for (double bw : new double[] { 0.01, 0.02, 0.03, 0.04, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9 }) { // fqe sinkt, sqe steigt mit steigender bw, sudden increase of sqe below 0.03.. why?
+		for( GWKernel ke : new GWKernel[]{ GWKernel.boxcar } )
+		for (double bw : new double[]{} ) { // fqe sinkt, sqe steigt mit steigender bw, sudden increase of sqe below 0.03.. why?
 			
 			Grid2DHex<double[]> grid = new Grid2DHex<double[]>(15, 20);
 			SomUtils.initRandom(grid, samples);
@@ -191,7 +179,7 @@ public class GWBmuGetter extends BmuGetter<double[]> {
 		}
 		
 		log.debug("GeoSOM");
-		for (int k : new int[]{ 1,2,3 }) {
+		for (int k : new int[]{ 1,2,3, 100 }) {
 			Grid2DHex<double[]> grid = new Grid2DHex<double[]>(15, 20);
 			SomUtils.initRandom(grid, samples);
 			BmuGetter<double[]> bmuGetter = new KangasBmuGetter<double[]>(gDist, fDist, k);

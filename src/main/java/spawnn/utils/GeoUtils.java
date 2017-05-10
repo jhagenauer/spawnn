@@ -24,7 +24,6 @@ import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.log4j.Logger;
 
 import com.vividsolutions.jts.geom.Geometry;
-import com.vividsolutions.jts.geom.Point;
 
 import cern.colt.Arrays;
 import spawnn.dist.Dist;
@@ -85,33 +84,10 @@ public class GeoUtils {
 				a[j] += (x_i[j] * w_i);
 			b += w_i;			
 		}	
+		if( b > 0 )		
 		for( int i = 0; i < vLength; i++ )
 			a[i] /= b;
 		return a;
-	}
-	
-	public static void main( String[] args ) {
-		SpatialDataFrame sdf = DataUtils.readSpatialDataFrameFromShapefile(new File("data/election/election2004.shp"),
-				true);
-		for (int i = 0; i < sdf.samples.size(); i++) {
-			Point p = sdf.geoms.get(i).getCentroid();
-			sdf.samples.get(i)[0] = p.getX();
-			sdf.samples.get(i)[1] = p.getY();
-		}
-
-		int[] ga = new int[] { 0, 1 };
-		int[] fa = new int[] { 21, 32, 54, 63, 49 };
-
-		Dist<double[]> gDist = new EuclideanDist(ga);
-		
-		Drawer.geoDrawValues(sdf.geoms, sdf.samples, 52, sdf.crs, ColorBrewer.Blues, "output/blacks.png");
-		
-		List<double[]> means = new ArrayList<>();
-		for( double[] uv : sdf.samples ) 
-			means.add( getGWMean(sdf.samples, uv, gDist, GWKernel.gaussian, 1) );
-		
-		Drawer.geoDrawValues(sdf.geoms, means, 52, sdf.crs, ColorBrewer.Blues, "output/blacks_means.png");
-		
 	}
 	
 	// ----------------------------------------------
@@ -604,7 +580,7 @@ public class GeoUtils {
 		return distMatrix;
 	}
 
-	/*public static void main(String[] args) {
+	public static void main(String[] args) {
 		SpatialDataFrame sdf = DataUtils.readSpatialDataFrameFromCSV(new File("data/ozone.csv"), new int[]{2,3}, new int[]{}, true);
 		List<double[]> samples = sdf.samples;
 		Dist<double[]> gDist = new EuclideanDist(new int[]{2,3});
@@ -616,7 +592,7 @@ public class GeoUtils {
 		log.debug( "Inv, 1, norm: "+getMoransI( getRowNormedMatrix(m1), values) ); 
 		log.debug(Arrays.toString(getMoransIStatistics(m1, values )));
 		log.debug(Arrays.toString(getMoransIStatisticsMonteCarlo(m1, values, 100000 )));
-	}*/
+	}
 
 	public static Map<double[], Map<double[], Double>> contiguityMapToDistanceMap( Map<double[], Set<double[]>> connectMap ) {
 		Map<double[], Map<double[], Double>> r = new HashMap<>();
