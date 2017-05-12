@@ -70,7 +70,7 @@ public class GeoUtils {
 		else
 			throw new RuntimeException("No valid kernel given");
 		if( Double.isNaN(w) )
-			log.warn("NaN kernel value");
+			log.warn("NaN kernel value ");
 		return w;
 	}
 	

@@ -1,5 +1,10 @@
 package spawnn.som.bmu;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -80,7 +85,7 @@ public class GWBmuGetter extends BmuGetter<double[]> {
 		List<double[]> samples = new ArrayList<>();
 		List<Geometry> geoms = new ArrayList<>();
 		Map<double[],Integer> classes = new HashMap<>();
-		while( samples.size() < 500 ) {
+		while( samples.size() < 1000 ) {
 			double x = r.nextDouble();
 			double y = r.nextDouble();
 			double z;
@@ -150,10 +155,21 @@ public class GWBmuGetter extends BmuGetter<double[]> {
 			log.debug(ke+", "+bw+","+(sumValError/nrValSamples)+","+(totError/samples.size())+"\t" );
 		}
 		
+		Path file = Paths.get("output/results_gwbmu.csv");
+		try {
+			Files.createDirectories(file.getParent());
+			Files.deleteIfExists(file);
+			Files.createFile(file);
+			String s = "method,parameter,variable,value\r\n";
+			Files.write(file, s.getBytes(), StandardOpenOption.APPEND);
+		} catch (IOException e1) {
+			e1.printStackTrace();
+		}
+		
 		log.debug("GWSOM");
 		//for( GWKernel ke : GWKernel.values() )
-		for( GWKernel ke : new GWKernel[]{ GWKernel.boxcar } )
-		for (double bw : new double[]{} ) { // fqe sinkt, sqe steigt mit steigender bw, sudden increase of sqe below 0.03.. why?
+		for( GWKernel ke : new GWKernel[]{ GWKernel.gaussian, GWKernel.boxcar } )
+		for (double bw = 0.01; bw <= 3; bw+=0.01 ) { // fqe sinkt, sqe steigt mit steigender bw, sudden increase of sqe below 0.03.. why?
 			
 			Grid2DHex<double[]> grid = new Grid2DHex<double[]>(15, 20);
 			SomUtils.initRandom(grid, samples);
@@ -167,7 +183,7 @@ public class GWBmuGetter extends BmuGetter<double[]> {
 				som.train((double) t / T_MAX, x);
 			}
 
-			log.debug(ke+","+ bw);
+			/*log.debug(ke+","+ bw);
 			log.debug("fqe: " + SomUtils.getMeanQuantError(grid, bmuGetter, fDist, samples));
 			log.debug("sqe: " + SomUtils.getMeanQuantError(grid, bmuGetter, gDist, samples));
 			log.debug("te: " + SomUtils.getTopoError(grid, bmuGetter, samples));
@@ -175,11 +191,20 @@ public class GWBmuGetter extends BmuGetter<double[]> {
 			Map<GridPos,Set<double[]>> mapping = SomUtils.getBmuMapping(samples, grid, bmuGetter,true);
 			SomUtils.printGeoGrid(ga, grid, "output/gwsom_grid_"+ke+"_"+bw+".png");
 			SomUtils.printDMatrix(grid, fDist, "output/gwsom_dmat_"+ke+"_"+bw+".png");
-			SomUtils.printClassDist(classes, mapping, grid, "output/gwsom_class_"+ke+"_"+bw+".png");
+			SomUtils.printClassDist(classes, mapping, grid, "output/gwsom_class_"+ke+"_"+bw+".png");*/
+			
+			try {
+				String s = ke+"," + bw + "," + SomUtils.getMeanQuantError(grid, bmuGetter, fDist, samples)
+						+ ","+SomUtils.getMeanQuantError(grid, bmuGetter, gDist, samples)
+						+ ","+SomUtils.getTopoError(grid, bmuGetter, samples) + "\r\n";
+				Files.write(file, s.getBytes(), StandardOpenOption.APPEND);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		}
 		
 		log.debug("GeoSOM");
-		for (int k : new int[]{ 1,2,3, 100 }) {
+		for (int k = 1; k <= 26; k++ ) {
 			Grid2DHex<double[]> grid = new Grid2DHex<double[]>(15, 20);
 			SomUtils.initRandom(grid, samples);
 			BmuGetter<double[]> bmuGetter = new KangasBmuGetter<double[]>(gDist, fDist, k);
@@ -190,7 +215,7 @@ public class GWBmuGetter extends BmuGetter<double[]> {
 				som.train((double) t / T_MAX, x);
 			}
 
-			log.debug("k: " + k);
+			/*log.debug("k: " + k);
 			log.debug("fqe: " + SomUtils.getMeanQuantError(grid, bmuGetter, fDist, samples));
 			log.debug("sqe: " + SomUtils.getMeanQuantError(grid, bmuGetter, gDist, samples));
 			log.debug("te: " + SomUtils.getTopoError(grid, bmuGetter, samples));
@@ -198,12 +223,21 @@ public class GWBmuGetter extends BmuGetter<double[]> {
 			Map<GridPos,Set<double[]>> mapping = SomUtils.getBmuMapping(samples, grid, bmuGetter,true);
 			SomUtils.printGeoGrid(ga, grid, "output/geosom_grid_"+k+".png");			
 			SomUtils.printDMatrix(grid, fDist, "output/geosom_dmat_"+k+".png");
-			SomUtils.printClassDist(classes, mapping, grid, "output/geosom_class_"+k+".png");
+			SomUtils.printClassDist(classes, mapping, grid, "output/geosom_class_"+k+".png");*/
+			
+			try {
+				String s = "geosom"+"," + k + "," + SomUtils.getMeanQuantError(grid, bmuGetter, fDist, samples)
+						+ ","+SomUtils.getMeanQuantError(grid, bmuGetter, gDist, samples)
+						+ ","+SomUtils.getTopoError(grid, bmuGetter, samples) + "\r\n";
+				Files.write(file, s.getBytes(), StandardOpenOption.APPEND);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 			
 		}
 		
 		log.debug("WeightedSOM");
-		for (double w : new double[]{}) {
+		for (double w = 0; w <= 1.0; w+=0.01 ) {
 			Grid2DHex<double[]> grid = new Grid2DHex<double[]>(15, 20);
 			SomUtils.initRandom(grid, samples);
 			
@@ -219,7 +253,7 @@ public class GWBmuGetter extends BmuGetter<double[]> {
 				som.train((double) t / T_MAX, x);
 			}
 
-			log.debug("w: " + w);
+			/*log.debug("w: " + w);
 			log.debug("fqe: " + SomUtils.getMeanQuantError(grid, bmuGetter, fDist, samples));
 			log.debug("sqe: " + SomUtils.getMeanQuantError(grid, bmuGetter, gDist, samples));
 			log.debug("te: " + SomUtils.getTopoError(grid, bmuGetter, samples));
@@ -227,7 +261,16 @@ public class GWBmuGetter extends BmuGetter<double[]> {
 			Map<GridPos,Set<double[]>> mapping = SomUtils.getBmuMapping(samples, grid, bmuGetter,true);
 			SomUtils.printGeoGrid(ga, grid, "output/weightedsom_grid_"+w+".png");
 			SomUtils.printDMatrix(grid, fDist, "output/weightedsom_dmat_"+w+".png");
-			SomUtils.printClassDist(classes, mapping, grid, "output/weightedsom_class_"+w+".png");
+			SomUtils.printClassDist(classes, mapping, grid, "output/weightedsom_class_"+w+".png");*/
+			
+			try {
+				String s = "weighted"+"," + w + "," + SomUtils.getMeanQuantError(grid, bmuGetter, fDist, samples)
+						+ ","+SomUtils.getMeanQuantError(grid, bmuGetter, gDist, samples)
+						+ ","+SomUtils.getTopoError(grid, bmuGetter, samples) + "\r\n";
+				Files.write(file, s.getBytes(), StandardOpenOption.APPEND);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 			
 		}
 	}

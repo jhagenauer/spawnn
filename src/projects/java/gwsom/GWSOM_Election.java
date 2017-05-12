@@ -68,17 +68,16 @@ public class GWSOM_Election {
 		} catch (IOException e1) {
 			e1.printStackTrace();
 		}
-
+		
 		boolean adaptive = false;
-
 		log.debug("GWSOM");
 		// for( GWKernel ke : GWKernel.values() )
 		for (GWKernel ke : new GWKernel[] { GWKernel.gaussian })
-			for (double bw = 0; bw <= 10; bw += 0.01 ) {
-
+			for (double bw = 0.01; bw <= 10; bw += 0.01 ) {
+				
 				Grid2DHex<double[]> grid = new Grid2DHex<double[]>(15, 20);
 				SomUtils.initRandom(grid, samples);
-
+				
 				Map<double[], Double> bandwidth = GeoUtils.getBandwidth(samples, gDist, bw, adaptive);
 				BmuGetter<double[]> bmuGetter = new GWBmuGetter(gDist, fDist, ke, bandwidth);
 
@@ -89,7 +88,7 @@ public class GWSOM_Election {
 				}
 
 				try {
-					String s = "gwsom," + bw + "," + SomUtils.getMeanQuantError(grid, bmuGetter, fDist, samples)
+					String s = ke+"," + bw + "," + SomUtils.getMeanQuantError(grid, bmuGetter, fDist, samples)
 							+ SomUtils.getMeanQuantError(grid, bmuGetter, gDist, samples)
 							+ SomUtils.getTopoError(grid, bmuGetter, samples) + "\r\n";
 					Files.write(file, s.getBytes(), StandardOpenOption.APPEND);
