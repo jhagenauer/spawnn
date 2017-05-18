@@ -3,11 +3,11 @@ package spawnn.utils;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
-
-import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 
 import spawnn.dist.Dist;
 
@@ -163,7 +163,7 @@ public class ClusterValidation {
 		
 		return nns.get(nns.size()-1);
 	}
-
+	
 	// strehl and gosh 2002
 	public static <T> double getNormalizedMutualInformation(Collection<Set<T>> u1, Collection<Set<T>> v1) {
 		List<Set<T>> u = new ArrayList<>(u1);

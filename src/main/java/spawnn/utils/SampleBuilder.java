@@ -1164,7 +1164,7 @@ public class SampleBuilder {
 		// buildTwoPlanes("data/twoplanes.csv");
 		// buildGaussianMixture(1000, "output/gm.csv");
 
-		buildSyntheticSurface(81, "data/syn_surface.csv");
+		// buildSyntheticSurface(81, "data/syn_surface.csv");
 
 		// buildConcentricCircles(2000, 7, "output/circles.shp");
 
@@ -1248,7 +1248,7 @@ public class SampleBuilder {
 		// buildNDiffDensSquares(15, 1000, 0.025, 0.5, 2, 1, "data/cng_var_test/diffsqr1.shp");
 		// buildNDiffDensSquares(15, 1000, 0.025, 0.1, 2, 1, "data/cng_var_test/diffsqr2.shp");
 
-		buildRandomRegions(100, 5000, 0.1, 6, "data/cng_var_test/100regions.shp");
+		buildRandomRegions(100, 5000, 0.1, 5, "data/100regions.shp");
 
 		/*
 		 * try { List<double[]> samples = SampleBuilder.readSamplesFromFcps("data/fcps/Chainlink.lrn", "data/fcps/Chainlink.cls"); DataUtil.writeCSV(new FileOutputStream("output/chainlink.csv"), samples); } catch (FileNotFoundException e) { e.printStackTrace(); }

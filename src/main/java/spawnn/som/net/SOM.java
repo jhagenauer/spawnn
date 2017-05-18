@@ -21,9 +21,9 @@ public class SOM implements UnsupervisedNet {
 		this.lr = lr;
 	}
 	
+	@Override
 	public void train( double t, double[] x) {
 		GridPos bmuPos = bmuGetter.getBmuPos( x, grid );
-				
 		for( GridPos p : grid.getPositions() ) {
 			double theta = nb.getValue( grid.dist( bmuPos, p ), t );
 			double alpha = lr.getValue( t );
