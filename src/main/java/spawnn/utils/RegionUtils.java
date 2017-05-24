@@ -194,6 +194,7 @@ public class RegionUtils {
 				map.get(region).add( samples.get(num) );
 		
 			}
+			br.close();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

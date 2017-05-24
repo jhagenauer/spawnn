@@ -22,23 +22,24 @@ public class GWBmuGetter extends BmuGetter<double[]> {
 		this.bandwidth = bandwidth;
 	}
 
+	// TODO what is the advantage? Think about it, testing does not work
 	@Override
 	public GridPos getBmuPos(double[] x, Grid<double[]> grid, Set<GridPos> ign) {
 		double dist = Double.NaN;
 		GridPos bmu = null;
+		double bw_x = bandwidth.get(x);
 		
 		for (GridPos p : grid.getPositions()) {
-
 			if (ign != null && ign.contains(p))
 				continue;
 			
 			double[] v = grid.getPrototypeAt(p);
-			double w = GeoUtils.getKernelValue( kernel, gDist.dist(v, x), bandwidth.get(x) );
+			double w = GeoUtils.getKernelValue( kernel, gDist.dist(v, x), bw_x );
 			double[] est = new double[v.length];
 			for( int i = 0; i < v.length; i++ )
 				est[i] = w * v[i];
-			double d = fDist.dist(est, x);
 			
+			double d = fDist.dist(est, x);
 			if( bmu == null || d < dist ) { 
 				bmu = p;
 				dist = d;

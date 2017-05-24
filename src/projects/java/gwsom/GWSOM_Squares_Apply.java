@@ -33,10 +33,8 @@ import spawnn.som.net.SOM;
 import spawnn.som.utils.SomUtils;
 import spawnn.utils.Clustering;
 import spawnn.utils.Clustering.TreeNode;
-import spawnn.utils.ColorBrewer;
 import spawnn.utils.DataUtils;
 import spawnn.utils.DataUtils.Transform;
-import spawnn.utils.Drawer;
 import spawnn.utils.GeoUtils;
 import spawnn.utils.GeoUtils.GWKernel;
 
@@ -85,7 +83,7 @@ public class GWSOM_Squares_Apply {
 		int[] fa = new int[] { 2 };
 
 		DataUtils.transform(samples, fa, Transform.zScore);
-		// DataUtils.writeCSV("output/squares.csv", samples,new String[]{"x","y","z"});
+		DataUtils.writeCSV("output/squares.csv", samples,new String[]{"x","y","z"});
 
 		Dist<double[]> fDist = new EuclideanDist(fa);
 		Dist<double[]> gDist = new EuclideanDist(ga);
@@ -97,9 +95,9 @@ public class GWSOM_Squares_Apply {
 
 		boolean adaptive = false;
 
-		List<Entry<List<Integer>, List<Integer>>> cvList = SupervisedUtils.getCVList(10, 10, samples.size());
-		for (GWKernel ke : new GWKernel[] { GWKernel.boxcar })
-			for (double bw : new double[] { 0.18 }) {
+		List<Entry<List<Integer>, List<Integer>>> cvList = SupervisedUtils.getCVList(10, 1, samples.size());
+		for (GWKernel ke : new GWKernel[] { GWKernel.gaussian })
+			for (double bw = 0; bw <= 2; bw+=0.01 ) {
 
 				double sumValError = 0;
 				int nrValSamples = 0;
@@ -129,11 +127,13 @@ public class GWSOM_Squares_Apply {
 					totError += Math.pow(m[fa[0]] - uv[fa[0]], 2);
 				}
 
-				Drawer.geoDrawValues(geoms, values, fa[0], null, ColorBrewer.Blues, "output/gwmean_" + ke + "_" + bw + ".png");
+				//Drawer.geoDrawValues(geoms, values, fa[0], null, ColorBrewer.Blues, "output/gwmean_" + ke + "_" + bw + ".png");
 				// DataUtils.writeCSV("output/gwmean_"+ke+"_"+bw+".csv", values,new String[]{"x","y","z"});
 
 				log.debug( ke + ", " + bw + "," + (sumValError / nrValSamples) + "," + (totError / samples.size()) + "\t");
 			}
+		
+		System.exit(1);
 
 		// boxcar ~0.18 interesting
 		log.debug("GWSOM");

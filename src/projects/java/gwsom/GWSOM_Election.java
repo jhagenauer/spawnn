@@ -6,15 +6,18 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Random;
 
 import org.apache.log4j.Logger;
 
 import com.vividsolutions.jts.geom.Point;
 
+import nnet.SupervisedUtils;
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
 import spawnn.dist.WeightedDist;
@@ -27,8 +30,10 @@ import spawnn.som.grid.Grid2DHex;
 import spawnn.som.kernel.GaussKernel;
 import spawnn.som.net.SOM;
 import spawnn.som.utils.SomUtils;
+import spawnn.utils.ColorBrewer;
 import spawnn.utils.DataUtils;
 import spawnn.utils.DataUtils.Transform;
+import spawnn.utils.Drawer;
 import spawnn.utils.GeoUtils;
 import spawnn.utils.GeoUtils.GWKernel;
 import spawnn.utils.SpatialDataFrame;
@@ -41,8 +46,7 @@ public class GWSOM_Election {
 		Random r = new Random();
 		int T_MAX = 100000;
 
-		SpatialDataFrame sdf = DataUtils.readSpatialDataFrameFromShapefile(new File("data/election/election2004.shp"),
-				true);
+		SpatialDataFrame sdf = DataUtils.readSpatialDataFrameFromShapefile(new File("data/election/election2004.shp"), true);
 		for (int i = 0; i < sdf.samples.size(); i++) {
 			Point p = sdf.geoms.get(i).getCentroid();
 			sdf.samples.get(i)[0] = p.getX();
@@ -57,6 +61,47 @@ public class GWSOM_Election {
 		Dist<double[]> gDist = new EuclideanDist(ga);
 
 		DataUtils.transform(samples, fa, Transform.zScore);
+				
+		boolean adaptive = false;
+		
+		List<Entry<List<Integer>, List<Integer>>> cvList = SupervisedUtils.getCVList(10, 1, samples.size());
+		for (GWKernel ke : new GWKernel[] { GWKernel.gaussian })
+			for (double bw : new double[]{ 0.8 } ) {
+
+				double sumValError = 0;
+				int nrValSamples = 0;
+				for (final Entry<List<Integer>, List<Integer>> cvEntry : cvList) {
+					List<double[]> samplesTrain = new ArrayList<double[]>();
+					for (int k : cvEntry.getKey())
+						samplesTrain.add(samples.get(k));
+
+					List<double[]> samplesVal = new ArrayList<double[]>();
+					for (int k : cvEntry.getValue())
+						samplesVal.add(samples.get(k));
+
+					Map<double[], Double> bandwidth = GeoUtils.getBandwidth(samplesVal, gDist, bw, adaptive);
+					for (double[] uv : samplesVal)
+						sumValError += Math.pow(
+								uv[fa[0]] - GeoUtils.getGWMean(samplesTrain, uv, gDist, ke, bandwidth.get(uv))[fa[0]],
+								2);
+					nrValSamples += samplesVal.size();
+				}
+
+				Map<double[], Double> bandwidth = GeoUtils.getBandwidth(samples, gDist, bw, adaptive);
+				List<double[]> values = new ArrayList<>();
+				double totError = 0;
+				for (double[] uv : samples) {
+					double[] m = GeoUtils.getGWMean(samples, uv, gDist, ke, bandwidth.get(uv));
+					values.add(m);
+					totError += Math.pow(m[fa[0]] - uv[fa[0]], 2);
+				}
+
+				Drawer.geoDrawValues(sdf.geoms, values, fa[0], null, ColorBrewer.Blues, "output/gwmean_" + ke + "_" + bw + ".png");
+				// DataUtils.writeCSV("output/gwmean_"+ke+"_"+bw+".csv", values,new String[]{"x","y","z"});
+
+				log.debug( ke + ", " + bw + "," + (sumValError / nrValSamples) + "," + (totError / samples.size()) + "\t");
+			}
+		
 
 		Path file = Paths.get("output/results_election.csv");
 		try {
@@ -69,7 +114,6 @@ public class GWSOM_Election {
 			e1.printStackTrace();
 		}
 		
-		boolean adaptive = false;
 		log.debug("GWSOM");
 		// for( GWKernel ke : GWKernel.values() )
 		for (GWKernel ke : new GWKernel[] { GWKernel.gaussian })
