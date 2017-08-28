@@ -2,10 +2,6 @@ package gwr;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -14,7 +10,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.Set;
 
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 import org.apache.log4j.Logger;
@@ -27,13 +22,11 @@ import chowClustering.LinearModel;
 import nnet.SupervisedUtils;
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
-import spawnn.utils.ColorBrewer;
-import spawnn.utils.ColorUtils.ColorClass;
-import spawnn.utils.GeoUtils.GWKernel;
 import spawnn.utils.DataUtils;
-import spawnn.utils.Drawer;
 import spawnn.utils.GeoUtils;
+import spawnn.utils.GeoUtils.GWKernel;
 import spawnn.utils.SpatialDataFrame;
+import spawnn.utils.DataUtils.Transform;
 
 public class GWR_CV {
 
@@ -41,7 +34,7 @@ public class GWR_CV {
 
 	public static void main(String[] args) {
 
-		int threads = 5;//Math.max(1, Runtime.getRuntime().availableProcessors() - 1);
+		int threads = Math.max(1, Runtime.getRuntime().availableProcessors() - 1);
 
 		SpatialDataFrame sdf = DataUtils.readSpatialDataFrameFromShapefile(new File("data/election/election2004.shp"),
 				true);
@@ -52,36 +45,21 @@ public class GWR_CV {
 		}
 
 		int[] ga = new int[] { 0, 1 };
-		int[] fa = new int[] { 52, 49, 10 };
+		int[] fa = new int[] { 52, 49, 10, 11, 14, 21, 32 };
 		int ta = 7;
+		
+		DataUtils.transform(sdf.samples, fa, Transform.zScore);
 
 		Dist<double[]> gDist = new EuclideanDist(ga);
 
-		// lm
-		LinearModel lm = new LinearModel(sdf.samples, fa, ta, false);
-		List<Double> residuals = lm.getResiduals();
-		Drawer.geoDrawValues(sdf.geoms, residuals, sdf.crs, ColorBrewer.Blues, ColorClass.Quantile, "output/lm_residuals.png");
-
-		double mean = 0;
-		Map<double[], Double> values = new HashMap<>();
-		for (int i = 0; i < sdf.samples.size(); i++) {
-			values.put(sdf.samples.get(i), residuals.get(i));
-			mean += residuals.get(i);
-		}
-		mean /= residuals.size();
-
-		Map<double[], Set<double[]>> cm = GeoUtils.getContiguityMap(sdf.samples, sdf.geoms, false, false);
-		Map<double[], Map<double[], Double>> dMap = GeoUtils.contiguityMapToDistanceMap(cm);
-		List<double[]> lisa = GeoUtils.getLocalMoransIMonteCarlo(sdf.samples, values, dMap, 999);
-		
 		GWKernel k = GWKernel.gaussian;
-		boolean adaptive = true;
+		boolean adaptive = false;
 
 		List<double[]> samples = sdf.samples;
 		
-		List<Entry<List<Integer>, List<Integer>>> cvList = SupervisedUtils.getCVList(10, 32, samples.size());
+		List<Entry<List<Integer>, List<Integer>>> cvList = SupervisedUtils.getCVList(10, 1, samples.size());
 
-		for (double bw = 5; bw < 15; bw++ ) {
+		for (double bw = 0.4; bw < 2; bw+=0.1 ) {
 
 			Map<double[], Double> bandwidth = GeoUtils.getBandwidth(samples, gDist, bw, adaptive);
 

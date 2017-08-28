@@ -7,6 +7,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,10 +31,8 @@ import spawnn.som.grid.Grid2DHex;
 import spawnn.som.kernel.GaussKernel;
 import spawnn.som.net.SOM;
 import spawnn.som.utils.SomUtils;
-import spawnn.utils.ColorBrewer;
 import spawnn.utils.DataUtils;
 import spawnn.utils.DataUtils.Transform;
-import spawnn.utils.Drawer;
 import spawnn.utils.GeoUtils;
 import spawnn.utils.GeoUtils.GWKernel;
 import spawnn.utils.SpatialDataFrame;
@@ -55,21 +54,38 @@ public class GWSOM_Election {
 		List<double[]> samples = sdf.samples;
 
 		int[] ga = new int[] { 0, 1 };
-		int[] fa = new int[] { 11, 21, 23, 32, 54, 63, 48, 49 };
+		int[] fa = new int[] { 11, 21, 32, 54, 63, 48, 49 };
+		
+		for( int i : fa )
+			log.debug(i+":"+sdf.names.get(i));
 
 		Dist<double[]> fDist = new EuclideanDist(fa);
 		Dist<double[]> gDist = new EuclideanDist(ga);
 
 		DataUtils.transform(samples, fa, Transform.zScore);
+		
+		// --------------------
+		
+		/*{
+		//samples = samples.subList(0, 10);
+		Map<double[], Double> bandwidth = GeoUtils.getBandwidth(samples, gDist, 0.8, false);
+		for( int i = 0; i < 3; i++ ) {
+			double[] uv = samples.get(i);
+			double[] g = GeoUtils.getGWMean( samples, uv, gDist, GWKernel.gaussian, bandwidth.get(uv) );
+			log.debug("g: "+Arrays.toString( DataUtils.strip(g,fa)));
+		}
+		System.exit(1);
+		}*/
+		
+		// --------------------
 				
 		boolean adaptive = false;
 		
 		List<Entry<List<Integer>, List<Integer>>> cvList = SupervisedUtils.getCVList(10, 1, samples.size());
 		for (GWKernel ke : new GWKernel[] { GWKernel.gaussian })
-			for (double bw : new double[]{ 0.8 } ) {
+			for (double bw = 0.1; bw <= 20; bw += 0.1 ) {
 
-				double sumValError = 0;
-				int nrValSamples = 0;
+				List<double[]> rmse = new ArrayList<double[]>();
 				for (final Entry<List<Integer>, List<Integer>> cvEntry : cvList) {
 					List<double[]> samplesTrain = new ArrayList<double[]>();
 					for (int k : cvEntry.getKey())
@@ -80,27 +96,31 @@ public class GWSOM_Election {
 						samplesVal.add(samples.get(k));
 
 					Map<double[], Double> bandwidth = GeoUtils.getBandwidth(samplesVal, gDist, bw, adaptive);
+					double[] e = new double[fa.length];
 					for (double[] uv : samplesVal)
-						sumValError += Math.pow(
-								uv[fa[0]] - GeoUtils.getGWMean(samplesTrain, uv, gDist, ke, bandwidth.get(uv))[fa[0]],
-								2);
-					nrValSamples += samplesVal.size();
+						for( int i = 0; i < fa.length; i++ )
+							e[i] += Math.pow( uv[fa[i]] - GeoUtils.getGWMean(samplesTrain, uv, gDist, ke, bandwidth.get(uv))[fa[i]], 2);
+					for( int i = 0; i < e.length; i++ )
+						e[i] = Math.sqrt( e[i]/samplesVal.size() );
+					
+					rmse.add(e);
 				}
 
 				Map<double[], Double> bandwidth = GeoUtils.getBandwidth(samples, gDist, bw, adaptive);
 				List<double[]> values = new ArrayList<>();
-				double totError = 0;
-				for (double[] uv : samples) {
-					double[] m = GeoUtils.getGWMean(samples, uv, gDist, ke, bandwidth.get(uv));
-					values.add(m);
-					totError += Math.pow(m[fa[0]] - uv[fa[0]], 2);
-				}
-
-				Drawer.geoDrawValues(sdf.geoms, values, fa[0], null, ColorBrewer.Blues, "output/gwmean_" + ke + "_" + bw + ".png");
+				for (double[] uv : samples) 
+					values.add(GeoUtils.getGWMean(samples, uv, gDist, ke, bandwidth.get(uv)));
+				
+				//Drawer.geoDrawValues(sdf.geoms, values, fa[0], null, ColorBrewer.Blues, "output/gwmean_" + ke + "_" + bw + ".png");
 				// DataUtils.writeCSV("output/gwmean_"+ke+"_"+bw+".csv", values,new String[]{"x","y","z"});
 
-				log.debug( ke + ", " + bw + "," + (sumValError / nrValSamples) + "," + (totError / samples.size()) + "\t");
+				double sum = 0;
+				for( double[] e : rmse )
+					for( double e2 : e )
+						sum += e2;
+				log.debug( ke + ", " + bw + "," + sum);
 			}
+		System.exit(1);
 		
 
 		Path file = Paths.get("output/results_election.csv");

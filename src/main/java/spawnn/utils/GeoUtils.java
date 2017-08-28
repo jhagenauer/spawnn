@@ -82,9 +82,8 @@ public class GeoUtils {
 			double w_i = getKernelValue(k, dist.dist(uv, x_i), bw);			
 			for( int j = 0; j < vLength; j++ ) 
 				a[j] += (x_i[j] * w_i);
-			b += w_i;			
-		}	
-		if( b > 0 )		
+			b += w_i;
+		}		
 		for( int i = 0; i < vLength; i++ )
 			a[i] /= b;
 		return a;
