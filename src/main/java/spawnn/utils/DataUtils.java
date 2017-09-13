@@ -13,11 +13,11 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.io.Serializable;
 import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -32,19 +32,20 @@ import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 import org.apache.log4j.Logger;
 import org.geotools.data.DataStore;
+import org.geotools.data.DefaultTransaction;
 import org.geotools.data.FeatureSource;
-import org.geotools.data.FeatureStore;
-import org.geotools.data.FileDataStoreFactorySpi;
+import org.geotools.data.Transaction;
 import org.geotools.data.collection.ListFeatureCollection;
 import org.geotools.data.shapefile.ShapefileDataStore;
 import org.geotools.data.shapefile.ShapefileDataStoreFactory;
+import org.geotools.data.simple.SimpleFeatureSource;
+import org.geotools.data.simple.SimpleFeatureStore;
 import org.geotools.feature.FeatureIterator;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.feature.type.AttributeDescriptor;
-import org.opengis.feature.type.Name;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
 import com.vividsolutions.jts.geom.Coordinate;
@@ -78,7 +79,7 @@ public class DataUtils {
 		}
 		return r;
 	}
-	
+
 	// pretty sucks
 	private static double sammonsStress(List<double[]> l1, Dist<double[]> a, List<double[]> l2, Dist<double[]> b) {
 		double sum = 0;
@@ -358,18 +359,18 @@ public class DataUtils {
 			r[i] /= c.size();
 		return r;
 	}
-		
-	public static RealMatrix toRealMatrix( List<double[]> samples ) {
+
+	public static RealMatrix toRealMatrix(List<double[]> samples) {
 		double[][] m = new double[samples.size()][];
-		for( int i = 0; i < samples.size(); i++ )
+		for (int i = 0; i < samples.size(); i++)
 			m[i] = samples.get(i);
-		
+
 		return new Array2DRowRealMatrix(m);
 	}
-	
-	public static List<double[]> toSamples( RealMatrix rm ) {
+
+	public static List<double[]> toSamples(RealMatrix rm) {
 		List<double[]> l = new ArrayList<>();
-		for( int i = 0; i < rm.getRowDimension(); i++ )
+		for (int i = 0; i < rm.getRowDimension(); i++)
 			l.add(rm.getRow(i));
 		return l;
 	}
@@ -423,7 +424,7 @@ public class DataUtils {
 					String n = names[i];
 					if (n.length() > 8) {
 						n = n.substring(0, 8);
-						//log.debug("Trunkating " + names[i] + " to " + n);
+						// log.debug("Trunkating " + names[i] + " to " + n);
 					}
 					typeBuilder.add(n, Double.class);
 				} else {
@@ -459,29 +460,31 @@ public class DataUtils {
 				SimpleFeature sf = featureBuilder.buildFeature(null);
 				fc.add(sf);
 			}
+			
+			ShapefileDataStoreFactory dataStoreFactory = new ShapefileDataStoreFactory();
 
-			// store shape file, no coordinate reference system
-			Map map = Collections.singletonMap("url", new File(fn).toURI().toURL());
-			FileDataStoreFactorySpi factory = new ShapefileDataStoreFactory();
-			DataStore myData = factory.createNewDataStore(map);
-			myData.createSchema(fc.getSchema());
-			Name name = myData.getNames().get(0);
-			FeatureStore<SimpleFeatureType, SimpleFeature> store = (FeatureStore<SimpleFeatureType, SimpleFeature>) myData.getFeatureSource(name);
+			Map<String, Serializable> params = new HashMap<>();
+			params.put("url", new File(fn).toURI().toURL());
+			params.put("create spatial index", Boolean.TRUE);
 
-			store.addFeatures(fc);
+			ShapefileDataStore newDataStore = (ShapefileDataStore) dataStoreFactory.createNewDataStore(params);
+			newDataStore.createSchema(fc.getSchema());
 
-			/*Transaction transaction = new DefaultTransaction("create");
+			String typeName = newDataStore.getTypeNames()[0];
+			SimpleFeatureSource featureSource = newDataStore.getFeatureSource(typeName);
+			SimpleFeatureStore featureStore = (SimpleFeatureStore) featureSource;
+
+			Transaction transaction = new DefaultTransaction("create");
 			try {
-				store.addFeatures(fc);
+				featureStore.addFeatures(fc);
 				transaction.commit();
 			} catch (Exception e) {
 				e.printStackTrace();
 				transaction.rollback();
 			} finally {
 				transaction.close();
-			}*/
+			}
 
-			myData.dispose();
 		} catch (MalformedURLException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
@@ -669,11 +672,11 @@ public class DataUtils {
 			e.printStackTrace();
 		}
 	}
-	
+
 	public static DataFrame readDataFrameFromCSV(String file, int[] ign, boolean verbose) {
-		return  readDataFrameFromCSV(new File(file), ign,verbose);
+		return readDataFrameFromCSV(new File(file), ign, verbose);
 	}
-	
+
 	public static DataFrame readDataFrameFromCSV(File file, int[] ign, boolean verbose) {
 		return readDataFrameFromCSV(file, ign, verbose, ',');
 	}
@@ -792,7 +795,7 @@ public class DataUtils {
 			ignore.add(i);
 
 		BufferedReader reader = null;
-		
+
 		try {
 			reader = new BufferedReader(new FileReader(file));
 			// header handling
@@ -886,14 +889,14 @@ public class DataUtils {
 			for (int i = 0; i < adl.size(); i++) {
 				AttributeDescriptor ad = adl.get(i);
 				String bin = ad.getType().getBinding().getName();
-								
-				if (ignore.contains(i) )
+
+				if (ignore.contains(i))
 					continue;
 
 				if (bin.equals("java.lang.Integer")) {
 					sd.names.add(ad.getLocalName());
 					sd.bindings.add(SpatialDataFrame.binding.Integer);
-				} else if (bin.equals("java.lang.Double") || td.contains(i) ) {
+				} else if (bin.equals("java.lang.Double") || td.contains(i)) {
 					sd.names.add(ad.getLocalName());
 					sd.bindings.add(SpatialDataFrame.binding.Double);
 				} else if (bin.equals("java.lang.Long")) {
@@ -1047,19 +1050,19 @@ public class DataUtils {
 		for (double[] d : samples)
 			for (int i = 0; i < fa.length; i++)
 				ds[i].addValue(d[fa[i]]);
-		
+
 		RealMatrix v = null;
-		if( t == Transform.pca ) {
+		if (t == Transform.pca) {
 			RealMatrix matrix = new Array2DRowRealMatrix(samples.size(), fa.length);
 			for (int i = 0; i < samples.size(); i++)
-				for( int j = 0; j < fa.length; j++ )
+				for (int j = 0; j < fa.length; j++)
 					matrix.setEntry(i, j, samples.get(i)[fa[j]]);
-		
+
 			SingularValueDecomposition svd = new SingularValueDecomposition(matrix);
 			v = svd.getU().multiply(svd.getS());
 		}
 
-		for (int i = 0; i < samples.size(); i++ ) {
+		for (int i = 0; i < samples.size(); i++) {
 			double[] d = samples.get(i);
 			for (int j = 0; j < fa.length; j++) {
 				if (t == Transform.log)
@@ -1074,12 +1077,12 @@ public class DataUtils {
 					d[fa[j]] = (d[fa[j]] - ds[j].getMean()) / ds[j].getStandardDeviation();
 				else if (t == Transform.scale01)
 					d[fa[j]] = (d[fa[j]] - ds[j].getMin()) / (ds[j].getMax() - ds[j].getMin());
-				else if( t == Transform.pca ) 
+				else if (t == Transform.pca)
 					d[fa[j]] = v.getEntry(i, j);
 			}
 		}
 	}
-	
+
 	public static void transform(List<double[]> samples, Transform t) {
 		int[] fa = new int[samples.get(0).length];
 		for (int i = 0; i < fa.length; i++)
@@ -1102,7 +1105,7 @@ public class DataUtils {
 			for (int i : idx)
 				s[i] = (s[i] - mean[i]) / stdDev;
 	}
-	
+
 	public static List<double[]> removeColumns(List<double[]> samples, int[] ign) {
 		List<double[]> ns = new ArrayList<double[]>();
 
@@ -1115,7 +1118,7 @@ public class DataUtils {
 
 			int mod = 0;
 			for (int i = 0; i < x.length; i++) {
-				if (ignore.contains(i) || i >= n.length )
+				if (ignore.contains(i) || i >= n.length)
 					mod++;
 				else
 					n[i - mod] = x[i];
@@ -1124,7 +1127,7 @@ public class DataUtils {
 		}
 		return ns;
 	}
-	
+
 	public static List<double[]> retainColumns(List<double[]> samples, int[] r) {
 		int n = samples.get(0).length;
 
@@ -1201,8 +1204,7 @@ public class DataUtils {
 		return ssq;
 	}
 
-	
-	// If one wants to perform PCA on a correlation matrix (instead of a covariance matrix), then columns of X should not only be centered, but standardized as well, i.e. divided by their standard deviations. 
+	// If one wants to perform PCA on a correlation matrix (instead of a covariance matrix), then columns of X should not only be centered, but standardized as well, i.e. divided by their standard deviations.
 	public static List<double[]> reduceDimensionByPCA(List<double[]> samples, int nrComponents) {
 		RealMatrix matrix = new Array2DRowRealMatrix(samples.size(), samples.get(0).length);
 		for (int i = 0; i < samples.size(); i++)
@@ -1218,20 +1220,20 @@ public class DataUtils {
 		}
 		return ns;
 	}
-	
-	public static void main( String[] args ) {
-		DataFrame df = DataUtils.readDataFrameFromCSV("data/iris.csv", new int[]{}, true);
-		
+
+	public static void main(String[] args) {
+		DataFrame df = DataUtils.readDataFrameFromCSV("data/iris.csv", new int[] {}, true);
+
 		DataUtils.transform(df.samples, Transform.zScore);
 		DataUtils.transform(df.samples, Transform.pca);
-		
-		for( double[] d : df.samples ) 
+
+		for (double[] d : df.samples)
 			log.debug(Arrays.toString(d));
 	}
 
-	public static double[] strip( double[] d, int[] fa ) {
+	public static double[] strip(double[] d, int[] fa) {
 		double[] nd = new double[fa.length];
-		for( int j = 0; j < fa.length; j++ )
+		for (int j = 0; j < fa.length; j++)
 			nd[j] = d[fa[j]];
 		return nd;
 	}

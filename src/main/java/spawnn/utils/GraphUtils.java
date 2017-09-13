@@ -1,6 +1,7 @@
 package spawnn.utils;
 
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.AbstractMap;
@@ -12,6 +13,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+
+import javax.xml.stream.XMLOutputFactory;
+import javax.xml.stream.XMLStreamException;
+import javax.xml.stream.XMLStreamWriter;
 
 import spawnn.dist.Dist;
 
@@ -243,4 +248,88 @@ public class GraphUtils {
 			}
 		}	
 	}
+	
+	public static void writeGraphToGraphML(String[] names, Map<double[], Map<double[],Double>> g, File fn) {
+		Set<double[]> v = new HashSet<double[]>(g.keySet());
+		for( Map<double[],Double> m : g.values() )
+			v.addAll(m.keySet());
+		List<double[]> nodes = new ArrayList<double[]>(v);
+		
+		FileWriter fw = null;
+
+		try {
+			fw = new FileWriter(fn);
+			XMLOutputFactory factory = XMLOutputFactory.newInstance();
+			XMLStreamWriter writer = factory.createXMLStreamWriter(fw);
+
+			writer.writeStartDocument();
+
+			writer.writeStartElement("graphml");
+			writer.writeDefaultNamespace("http://graphml.graphdrawing.org/xmlns");
+
+			for (String s : names) {
+				writer.writeStartElement("key");
+				writer.writeAttribute("id", s);
+				writer.writeAttribute("for", "node");
+				writer.writeAttribute("attr.name", s);
+				writer.writeAttribute("attr.type", "double");
+				writer.writeEndElement();
+			}
+
+			// edge attributes
+			writer.writeStartElement("key");
+			writer.writeAttribute("id", "value");
+			writer.writeAttribute("for", "edge");
+			writer.writeAttribute("attr.name", "value");
+			writer.writeAttribute("attr.type", "double");
+			writer.writeEndElement();
+			
+			writer.writeStartElement("graph");
+			writer.writeAttribute("id", "G");
+			writer.writeAttribute("edgedefault", "undirected");
+
+			for (double[] n : nodes) {
+				writer.writeStartElement("node");
+				writer.writeAttribute("id", nodes.indexOf(n) + "");
+
+				for (int i = 0; i < names.length; i++) {
+					writer.writeStartElement("data");
+					writer.writeAttribute("key", names[i]);
+					writer.writeCharacters("" + n[i]);
+					writer.writeEndElement();
+				}
+				writer.writeEndElement(); // end node
+			}
+
+			int i = 0;
+			for( double[] a : g.keySet() )
+				for( double[] b : g.get(a).keySet() ) {
+				double edge = g.get(a).get(b);
+				writer.writeStartElement("edge");
+				writer.writeAttribute("id", i++ + "");
+				writer.writeAttribute("source", nodes.indexOf(a) + "");
+				writer.writeAttribute("target", nodes.indexOf(b) + "");
+
+				// write attributes
+				writer.writeStartElement("data");
+				writer.writeAttribute("key", "value");
+				writer.writeCharacters("" + edge);
+				writer.writeEndElement(); // end data
+
+				writer.writeEndElement(); // end edge
+			}
+			writer.writeEndElement(); // end graph
+			writer.writeEndElement(); // end graphml
+			writer.writeEndDocument();
+			writer.flush();
+			writer.close();
+			fw.flush();
+			fw.close();
+		} catch (XMLStreamException ex) {
+			ex.printStackTrace();
+		} catch (IOException ex) {
+			ex.printStackTrace();
+		}
+	}
+
 }
