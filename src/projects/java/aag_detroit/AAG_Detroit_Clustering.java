@@ -105,8 +105,8 @@ public class AAG_Detroit_Clustering {
 			System.out.println("f-qe: " + DataUtils.getMeanQuantizationError(bmus, fDist));
 			System.out.println("s-qe: " + DataUtils.getMeanQuantizationError(bmus, gDist));
 
-			System.out.println("bmu-wcss: " + ClusterValidation.getWithinClusterSumOfSuqares(bmus.values(), fDist));
-			System.out.println("bmu-wcss: " + ClusterValidation.getWithinClusterSumOfSuqares(bmus.values(), gDist));
+			System.out.println("f-bmu-wcss: " + ClusterValidation.getWithinClusterSumOfSuqares(bmus.values(), fDist));
+			System.out.println("s-bmu-wcss: " + ClusterValidation.getWithinClusterSumOfSuqares(bmus.values(), gDist));
 
 			Map<double[], Map<double[], Double>> graph = new HashMap<double[], Map<double[], Double>>();
 			for (double[] x : sdf.samples) {

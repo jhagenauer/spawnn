@@ -2,8 +2,6 @@ package gwr;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -21,12 +19,12 @@ import nnet.SupervisedUtils;
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
 import spawnn.utils.ColorBrewer;
+import spawnn.utils.ColorUtils.ColorClass;
 import spawnn.utils.DataUtils;
 import spawnn.utils.Drawer;
 import spawnn.utils.GeoUtils;
-import spawnn.utils.SpatialDataFrame;
-import spawnn.utils.ColorUtils.ColorClass;
 import spawnn.utils.GeoUtils.GWKernel;
+import spawnn.utils.SpatialDataFrame;
 
 public class GWR {
 	
@@ -91,15 +89,15 @@ public class GWR {
 				
 		Drawer.geoDrawCluster(lisaCluster.values(), sdf.samples, sdf.geoms, "output/lm_lisa_clust.png", true);
 			
-		GWKernel k = GWKernel.gaussian;
 		boolean adaptive = true;
 				
 		List<double[]> samples = sdf.samples;
 			
 		DoubleMatrix Y = new DoubleMatrix( LinearModel.getY( samples, ta) );
 		DoubleMatrix X = new DoubleMatrix( LinearModel.getX( samples, fa, true) );
-										
-		for( double bw : new double[]{ 4,5,6,7,8,9,10,11,12,13,14,15 } ) {
+		
+		for( GWKernel k : new GWKernel[]{ GWKernel.gaussian, GWKernel.bisquare, GWKernel.boxcar } )
+		for( double bw : new double[]{ 2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20 } ) {
 			
 			// estimate coefficients
 			List<Double> responseTrain = new ArrayList<Double>();
@@ -133,6 +131,7 @@ public class GWR {
 			double mse = rss/samples.size();
 			double traceS = S.diag().sum();
 			
+			log.debug("kernel: "+k);
 			log.debug("bandwidth: "+bw);
 			log.debug("Nr params: "+traceS);		
 			log.debug("Nr. of data points: "+samples.size());

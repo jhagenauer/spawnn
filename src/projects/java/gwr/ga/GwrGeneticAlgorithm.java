@@ -4,6 +4,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -13,21 +14,18 @@ import java.util.concurrent.Future;
 
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.log4j.Logger;
-import org.jblas.DoubleMatrix;
 
 import com.vividsolutions.jts.geom.Point;
 
-import chowClustering.LinearModel;
-import spawnn.dist.Dist;
-import spawnn.dist.EuclideanDist;
+import nnet.SupervisedUtils;
 import spawnn.utils.DataUtils;
 import spawnn.utils.SpatialDataFrame;
 
-public class GeneticAlgorithm {
+public class GwrGeneticAlgorithm {
 	
-	private static Logger log = Logger.getLogger(GeneticAlgorithm.class);
+	private static Logger log = Logger.getLogger(GwrGeneticAlgorithm.class);
 	private final static Random r = new Random();
-	int threads = 4;//Math.max(1 , Runtime.getRuntime().availableProcessors() -1 );;
+	int threads = Math.max(1 , Runtime.getRuntime().availableProcessors() -1 );;
 	
 	public int tournamentSize = 2;
 	public double recombProb = 0.7;
@@ -227,24 +225,18 @@ public class GeneticAlgorithm {
 		int[] fa = new int[]{52,49,10};
 		int ta = 7;
 		
-		Dist<double[]> gDist = new EuclideanDist(ga);
-		
 		List<double[]> samples = sdf.samples;
-					
-		DoubleMatrix Y = new DoubleMatrix( LinearModel.getY( samples, ta) );
-		DoubleMatrix X = new DoubleMatrix( LinearModel.getX( samples, fa, true) );
-					
-		List<GAIndividual> init = new ArrayList<GAIndividual>();
-		while( init.size() < 50 ) {
-			List<Integer> bandwidth = new ArrayList<>();
-			while( bandwidth.size() < samples.size() ) {
-				//bandwidth.add( r.nextInt(20)+fa.length+1 );
-				bandwidth.add( new int[]{8,9,10}[r.nextInt(3)]);
-			}
-			init.add( new GwrGAIndividual( X, Y, bandwidth, sdf, gDist ) );
-		}
-		GeneticAlgorithm gen = new GeneticAlgorithm();
-		GwrGAIndividual result = (GwrGAIndividual)gen.search( init );
+		List<Entry<List<Integer>, List<Integer>>> cvList = SupervisedUtils.getCVList(10, 1, samples.size());
+		int[] i = new int[]{7,8,9,10,11,12,13,14};
 		
+		List<GAIndividual> init = new ArrayList<GAIndividual>();
+		while( init.size() < 20 ) {
+			List<Integer> bandwidth = new ArrayList<>();
+			while( bandwidth.size() < samples.size() )
+				bandwidth.add( i[r.nextInt(i.length)]);
+			init.add( new GwrGAIndividual( i, bandwidth, sdf, cvList, fa, ga, ta ) );
+		}
+		GwrGeneticAlgorithm gen = new GwrGeneticAlgorithm();
+		GwrGAIndividual result = (GwrGAIndividual)gen.search( init );	
 	}
 }
