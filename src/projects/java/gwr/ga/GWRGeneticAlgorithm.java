@@ -21,9 +21,9 @@ import nnet.SupervisedUtils;
 import spawnn.utils.DataUtils;
 import spawnn.utils.SpatialDataFrame;
 
-public class GwrGeneticAlgorithm {
+public class GWRGeneticAlgorithm {
 	
-	private static Logger log = Logger.getLogger(GwrGeneticAlgorithm.class);
+	private static Logger log = Logger.getLogger(GWRGeneticAlgorithm.class);
 	private final static Random r = new Random();
 	int threads = Math.max(1 , Runtime.getRuntime().availableProcessors() -1 );;
 	
@@ -53,7 +53,6 @@ public class GwrGeneticAlgorithm {
 				ds.addValue( cur.getCost() );
 			}
 			if( noImpro == 0 || k % 100 == 0 ) {
-				((GwrGAIndividual)best).write("output/"+k+"_"+best.getCost()+".png", "output/"+k+"_"+best.getCost()+".shp");
 				log.info(k+","+ds.getMin()+","+ds.getMean()+","+ds.getMax()+","+ds.getStandardDeviation() );
 			}
 															
@@ -227,16 +226,18 @@ public class GwrGeneticAlgorithm {
 		
 		List<double[]> samples = sdf.samples;
 		List<Entry<List<Integer>, List<Integer>>> cvList = SupervisedUtils.getCVList(10, 1, samples.size());
-		int[] i = new int[]{7,8,9,10,11,12,13,14};
 		
+		CostCalculator<GWRIndividual> cc = new GWRIndividualCostCalculator(sdf, cvList, fa, ga, ta);
+		
+		int[] i = new int[]{7,8,9,10,11,12,13,14};
 		List<GAIndividual> init = new ArrayList<GAIndividual>();
 		while( init.size() < 20 ) {
 			List<Integer> bandwidth = new ArrayList<>();
 			while( bandwidth.size() < samples.size() )
 				bandwidth.add( i[r.nextInt(i.length)]);
-			init.add( new GwrGAIndividual( i, bandwidth, sdf, cvList, fa, ga, ta ) );
+			init.add( new GWRIndividual( bandwidth, cc ) );
 		}
-		GwrGeneticAlgorithm gen = new GwrGeneticAlgorithm();
-		GwrGAIndividual result = (GwrGAIndividual)gen.search( init );	
+		GWRGeneticAlgorithm gen = new GWRGeneticAlgorithm();
+		GWRIndividual result = (GWRIndividual)gen.search( init );	
 	}
 }

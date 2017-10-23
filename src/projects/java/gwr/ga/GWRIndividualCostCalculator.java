@@ -7,7 +7,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Random;
 
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 import org.jblas.DoubleMatrix;
@@ -17,84 +16,36 @@ import chowClustering.LinearModel;
 import nnet.SupervisedUtils;
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
-import spawnn.utils.ColorBrewer;
-import spawnn.utils.Drawer;
 import spawnn.utils.GeoUtils;
 import spawnn.utils.SpatialDataFrame;
-import spawnn.utils.ColorUtils.ColorClass;
 import spawnn.utils.GeoUtils.GWKernel;
-import spawnn.utils.DataUtils;
 
-public class GwrGAIndividual extends GAIndividual {
-
-	protected List<Integer> bw;
-	List<double[]> samples;
+public class GWRIndividualCostCalculator implements CostCalculator<GWRIndividual> {
+	
 	SpatialDataFrame sdf;
-	int[] i, fa, ga;
+	List<double[]> samples;
+	int[] fa, ga;
 	int ta;
 	List<Entry<List<Integer>, List<Integer>>> cvList;
-	Random r = new Random();
-
-	// TODO: move cost-related parameters to one class/function... this sucks here. Question is where to use costcalculator?
-	public GwrGAIndividual( int[] i, List<Integer> bw, SpatialDataFrame sdf, List<Entry<List<Integer>, List<Integer>>> cvList, int[] fa, int[] ga, int ta ) {
-		this.bw = bw;
+	
+	public GWRIndividualCostCalculator( SpatialDataFrame sdf, List<Entry<List<Integer>, List<Integer>>> cvList, int[] fa, int[] ga, int ta ) {
 		this.samples = sdf.samples;
 		this.sdf = sdf;
 		this.cvList = cvList;
-		this.i = i;
 		this.fa = fa;
 		this.ga = ga;
 		this.ta = ta;
-		
-		this.cost = getCost();
-	}
-	
-	@Override
-	public GAIndividual mutate() {
-		List<Integer> nBw = new ArrayList<>();
-		for( int j = 0; j < samples.size(); j++ ) {
-			int h = bw.get(j);
-			
-			if( r.nextDouble() < 1.0/samples.size() ) {
-				/*if( h == X.getColumns() || r.nextBoolean() )
-					h++;
-				else
-					h--;*/
-				h = i[r.nextInt(i.length)];
-			}
-			nBw.add(h);
-		}
-		return new GwrGAIndividual(i, nBw, sdf, cvList, fa, ga, ta );
-	}
-	
-	public List<Integer> getBandwidth() {
-		return bw;
 	}
 
 	@Override
-	public GAIndividual recombine(GAIndividual mother) {
-		List<Integer> mBw = ((GwrGAIndividual)mother).getBandwidth();
-		List<Integer> nBw = new ArrayList<>();
-		for( int i = 0; i < bw.size(); i++)
-			if( r.nextBoolean() )
-				nBw.add(mBw.get(i));
-			else
-				nBw.add(bw.get(i));
-		return new GwrGAIndividual(i, nBw, sdf, cvList , fa,ga, ta );
-	}
-	
-	double cost = Double.NaN;
-	
-	@Override
-	public double getCost() {
-		if( !Double.isNaN(cost) )
-			return cost;
-				
+	public double getCost(GWRIndividual ind) {
+		
+		
 		Dist<double[]> gDist = new EuclideanDist(ga);
 		Map<double[],Double> bandwidth = new HashMap<>();
 		for( int i = 0; i < samples.size(); i++ ) {
 			double[] a = samples.get(i);
-			int k = bw.get(i);
+			int k = ind.getBandwidthAt(i);
 			List<double[]> s = new ArrayList<>(samples); 
 			Collections.sort(s, new Comparator<double[]>() {
 				@Override
@@ -137,21 +88,8 @@ public class GwrGAIndividual extends GAIndividual {
 				predictions.add(XVal.getRow(i).mmul(beta).get(0));
 			}
 			ss.addValue( SupervisedUtils.getRMSE(predictions, samplesVal, ta) );
-		}			
-		this.cost = ss.getMean();
-		
-		if( Double.isNaN(cost) ) {
-			System.out.println(cost);
-			System.exit(1);
-		}
-		return cost;
+		}	
+		return ss.getMean();
 	}
-	
-	public void write(String fa, String fb) {
-		List<double[]> values = new ArrayList<>();
-		for( int i : bw )
-			values.add( new double[]{i} );
-		Drawer.geoDrawValues(sdf.geoms, values, 0, sdf.crs, ColorBrewer.Blues, ColorClass.Quantile, fa);
-		DataUtils.writeShape(values, sdf.geoms, new String[]{"bandwidth"}, sdf.crs, fb);
-	}
+
 }
