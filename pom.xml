@@ -9,7 +9,7 @@
 	<description>Spatial Analysis with Neural Networks (SPAWNN)</description>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<geotools.version>17.2</geotools.version>
+		<geotools.version>18.0</geotools.version>
 		<jung.version>2.0.1</jung.version>
 	</properties>
 	<build>

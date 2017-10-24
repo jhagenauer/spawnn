@@ -227,7 +227,7 @@ public class GWRGeneticAlgorithm {
 		List<double[]> samples = sdf.samples;
 		List<Entry<List<Integer>, List<Integer>>> cvList = SupervisedUtils.getCVList(10, 1, samples.size());
 		
-		CostCalculator<GWRIndividual> cc = new GWRIndividualCostCalculator(sdf, cvList, fa, ga, ta);
+		CostCalculator<GWRIndividual> cc = new GWRIndividualCostCalculator_CV(sdf, cvList, fa, ga, ta);
 		
 		int[] i = new int[]{7,8,9,10,11,12,13,14};
 		List<GAIndividual> init = new ArrayList<GAIndividual>();
@@ -238,6 +238,7 @@ public class GWRGeneticAlgorithm {
 			init.add( new GWRIndividual( bandwidth, cc ) );
 		}
 		GWRGeneticAlgorithm gen = new GWRGeneticAlgorithm();
-		GWRIndividual result = (GWRIndividual)gen.search( init );	
+		GWRIndividual result = (GWRIndividual)gen.search( init );
+		
 	}
 }

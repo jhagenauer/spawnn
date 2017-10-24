@@ -20,7 +20,7 @@ import spawnn.utils.GeoUtils;
 import spawnn.utils.SpatialDataFrame;
 import spawnn.utils.GeoUtils.GWKernel;
 
-public class GWRIndividualCostCalculator implements CostCalculator<GWRIndividual> {
+public class GWRIndividualCostCalculator_CV implements CostCalculator<GWRIndividual> {
 	
 	SpatialDataFrame sdf;
 	List<double[]> samples;
@@ -28,7 +28,7 @@ public class GWRIndividualCostCalculator implements CostCalculator<GWRIndividual
 	int ta;
 	List<Entry<List<Integer>, List<Integer>>> cvList;
 	
-	public GWRIndividualCostCalculator( SpatialDataFrame sdf, List<Entry<List<Integer>, List<Integer>>> cvList, int[] fa, int[] ga, int ta ) {
+	public GWRIndividualCostCalculator_CV( SpatialDataFrame sdf, List<Entry<List<Integer>, List<Integer>>> cvList, int[] fa, int[] ga, int ta ) {
 		this.samples = sdf.samples;
 		this.sdf = sdf;
 		this.cvList = cvList;
@@ -38,9 +38,7 @@ public class GWRIndividualCostCalculator implements CostCalculator<GWRIndividual
 	}
 
 	@Override
-	public double getCost(GWRIndividual ind) {
-		
-		
+	public double getCost(GWRIndividual ind) {		
 		Dist<double[]> gDist = new EuclideanDist(ga);
 		Map<double[],Double> bandwidth = new HashMap<>();
 		for( int i = 0; i < samples.size(); i++ ) {
@@ -54,8 +52,7 @@ public class GWRIndividualCostCalculator implements CostCalculator<GWRIndividual
 				}
 			});
 			bandwidth.put(a, gDist.dist( s.get( k-1 ), a) );			
-		}
-		
+		}		
 		SummaryStatistics ss = new SummaryStatistics();
 		for (final Entry<List<Integer>, List<Integer>> cvEntry : cvList) {
 			List<double[]> samplesTrain = new ArrayList<double[]>();
