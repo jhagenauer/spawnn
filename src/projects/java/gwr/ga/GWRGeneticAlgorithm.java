@@ -1,6 +1,7 @@
 package gwr.ga;
 
 import java.io.File;
+import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -87,39 +88,34 @@ public class GWRGeneticAlgorithm<T extends GAIndividual> {
 			
 			// GENERATE OFFSPRING
 			ExecutorService es = Executors.newFixedThreadPool(threads);
-			List<Future<T>> futures = new ArrayList<Future<T>>();
+			List<Future<SimpleEntry<T, Double>>> futures = new ArrayList<Future<SimpleEntry<T, Double>>>();
 			
 			for( int i = 0; i < offspringSize; i++ ) {
 				final T a = gen.get( r.nextInt( gen.size() ) );
 				final T b = gen.get( r.nextInt( gen.size() ) );
 				
-				futures.add( es.submit( new Callable<T>() {
+				futures.add( es.submit( new Callable<SimpleEntry<T, Double>>() {
 					@Override
-					public T call() throws Exception {
+					public SimpleEntry<T, Double> call() throws Exception {
 						GAIndividual child;
-						
 						if( r.nextDouble() < recombProb )
 							child = a.recombine( b );
 						else 
 							child = a;
+						T mutChild = (T)child.mutate();
 						
-						/*T at = (T)a;
-						T bt = (T)b;
-						T ct = (T)at.recombine(bt); // only works with upcast
-						*/
-																	
-						return (T)child.mutate();
+						return new SimpleEntry<T, Double>(mutChild, cc.getCost(mutChild));
 					}
 				}));	
 			}
 			es.shutdown();
 			
 			gen.clear();
-			for( Future<T> f : futures ) {
+			for( Future<SimpleEntry<T, Double>> f : futures ) {
 				try {
-					T c = f.get();
-					gen.add( c );
-					costs.put( c, cc.getCost( c) );
+					SimpleEntry<T, Double> e = f.get();
+					gen.add( e.getKey() );
+					costs.put( e.getKey(), e.getValue() );					
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				} catch (ExecutionException e) {
