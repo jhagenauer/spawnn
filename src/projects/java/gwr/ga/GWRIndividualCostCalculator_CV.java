@@ -27,14 +27,16 @@ public class GWRIndividualCostCalculator_CV implements CostCalculator<GWRIndivid
 	int[] fa, ga;
 	int ta;
 	List<Entry<List<Integer>, List<Integer>>> cvList;
+	GWKernel kernel;
 	
-	public GWRIndividualCostCalculator_CV( SpatialDataFrame sdf, List<Entry<List<Integer>, List<Integer>>> cvList, int[] fa, int[] ga, int ta ) {
+	public GWRIndividualCostCalculator_CV( SpatialDataFrame sdf, List<Entry<List<Integer>, List<Integer>>> cvList, int[] fa, int[] ga, int ta, GWKernel kernel ) {
 		this.samples = sdf.samples;
 		this.sdf = sdf;
 		this.cvList = cvList;
 		this.fa = fa;
 		this.ga = ga;
 		this.ta = ta;
+		this.kernel = kernel;
 	}
 
 	@Override
@@ -75,7 +77,7 @@ public class GWRIndividualCostCalculator_CV implements CostCalculator<GWRIndivid
 				for (int j = 0; j < X.getRows(); j++) {
 					double[] b = samplesTrain.get(j);
 					double d = gDist.dist(a, b);
-					double w = GeoUtils.getKernelValue( GWKernel.gaussian, d, bandwidth.get(a));
+					double w = GeoUtils.getKernelValue( kernel, d, bandwidth.get(a));
 
 					XtW.putColumn(j, X.getRow(j).mul(w));
 				}

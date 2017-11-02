@@ -16,11 +16,12 @@ public class BuildTestData {
 	public static void main(String[] args ) {
 		Set<double[]> s = createSpDepTestData();
 		DataUtils.writeCSV("output/spDat.csv", new ArrayList<double[]>(s), new String[]{"long","lat","beta","x","y"} );
+		log.debug(s.size());
 	}
 	
 	public static Set<double[]> createSpDepTestData() {
 		Random r = new Random(0);
-		Set<double[]> s = createSpDepTestData(1.0, 1.0, 0.5, true, 1.0/50, r);
+		Set<double[]> s = createSpDepTestData(1.0, 1.0, 0.5, true, 1.0/35, r);
 		
 		double b_ = r.nextDouble()*4-2;
 		double x = r.nextDouble();
@@ -30,7 +31,7 @@ public class BuildTestData {
 
 	private static Set<double[]> createSpDepTestData(double x_2, double y_2, double cut, boolean vert, double res, Random r) {
 		Set<double[]> s = new HashSet<double[]>();
-		log.debug(x_2+","+y_2+","+cut+","+vert+","+res);
+		//log.debug(x_2+","+y_2+","+cut+","+vert+","+res);
 
 		double b_ = r.nextDouble()*4-2;
 		if (vert) {	
