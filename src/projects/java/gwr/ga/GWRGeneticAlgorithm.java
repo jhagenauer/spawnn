@@ -58,6 +58,7 @@ public class GWRGeneticAlgorithm<T extends GAIndividual> {
 				if( best == null || costs.get(cur) < bestCost  ) { 
 					best = cur;
 					noImpro = 0;
+					bestCost = costs.get(cur);
 				}
 				ds.addValue( costs.get(cur) );
 			}
