@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -21,10 +22,11 @@ import org.apache.log4j.Logger;
 
 import nnet.SupervisedUtils;
 import spawnn.utils.DataUtils;
+import spawnn.utils.GeoUtils;
 import spawnn.utils.GeoUtils.GWKernel;
 import spawnn.utils.SpatialDataFrame;
 
-public class GWRGeneticAlgorithm<T extends GAIndividual> {
+public class GWRGeneticAlgorithm<T extends GAIndividual<T>> {
 	
 	private static Logger log = Logger.getLogger(GWRGeneticAlgorithm.class);
 	private final static Random r = new Random();
@@ -47,9 +49,9 @@ public class GWRGeneticAlgorithm<T extends GAIndividual> {
 		int parentSize = init.size();
 		int offspringSize = parentSize*2;
 				
-		int maxK = 500;
+		int maxK = 1000;
 		int k = 0;
-		while( /*k < maxK &&*/ noImpro < 100 ) {
+		while( k < maxK && noImpro < 100 ) {
 			
 			// check best and increase noImpro
 			noImpro++;
@@ -68,9 +70,9 @@ public class GWRGeneticAlgorithm<T extends GAIndividual> {
 															
 			// SELECT NEW GEN/POTENTIAL PARENTS
 			// elite
-			Collections.sort( gen, new Comparator<GAIndividual>() {
+			Collections.sort( gen, new Comparator<GAIndividual<T>>() {
 				@Override
-				public int compare(GAIndividual g1, GAIndividual g2) {
+				public int compare(GAIndividual<T> g1, GAIndividual<T> g2) {
 					return Double.compare(costs.get(g1), costs.get(g2));
 				}
 			} );	
@@ -98,12 +100,12 @@ public class GWRGeneticAlgorithm<T extends GAIndividual> {
 				futures.add( es.submit( new Callable<SimpleEntry<T, Double>>() {
 					@Override
 					public SimpleEntry<T, Double> call() throws Exception {
-						GAIndividual child;
+						T child;
 						if( r.nextDouble() < recombProb )
 							child = a.recombine( b );
 						else 
 							child = a;
-						T mutChild = (T)child.mutate();
+						T mutChild = child.mutate();
 						
 						return new SimpleEntry<T, Double>(mutChild, cc.getCost(mutChild));
 					}
@@ -237,6 +239,8 @@ public class GWRGeneticAlgorithm<T extends GAIndividual> {
 		int[] fa = new int[]{3};
 		int ta = 4;
 		SpatialDataFrame sdf = DataUtils.readSpatialDataFrameFromCSV(new File("output/spDat.csv"), new int[]{0,1}, new int[]{}, true);
+		Map<double[], Set<double[]>>cm = GeoUtils.getContiguityMap(sdf.samples, sdf.geoms, false, true);
+		
 		List<Entry<List<Integer>, List<Integer>>> cvList = SupervisedUtils.getCVList(10, 1, sdf.size() );
 		 
 		CostCalculator<GWRIndividual> cc_AICc = new GWRIndividualCostCalculator_AICc(sdf, fa, ga, ta, kernel);
@@ -262,15 +266,17 @@ public class GWRGeneticAlgorithm<T extends GAIndividual> {
 			
 			GWRGeneticAlgorithm<GWRIndividual> gen = new GWRGeneticAlgorithm<GWRIndividual>();
 			GWRIndividual result = (GWRIndividual)gen.search( init, cc_AICc );
-			log.debug("result GWR AICc: "+cc_AICc.getCost(result) );
-			log.debug("result GWR CV: "+cc_CV.getCost(result) );
+			double aicc = cc_AICc.getCost(result);
+			double cv = cc_CV.getCost(result);
+			log.debug("result GWR AICc: "+aicc );
+			log.debug("result GWR CV: "+cv );
 			
 			List<double[]> r = new ArrayList<double[]>();
 			for( int i = 0; i < sdf.samples.size(); i++ ) {
 				double[] d = sdf.samples.get(i);
-				r.add( new double[]{ d[0], d[1], result.getBandwidth().get(i) } );
+				r.add( new double[]{ d[0], d[1], result.getBandwidthAt(i) } );
 			}
-			DataUtils.writeCSV("output/result_AICc.csv", r, new String[]{"long","lat","b"});
+			DataUtils.writeCSV("output/result_AICc_"+aicc+"_"+cv+".csv", r, new String[]{"long","lat","b"});
 		}
 		
 		{
@@ -278,15 +284,17 @@ public class GWRGeneticAlgorithm<T extends GAIndividual> {
 			
 			GWRGeneticAlgorithm<GWRIndividual> gen = new GWRGeneticAlgorithm<GWRIndividual>();
 			GWRIndividual result = (GWRIndividual)gen.search( init, cc_CV );
-			log.debug("result GWR AICc: "+cc_AICc.getCost(result) );
-			log.debug("result GWR CV: "+cc_CV.getCost(result) );
+			double aicc = cc_AICc.getCost(result);
+			double cv = cc_CV.getCost(result);
+			log.debug("result GWR AICc: "+aicc );
+			log.debug("result GWR CV: "+cv );
 			
 			List<double[]> r = new ArrayList<double[]>();
 			for( int i = 0; i < sdf.samples.size(); i++ ) {
 				double[] d = sdf.samples.get(i);
-				r.add( new double[]{ d[0], d[1], result.getBandwidth().get(i) } );
+				r.add( new double[]{ d[0], d[1], d[2], result.getBandwidthAt(i) } );
 			}
-			DataUtils.writeCSV("output/result_CV.csv", r, new String[]{"long","lat","b"});
+			DataUtils.writeCSV("output/result_CV_"+aicc+"_"+cv+".csv", r, new String[]{"long","lat","best","estBeta"});
 		}
 	}
 }

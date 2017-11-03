@@ -11,14 +11,15 @@ import java.util.Map.Entry;
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 import org.jblas.DoubleMatrix;
 import org.jblas.Solve;
+import org.jblas.exceptions.LapackException;
 
 import chowClustering.LinearModel;
 import nnet.SupervisedUtils;
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
 import spawnn.utils.GeoUtils;
-import spawnn.utils.SpatialDataFrame;
 import spawnn.utils.GeoUtils.GWKernel;
+import spawnn.utils.SpatialDataFrame;
 
 public class GWRIndividualCostCalculator_CV implements CostCalculator<GWRIndividual> {
 	
@@ -82,9 +83,15 @@ public class GWRIndividualCostCalculator_CV implements CostCalculator<GWRIndivid
 					XtW.putColumn(j, X.getRow(j).mul(w));
 				}
 				DoubleMatrix XtWX = XtW.mmul(X);
-				DoubleMatrix beta = Solve.solve(XtWX, XtW.mmul(Y));
-
-				predictions.add(XVal.getRow(i).mmul(beta).get(0));
+								
+				try {
+					DoubleMatrix beta = Solve.solve(XtWX, XtW.mmul(Y));
+					predictions.add(XVal.getRow(i).mmul(beta).get(0));
+				} catch( LapackException e ) {
+					e.printStackTrace();
+					System.err.println("!!!! "+ind.getBandwidthAt(i));
+					return Double.MAX_VALUE;
+				}				
 			}
 			ss.addValue( SupervisedUtils.getRMSE(predictions, samplesVal, ta) );
 		}	

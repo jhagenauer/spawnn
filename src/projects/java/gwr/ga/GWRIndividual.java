@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-public class GWRIndividual implements GAIndividual {
+public class GWRIndividual implements GAIndividual<GWRIndividual> {
 
 	protected List<Integer> bw;
 	Random r = new Random();
@@ -33,7 +33,7 @@ public class GWRIndividual implements GAIndividual {
 	}
 
 	@Override
-	public GWRIndividual recombine(GAIndividual mother) {
+	public GWRIndividual recombine(GWRIndividual mother) {
 		List<Integer> mBw = ((GWRIndividual)mother).getBandwidth();
 		List<Integer> nBw = new ArrayList<>();
 		for( int i = 0; i < bw.size(); i++)

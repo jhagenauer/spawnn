@@ -1,6 +1,6 @@
 package gwr.ga;
 
-public interface GAIndividual {
-	public GAIndividual mutate();
-	public GAIndividual recombine( GAIndividual mother );
+public interface GAIndividual<T> {
+	public T mutate();
+	public T recombine( T mother );
 }
