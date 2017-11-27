@@ -1,7 +1,6 @@
 package gwr.ga;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -19,43 +18,32 @@ import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
 import spawnn.utils.GeoUtils;
 import spawnn.utils.GeoUtils.GWKernel;
-import spawnn.utils.SpatialDataFrame;
 
-public class GWRIndividualCostCalculator_CV implements CostCalculator<GWRIndividual> {
+public class GWRIndividualCostCalculator_CV extends GWRCostCalculator {
 	
-	SpatialDataFrame sdf;
-	List<double[]> samples;
-	int[] fa, ga;
-	int ta;
 	List<Entry<List<Integer>, List<Integer>>> cvList;
-	GWKernel kernel;
 	
-	public GWRIndividualCostCalculator_CV( SpatialDataFrame sdf, List<Entry<List<Integer>, List<Integer>>> cvList, int[] fa, int[] ga, int ta, GWKernel kernel ) {
-		this.samples = sdf.samples;
-		this.sdf = sdf;
+	public GWRIndividualCostCalculator_CV( List<double[]> samples, List<Entry<List<Integer>, List<Integer>>> cvList, int[] fa, int[] ga, int ta, GWKernel kernel, int minBW ) {
+		super(samples,fa,ga,ta,kernel,minBW);
 		this.cvList = cvList;
-		this.fa = fa;
-		this.ga = ga;
-		this.ta = ta;
-		this.kernel = kernel;
 	}
 
 	@Override
 	public double getCost(GWRIndividual ind) {		
 		Dist<double[]> gDist = new EuclideanDist(ga);
+		
 		Map<double[],Double> bandwidth = new HashMap<>();
-		for( int i = 0; i < samples.size(); i++ ) {
-			double[] a = samples.get(i);
-			int k = ind.getBandwidthAt(i);
-			List<double[]> s = new ArrayList<>(samples); 
-			Collections.sort(s, new Comparator<double[]>() {
+		for (int i = 0; i < samples.size(); i++) {
+			double[] a = samples.get(i);		
+			double[] b = getKthLargest(samples, getBandwidthAt(ind,i), new Comparator<double[]>() {
 				@Override
-				public int compare(double[] o1, double[] o2) { 
-					return Double.compare( gDist.dist(o1, a), gDist.dist(o2, a)); 
+				public int compare(double[] o1, double[] o2) {
+					return -Double.compare(gDist.dist(o1, a), gDist.dist(o2, a));
 				}
 			});
-			bandwidth.put(a, gDist.dist( s.get( k-1 ), a) );			
-		}		
+			bandwidth.put(a, gDist.dist( a, b ) );
+		}
+		
 		SummaryStatistics ss = new SummaryStatistics();
 		for (final Entry<List<Integer>, List<Integer>> cvEntry : cvList) {
 			List<double[]> samplesTrain = new ArrayList<double[]>();
@@ -88,8 +76,8 @@ public class GWRIndividualCostCalculator_CV implements CostCalculator<GWRIndivid
 					DoubleMatrix beta = Solve.solve(XtWX, XtW.mmul(Y));
 					predictions.add(XVal.getRow(i).mmul(beta).get(0));
 				} catch( LapackException e ) {
-					e.printStackTrace();
-					System.err.println("!!!! "+ind.getBandwidthAt(i));
+					//e.printStackTrace();
+					System.err.println("!!!! "+getBandwidthAt(ind,i) );
 					return Double.MAX_VALUE;
 				}				
 			}
@@ -97,5 +85,4 @@ public class GWRIndividualCostCalculator_CV implements CostCalculator<GWRIndivid
 		}	
 		return ss.getMean();
 	}
-
 }
