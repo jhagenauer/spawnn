@@ -76,8 +76,7 @@ public class GWRIndividualCostCalculator_CV extends GWRCostCalculator {
 					DoubleMatrix beta = Solve.solve(XtWX, XtW.mmul(Y));
 					predictions.add(XVal.getRow(i).mmul(beta).get(0));
 				} catch( LapackException e ) {
-					//e.printStackTrace();
-					System.err.println("!!!! "+getBandwidthAt(ind,i) );
+					System.err.println("Couldn't solve eqs! Too low bandwidth?! "+getBandwidthAt(ind, i));
 					return Double.MAX_VALUE;
 				}				
 			}

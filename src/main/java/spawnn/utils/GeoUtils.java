@@ -57,16 +57,18 @@ public class GeoUtils {
 		return bandwidth;
 	}
 	
-	public enum GWKernel {gaussian,bisquare,boxcar};
+	public enum GWKernel {gaussian,bisquare,boxcar,boxcar2};
 	
-	public static double getKernelValue(GWKernel k, double d, double bw ) {
+	public static double getKernelValue(GWKernel k, double dist, double bw ) {
 		double w;
 		if (k==GWKernel.gaussian) 
-			w = Math.exp(-0.5 * Math.pow(d / bw, 2));
+			w = Math.exp(-0.5 * Math.pow(dist / bw, 2));
 		else if( k==GWKernel.bisquare )
-			w = d < bw ? Math.pow(1.0 - Math.pow(d / bw, 2), 2) : 0;
-		else if( k==GWKernel.boxcar)
-			w = d < bw ? 1 : 0;
+			w = dist < bw ? Math.pow(1.0 - Math.pow(dist / bw, 2), 2) : 0;
+		else if( k==GWKernel.boxcar) 
+			w = dist < bw ? 1 : 0;
+		else if( k==GWKernel.boxcar2) 
+			w = dist <= bw ? 1 : 0;
 		else
 			throw new RuntimeException("No valid kernel given");
 		if( Double.isNaN(w) )

@@ -6,7 +6,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
-import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
+import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 
 public class GWRIndividual implements GAIndividual<GWRIndividual> {
 
@@ -32,10 +32,10 @@ public class GWRIndividual implements GAIndividual<GWRIndividual> {
 				if( !useNB4Mut ) {
 					h += r.nextGaussian()*sd;
 				} else {
-					DescriptiveStatistics ds = new DescriptiveStatistics();
+					SummaryStatistics ds = new SummaryStatistics();
 					for( int i : cmI.get(j) )
 						ds.addValue( bw.get(i) );
-					h += (int)Math.round( r.nextGaussian()*ds.getStandardDeviation()*sd );
+					h += r.nextGaussian()*ds.getStandardDeviation()*sd;
 				}
 			}
 			nBw.add(h);

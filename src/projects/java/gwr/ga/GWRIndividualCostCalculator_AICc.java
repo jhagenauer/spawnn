@@ -33,15 +33,7 @@ public class GWRIndividualCostCalculator_AICc extends GWRCostCalculator {
 		Map<double[], Double> bandwidth = new HashMap<>();
 		for (int i = 0; i < samples.size(); i++) {
 			int k = getBandwidthAt( ind, i);
-			double[] a = samples.get(i);		
-			
-			/*double[] b = getKthLargest(samples, k, new Comparator<double[]>() {
-				@Override
-				public int compare(double[] o1, double[] o2) {
-					return -Double.compare(gDist.dist(o1, a), gDist.dist(o2, a));
-				}
-			});
-			bandwidth.put(a, gDist.dist( a, b ) );*/		
+			double[] a = samples.get(i);			
 						
 			if( !bwCache.containsKey(a) )
 				bwCache.put(a, new HashMap<Integer,Double>() );
@@ -49,10 +41,10 @@ public class GWRIndividualCostCalculator_AICc extends GWRCostCalculator {
 				double[] b = getKthLargest(samples, k, new Comparator<double[]>() {
 					@Override
 					public int compare(double[] o1, double[] o2) {
-						return -Double.compare(gDist.dist(o1, a), gDist.dist(o2, a));
+						return -Double.compare( gDist.dist(o1, a), gDist.dist(o2, a) );
 					}
 				});
-				bwCache.get(a).put(k,gDist.dist(a, b));
+				bwCache.get(a).put(k, gDist.dist(a, b) );
 			}			
 			bandwidth.put(a, bwCache.get(a).get(k) );			
 		}
@@ -80,8 +72,7 @@ public class GWRIndividualCostCalculator_AICc extends GWRCostCalculator {
 				DoubleMatrix beta = Solve.solve(XtWX, XtW.mmul(Y));
 				predictions.add(X.getRow(i).mmul(beta).get(0));
 			} catch( LapackException e ) {
-				//e.printStackTrace();
-				System.err.println("!!!! "+getBandwidthAt(ind, i));
+				System.err.println("Couldn't solve eqs! Too low bandwidth?! "+getBandwidthAt(ind, i));
 				return Double.MAX_VALUE;
 			}
 			
