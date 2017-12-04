@@ -19,7 +19,7 @@ public class GWR_Test {
 
 	public static void main(String[] args) {
 		GeometryFactory gf = new GeometryFactory();
-		GWKernel kernel = GWKernel.boxcar;
+		GWKernel kernel = GWKernel.bisquare;
 		int[] ga = new int[] { 0, 1 };
 		int[] fa = new int[] { 3 };
 		int ta = 4;
@@ -34,10 +34,10 @@ public class GWR_Test {
 
 		List<Double> bw = new ArrayList<Double>();
 		for (int i = 0; i < samples.size(); i++)
-			bw.add(0.1091758);
+			bw.add(27.0);
 		GWRIndividual ind = new GWRIndividual(bw, 0);
 
-		GWRCostCalculator ccAICc = new GWRIndividualCostCalculator_AICc(samples, fa, ga, ta, kernel,false);
+		GWRCostCalculator ccAICc = new GWRIndividualCostCalculator_AICc(samples, fa, ga, ta, kernel,true,0);
 
 		double aicc = ccAICc.getCost(ind);
 		log.debug(aicc);

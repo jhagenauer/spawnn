@@ -20,7 +20,7 @@ public class GWRIndividual implements GAIndividual<GWRIndividual> {
 		this.sd = sd;
 	}
 	
-	public static boolean useNB4Mut = false;
+	public static boolean mutationMode = false;
 	public static Map<Integer, Set<Integer>> cmI;
 		
 	@Override
@@ -29,7 +29,7 @@ public class GWRIndividual implements GAIndividual<GWRIndividual> {
 		for( int j = 0; j < chromosome.size(); j++ ) {
 			double h = chromosome.get(j);
 			if( r.nextDouble() < 1.0/chromosome.size() ) {	
-				if( !useNB4Mut ) {
+				if( !mutationMode ) {
 					h += r.nextGaussian()*sd;
 				} else {
 					SummaryStatistics ds = new SummaryStatistics();
@@ -38,7 +38,7 @@ public class GWRIndividual implements GAIndividual<GWRIndividual> {
 					h += r.nextGaussian()*ds.getStandardDeviation()*sd;
 				}
 			}
-			nBw.add(h);
+			nBw.add(h );
 		}
 		return new GWRIndividual( nBw, sd );
 	}
@@ -66,7 +66,7 @@ public class GWRIndividual implements GAIndividual<GWRIndividual> {
 		return this.chromosome;
 	}
 	
-	public double getBandwidthAt(int i) {
+	public double getGeneAt(int i) {
 		return chromosome.get(i);
 	}
 }

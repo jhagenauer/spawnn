@@ -17,14 +17,14 @@ import spawnn.utils.GeoUtils.GWKernel;
 
 public class GWRIndividualCostCalculator_AICc extends GWRCostCalculator {
 	
-	GWRIndividualCostCalculator_AICc(List<double[]> samples, int[] fa, int[] ga, int ta, GWKernel kernel, boolean adaptive) {
-		super(samples, fa, ga, ta, kernel,adaptive);
+	GWRIndividualCostCalculator_AICc(List<double[]> samples, int[] fa, int[] ga, int ta, GWKernel kernel, boolean adaptive,double minBw) {
+		super(samples, fa, ga, ta, kernel,adaptive,minBw);
 	}
 
 	@Override
 	public double getCost(GWRIndividual ind) {
 		Dist<double[]> gDist = new EuclideanDist(ga);
-		Map<double[], Double> bandwidth = getSpatialBandwidth(ind, gDist);
+		Map<double[], Double> bandwidth = getSpatialBandwidth(ind);
 
 		DoubleMatrix Y = new DoubleMatrix(LinearModel.getY(samples, ta));
 		DoubleMatrix X = new DoubleMatrix(LinearModel.getX(samples, fa, true));
@@ -34,12 +34,13 @@ public class GWRIndividualCostCalculator_AICc extends GWRCostCalculator {
 		
 		for (int i = 0; i < samples.size(); i++) {
 			double[] a = samples.get(i);
+			double bw = bandwidth.get(a);
 
 			DoubleMatrix XtW = new DoubleMatrix(X.getColumns(), X.getRows());
 			for (int j = 0; j < X.getRows(); j++) {
 				double[] b = samples.get(j);
 				double d = gDist.dist(a, b);
-				double w = GeoUtils.getKernelValue(kernel, d, bandwidth.get(a));
+				double w = GeoUtils.getKernelValue(kernel, d, bw );
 
 				XtW.putColumn(j, X.getRow(j).mul(w));
 			}
@@ -49,7 +50,7 @@ public class GWRIndividualCostCalculator_AICc extends GWRCostCalculator {
 				DoubleMatrix beta = Solve.solve(XtWX, XtW.mmul(Y));
 				predictions.add(X.getRow(i).mmul(beta).get(0));
 			} catch( LapackException e ) {
-				System.err.println("Couldn't solve eqs! Too low bandwidth?! "+ind.getBandwidthAt(i));
+				System.err.println("Couldn't solve eqs! Too low bandwidth?! "+bw+", "+adaptive+", "+ind.getChromosome().get(i) );
 				return Double.MAX_VALUE;
 			}
 			

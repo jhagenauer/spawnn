@@ -245,6 +245,7 @@ public class GWRGeneticAlgorithm<T extends GAIndividual<T>> {
 		GeometryFactory gf = new GeometryFactory();
 		GWKernel kernel = GWKernel.bisquare;
 		boolean adaptive = true;
+		double minBw = 6;
 		int bwInit = -1;
 		int[] ga = new int[] { 0, 1 };
 		int[] fa = new int[] { 3 };
@@ -287,13 +288,13 @@ public class GWRGeneticAlgorithm<T extends GAIndividual<T>> {
 		Map<double[], Map<double[], Double>> dMap = GeoUtils.getRowNormedMatrix(GeoUtils.contiguityMapToDistanceMap(cm));
 		List<Entry<List<Integer>, List<Integer>>> cvList = SupervisedUtils.getCVList(10, 1, samples.size());
 
-		GWRCostCalculator ccAICc = new GWRIndividualCostCalculator_AICc(samples, fa, ga, ta, kernel, adaptive);
-		GWRCostCalculator ccCV = new GWRIndividualCostCalculator_CV(samples, cvList, fa, ga, ta, kernel, adaptive);
+		GWRCostCalculator ccAICc = new GWRIndividualCostCalculator_AICc(samples, fa, ga, ta, kernel, adaptive, minBw);
+		GWRCostCalculator ccCV = new GWRIndividualCostCalculator_CV(samples, cvList, fa, ga, ta, kernel, adaptive, minBw );
 
 		{
 			log.info("Search global bandwidth/j");
 			double bestGlobalACIc = Double.MAX_VALUE;
-			for (int j = 1; j < pointsPerRow; j++) {
+			for (int j = 14; j < pointsPerRow; j++) {
 				List<Double> bw = new ArrayList<Double>();
 				for (int i = 0; i < samples.size(); i++)
 					bw.add((double) j);
@@ -323,11 +324,18 @@ public class GWRGeneticAlgorithm<T extends GAIndividual<T>> {
 		params.add( new Object[]{true,true,4.0,0.7,2,false});
 		params.add( new Object[]{true,true,2.0,0.7,2,false});
 		params.add( new Object[]{true,true,1.0,0.7,2,false});
-		Collections.shuffle(params);
+		
 		params.add( 0, new Object[]{false,false,-1.0,0.7,2,true});
 		
+		params.add( 0, new Object[]{true,false,0.5,0.7,2,true});
+		params.add( 0, new Object[]{true,false,1.0,0.7,2,true});
+		params.add( 0, new Object[]{true,false,2.0,0.7,2,true});
+		params.add( 0, new Object[]{true,false,4.0,0.7,2,true});
+		params.add( 0, new Object[]{true,false,8.0,0.7,2,true});
+		Collections.shuffle(params);
+		
 		for (Object[] p : params) {	
-			GWRIndividual.useNB4Mut = (boolean) p[0];
+			GWRIndividual.mutationMode = (boolean) p[0];
 			GWRIndividual.meanRecomb = (boolean) p[1];
 			double sd = (double) p[2];
 			GWRGeneticAlgorithm.recombProb = (double) p[3];
@@ -349,23 +357,22 @@ public class GWRGeneticAlgorithm<T extends GAIndividual<T>> {
 
 			GWRGeneticAlgorithm<GWRIndividual> gen = new GWRGeneticAlgorithm<GWRIndividual>();
 			GWRIndividual result = (GWRIndividual) gen.search(init, ccAICc);
-
+			Map<double[], Double> resultBw = ccAICc.getSpatialBandwidth(result);
+			
 			double aicc = ccAICc.getCost(result);
-			double cv = ccCV.getCost(result);
-
+			
 			log.info("result GWR AICc: " + aicc);
-			log.info("result GWR CV: " + cv);
 
 			List<double[]> r = new ArrayList<double[]>();
 			Map<double[], Double> r2 = new HashMap<double[], Double>();
 			for (int i = 0; i < samples.size(); i++) {
 				double[] d = samples.get(i);
-				r.add(new double[] { d[ga[0]], d[ga[1]], d[2], result.getBandwidthAt(i) });
-				r2.put(d, (double) result.getBandwidthAt(i));
+				r.add(new double[] { d[ga[0]], d[ga[1]], d[2], resultBw.get(d) });
+				r2.put(d, resultBw.get(d) );
 			}
 			log.info("moran: " + Arrays.toString(GeoUtils.getMoransIStatistics(dMap, r2)));
 
-			String s = "output/result_AICc_" + Arrays.toString(p) + "_" + aicc + "_" + cv;
+			String s = "output/result_AICc_" + Arrays.toString(p) + "_" + aicc;
 			DataUtils.writeCSV(s + ".csv", r, new String[] { "long", "lat", "b", "radius" });
 			Drawer.geoDrawValues(geoms, r, 2, null, ColorBrewer.Blues, ColorClass.Equal, s + ".png");
 		}
