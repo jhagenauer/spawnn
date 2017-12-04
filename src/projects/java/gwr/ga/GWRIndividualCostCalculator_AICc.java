@@ -1,8 +1,6 @@
 package gwr.ga;
 
 import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -19,35 +17,14 @@ import spawnn.utils.GeoUtils.GWKernel;
 
 public class GWRIndividualCostCalculator_AICc extends GWRCostCalculator {
 	
-	GWRIndividualCostCalculator_AICc(List<double[]> samples, int[] fa, int[] ga, int ta, GWKernel kernel, int minBW) {
-		super(samples, fa, ga, ta, kernel, minBW);
+	GWRIndividualCostCalculator_AICc(List<double[]> samples, int[] fa, int[] ga, int ta, GWKernel kernel, boolean adaptive) {
+		super(samples, fa, ga, ta, kernel,adaptive);
 	}
 
-	private Map<double[],Map<Integer,Double>> bwCache = new HashMap<double[],Map<Integer,Double>>();
-		
 	@Override
 	public double getCost(GWRIndividual ind) {
 		Dist<double[]> gDist = new EuclideanDist(ga);
-		
-		// adaptive
-		Map<double[], Double> bandwidth = new HashMap<>();
-		for (int i = 0; i < samples.size(); i++) {
-			int k = getBandwidthAt( ind, i);
-			double[] a = samples.get(i);			
-						
-			if( !bwCache.containsKey(a) )
-				bwCache.put(a, new HashMap<Integer,Double>() );
-			if( !bwCache.get(a).containsKey(k) ) {
-				double[] b = getKthLargest(samples, k, new Comparator<double[]>() {
-					@Override
-					public int compare(double[] o1, double[] o2) {
-						return -Double.compare( gDist.dist(o1, a), gDist.dist(o2, a) );
-					}
-				});
-				bwCache.get(a).put(k, gDist.dist(a, b) );
-			}			
-			bandwidth.put(a, bwCache.get(a).get(k) );			
-		}
+		Map<double[], Double> bandwidth = getSpatialBandwidth(ind, gDist);
 
 		DoubleMatrix Y = new DoubleMatrix(LinearModel.getY(samples, ta));
 		DoubleMatrix X = new DoubleMatrix(LinearModel.getX(samples, fa, true));
@@ -72,7 +49,7 @@ public class GWRIndividualCostCalculator_AICc extends GWRCostCalculator {
 				DoubleMatrix beta = Solve.solve(XtWX, XtW.mmul(Y));
 				predictions.add(X.getRow(i).mmul(beta).get(0));
 			} catch( LapackException e ) {
-				System.err.println("Couldn't solve eqs! Too low bandwidth?! "+getBandwidthAt(ind, i));
+				System.err.println("Couldn't solve eqs! Too low bandwidth?! "+ind.getBandwidthAt(i));
 				return Double.MAX_VALUE;
 			}
 			

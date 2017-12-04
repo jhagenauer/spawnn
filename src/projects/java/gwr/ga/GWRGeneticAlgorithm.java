@@ -244,8 +244,8 @@ public class GWRGeneticAlgorithm<T extends GAIndividual<T>> {
 
 		GeometryFactory gf = new GeometryFactory();
 		GWKernel kernel = GWKernel.bisquare;
+		boolean adaptive = true;
 		int bwInit = -1;
-		int minBw = 8;
 		int[] ga = new int[] { 0, 1 };
 		int[] fa = new int[] { 3 };
 		int ta = 4;
@@ -287,8 +287,8 @@ public class GWRGeneticAlgorithm<T extends GAIndividual<T>> {
 		Map<double[], Map<double[], Double>> dMap = GeoUtils.getRowNormedMatrix(GeoUtils.contiguityMapToDistanceMap(cm));
 		List<Entry<List<Integer>, List<Integer>>> cvList = SupervisedUtils.getCVList(10, 1, samples.size());
 
-		GWRCostCalculator ccAICc = new GWRIndividualCostCalculator_AICc(samples, fa, ga, ta, kernel, minBw);
-		GWRCostCalculator ccCV = new GWRIndividualCostCalculator_CV(samples, cvList, fa, ga, ta, kernel, minBw);
+		GWRCostCalculator ccAICc = new GWRIndividualCostCalculator_AICc(samples, fa, ga, ta, kernel, adaptive);
+		GWRCostCalculator ccCV = new GWRIndividualCostCalculator_CV(samples, cvList, fa, ga, ta, kernel, adaptive);
 
 		{
 			log.info("Search global bandwidth/j");
@@ -314,37 +314,37 @@ public class GWRGeneticAlgorithm<T extends GAIndividual<T>> {
 		}
 
 		List<Object[]> params = new ArrayList<Object[]>();
-		/*for (boolean useNB4Mut : new boolean[] { true, false })
-			for (boolean meanRecomb : new boolean[] { true, false })
-				for (double sd : new double[] { 4 })
-					for (double recombProb : new double[] { 0.7 })
-						for (int ts : new int[] { 2 })
-							params.add(new Object[] { useNB4Mut, meanRecomb, sd, recombProb, ts });*/
 		
-		params.add( new Object[]{true,false,8,0.7,2});
-		params.add( new Object[]{true,false,4,0.7,2});
-		params.add( new Object[]{true,false,2,0.7,2});
-		params.add( new Object[]{true,false,1,0.7,2});
-		params.add( new Object[]{true,true,8,0.7,2});
-		params.add( new Object[]{true,true,4,0.7,2});
-		params.add( new Object[]{true,true,2,0.7,2});
-		params.add( new Object[]{true,true,1,0.7,2});
+		params.add( new Object[]{true,false,8.0,0.7,2,false});
+		params.add( new Object[]{true,false,4.0,0.7,2,false});
+		params.add( new Object[]{true,false,2.0,0.7,2,false});
+		params.add( new Object[]{true,false,1.0,0.7,2,false});
+		params.add( new Object[]{true,true,8.0,0.7,2,false});
+		params.add( new Object[]{true,true,4.0,0.7,2,false});
+		params.add( new Object[]{true,true,2.0,0.7,2,false});
+		params.add( new Object[]{true,true,1.0,0.7,2,false});
 		Collections.shuffle(params);
+		params.add( 0, new Object[]{false,false,-1.0,0.7,2,true});
 		
 		for (Object[] p : params) {	
 			GWRIndividual.useNB4Mut = (boolean) p[0];
 			GWRIndividual.meanRecomb = (boolean) p[1];
 			double sd = (double) p[2];
 			GWRGeneticAlgorithm.recombProb = (double) p[3];
-			GWRGeneticAlgorithm.tournamentSize = (int) p[4];			
+			GWRGeneticAlgorithm.tournamentSize = (int) p[4];	
+			boolean useIntIndividual = (boolean)p[5];
 			log.info(Arrays.toString(p));
 
 			List<GWRIndividual> init = new ArrayList<GWRIndividual>();
 			while (init.size() < 25) {
 				List<Double> bandwidth = new ArrayList<>();
 				while (bandwidth.size() < samples.size())
-					bandwidth.add(bwInit + r.nextGaussian() * 4);
-				init.add(new GWRIndividual(bandwidth, sd));
+					bandwidth.add( (double)Math.round( bwInit + r.nextGaussian() * 4 ) ); 
+				
+				if( !useIntIndividual )
+					init.add(new GWRIndividual(bandwidth, sd));
+				else
+					init.add(new GWRIndividual_Int(bandwidth, sd));
 			}
 
 			GWRGeneticAlgorithm<GWRIndividual> gen = new GWRGeneticAlgorithm<GWRIndividual>();
@@ -360,8 +360,8 @@ public class GWRGeneticAlgorithm<T extends GAIndividual<T>> {
 			Map<double[], Double> r2 = new HashMap<double[], Double>();
 			for (int i = 0; i < samples.size(); i++) {
 				double[] d = samples.get(i);
-				r.add(new double[] { d[ga[0]], d[ga[1]], d[2], result.getBandwidth().get(i) });
-				r2.put(d, (double) result.getBandwidth().get(i));
+				r.add(new double[] { d[ga[0]], d[ga[1]], d[2], result.getBandwidthAt(i) });
+				r2.put(d, (double) result.getBandwidthAt(i));
 			}
 			log.info("moran: " + Arrays.toString(GeoUtils.getMoransIStatistics(dMap, r2)));
 

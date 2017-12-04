@@ -1,8 +1,6 @@
 package gwr.ga;
 
 import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -23,26 +21,15 @@ public class GWRIndividualCostCalculator_CV extends GWRCostCalculator {
 	
 	List<Entry<List<Integer>, List<Integer>>> cvList;
 	
-	public GWRIndividualCostCalculator_CV( List<double[]> samples, List<Entry<List<Integer>, List<Integer>>> cvList, int[] fa, int[] ga, int ta, GWKernel kernel, int minBW ) {
-		super(samples,fa,ga,ta,kernel,minBW);
+	public GWRIndividualCostCalculator_CV( List<double[]> samples, List<Entry<List<Integer>, List<Integer>>> cvList, int[] fa, int[] ga, int ta, GWKernel kernel, boolean adaptive ) {
+		super(samples,fa,ga,ta,kernel,adaptive);
 		this.cvList = cvList;
 	}
 
 	@Override
 	public double getCost(GWRIndividual ind) {		
 		Dist<double[]> gDist = new EuclideanDist(ga);
-		
-		Map<double[],Double> bandwidth = new HashMap<>();
-		for (int i = 0; i < samples.size(); i++) {
-			double[] a = samples.get(i);		
-			double[] b = getKthLargest(samples, getBandwidthAt(ind,i), new Comparator<double[]>() {
-				@Override
-				public int compare(double[] o1, double[] o2) {
-					return -Double.compare(gDist.dist(o1, a), gDist.dist(o2, a));
-				}
-			});
-			bandwidth.put(a, gDist.dist( a, b ) );
-		}
+		Map<double[],Double> bandwidth = getSpatialBandwidth(ind, gDist);
 		
 		SummaryStatistics ss = new SummaryStatistics();
 		for (final Entry<List<Integer>, List<Integer>> cvEntry : cvList) {
@@ -76,7 +63,7 @@ public class GWRIndividualCostCalculator_CV extends GWRCostCalculator {
 					DoubleMatrix beta = Solve.solve(XtWX, XtW.mmul(Y));
 					predictions.add(XVal.getRow(i).mmul(beta).get(0));
 				} catch( LapackException e ) {
-					System.err.println("Couldn't solve eqs! Too low bandwidth?! "+getBandwidthAt(ind, i));
+					System.err.println("Couldn't solve eqs! Too low bandwidth?! "+ind.getBandwidthAt(i));
 					return Double.MAX_VALUE;
 				}				
 			}
