@@ -14,7 +14,7 @@ public class BuildTestData {
 	private static Logger log = Logger.getLogger(BuildTestData.class);
 
 	public static void main(String[] args) {
-		Set<double[]> s = createSpDepTestData(35);
+		Set<double[]> s = createSpDepTestData(16);
 		DataUtils.writeCSV("output/spDat.csv", new ArrayList<double[]>(s), new String[] { "long", "lat", "beta", "x", "y" });
 		log.debug(s.size());
 	}

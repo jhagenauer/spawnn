@@ -35,7 +35,7 @@ public class GWR_Test {
 		List<Double> bw = new ArrayList<Double>();
 		for (int i = 0; i < samples.size(); i++)
 			bw.add(27.0);
-		GWRIndividual ind = new GWRIndividual(bw, 0);
+		GWRIndividual ind = new GWRIndividual(bw, 0,Double.MAX_VALUE,0);
 
 		GWRCostCalculator ccAICc = new GWRIndividualCostCalculator_AICc(samples, fa, ga, ta, kernel,true,0);
 

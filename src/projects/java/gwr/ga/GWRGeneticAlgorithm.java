@@ -25,6 +25,7 @@ import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
 
+import heuristics.GeneticAlgorithm;
 import nnet.SupervisedUtils;
 import spawnn.utils.ColorBrewer;
 import spawnn.utils.ColorUtils.ColorClass;
@@ -41,6 +42,7 @@ public class GWRGeneticAlgorithm<T extends GAIndividual<T>> {
 
 	public static int tournamentSize = 2;
 	public static double recombProb = 0.7;
+	public static boolean elitist = false;
 
 	public T search(List<T> init, CostCalculator<T> cc) {
 
@@ -56,7 +58,7 @@ public class GWRGeneticAlgorithm<T extends GAIndividual<T>> {
 		int parentSize = init.size();
 		int offspringSize = parentSize * 2;
 
-		int maxK = 20000;
+		int maxK = 50000;
 		int k = 0;
 		while (k < maxK && noImpro < 200) {
 
@@ -74,6 +76,9 @@ public class GWRGeneticAlgorithm<T extends GAIndividual<T>> {
 			if (noImpro == 0 || k % 100 == 0) {
 				log.debug(k + "," + ds.getMin() + "," + ds.getMean() + "," + ds.getMax() + ","
 						+ ds.getStandardDeviation());
+				
+				if( k % 100 == 0 )
+					log.debug( ((GWRIndividual)best).getChromosome() );
 			}
 
 			// SELECT NEW GEN/POTENTIAL PARENTS
@@ -85,13 +90,15 @@ public class GWRGeneticAlgorithm<T extends GAIndividual<T>> {
 				}
 			});
 
-			List<T> elite = new ArrayList<T>();
-			// elite.addAll( gen.subList(0, Math.max( 1, (int)( 0.01*gen.size()
-			// ) ) ) );
-			gen.removeAll(elite);
+			List<T> elite;
+			if( !elitist )
+				elite = new ArrayList<T>();
+			else
+				elite = new ArrayList<>(gen.subList(0, Math.max(1, (int) Math.round( gen.size()*0.05 ) ) ) );
 
 			// SELECT PARENT
-			List<T> selected = new ArrayList<T>(elite);
+			gen.removeAll(elite); // elite always parent
+			List<T> selected = new ArrayList<T>(elite); 
 			while (selected.size() < parentSize) {
 				T i = tournament(gen, tournamentSize, costs);
 				selected.add(i);
@@ -134,6 +141,7 @@ public class GWRGeneticAlgorithm<T extends GAIndividual<T>> {
 					e.printStackTrace();
 				}
 			}
+			gen.addAll(elite);
 			costs.keySet().retainAll(gen);
 
 			k++;
@@ -245,13 +253,13 @@ public class GWRGeneticAlgorithm<T extends GAIndividual<T>> {
 		GeometryFactory gf = new GeometryFactory();
 		GWKernel kernel = GWKernel.bisquare;
 		boolean adaptive = true;
-		double minBw = 6;
+		double minBw = 8;
 		int bwInit = -1;
 		int[] ga = new int[] { 0, 1 };
 		int[] fa = new int[] { 3 };
 		int ta = 4;
 
-		int pointsPerRow = 24;
+		int pointsPerRow = (int)Math.pow(2, 4);
 		List<double[]> samples = new ArrayList<double[]>(BuildTestData.createSpDepTestData(pointsPerRow));
 		List<Geometry> geoms = new ArrayList<Geometry>();
 		for (double[] d : samples)
@@ -263,14 +271,15 @@ public class GWRGeneticAlgorithm<T extends GAIndividual<T>> {
 		for (int i = 0; i < samples.size(); i++)
 			idxMap.put(samples.get(i), i);
 
+		double delta = 0.0000001;
 		Map<Integer, Set<Integer>> cmI = new HashMap<Integer, Set<Integer>>();
 		for (int i = 0; i < samples.size(); i++) {
 			double[] a = samples.get(i);
 			Set<Integer> s = new HashSet<Integer>();
 			for (int j = 0; j < samples.size(); j++) {
 				double[] b = samples.get(j);
-				if (Math.abs(a[ga[0]] - b[ga[0]]) <= 1.000001 / pointsPerRow
-						&& Math.abs(a[ga[1]] - b[ga[1]]) <= 1.000001 / pointsPerRow) // expects 1/pointsPerRow spacing
+				if (Math.abs(a[ga[0]] - b[ga[0]]) <= delta + 1.0 / pointsPerRow
+						&& Math.abs(a[ga[1]] - b[ga[1]]) <= delta + 1.0 / pointsPerRow) // expects 1/pointsPerRow spacing
 					s.add(j);
 			}
 			cmI.put(i, s);
@@ -289,70 +298,61 @@ public class GWRGeneticAlgorithm<T extends GAIndividual<T>> {
 		List<Entry<List<Integer>, List<Integer>>> cvList = SupervisedUtils.getCVList(10, 1, samples.size());
 
 		GWRCostCalculator ccAICc = new GWRIndividualCostCalculator_AICc(samples, fa, ga, ta, kernel, adaptive, minBw);
-		GWRCostCalculator ccCV = new GWRIndividualCostCalculator_CV(samples, cvList, fa, ga, ta, kernel, adaptive, minBw );
 
 		{
 			log.info("Search global bandwidth/j");
 			double bestGlobalACIc = Double.MAX_VALUE;
-			for (int j = 14; j < pointsPerRow; j++) {
+			for (int j = 2; j < pointsPerRow; j++) {
 				List<Double> bw = new ArrayList<Double>();
 				for (int i = 0; i < samples.size(); i++)
 					bw.add((double) j);
-				GWRIndividual ind = new GWRIndividual(bw, 0);
+				GWRIndividual ind = new GWRIndividual(bw, 0, Double.MAX_VALUE, 0);
 				
 				double aicc = ccAICc.getCost(ind);
-				double cv = ccCV.getCost(ind);
 								
-				log.debug(j+","+aicc+"\t"+cv);
+				log.debug(j+","+aicc);
 				if (aicc < bestGlobalACIc) {
 					bestGlobalACIc = aicc;
 					bwInit = j;
 					log.info("bw " + j);
 					log.info("basic GWR AICc: " + aicc);
-					log.info("basic GWR CV: " + cv );
 				}
 			}
 		}
 
 		List<Object[]> params = new ArrayList<Object[]>();
+		for( int ts : new int[]{2,3,4,6,8,10} )
+			for( boolean mutMode : new boolean[]{ true, false })
+				for( boolean meanRecomb : new boolean[]{true, false} )
+					for( boolean elitist : new boolean[]{true, false } )
+						for( double recomProb: new double[]{ 0.5,0.6,0.7,0.8,0.9})
+							for( double sd : new double[]{ 0.5,1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.4, 2.8, 3.2, 3.6, 4.0, 5.0 })
+								params.add( new Object[]{ts,mutMode,meanRecomb,elitist,recomProb,sd,false});
 		
-		params.add( new Object[]{true,false,8.0,0.7,2,false});
-		params.add( new Object[]{true,false,4.0,0.7,2,false});
-		params.add( new Object[]{true,false,2.0,0.7,2,false});
-		params.add( new Object[]{true,false,1.0,0.7,2,false});
-		params.add( new Object[]{true,true,8.0,0.7,2,false});
-		params.add( new Object[]{true,true,4.0,0.7,2,false});
-		params.add( new Object[]{true,true,2.0,0.7,2,false});
-		params.add( new Object[]{true,true,1.0,0.7,2,false});
-		
-		params.add( 0, new Object[]{false,false,-1.0,0.7,2,true});
-		
-		params.add( 0, new Object[]{true,false,0.5,0.7,2,true});
-		params.add( 0, new Object[]{true,false,1.0,0.7,2,true});
-		params.add( 0, new Object[]{true,false,2.0,0.7,2,true});
-		params.add( 0, new Object[]{true,false,4.0,0.7,2,true});
-		params.add( 0, new Object[]{true,false,8.0,0.7,2,true});
 		Collections.shuffle(params);
 		
 		for (Object[] p : params) {	
-			GWRIndividual.mutationMode = (boolean) p[0];
-			GWRIndividual.meanRecomb = (boolean) p[1];
-			double sd = (double) p[2];
-			GWRGeneticAlgorithm.recombProb = (double) p[3];
-			GWRGeneticAlgorithm.tournamentSize = (int) p[4];	
-			boolean useIntIndividual = (boolean)p[5];
-			log.info(Arrays.toString(p));
+			
+			GWRGeneticAlgorithm.tournamentSize = (int) p[0];	
+			GWRGeneticAlgorithm.elitist = (boolean)p[3];
+			GWRGeneticAlgorithm.recombProb = (double) p[4];
+			
+			GWRIndividual.mutationMode = (boolean) p[1];
+			GWRIndividual.meanRecomb = (boolean) p[2];
+			double sd = (double) p[5];
+			boolean intInd = (boolean)p[6];
+			
+			log.info(params.indexOf(p)+","+Arrays.toString(p));
 
 			List<GWRIndividual> init = new ArrayList<GWRIndividual>();
 			while (init.size() < 25) {
 				List<Double> bandwidth = new ArrayList<>();
 				while (bandwidth.size() < samples.size())
 					bandwidth.add( (double)Math.round( bwInit + r.nextGaussian() * 4 ) ); 
-				
-				if( !useIntIndividual )
-					init.add(new GWRIndividual(bandwidth, sd));
+				if( !intInd )
+					init.add(new GWRIndividual(bandwidth, sd, bandwidth.size(), minBw ));
 				else
-					init.add(new GWRIndividual_Int(bandwidth, sd));
+					init.add(new GWRIndividual_Int(bandwidth, sd, bandwidth.size(), minBw ));
 			}
 
 			GWRGeneticAlgorithm<GWRIndividual> gen = new GWRGeneticAlgorithm<GWRIndividual>();
@@ -372,9 +372,9 @@ public class GWRGeneticAlgorithm<T extends GAIndividual<T>> {
 			}
 			log.info("moran: " + Arrays.toString(GeoUtils.getMoransIStatistics(dMap, r2)));
 
-			String s = "output/result_AICc_" + Arrays.toString(p) + "_" + aicc;
+			String s = "output/result_AICc_" + params.indexOf(p)+","+Arrays.toString(p) + "_" + aicc;
 			DataUtils.writeCSV(s + ".csv", r, new String[] { "long", "lat", "b", "radius" });
-			Drawer.geoDrawValues(geoms, r, 2, null, ColorBrewer.Blues, ColorClass.Equal, s + ".png");
+			Drawer.geoDrawValues(geoms, r, 3, null, ColorBrewer.Blues, ColorClass.Equal, s + ".png");
 		}
 	}
 }

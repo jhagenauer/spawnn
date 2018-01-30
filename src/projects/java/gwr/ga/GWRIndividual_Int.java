@@ -7,8 +7,8 @@ import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 
 public class GWRIndividual_Int extends GWRIndividual {
 
-	public GWRIndividual_Int(List<Double> chromosome, double sd) {
-		super(chromosome, sd);
+	public GWRIndividual_Int(List<Double> chromosome, double sd, double maxGene, double minGene) {
+		super(chromosome, sd, maxGene, minGene);
 	}
 
 	private int getPoissonRandom(double mean) {
@@ -24,7 +24,7 @@ public class GWRIndividual_Int extends GWRIndividual {
 
 	@Override
 	public GWRIndividual mutate() {
-		List<Double> nBw = new ArrayList<>();
+		List<Double> nChromosome = new ArrayList<>();
 		for (int j = 0; j < chromosome.size(); j++) {
 			double h = chromosome.get(j);
 			if (r.nextDouble() < 1.0 / chromosome.size()) {
@@ -33,32 +33,41 @@ public class GWRIndividual_Int extends GWRIndividual {
 					for (int i : cmI.get(j))
 						mean += chromosome.get(i);
 					mean /= cmI.get(j).size();
-					h = getPoissonRandom(mean);
+					h = getPoissonRandom(mean * sd);
 				} else {
 					// not weighted yet
 					DescriptiveStatistics ds = new DescriptiveStatistics();
-					for( int i : cmI.get(j) )
+					for ( int i : cmI.get(j) )
 						ds.addValue( chromosome.get(i) );
-					double pc25 = ds.getPercentile(0.25);
-					double pc75 = ds.getPercentile(0.75);
+					double pc25 = ds.getPercentile(25);
+					double pc75 = ds.getPercentile(75);
 					double iqr = pc75 - pc25;
-					h = (int)Math.round( pc25 - sd*iqr + r.nextDouble()*(pc75+sd*iqr) ); 
+					double lower = pc25 - sd*iqr;
+					double upper = pc75 + sd*iqr;
+					h = (int) Math.round( lower + r.nextDouble() * (upper-lower) );		
 				}
+				h = Math.max(minGene, Math.min(maxGene, h));
 			}
-			nBw.add( h );
+			nChromosome.add(h);
 		}
-		return new GWRIndividual_Int(nBw, sd);
+		return new GWRIndividual_Int(nChromosome, sd, maxGene, minGene);
 	}
 
 	@Override
 	public GWRIndividual recombine(GWRIndividual mother) {
-		List<Double> mBw = ((GWRIndividual) mother).getChromosome();
-		List<Double> nBw = new ArrayList<>();
-		for (int i = 0; i < chromosome.size(); i++)
-			if (r.nextBoolean())
-				nBw.add(mBw.get(i));
-			else
-				nBw.add(chromosome.get(i));
-		return new GWRIndividual_Int(nBw, sd);
+		List<Double> mChromosome = ((GWRIndividual)mother).getChromosome();
+		List<Double> nChromosome = new ArrayList<>();
+		
+		for( int i = 0; i < chromosome.size(); i++)
+			if( !meanRecomb ) {
+				if( r.nextBoolean() ) 
+					nChromosome.add( mChromosome.get(i) );
+				else
+					nChromosome.add(chromosome.get(i));
+			} else {
+				double h = Math.round( (chromosome.get(i)+mChromosome.get(i))/2 );
+				nChromosome.add( h );
+			}
+		return new GWRIndividual_Int( nChromosome, sd, maxGene, minGene );
 	}
 }
