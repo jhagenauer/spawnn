@@ -7,8 +7,6 @@ import java.util.Set;
 
 import org.apache.log4j.Logger;
 
-import heuristics.Evaluator;
-
 public class TabuSearch<T extends TabuIndividual<T>> {
 	
 	private static Logger log = Logger.getLogger(TabuSearch.class);

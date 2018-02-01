@@ -3,8 +3,6 @@ package aag_detroit;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -12,6 +10,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
+import heuristics.sa.SimulatedAnnealing;
 import spawnn.dist.AugmentedDist;
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
@@ -32,19 +31,15 @@ import spawnn.utils.SpatialDataFrame;
 public class AAG_Detroit_Clustering {
 
 	enum Mode {
-		Augmented, Weighted, CNG
+		Augmented, WNG, CNG
 	};
 	
 	public static void main(String[] args) {
-
-		Comparator<Set<double[]>> comp = new Comparator<Set<double[]>>() {
-			@Override
-			public int compare(Set<double[]> o1, Set<double[]> o2) {
-				return Double.compare(o1.size(), o2.size());
-			}
-		};
 		
-		SpatialDataFrame sdf = DataUtils.readSpatialDataFrameFromShapefile(new File("/home/julian/publications/aag_detroit/data/detroit_metro_race.shp"), true);
+		//String inFn = "/home/julian/publications/aag_detroit/data/detroit_metro_race.shp";
+		String inFn = "C://Users/hagenaj/git/aag_detroit/data/detroit_metro_race.shp";
+		SpatialDataFrame sdf = DataUtils.readSpatialDataFrameFromShapefile(new File(inFn), true);
+				
 		int[] fa = new int[] { 0, 1, 2, 3, 4, 5 };
 		int[] ga = new int[] { 9, 10 };
 		Dist<double[]> gDist = new EuclideanDist(ga);
@@ -60,15 +55,17 @@ public class AAG_Detroit_Clustering {
 		Random r = new Random();
 		int T_MAX = 100000;
 		int nrNeurons = 96;
+		
+		List<Set<double[]>> prevNeuronClusters = null;
 
-		for (Mode m : new Mode[]{Mode.CNG, Mode.Weighted}) {
+		for (Mode m : new Mode[]{Mode.CNG, Mode.WNG}) {
 			r.setSeed(0);
 			System.out.println(m);
 
 			Object o;
 			if (m == Mode.Augmented) {
 				o = 0.9;
-			} else if (m == Mode.Weighted) {
+			} else if (m == Mode.WNG) {
 				o = 0.42;
 			} else {
 				o = 14;
@@ -78,7 +75,7 @@ public class AAG_Detroit_Clustering {
 				double a = (double) o;
 				Dist<double[]> aDist = new AugmentedDist(ga, fa, a);
 				s = new DefaultSorter<double[]>(aDist);
-			} else if (m == Mode.Weighted) {
+			} else if (m == Mode.WNG) {
 				double w = (double) o;
 				Map<Dist<double[]>, Double> map = new HashMap<Dist<double[]>, Double>();
 				map.put(fDist, 1 - w);
@@ -126,11 +123,21 @@ public class AAG_Detroit_Clustering {
 				graph.get(bmuA).put(bmuB, graph.get(bmuA).get(bmuB) + 1.0);
 				graph.get(bmuB).put(bmuA, graph.get(bmuB).get(bmuA) + 1.0);
 			}
-
+			
 			Map<double[], Integer> map = GraphClustering.multilevelOptimization(graph, 10);
 			List<Set<double[]>> neuronClusters = new ArrayList<Set<double[]>>(GraphClustering.modulMapToCluster(map));
-			Collections.sort(neuronClusters, comp);
-			System.out.println("clusters: " + neuronClusters.size());
+			System.out.println("neuron clusters: " + neuronClusters.size());
+			
+			if( prevNeuronClusters == null )
+				prevNeuronClusters = neuronClusters;
+			else { // try to match neuron clusters
+				
+				ClusterCostCalculator cc = new ClusterCostCalculator(prevNeuronClusters, neuronClusters, fDist);
+				SimulatedAnnealing<ClusterIndividual> sa = new SimulatedAnnealing<ClusterIndividual>(cc);
+				ClusterIndividual bestCI = sa.search( new ClusterIndividual(neuronClusters));
+								
+				neuronClusters = bestCI.getList();	
+			}
 
 			List<Set<double[]>> finClusters = new ArrayList<Set<double[]>>();
 			for (Set<double[]> s1 : neuronClusters) {
@@ -139,7 +146,7 @@ public class AAG_Detroit_Clustering {
 					s2.addAll(bmus.get(d));
 				finClusters.add(s2);
 			}
-			Collections.sort(finClusters, comp);
+			System.out.println("fin clusters: "+finClusters.size());
 			
 			System.out.println("f-wcss: " + ClusterValidation.getWithinClusterSumOfSuqares(finClusters, fDist));
 			System.out.println("s-wcss: " + ClusterValidation.getWithinClusterSumOfSuqares(finClusters, gDist));
@@ -166,7 +173,7 @@ public class AAG_Detroit_Clustering {
 					nd[d.length+i] = od[i];
 				for (int i = 0; i < finClusters.size(); i++)
 					if (finClusters.get(i).contains(d)) {
-						nd[nd.length - 1] = i;
+						nd[nd.length - 1] = i+1;
 						break;
 					}
 				nSamples.add(nd);
@@ -177,7 +184,7 @@ public class AAG_Detroit_Clustering {
 				nNames.add(st);
 			for( String st : sdf.names )
 				nNames.add(st+"1");
-			nNames.add("cluster");
+			nNames.add("Cluster");
 			
 			DataUtils.writeShape(nSamples, sdf.geoms, nNames.toArray(new String[]{}), sdf.crs, "output/clusters_" + m + ".shp");
 

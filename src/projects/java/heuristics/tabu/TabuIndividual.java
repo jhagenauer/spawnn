@@ -4,8 +4,22 @@ import java.util.List;
 
 import heuristics.Individual;
 
-public abstract class TabuIndividual<T> extends Individual<T> {
+public abstract class TabuIndividual<T> implements Individual<T> {
 	public abstract TabuIndividual<T> applyMove( TabuMove<T> tm );
 	public abstract TabuMove<T> getRandomMove();
 	public abstract List<TabuMove<T>> getNeighboringMoves();
+	
+	private double value = 0;
+	
+	public void setValue(double value) {
+		this.value = value;
+	}
+	
+	public double getValue() {
+		return value;
+	}
+	
+	public int compareTo(T o) {
+		return Double.compare(value, ((TabuIndividual<T>) o).getValue());
+	}
 }

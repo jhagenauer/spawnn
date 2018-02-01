@@ -4,15 +4,14 @@ import java.util.Random;
 
 import org.apache.log4j.Logger;
 
-import heuristics.Evaluator;
-import heuristics.GAIndividual;
+import heuristics.CostCalculator;
 
-public class SimulatedAnnealing<T extends GAIndividual<T>> {
+public class SimulatedAnnealing<T extends SAIndividual<T>> {
 	private static Logger log = Logger.getLogger(SimulatedAnnealing.class);
 	
-	Evaluator<T> eva;
+	CostCalculator<T> eva;
 	
-	public SimulatedAnnealing(Evaluator<T> evaluator) {
+	public SimulatedAnnealing(CostCalculator<T> evaluator) {
 		this.eva = evaluator;
 	}
 
@@ -20,7 +19,7 @@ public class SimulatedAnnealing<T extends GAIndividual<T>> {
 		Random r = new Random();
 						
 		T x = init;
-		x.setValue( eva.evaluate(x) );
+		double xCost = eva.getCost(x);
 
 		double maxT = 10; 
 		int maxI = 800; 
@@ -29,15 +28,16 @@ public class SimulatedAnnealing<T extends GAIndividual<T>> {
 			//log.debug(t+","+x.getValue());
 			int j = 0;
 			for( int i = 0; i < maxI; ) {
-				T y = x.recombine(x); // effectively clone				
-				y.mutate();
-				y.setValue( eva.evaluate(y) );
+				T y = x.getCopy(); // effectively clone				
+				y.step();
+				double yCost = eva.getCost(y);
 				
 				// l muß größer sein, je höher t und je besser y ist.
 				// ist y = x, ist l = 1!;
-				double l = Math.exp ( ( x.getValue() - y.getValue() )/t);
-				if( y.getValue() < x.getValue() || r.nextDouble() < l ) {
+				double l = Math.exp ( ( xCost - yCost )/t);
+				if( yCost < xCost || r.nextDouble() < l ) {
 					x = y;
+					xCost = yCost;
 					i++;
 				} else if( maxJ < ++j ) {
 					j = 0;
@@ -45,6 +45,7 @@ public class SimulatedAnnealing<T extends GAIndividual<T>> {
 				}
 			}
 		}
+		log.debug("best: "+xCost);
 		return x;
 	}
 }
