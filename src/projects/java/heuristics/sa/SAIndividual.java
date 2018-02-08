@@ -1,8 +1,8 @@
 package heuristics.sa;
 
-import heuristics.Individual;
+import heuristics.HeuristicsIndividual;
 
-public interface SAIndividual<T> extends Individual<T> {
+public interface SAIndividual<T> extends HeuristicsIndividual {
 	public void step();
 	public T getCopy();
 }

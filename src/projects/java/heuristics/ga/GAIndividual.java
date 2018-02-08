@@ -1,8 +1,8 @@
 package heuristics.ga;
 
-import heuristics.Individual;
+import heuristics.HeuristicsIndividual;
 
-public interface GAIndividual<T> extends Individual<T> {
+public interface GAIndividual<T> extends HeuristicsIndividual {
 	public T mutate();
 	public T recombine( T mother );
 }

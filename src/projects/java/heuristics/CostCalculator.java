@@ -1,5 +1,5 @@
 package heuristics;
 
-public interface CostCalculator<T extends Individual<?>> {
+public interface CostCalculator<T extends HeuristicsIndividual> {
 	public double getCost(T i);
 }

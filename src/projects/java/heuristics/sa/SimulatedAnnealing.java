@@ -2,12 +2,9 @@ package heuristics.sa;
 
 import java.util.Random;
 
-import org.apache.log4j.Logger;
-
 import heuristics.CostCalculator;
 
 public class SimulatedAnnealing<T extends SAIndividual<T>> {
-	private static Logger log = Logger.getLogger(SimulatedAnnealing.class);
 	
 	CostCalculator<T> eva;
 	
@@ -45,7 +42,6 @@ public class SimulatedAnnealing<T extends SAIndividual<T>> {
 				}
 			}
 		}
-		log.debug("best: "+xCost);
 		return x;
 	}
 }

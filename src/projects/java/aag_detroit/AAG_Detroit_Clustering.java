@@ -3,6 +3,8 @@ package aag_detroit;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -10,6 +12,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
+import heuristics.CostCalculator;
 import heuristics.sa.SimulatedAnnealing;
 import spawnn.dist.AugmentedDist;
 import spawnn.dist.Dist;
@@ -56,7 +59,7 @@ public class AAG_Detroit_Clustering {
 		int T_MAX = 100000;
 		int nrNeurons = 96;
 		
-		List<Set<double[]>> prevNeuronClusters = null;
+		List<Set<double[]>> prevFinClusters = null;
 
 		for (Mode m : new Mode[]{Mode.CNG, Mode.WNG}) {
 			r.setSeed(0);
@@ -128,17 +131,18 @@ public class AAG_Detroit_Clustering {
 			List<Set<double[]>> neuronClusters = new ArrayList<Set<double[]>>(GraphClustering.modulMapToCluster(map));
 			System.out.println("neuron clusters: " + neuronClusters.size());
 			
-			if( prevNeuronClusters == null )
-				prevNeuronClusters = neuronClusters;
-			else { // try to match neuron clusters
-				
-				ClusterCostCalculator cc = new ClusterCostCalculator(prevNeuronClusters, neuronClusters, fDist);
-				SimulatedAnnealing<ClusterIndividual> sa = new SimulatedAnnealing<ClusterIndividual>(cc);
-				ClusterIndividual bestCI = sa.search( new ClusterIndividual(neuronClusters));
-								
-				neuronClusters = bestCI.getList();	
-			}
-
+			Map<Set<double[]>,double[]> means = new HashMap<>();
+			for( Set<double[]> ss : neuronClusters )
+				means.put(ss, DataUtils.getMean(ss));
+			double[] refEl = new double[sdf.samples.get(0).length];
+			
+			Collections.sort( neuronClusters, new Comparator<Set<double[]>>() {
+				@Override
+				public int compare(Set<double[]> o1, Set<double[]> o2) {
+					return Double.compare( fDist.dist(refEl, means.get(o1) ), fDist.dist(refEl, means.get(o2) ) );
+				}
+			});
+			
 			List<Set<double[]>> finClusters = new ArrayList<Set<double[]>>();
 			for (Set<double[]> s1 : neuronClusters) {
 				Set<double[]> s2 = new HashSet<double[]>();
@@ -148,14 +152,45 @@ public class AAG_Detroit_Clustering {
 			}
 			System.out.println("fin clusters: "+finClusters.size());
 			
-			System.out.println("f-wcss: " + ClusterValidation.getWithinClusterSumOfSuqares(finClusters, fDist));
-			System.out.println("s-wcss: " + ClusterValidation.getWithinClusterSumOfSuqares(finClusters, gDist));
-			
-			for( int i = 0; i < finClusters.size(); i++ ) {
+			// match fin clusters and sort neuron-clusters accordingly
+			if( prevFinClusters == null ) {
+				prevFinClusters = finClusters;
+			} else { // try to match neuron clusters
+				
+				// Simulated Annealing
+				List<Set<double[]>> globalBest = null;
+				double globalCost  = Double.MAX_VALUE;
+				CostCalculator<SAClusterIndividual> cc = new ClusterCostCalculator(prevFinClusters, finClusters, fDist);
+				for( int i = 0; i < 20; i++ ) {
+					System.out.println(i);
+					SimulatedAnnealing<SAClusterIndividual> sa = new SimulatedAnnealing<>(cc);
+					List<Set<double[]>> l = new ArrayList<>(finClusters);
+					Collections.shuffle(l);
+					SAClusterIndividual localBestCI = sa.search( new SAClusterIndividual(l));
+					double curCost = cc.getCost(localBestCI);
+					if( globalBest == null || curCost < globalCost ) {
+						globalBest = localBestCI.getList();
+						globalCost = curCost;
+						System.out.println(i+" "+globalCost);
+					}
+				}
+				
+				// resort neuron cluster to match optimized final clusters' order
+				List<Set<double[]>> nNeuronClusters = new ArrayList<Set<double[]>>(neuronClusters);
+				for( int i = 0; i < finClusters.size(); i++ ) {
+					Set<double[]> ss = finClusters.get(i);
+					int idx = globalBest.indexOf( ss );
+					nNeuronClusters.set(idx, neuronClusters.get(i) );
+				}
+				neuronClusters = nNeuronClusters;								
+				finClusters = globalBest;
+			}
+						
+			/*for( int i = 0; i < finClusters.size(); i++ ) {
 				Set<double[]> se = finClusters.get(i);
 				System.out.println("f "+i+" "+DataUtils.getSumOfSquares(se, fDist)+","+DataUtils.getSumOfSquares(se, fDist)/se.size() );
 				System.out.println("s "+i+" "+DataUtils.getSumOfSquares(se, gDist)+","+DataUtils.getSumOfSquares(se, gDist)/se.size() );
-			}
+			}*/
 
 			Drawer.geoDrawCluster(finClusters, sdf.samples, sdf.geoms, "output/clusters_" + m + ".png", true);
 
@@ -199,7 +234,7 @@ public class AAG_Detroit_Clustering {
 				double[] na = Arrays.copyOf(a, a.length + 1);
 				for (int i = 0; i < neuronClusters.size(); i++)
 					if (neuronClusters.get(i).contains(a)) {
-						na[na.length - 1] = i;
+						na[na.length - 1] = i + 1;
 						break;
 					}
 				nVertices.put(a, na);
@@ -222,5 +257,6 @@ public class AAG_Detroit_Clustering {
 			
 			GraphUtils.writeGraphToGraphML(nNames.toArray(new String[]{}), nGraph, new File("output/graph_" + m + ".xml"));
 		}
+		System.out.println("Done.");
 	}
 }

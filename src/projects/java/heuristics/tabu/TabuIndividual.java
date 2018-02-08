@@ -2,9 +2,9 @@ package heuristics.tabu;
 
 import java.util.List;
 
-import heuristics.Individual;
+import heuristics.HeuristicsIndividual;
 
-public abstract class TabuIndividual<T> implements Individual<T> {
+public abstract class TabuIndividual<T> implements HeuristicsIndividual {
 	public abstract TabuIndividual<T> applyMove( TabuMove<T> tm );
 	public abstract TabuMove<T> getRandomMove();
 	public abstract List<TabuMove<T>> getNeighboringMoves();
