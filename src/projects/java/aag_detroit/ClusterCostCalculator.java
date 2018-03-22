@@ -7,6 +7,7 @@ import java.util.Set;
 
 import heuristics.CostCalculator;
 import spawnn.dist.Dist;
+import spawnn.utils.DataUtils;
 
 public class ClusterCostCalculator implements CostCalculator<SAClusterIndividual> {
 	
@@ -22,13 +23,11 @@ public class ClusterCostCalculator implements CostCalculator<SAClusterIndividual
 		this.prev = prev;
 		this.dm = new HashMap<>();
 		for( Set<double[]> a : prev ) {
-			Map<Set<double[]>,Double> ms = new HashMap<>();
+			double[] mA = DataUtils.getMean(a);
+			Map<Set<double[]>,Double> ms = new HashMap<>();			
 			for( Set<double[]> b : ci ) {
-				double di = 0;
-				for( double[] d1 : a )
-					for( double[] d2 : b )
-						di += fDist.dist(d1, d2);
-				di/=(a.size()*b.size());					
+				double[] mB = DataUtils.getMean(b);
+				double di = fDist.dist(mA, mB);					
 				ms.put(b, di);
 			}
 			dm.put(a, ms);

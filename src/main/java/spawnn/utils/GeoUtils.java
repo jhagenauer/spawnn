@@ -418,18 +418,25 @@ public class GeoUtils {
 			ds.addValue(getMoransI(dMap, m));
 		}
 				
-		double mean = ds.getMean(), var = ds.getStandardDeviation();
+		double mean = ds.getMean();
+		double var = ds.getStandardDeviation();
 		double zScore = ( moran - mean ) / var;
-		
-		int i = 0;
+		/*int i = 0;
 		for( double permMoran : ds.getValues() ) {
 			double permZScore = ( permMoran - mean ) / var;
-			if( zScore >= 0 && permZScore >= zScore )
+			if( zScore > 0 && permZScore >= zScore )
 				i++;
 			if( zScore < 0 && permZScore <= zScore )
 				i++;
-			/*if( Math.abs(permZScore) >= Math.abs(zScore) )
-				i++;*/
+		}*/
+		
+		// simplified calculation of i:
+		int i = 0;
+		for( double permMoran : ds.getValues() ) {
+			if( moran > mean && permMoran >= moran )
+				i++;
+			if( moran < mean && permMoran <= moran )
+				i++;
 		}
 				
 		return new double[]{ 

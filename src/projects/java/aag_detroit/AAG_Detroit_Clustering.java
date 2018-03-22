@@ -161,7 +161,7 @@ public class AAG_Detroit_Clustering {
 				List<Set<double[]>> globalBest = null;
 				double globalCost  = Double.MAX_VALUE;
 				CostCalculator<SAClusterIndividual> cc = new ClusterCostCalculator(prevFinClusters, finClusters, fDist);
-				for( int i = 0; i < 20; i++ ) {
+				for( int i = 0; i < 25; i++ ) {
 					System.out.println(i);
 					SimulatedAnnealing<SAClusterIndividual> sa = new SimulatedAnnealing<>(cc);
 					List<Set<double[]>> l = new ArrayList<>(finClusters);
