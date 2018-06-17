@@ -31,7 +31,7 @@ public class NG implements UnsupervisedNet {
 	
 	@Deprecated
 	public NG( int numNeurons, double lInit, double lFinal, double eInit, double eFinal, int dim, Sorter<double[]> sorter  ) {
-		Random r = new Random();
+		Random r = new Random(0);
 		
 		this.sorter = sorter;
 		this.neighborhoodRange = new PowerDecay(lInit, lFinal);
@@ -48,12 +48,7 @@ public class NG implements UnsupervisedNet {
 			neurons.add( d  );
 		}
 	}
-	
-	@Deprecated // better user sorter.sort directly
-	public void sortNeurons(double[] x ) {
-		sorter.sort(x, neurons);
-	}
-		
+			
 	public void train( double t, double[] x ) {
 		sorter.sort(x,neurons);
 		

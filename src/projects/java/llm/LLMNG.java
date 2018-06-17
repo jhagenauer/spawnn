@@ -9,7 +9,6 @@ import spawnn.SupervisedNet;
 import spawnn.ng.NG;
 import spawnn.ng.sorter.Sorter;
 import spawnn.som.decay.DecayFunction;
-import spawnn.som.decay.PowerDecay;
 
 public class LLMNG extends NG implements SupervisedNet {
 		
@@ -31,7 +30,7 @@ public class LLMNG extends NG implements SupervisedNet {
 		this.neighborhoodRange2 = neighborhoodRange2;
 		this.fa = fa;
 
-		Random r = new Random();
+		Random r = new Random(1);
 		for( double[] d : getNeurons() ) {
 			// init output
 			double[] o = new double[outDim];
@@ -47,14 +46,7 @@ public class LLMNG extends NG implements SupervisedNet {
 			matrix.put(d, m);
 		}
 	}
-			
-	@Deprecated
-	public LLMNG( List<double[]> neurons, double lInit, double lFinal, double eInit, double eFinal,
-			double lInit2, double lFinal2, double eInit2, double eFinal2, 
-			Sorter<double[]> bg, int[] fa, int outDim ) {
-		this(neurons, new PowerDecay(lInit, lFinal), new PowerDecay(eInit, eFinal), new PowerDecay(lInit2, lFinal2), new PowerDecay(eInit2, eFinal2), bg, fa, outDim);
-	}
-	
+		
 	public double[] present( double[] x ) {
 		sorter.sort(x, neurons);
 		return getResponse(x, getNeurons().get(0) );

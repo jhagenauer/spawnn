@@ -1025,6 +1025,21 @@ public class DataUtils {
 		for (double[] d : samples)
 			d[idx] = (d[idx] - ss.getMean()) / ss.getStandardDeviation();
 	}
+	
+	public static void zScoreColumns(List<double[]> samplesTrain, List<double[]> samplesTest, int[] fa ) {
+		for( int idx : fa ) {
+			SummaryStatistics ss = new SummaryStatistics();
+			for (double[] d : samplesTrain)
+				ss.addValue(d[idx]);
+			
+			double mean = ss.getMean();
+			double sd = ss.getStandardDeviation();
+			for (double[] d : samplesTrain)
+				d[idx] = (d[idx] - mean) / sd;
+			for (double[] d : samplesTest)
+				d[idx] = (d[idx] - mean) / sd;
+		}
+	}
 
 	@Deprecated
 	public static void zScoreColumns(List<double[]> samples) {

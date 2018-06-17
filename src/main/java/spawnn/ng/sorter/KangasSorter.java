@@ -24,7 +24,9 @@ public class KangasSorter<T> implements Sorter<T> {
 		
 	@Override
 	public void sort( final T x, List<T> neurons ) {
-		if( l == 1 )
+		if( neurons.size() == 1 )
+			return;
+		else if( l == 1 )
 			a.sort(x, neurons);
 		else if( l == neurons.size() )
 			b.sort(x, neurons);	
@@ -32,7 +34,6 @@ public class KangasSorter<T> implements Sorter<T> {
 			a.sort(x, neurons);
 			b.sort(x, neurons.subList(0, l ));
 		}
-				
 	}
 
 	@Override

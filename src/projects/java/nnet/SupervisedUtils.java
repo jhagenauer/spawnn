@@ -41,8 +41,6 @@ public class SupervisedUtils {
 		return cvList;
 	}
 
-	// Maybe we should remove this function due to triviality
-	@Deprecated
 	public static double getRMSE(List<double[]> response, List<double[]> desired) {
 		return Math.sqrt(getMSE(response, desired));
 	}
@@ -52,7 +50,6 @@ public class SupervisedUtils {
 	}
 
 	// Mean sum of squares
-	@Deprecated
 	public static double getMSE(List<double[]> response, List<double[]> desired) {
 		if (response.size() != desired.size())
 			throw new RuntimeException("response.size() != desired.size()");
@@ -67,7 +64,6 @@ public class SupervisedUtils {
 		return getResidualSumOfSquares(response, samples, ta) / response.size();
 	}
 
-	@Deprecated
 	public static double getR2(List<double[]> response, List<double[]> desired) {
 		if (response.size() != desired.size())
 			throw new RuntimeException();
