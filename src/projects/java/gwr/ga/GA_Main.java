@@ -7,8 +7,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.Map.Entry;
+import java.util.Random;
+import java.util.Set;
 
 import org.apache.log4j.Logger;
 
@@ -27,7 +28,7 @@ public class GA_Main {
 	private static Logger log = Logger.getLogger(GA_Main.class);
 
 	public static void main(String[] args) {
-
+		
 		GeometryFactory gf = new GeometryFactory();
 		GWKernel kernel = GWKernel.bisquare;
 		boolean adaptive = true;
@@ -122,6 +123,7 @@ public class GA_Main {
 			
 			log.info(params.indexOf(p)+","+Arrays.toString(p));
 
+			Random r = new Random();
 			List<GWRIndividual> init = new ArrayList<GWRIndividual>();
 			while (init.size() < 25) {
 				List<Double> bandwidth = new ArrayList<>();
@@ -141,17 +143,17 @@ public class GA_Main {
 			
 			log.info("result GWR AICc: " + aicc);
 
-			List<double[]> r = new ArrayList<double[]>();
+			List<double[]> rr = new ArrayList<double[]>();
 			Map<double[], Double> r2 = new HashMap<double[], Double>();
 			for (int i = 0; i < samples.size(); i++) {
 				double[] d = samples.get(i);
-				r.add(new double[] { d[ga[0]], d[ga[1]], d[2], resultBw.get(d) });
+				rr.add(new double[] { d[ga[0]], d[ga[1]], d[2], resultBw.get(d) });
 				r2.put(d, resultBw.get(d) );
 			}
 			log.info("moran: " + Arrays.toString(GeoUtils.getMoransIStatistics(dMap, r2)));
 
 			String s = "output/result_AICc_" + params.indexOf(p)+","+Arrays.toString(p) + "_" + aicc;
-			DataUtils.writeCSV(s + ".csv", r, new String[] { "long", "lat", "b", "radius" });
+			DataUtils.writeCSV(s + ".csv", rr, new String[] { "long", "lat", "b", "radius" });
 		}
 	}
 }

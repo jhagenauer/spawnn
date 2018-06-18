@@ -13,17 +13,18 @@ public class LLM_GA_Main {
 
 	public static void main(String[] args) {
 			
-			GeneticAlgorithm.tournamentSize = 2;	
+			GeneticAlgorithm.tournamentSize = 3;	
 			GeneticAlgorithm.elitist = true;
 			GeneticAlgorithm.recombProb = 0.7;
 			
 			LLM_CostCalculator cc = new LLM_CostCalculator();
 			List<LLM_Individual> init = new ArrayList<>();
-			while (init.size() < 25) 
+			while (init.size() < 30)
 				init.add(new LLM_Individual() );
-			
+						
 			GeneticAlgorithm<LLM_Individual> gen = new GeneticAlgorithm<LLM_Individual>();
 			LLM_Individual result = (LLM_Individual) gen.search(init, cc);
+			
 			log.info("best:");
 			log.info(cc.getCost(result));
 			log.info(result.iParam);

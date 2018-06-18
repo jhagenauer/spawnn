@@ -33,7 +33,7 @@ public class LLM_CostCalculator implements CostCalculator<LLM_Individual> {
 	
 	public LLM_CostCalculator() {
 		sdf = DataUtils.readSpatialDataFrameFromShapefile(new File("data/lucas/lucas.shp"), true);
-		cvList = SupervisedUtils.getCVList(10, 4, sdf.size());
+		cvList = SupervisedUtils.getCVList(10, 1, sdf.size());
 
 		fa = new int[] { 
 				2, // TLA
@@ -109,8 +109,8 @@ public class LLM_CostCalculator implements CostCalculator<LLM_Individual> {
 			}
 			rmse.addValue( SupervisedUtils.getRMSE( response, desired ) );
 		}
-		
-		return rmse.getMean();
+		double mean = rmse.getMean();
+		return Double.isNaN(mean) ? Double.MAX_VALUE : mean;
 	}
 	
 	private DecayFunction getFunction(double init, double fin, function func) {

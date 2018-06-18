@@ -20,6 +20,7 @@ import org.apache.log4j.Logger;
 public class GeneticAlgorithm<T extends GAIndividual<T>> {
 
 	private static Logger log = Logger.getLogger(GeneticAlgorithm.class);
+	
 	private final static Random r = new Random(0);
 	int threads = Math.max(1, Runtime.getRuntime().availableProcessors() - 1);;
 
@@ -29,11 +30,15 @@ public class GeneticAlgorithm<T extends GAIndividual<T>> {
 
 	public T search(List<T> init, CostCalculator<T> cc) {
 
+		log.debug("Getting init costs...");
 		List<T> gen = new ArrayList<T>(init);
 		Map<T, Double> costs = new HashMap<T, Double>(); // cost cache
-		for (T i : init)
-			costs.put(i, cc.getCost(i));
-
+		for (T i : init) {
+			double cost = cc.getCost(i);
+			log.debug(i+" "+cost);
+			costs.put(i, cost);
+		}
+		
 		T best = null;
 		double bestCost = Double.MAX_VALUE;
 
@@ -41,9 +46,11 @@ public class GeneticAlgorithm<T extends GAIndividual<T>> {
 		int parentSize = init.size();
 		int offspringSize = parentSize * 2;
 
+		log.debug("Evolving...");
 		int maxK = 50000;
 		int k = 0;
 		while (k < maxK && noImpro < 200) {
+			log.debug("k: "+k);
 
 			// check best and increase noImpro
 			noImpro++;
@@ -56,9 +63,13 @@ public class GeneticAlgorithm<T extends GAIndividual<T>> {
 				}
 				ds.addValue(costs.get(cur));
 			}
-			if (noImpro == 0 || k % 100 == 0) {
+			
+			if (k % 25 == 0) {
 				log.debug(k + "," + ds.getMin() + "," + ds.getMean() + "," + ds.getMax() + "," + ds.getStandardDeviation());
 			}
+			if( noImpro == 0 )
+				log.debug(bestCost+", "+best);
+			
 
 			// SELECT NEW GEN/POTENTIAL PARENTS
 			// elite

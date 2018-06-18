@@ -9,6 +9,7 @@ import java.util.Map.Entry;
 import ga.GAIndividual;
 
 import java.util.Random;
+import java.util.TreeMap;
 
 import llm.LLMNG;
 import llm.LLM_Lucas_CV.function;
@@ -21,12 +22,13 @@ public class LLM_Individual implements GAIndividual<LLM_Individual> {
 	final static Map<String,Object[]> params;
 		
 	static {
-		params = new HashMap<>();
+		params = new TreeMap<>();
 				
 		List<Object> list = new ArrayList<>();
-		for(int l = 1; l <= nrNeurons; l++ )
+		/*for(int l = 1; l <= nrNeurons; l++ )
 			list.add( l );
-		params.put("l", list.toArray(new Object[]{}));
+		params.put("l", list.toArray(new Object[]{}));*/
+		params.put("l", new Object[]{25} );
 		
 		list = new ArrayList<>();
 		for( LLMNG.mode mode : new LLMNG.mode[] { LLMNG.mode.fritzke, LLMNG.mode.martinetz } )
@@ -39,9 +41,9 @@ public class LLM_Individual implements GAIndividual<LLM_Individual> {
 		params.put("mode", list.toArray(new Object[]{}));
 		
 		list = new ArrayList<>();
-		for( double nb1Init : new double[] { nrNeurons, nrNeurons * 2.0 / 3, nrNeurons * 1.0/3 } )
+		for( double nb1Init : new double[] { nrNeurons, nrNeurons * 3.0/4, nrNeurons * 2.0/4, nrNeurons * 1.0/4, 1 } )
 			list.add(nb1Init);
-		params.put("nb1Inint", list.toArray(new Object[]{}));
+		params.put("nb1Init", list.toArray(new Object[]{}));
 		
 		list = new ArrayList<>();
 		for( double nb1Final : new double[] { 0.0001, 0.001, 0.01, 0.1, 1 } )
@@ -74,9 +76,9 @@ public class LLM_Individual implements GAIndividual<LLM_Individual> {
 		params.put("lr1Func", list.toArray(new Object[]{}));
 		
 		list = new ArrayList<>();
-		for( double nb2Init : new double[] { nrNeurons, nrNeurons * 2.0 / 3, nrNeurons * 1.0/3 } )
+		for( double nb2Init : new double[] { nrNeurons, nrNeurons * 3.0/4, nrNeurons * 2.0/4, nrNeurons * 1.0/4, 1 } )
 			list.add(nb2Init);
-		params.put("nb2Inint", list.toArray(new Object[]{}));
+		params.put("nb2Init", list.toArray(new Object[]{}));
 		
 		list = new ArrayList<>();
 		for( double nb2Final : new double[] { 0.0001, 0.001, 0.01, 0.1, 1 } )
@@ -113,7 +115,7 @@ public class LLM_Individual implements GAIndividual<LLM_Individual> {
 	private Random r = new Random();
 	
 	public LLM_Individual() {
-		iParam = new HashMap<>();
+		iParam = new TreeMap<>();
 		for( Entry<String, Object[]> e : params.entrySet() ) {
 			Object[] o = e.getValue();
 			iParam.put(e.getKey(), o[r.nextInt(o.length)] );
@@ -121,7 +123,7 @@ public class LLM_Individual implements GAIndividual<LLM_Individual> {
 	}
 
 	public LLM_Individual(Map<String, Object> nParam) {
-		iParam = new HashMap<>(nParam);
+		iParam = new TreeMap<>(nParam);
 	}
 
 	@Override
@@ -158,5 +160,9 @@ public class LLM_Individual implements GAIndividual<LLM_Individual> {
 				nParam.put(key, iParam.get(key) );
 		
 		return new LLM_Individual(nParam);
+	}
+	
+	public String toString() {
+		return iParam.toString();
 	}
 }
