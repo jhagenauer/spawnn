@@ -1,4 +1,4 @@
-package gwr.ga;
+package ga;
 
 public interface GAIndividual<T> {
 	public T mutate();

@@ -8,6 +8,8 @@ import java.util.Set;
 
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 
+import ga.GAIndividual;
+
 public class GWRIndividual implements GAIndividual<GWRIndividual> {
 
 	protected Random r = new Random();
