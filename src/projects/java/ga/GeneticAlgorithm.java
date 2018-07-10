@@ -22,7 +22,8 @@ public class GeneticAlgorithm<T extends GAIndividual<T>> {
 	private static Logger log = Logger.getLogger(GeneticAlgorithm.class);
 	
 	private final static Random r = new Random(0);
-	int threads = Math.max(1, Runtime.getRuntime().availableProcessors() - 1);;
+	int threads = Math.max(1, Runtime.getRuntime().availableProcessors() - 1);
+	//int threads = 4;
 
 	public static int tournamentSize = 2;
 	public static double recombProb = 0.7;
@@ -35,7 +36,7 @@ public class GeneticAlgorithm<T extends GAIndividual<T>> {
 		Map<T, Double> costs = new HashMap<T, Double>(); // cost cache
 		for (T i : init) {
 			double cost = cc.getCost(i);
-			log.debug(i+" "+cost);
+			log.debug(cost+" "+i);
 			costs.put(i, cost);
 		}
 		
@@ -65,7 +66,7 @@ public class GeneticAlgorithm<T extends GAIndividual<T>> {
 			}
 			
 			if (k % 25 == 0) {
-				log.debug(k + "," + ds.getMin() + "," + ds.getMean() + "," + ds.getMax() + "," + ds.getStandardDeviation());
+				log.debug(k + ", min: " + ds.getMin() + ", 2qt: "+ds.getPercentile(25) + ", mean: "+ds.getMean() + ", med: "+ ds.getPercentile(50)+", 4qt: "+ds.getPercentile(75) +", max: "+ds.getMax() + ", sd: " + ds.getStandardDeviation());
 			}
 			if( noImpro == 0 )
 				log.debug(bestCost+", "+best);

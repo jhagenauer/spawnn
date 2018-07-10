@@ -71,7 +71,7 @@ public class LLMNG extends NG implements SupervisedNet {
 	}
 	
 	public mode aMode = mode.fritzke;
-	public boolean ignSupport = false;
+	public boolean ignSupport = false; // intercept
 	
 	@Override
 	public void train( double t, double[] x, double[] desired ) {

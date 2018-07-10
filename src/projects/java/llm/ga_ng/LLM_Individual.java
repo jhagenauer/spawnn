@@ -1,4 +1,4 @@
-package llm.ga;
+package llm.ga_ng;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -13,10 +13,9 @@ import java.util.TreeMap;
 import ga.GAIndividual;
 import llm.LLMNG;
 import llm.LLM_Lucas_CV.function;
+import llm.WeightedErrorSorter;
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
-import spawnn.ng.sorter.KangasSorter;
-import spawnn.ng.sorter.Sorter;
 import spawnn.som.decay.DecayFunction;
 import spawnn.som.decay.LinearDecay;
 import spawnn.som.decay.PowerDecay;
@@ -24,7 +23,7 @@ import spawnn.som.decay.PowerDecay;
 public class LLM_Individual implements GAIndividual<LLM_Individual> {
 	
 	
-	final static int nrNeurons = 25;
+	final static int nrNeurons = 3;
 	
 	final static Map<String,Object[]> params;
 		
@@ -32,15 +31,14 @@ public class LLM_Individual implements GAIndividual<LLM_Individual> {
 		params = new TreeMap<>();
 		
 		List<Object> list = new ArrayList<>();
-		for(int l : new int[]{ 20000, 40000, 80000, 120000 } )
+		for(int l : new int[]{ 100000 } )
 			list.add( l );
 		params.put("t_max", list.toArray(new Object[]{}));
 				
-		/*list = new ArrayList<>();
-		for(int l = 1; l <= nrNeurons; l++ )
+		list = new ArrayList<>();
+		for(double l = 0; l <= 1.01; l+=0.05 )
 			list.add( l );
-		params.put("l", list.toArray(new Object[]{}));*/
-		params.put("l", new Object[]{ 1, 2, 3, 4, 5 } );
+		params.put("w", list.toArray(new Object[]{}));
 		
 		list = new ArrayList<>();
 		for( LLMNG.mode mode : new LLMNG.mode[] { LLMNG.mode.fritzke, LLMNG.mode.martinetz } )
@@ -48,7 +46,7 @@ public class LLM_Individual implements GAIndividual<LLM_Individual> {
 		params.put("mode", list.toArray(new Object[]{}));
 		
 		list = new ArrayList<>();
-		for( double nb1Init : new double[] { 25, 22, 18, 14, 12, 10, 8, 6, 4, 2 } )
+		for( double nb1Init : new double[] { 1, 2, 3 } )
 			list.add(nb1Init);
 		params.put("nb1Init", list.toArray(new Object[]{}));
 		
@@ -78,7 +76,7 @@ public class LLM_Individual implements GAIndividual<LLM_Individual> {
 		params.put("lr1Func", list.toArray(new Object[]{}));
 		
 		list = new ArrayList<>();
-		for( double nb2Init : new double[] { 25, 22, 18, 14, 12, 10, 8, 6, 4, 2 } )
+		for( double nb2Init : new double[] { 1, 2, 3 } )
 			list.add(nb2Init);
 		params.put("nb2Init", list.toArray(new Object[]{}));
 		
@@ -111,7 +109,7 @@ public class LLM_Individual implements GAIndividual<LLM_Individual> {
 	public Map<String,Object> iParam;
 	private Random r = new Random();
 	
-	public LLM_Individual() {
+	public LLM_Individual() {	
 		iParam = new TreeMap<>();
 		for( Entry<String, Object[]> e : params.entrySet() ) {
 			Object[] o = e.getValue();
@@ -192,20 +190,20 @@ public class LLM_Individual implements GAIndividual<LLM_Individual> {
 		return iParam.toString();
 	}
 	
-	public Sorter<double[]> getSorter( int[] ga, int[] fa ) {
-		Dist<double[]> gDist = new EuclideanDist(ga);
-		Dist<double[]> fDist = new EuclideanDist(fa);
-		Sorter<double[]> sorter = new KangasSorter<>(gDist, fDist, (int)iParam.get("l") );
-		return sorter;
+	public LLMNG train(List<double[]> samples, int[] fa, int ta ) {
+		return train(samples,fa,ta,0);
 	}
-	
-	public LLMNG buildModel(List<double[]> samplesTrain, int[] ga, int[] fa, int ta ) {
+		
+	public LLMNG train(List<double[]> samples, int[] fa, int ta, int seed ) {
 		Random r1 = new Random(0);
+		
+		Dist<double[]> dist = new EuclideanDist(fa);
+		WeightedErrorSorter wes =  new WeightedErrorSorter(null, dist, samples, ta, (double)iParam.get("w"));
 		
 		List<double[]> neurons = new ArrayList<>();
 		while (neurons.size() < LLM_Individual.nrNeurons ) {
-			int idx = r1.nextInt(samplesTrain.size());
-			double[] d = samplesTrain.get(idx);
+			int idx = r1.nextInt(samples.size());
+			double[] d = samples.get(idx);
 			neurons.add( Arrays.copyOf(d,d.length) );
 		}
 		
@@ -214,13 +212,14 @@ public class LLM_Individual implements GAIndividual<LLM_Individual> {
 				getFunction( (double)iParam.get("lr1Init"), (double)iParam.get("lr1Final"), (function)iParam.get("lr1Func")),
 				getFunction( (double)iParam.get("nb2Init"), (double)iParam.get("nb2Final"), (function)iParam.get("nb2Func")),
 				getFunction( (double)iParam.get("lr2Init"), (double)iParam.get("lr2Final"), (function)iParam.get("lr2Func")),
-				getSorter(ga, fa), fa, 1);
+				wes, fa, 1);
 		llmng.aMode = (LLMNG.mode)iParam.get("mode");
+		wes.setSupervisedNet(llmng);
 
 		for (int t = 0; t < (int)iParam.get("t_max"); t++) {
-			int j = r1.nextInt( samplesTrain.size() );
-			double[] d = samplesTrain.get(j);
-			llmng.train((double) t / (int)iParam.get("t_max"), d, new double[] { d[ta] });
+			int j = r1.nextInt( samples.size() );
+			double[] d = samples.get(j);
+			llmng.train((double) t / (int)iParam.get("t_max"), d, new double[] { d[ta] } );
 		}
 		return llmng;
 	}

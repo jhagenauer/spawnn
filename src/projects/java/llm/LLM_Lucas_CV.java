@@ -41,7 +41,7 @@ public class LLM_Lucas_CV {
 	public static void main(String[] args) {
 
 		SpatialDataFrame sdf = DataUtils.readSpatialDataFrameFromShapefile(new File("data/lucas/lucas.shp"), true);
-		List<Entry<List<Integer>, List<Integer>>> cvList = SupervisedUtils.getCVList(10, 10, sdf.size());
+		List<Entry<List<Integer>, List<Integer>>> cvList = SupervisedUtils.getCVList(10, 1, sdf.size());
 
 		int[] fa = new int[] { 
 				2, // TLA
@@ -139,8 +139,8 @@ public class LLM_Lucas_CV {
 
 						List<double[]> neurons = new ArrayList<>();
 						while (neurons.size() < nrNeurons) {
-							int idx = r1.nextInt(sdf.samples.size());
-							double[] d = sdf.samples.get(idx);
+							int idx = r1.nextInt(samplesTrain.size());
+							double[] d = samplesTrain.get(idx);
 							neurons.add( Arrays.copyOf(d,d.length) );
 						}
 

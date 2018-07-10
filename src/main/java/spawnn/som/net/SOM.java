@@ -34,4 +34,8 @@ public class SOM implements UnsupervisedNet {
 			grid.setPrototypeAt( p, v );
 		}
 	}
+	
+	public Grid<double[]> getGrid() {
+		return grid;
+	}
 }

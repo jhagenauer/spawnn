@@ -14,6 +14,7 @@ import org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression;
 import org.apache.log4j.Logger;
 
 import rbf.Meuse;
+import spawnn.SupervisedNet;
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
 import spawnn.som.bmu.BmuGetter;
@@ -30,7 +31,7 @@ import spawnn.som.net.SOM;
 import spawnn.som.utils.SomUtils;
 import spawnn.utils.DataUtils;
 
-public class LLMSOM extends SOM {
+public class LLMSOM extends SOM implements SupervisedNet {
 
 	private static Logger log = Logger.getLogger(LLMSOM.class);
 
@@ -39,25 +40,13 @@ public class LLMSOM extends SOM {
 	
 	private KernelFunction nb2;
 	private DecayFunction lr2;
-	private int[] fa; //indices of independend variables
-	
-	@Deprecated
-	public LLMSOM( KernelFunction nb, DecayFunction lr, Grid<double[]> grid, BmuGetter<double[]> bmuGetter, int outDim) {
-		this(nb,lr,grid,bmuGetter,nb,lr,outDim);
-	}
-	
-	@Deprecated
-	public LLMSOM( KernelFunction nb, DecayFunction lr, Grid<double[]> grid, BmuGetter<double[]> bmuGetter, 
-			KernelFunction nb2, DecayFunction lr2,
-			int outDim) {
-		this(nb, lr, grid, bmuGetter, nb2, lr2, null, outDim);
-	}
-	
+	private int[] fa; //indices of independent variables
+		
 	public LLMSOM( KernelFunction nb, DecayFunction lr, Grid<double[]> grid, BmuGetter<double[]> bmuGetter, 
 			KernelFunction nb2, DecayFunction lr2,
 			int[] fa, int outDim) {
 		super(nb, lr, grid, bmuGetter);
-		Random r = new Random();
+		Random r = new Random(1);
 		
 		if( fa == null ) {
 			this.fa = new int[grid.getPrototypes().iterator().next().length];
@@ -102,6 +91,11 @@ public class LLMSOM extends SOM {
 			r[i] += output.get(gp)[i];
 
 		return r;
+	}
+	
+	@Override
+	public double[] getResponse(double[] x, double[] neuron) {
+		return getResponse(x, grid.getPositionOf(neuron) );
 	}
 
 	public void train(double t, double[] x, double[] desired) {
@@ -212,7 +206,13 @@ public class LLMSOM extends SOM {
 		Grid2D<double[]> grid = new Grid2DHex<double[]>(8, 6);
 		SomUtils.initRandom(grid, samples);
 		BmuGetter<double[]> bmuGetter = new DefaultBmuGetter<double[]>(dist);
-		LLMSOM llm = new LLMSOM(new GaussKernel(new LinearDecay(10, 1)), new LinearDecay(1, 0.0), grid, bmuGetter, 1);
+		
+		KernelFunction nb1 = new GaussKernel(new LinearDecay(10, 1));
+		DecayFunction lr1 = new LinearDecay(1, 0.0);
+		KernelFunction nb2 = new GaussKernel(new LinearDecay(10, 1));
+		DecayFunction lr2 = new LinearDecay(1, 0.0);
+		
+		LLMSOM llm = new LLMSOM(nb1,lr1, grid, bmuGetter, nb2, lr2, new int[]{0,1,2,3,4}, 1);
 
 		for (int t = 0; t < 100000; t++) {
 			int j = r.nextInt(samples.size());
