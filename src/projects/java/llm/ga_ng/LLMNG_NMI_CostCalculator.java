@@ -13,7 +13,7 @@ import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
 import spawnn.utils.ClusterValidation;
 
-public class LLM_CostCalculator implements CostCalculator<LLM_Individual> {
+public class LLMNG_NMI_CostCalculator implements CostCalculator<LLMNG_Individual> {
 	
 	List<double[]> samples;
 	Map<Integer,Set<double[]>> cl;
@@ -21,7 +21,7 @@ public class LLM_CostCalculator implements CostCalculator<LLM_Individual> {
 	int ta;
 	Dist<double[]> dist;
 	
-	public LLM_CostCalculator(List<double[]> samples, Map<Integer,Set<double[]>> cl, int[] fa, int ta) {
+	public LLMNG_NMI_CostCalculator(List<double[]> samples, Map<Integer,Set<double[]>> cl, int[] fa, int ta) {
 		this.samples = samples;
 		this.cl = cl;
 		this.fa = fa;
@@ -30,7 +30,7 @@ public class LLM_CostCalculator implements CostCalculator<LLM_Individual> {
 	}
 
 	@Override
-	public double getCost(LLM_Individual i) {
+	public double getCost(LLMNG_Individual i) {
 		
 		double sum = 0;
 		for( int j = 0; j < 100; j++ ) {
@@ -84,7 +84,7 @@ public class LLM_CostCalculator implements CostCalculator<LLM_Individual> {
 			double nmi = ClusterValidation.getNormalizedMutualInformation( clusters , cl.values() );
 			if( Double.isNaN(nmi)) {
 				nmi = 0;
-				System.err.println("NaN: "+clusters.size());
+				//System.err.println("NaN: "+clusters.size());
 			}
 			sum += 1.0 - nmi;
 			

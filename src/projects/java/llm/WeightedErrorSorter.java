@@ -25,6 +25,13 @@ public class WeightedErrorSorter implements Sorter<double[]> {
 
 	// Why not simply mapping solely by error?
 	// What is the advantage?
+	//		vs. k-means/ward + lm: cluster not only geo/var-defined but also relationship defined (depending on w, with w==1 --> llm ~ k-means/lm)
+	//		vs. GWR: no clusters
+	//		vs. GWR+ward: only coefficient-clusters
+	// no definition of distance, or distance matrix.. cluster not necessarily spatial.. but they are if spatial dependent and spatial non-stationary
+	// how does it work for a time series?
+	
+	// 
 	
 	// Features: Map coefficients, functional clusters
 	// weight == 1 -> standard sorter

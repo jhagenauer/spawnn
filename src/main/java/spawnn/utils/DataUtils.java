@@ -66,6 +66,13 @@ public class DataUtils {
 
 	private static Logger log = Logger.getLogger(DataUtils.class);
 
+	public static double[] truncate(double[] d, int[] fa) {
+		double[] nd = new double[fa.length];
+		for (int i = 0; i < fa.length; i++)
+			nd[i] = d[fa[i]];
+		return nd;
+	}
+
 	public static List<double[]> mappingToCluster(Map<double[], Set<double[]>> m) {
 		List<double[]> r = new ArrayList<double[]>();
 
@@ -90,13 +97,15 @@ public class DataUtils {
 		double left = 0;
 		for (int i = 0; i < l1.size(); i++) {
 			for (int j = 0; j < i; j++) {
-				left += Math.pow(a.dist(l1.get(i), l1.get(j)) - b.dist(l2.get(i), l2.get(j)), 2) / a.dist(l1.get(i), l1.get(j));
+				left += Math.pow(a.dist(l1.get(i), l1.get(j)) - b.dist(l2.get(i), l2.get(j)), 2)
+						/ a.dist(l1.get(i), l1.get(j));
 			}
 		}
 		return (1.0 / sum) * left;
 	}
 
-	public static List<double[]> getSammonsProjection(List<double[]> samples, Dist<double[]> a, Dist<double[]> b, int dim) {
+	public static List<double[]> getSammonsProjection(List<double[]> samples, Dist<double[]> a, Dist<double[]> b,
+			int dim) {
 		List<double[]> projected = new ArrayList<double[]>();
 
 		// init
@@ -190,7 +199,8 @@ public class DataUtils {
 		return tab;
 	}
 
-	public static int countCompactClusters(Collection<List<double[]>> cluster, List<Geometry> geoms, List<double[]> samples) {
+	public static int countCompactClusters(Collection<List<double[]>> cluster, List<Geometry> geoms,
+			List<double[]> samples) {
 		int sum = 0;
 		GeometryFactory gf = new GeometryFactory();
 
@@ -412,9 +422,11 @@ public class DataUtils {
 		writeShape(samples, geoms, names, null, fn);
 	}
 
-	public static void writeShape(List<double[]> samples, List<Geometry> geoms, String[] names, CoordinateReferenceSystem crs, String fn) {
+	public static void writeShape(List<double[]> samples, List<Geometry> geoms, String[] names,
+			CoordinateReferenceSystem crs, String fn) {
 		if (names != null && samples.get(0).length != names.length)
-			throw new RuntimeException("column-length does not match names-length: " + samples.get(0).length + "!=" + names.length);
+			throw new RuntimeException(
+					"column-length does not match names-length: " + samples.get(0).length + "!=" + names.length);
 
 		try {
 			SimpleFeatureTypeBuilder typeBuilder = new SimpleFeatureTypeBuilder();
@@ -460,7 +472,7 @@ public class DataUtils {
 				SimpleFeature sf = featureBuilder.buildFeature(null);
 				fc.add(sf);
 			}
-			
+
 			ShapefileDataStoreFactory dataStoreFactory = new ShapefileDataStoreFactory();
 
 			Map<String, Serializable> params = new HashMap<>();
@@ -562,7 +574,8 @@ public class DataUtils {
 
 	@Deprecated
 	public static List<double[]> readCSV(InputStream is, int[] ign) {
-		SpatialDataFrame sd = new SpatialDataFrame(); // actually, its not spatial data
+		SpatialDataFrame sd = new SpatialDataFrame(); // actually, its not
+														// spatial data
 		List<double[]> r = new ArrayList<double[]>();
 
 		Set<Integer> ignore = new HashSet<Integer>();
@@ -837,7 +850,8 @@ public class DataUtils {
 				if (ga.length == 2) {
 					c = new Coordinate(Double.parseDouble(data[ga[0]]), Double.parseDouble(data[ga[1]]));
 				} else if (ga.length == 3) {
-					c = new Coordinate(Double.parseDouble(data[ga[0]]), Double.parseDouble(data[ga[1]]), Double.parseDouble(data[ga[2]]));
+					c = new Coordinate(Double.parseDouble(data[ga[0]]), Double.parseDouble(data[ga[1]]),
+							Double.parseDouble(data[ga[2]]));
 				} else {
 					throw new RuntimeException("Cannot create point of length " + ga.length);
 				}
@@ -877,7 +891,8 @@ public class DataUtils {
 		DataStore dataStore = null;
 		try {
 			dataStore = new ShapefileDataStore((file).toURI().toURL());
-			FeatureSource<SimpleFeatureType, SimpleFeature> featureSource = dataStore.getFeatureSource(dataStore.getTypeNames()[0]);
+			FeatureSource<SimpleFeatureType, SimpleFeature> featureSource = dataStore
+					.getFeatureSource(dataStore.getTypeNames()[0]);
 			sd.crs = featureSource.getSchema().getCoordinateReferenceSystem();
 
 			Set<Integer> td = new HashSet<>();
@@ -1025,13 +1040,13 @@ public class DataUtils {
 		for (double[] d : samples)
 			d[idx] = (d[idx] - ss.getMean()) / ss.getStandardDeviation();
 	}
-	
-	public static void zScoreColumns(List<double[]> samplesTrain, List<double[]> samplesTest, int[] fa ) {
-		for( int idx : fa ) {
+
+	public static void zScoreColumns(List<double[]> samplesTrain, List<double[]> samplesTest, int[] fa) {
+		for (int idx : fa) {
 			SummaryStatistics ss = new SummaryStatistics();
 			for (double[] d : samplesTrain)
 				ss.addValue(d[idx]);
-			
+
 			double mean = ss.getMean();
 			double sd = ss.getStandardDeviation();
 			for (double[] d : samplesTrain)
@@ -1057,6 +1072,10 @@ public class DataUtils {
 	public enum Transform {
 		pow2, log, sqrt, div, zScore, scale01, pca
 	};
+	
+	public static void transform(List<double[]> samples, int fa, Transform t) {
+		transform(samples, new int[]{fa}, t);
+	}
 
 	public static void transform(List<double[]> samples, int[] fa, Transform t) {
 		SummaryStatistics[] ds = new SummaryStatistics[fa.length];
@@ -1219,7 +1238,9 @@ public class DataUtils {
 		return ssq;
 	}
 
-	// If one wants to perform PCA on a correlation matrix (instead of a covariance matrix), then columns of X should not only be centered, but standardized as well, i.e. divided by their standard deviations.
+	// If one wants to perform PCA on a correlation matrix (instead of a
+	// covariance matrix), then columns of X should not only be centered, but
+	// standardized as well, i.e. divided by their standard deviations.
 	public static List<double[]> reduceDimensionByPCA(List<double[]> samples, int nrComponents) {
 		RealMatrix matrix = new Array2DRowRealMatrix(samples.size(), samples.get(0).length);
 		for (int i = 0; i < samples.size(); i++)

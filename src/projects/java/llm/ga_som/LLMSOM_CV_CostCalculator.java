@@ -1,37 +1,36 @@
-package llm.ga_ng;
+package llm.ga_som;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 
 import ga.CostCalculator;
-import llm.LLMNG;
+import llm.LLMSOM;
 import nnet.SupervisedUtils;
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
 
-public class LLM_CV_CostCalculator implements CostCalculator<LLM_Individual> {
+public class LLMSOM_CV_CostCalculator implements CostCalculator<LLMSOM_Individual> {
 	
 	List<double[]> samples;
-	int[] fa;
+	int[] fa, ga;
 	int ta;
 	Dist<double[]> dist;
 	List<Entry<List<Integer>, List<Integer>>> cvList;
 	
-	public LLM_CV_CostCalculator(List<double[]> samples, Map<Integer,Set<double[]>> cl, int[] fa, int ta) {
+	public LLMSOM_CV_CostCalculator(List<double[]> samples, int[] fa, int[] ga, int ta) {
 		this.samples = samples;
 		this.cvList = SupervisedUtils.getCVList(10, 1, samples.size());
 		this.fa = fa;
+		this.ga = ga;
 		this.ta = ta;
 		this.dist = new EuclideanDist(fa);
 	}
 
 	@Override
-	public double getCost(LLM_Individual i) {
+	public double getCost(LLMSOM_Individual i) {
 		
 		SummaryStatistics ss = new SummaryStatistics();
 		for (final Entry<List<Integer>, List<Integer>> cvEntry : cvList) {
@@ -44,15 +43,21 @@ public class LLM_CV_CostCalculator implements CostCalculator<LLM_Individual> {
 			for( int k : cvEntry.getValue() ) 
 				samplesVal.add(samples.get(k));
 			
-			LLMNG llmng = i.train(samplesTrain, fa, ta, 0);
+			LLMSOM llmsom = i.train(samplesTrain, fa, ga, ta, 0);
 			
 			List<Double> response = new ArrayList<>();
 			for( double[] x : samplesVal )
-				response.add( llmng.present(x)[0] );
+				response.add( llmsom.present(x)[0] );
 			
-			double rmse = SupervisedUtils.getRMSE(response, samplesVal, ta);	
-			ss.addValue(rmse);
+			//double r2 = SupervisedUtils.getR2(response, samplesVal, ta);
+			//System.out.println(r2);
+			//ss.addValue(1.0-r2);
+			
+			ss.addValue(SupervisedUtils.getRMSE(response, samplesVal, ta));
 		}		
-		return ss.getMean();
+		double mean = ss.getMean();
+		if( Double.isNaN(mean) )
+			return Double.POSITIVE_INFINITY;
+		return mean;
 	}
 }

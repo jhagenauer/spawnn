@@ -70,7 +70,7 @@ public class LLMNG extends NG implements SupervisedNet {
 		return r;
 	}
 	
-	public mode aMode = mode.fritzke;
+	public mode aMode = mode.martinetz;
 	public boolean ignSupport = false; // intercept
 	
 	@Override
@@ -90,7 +90,7 @@ public class LLMNG extends NG implements SupervisedNet {
 			double adapt = e * Math.exp( -(double)k/l );
 			for( int i = 0; i < w.length; i++ ) 
 				w[i] +=  adapt * ( x[i] - w[i] );
-									
+							
 			// adapt output
 			double adapt2 = e2 * Math.exp( -(double)k/l2 );
 			double[] o = output.get(w); // output Vector
@@ -100,7 +100,7 @@ public class LLMNG extends NG implements SupervisedNet {
 				else if( aMode == mode.martinetz)
 					o[i] += adapt2 * (desired[i] - r[i]);
 			}
-							
+						
 			// adapt matrix
 			double[][] m = matrix.get(w);
 			for( int i = 0; i < m.length; i++ )  // row

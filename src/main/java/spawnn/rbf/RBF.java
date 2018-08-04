@@ -59,6 +59,7 @@ public class RBF implements SupervisedNet {
 		return response;
 	}
 	
+	@Override
 	public void train( double t, double[] x, double[] desired ) {
 		 train(x, desired);
 	}

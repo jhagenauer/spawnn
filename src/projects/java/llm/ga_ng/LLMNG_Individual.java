@@ -16,14 +16,16 @@ import llm.LLM_Lucas_CV.function;
 import llm.WeightedErrorSorter;
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
+import spawnn.ng.sorter.DefaultSorter;
+import spawnn.ng.sorter.Sorter;
 import spawnn.som.decay.DecayFunction;
 import spawnn.som.decay.LinearDecay;
 import spawnn.som.decay.PowerDecay;
 
-public class LLM_Individual implements GAIndividual<LLM_Individual> {
+public class LLMNG_Individual implements GAIndividual<LLMNG_Individual> {
 	
 	
-	final static int nrNeurons = 3;
+	public static int nrNeurons = 3;
 	
 	final static Map<String,Object[]> params;
 		
@@ -36,27 +38,25 @@ public class LLM_Individual implements GAIndividual<LLM_Individual> {
 		params.put("t_max", list.toArray(new Object[]{}));
 				
 		list = new ArrayList<>();
-		for(double l = 0; l <= 1.01; l+=0.05 )
-			list.add( l );
+		/*for(double l = 0; l <= 1.01; l+=0.05 )
+			list.add( l );*/
+		list.add( 1.0 );
 		params.put("w", list.toArray(new Object[]{}));
 		
-		list = new ArrayList<>();
-		for( LLMNG.mode mode : new LLMNG.mode[] { LLMNG.mode.fritzke, LLMNG.mode.martinetz } )
-			list.add(mode);
-		params.put("mode", list.toArray(new Object[]{}));
+		// quantization parameters:
 		
 		list = new ArrayList<>();
-		for( double nb1Init : new double[] { 1, 2, 3 } )
+		for( double nb1Init : new double[] { 0.2, 0.4, 0.6, 0.8, 1, 2, 3, 6, 9 } )
 			list.add(nb1Init);
 		params.put("nb1Init", list.toArray(new Object[]{}));
 		
 		list = new ArrayList<>();
-		for( double nb1Final : new double[] { 0.0001, 0.001, 0.01, 0.1 } )
+		for( double nb1Final : new double[] { 0.0, 0.00001, 0.0001, 0.001, 0.01, 0.1 } )
 			list.add(nb1Final);
 		params.put("nb1Final", list.toArray(new Object[]{}));
 
 		list = new ArrayList<>();
-		for( function nb1Func : new function[] { function.Power/*, function.Linear*/ } )
+		for( function nb1Func : new function[] { function.Power, function.Linear } )
 			list.add(nb1Func);
 		params.put("nb1Func", list.toArray(new Object[]{}));
 		
@@ -66,27 +66,34 @@ public class LLM_Individual implements GAIndividual<LLM_Individual> {
 		params.put("lr1Init", list.toArray(new Object[]{}));
 		
 		list = new ArrayList<>();
-		for( double lr1Final : new double[] { 0.00001, 0.0001, 0.001, 0.01, 0.1 } )
+		for( double lr1Final : new double[] { 0.0, 0.00001, 0.0001, 0.001, 0.01, 0.1 } )
 			list.add(lr1Final);
 		params.put("lr1Final", list.toArray(new Object[]{}));
 		
 		list = new ArrayList<>();
-		for( function lr1Func : new function[] { function.Power/*, function.Linear*/ } )
+		for( function lr1Func : new function[] { function.Power, function.Linear } )
 			list.add(lr1Func);
 		params.put("lr1Func", list.toArray(new Object[]{}));
 		
+		// coefficient parameters:
+		
 		list = new ArrayList<>();
-		for( double nb2Init : new double[] { 1, 2, 3 } )
+		for( LLMNG.mode mode : new LLMNG.mode[] { LLMNG.mode.fritzke, LLMNG.mode.martinetz } )
+			list.add(mode);
+		params.put("mode", list.toArray(new Object[]{}));
+		
+		list = new ArrayList<>();
+		for( double nb2Init : new double[] { 0.2, 0.4, 0.6, 0.8, 1, 2, 3, 6, 9 } )
 			list.add(nb2Init);
 		params.put("nb2Init", list.toArray(new Object[]{}));
 		
 		list = new ArrayList<>();
-		for( double nb2Final : new double[] { 0.00001, 0.0001, 0.001, 0.01, 0.1 } )
+		for( double nb2Final : new double[] { 0.0, 0.00001, 0.0001, 0.001, 0.01, 0.1 } )
 			list.add(nb2Final);
 		params.put("nb2Final", list.toArray(new Object[]{}));
 
 		list = new ArrayList<>();
-		for( function nb2Func : new function[] { function.Power/*, function.Linear*/ } )
+		for( function nb2Func : new function[] { function.Power, function.Linear } )
 			list.add(nb2Func);
 		params.put("nb2Func", list.toArray(new Object[]{}));
 		
@@ -96,12 +103,12 @@ public class LLM_Individual implements GAIndividual<LLM_Individual> {
 		params.put("lr2Init", list.toArray(new Object[]{}));
 		
 		list = new ArrayList<>();
-		for( double lr2Final : new double[] { 0.0001, 0.001, 0.01, 0.1 } )
+		for( double lr2Final : new double[] { 0.0, 0.00001, 0.0001, 0.001, 0.01, 0.1 } )
 			list.add(lr2Final);
 		params.put("lr2Final", list.toArray(new Object[]{}));
 		
 		list = new ArrayList<>();
-		for( function lr2Func : new function[] { function.Power/*, function.Linear*/ } )
+		for( function lr2Func : new function[] { function.Power, function.Linear } )
 			list.add(lr2Func);
 		params.put("lr2Func", list.toArray(new Object[]{}));
 	}
@@ -109,7 +116,7 @@ public class LLM_Individual implements GAIndividual<LLM_Individual> {
 	public Map<String,Object> iParam;
 	private Random r = new Random();
 	
-	public LLM_Individual() {	
+	public LLMNG_Individual() {	
 		iParam = new TreeMap<>();
 		for( Entry<String, Object[]> e : params.entrySet() ) {
 			Object[] o = e.getValue();
@@ -117,11 +124,11 @@ public class LLM_Individual implements GAIndividual<LLM_Individual> {
 		}
 	}
 
-	public LLM_Individual(Map<String, Object> nParam) {
+	public LLMNG_Individual(Map<String, Object> nParam) {
 		iParam = new TreeMap<>(nParam);
 	}
 	
-	public LLM_Individual(String s ) {
+	public LLMNG_Individual(String s ) {
 		iParam = new TreeMap<>();
 		s = s.replace("{", "");
 		s = s.replaceAll("}",  "");
@@ -151,7 +158,7 @@ public class LLM_Individual implements GAIndividual<LLM_Individual> {
 	}
 
 	@Override
-	public LLM_Individual mutate() {
+	public LLMNG_Individual mutate() {
 		int sum = 0;
 		for( Object[] o : params.values() )
 			sum += o.length;
@@ -171,11 +178,11 @@ public class LLM_Individual implements GAIndividual<LLM_Individual> {
 		Object[] v = params.get(toMut);
 		nParam.put(toMut, v[r.nextInt(v.length)]);
 		
-		return new LLM_Individual(nParam);
+		return new LLMNG_Individual(nParam);
 	}
 
 	@Override
-	public LLM_Individual recombine(LLM_Individual mother) {
+	public LLMNG_Individual recombine(LLMNG_Individual mother) {
 		Map<String,Object> nParam = new HashMap<>();
 		for( String key : mother.iParam.keySet() )
 			if( r.nextBoolean() )
@@ -183,7 +190,7 @@ public class LLM_Individual implements GAIndividual<LLM_Individual> {
 			else
 				nParam.put(key, iParam.get(key) );
 		
-		return new LLM_Individual(nParam);
+		return new LLMNG_Individual(nParam);
 	}
 	
 	public String toString() {
@@ -199,9 +206,10 @@ public class LLM_Individual implements GAIndividual<LLM_Individual> {
 		
 		Dist<double[]> dist = new EuclideanDist(fa);
 		WeightedErrorSorter wes =  new WeightedErrorSorter(null, dist, samples, ta, (double)iParam.get("w"));
+		//Sorter<double[]> wes = new DefaultSorter<>(dist);
 		
 		List<double[]> neurons = new ArrayList<>();
-		while (neurons.size() < LLM_Individual.nrNeurons ) {
+		while (neurons.size() < LLMNG_Individual.nrNeurons ) {
 			int idx = r1.nextInt(samples.size());
 			double[] d = samples.get(idx);
 			neurons.add( Arrays.copyOf(d,d.length) );
@@ -214,12 +222,14 @@ public class LLM_Individual implements GAIndividual<LLM_Individual> {
 				getFunction( (double)iParam.get("lr2Init"), (double)iParam.get("lr2Final"), (function)iParam.get("lr2Func")),
 				wes, fa, 1);
 		llmng.aMode = (LLMNG.mode)iParam.get("mode");
+		llmng.ignSupport = false;
 		wes.setSupervisedNet(llmng);
-
-		for (int t = 0; t < (int)iParam.get("t_max"); t++) {
+		
+		int t_max = (int)iParam.get("t_max");
+		for (int t = 0; t < t_max; t++) {
 			int j = r1.nextInt( samples.size() );
 			double[] d = samples.get(j);
-			llmng.train((double) t / (int)iParam.get("t_max"), d, new double[] { d[ta] } );
+			llmng.train((double) t / t_max, d, new double[] { d[ta] } );
 		}
 		return llmng;
 	}

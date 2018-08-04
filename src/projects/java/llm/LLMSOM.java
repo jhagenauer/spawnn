@@ -13,6 +13,7 @@ import org.apache.commons.math3.stat.correlation.SpearmansCorrelation;
 import org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression;
 import org.apache.log4j.Logger;
 
+import llm.LLMNG.mode;
 import rbf.Meuse;
 import spawnn.SupervisedNet;
 import spawnn.dist.Dist;
@@ -42,7 +43,8 @@ public class LLMSOM extends SOM implements SupervisedNet {
 	private DecayFunction lr2;
 	private int[] fa; //indices of independent variables
 		
-	public LLMSOM( KernelFunction nb, DecayFunction lr, Grid<double[]> grid, BmuGetter<double[]> bmuGetter, 
+	public LLMSOM( KernelFunction nb, DecayFunction lr, 
+			Grid<double[]> grid, BmuGetter<double[]> bmuGetter, 
 			KernelFunction nb2, DecayFunction lr2,
 			int[] fa, int outDim) {
 		super(nb, lr, grid, bmuGetter);
@@ -97,50 +99,38 @@ public class LLMSOM extends SOM implements SupervisedNet {
 	public double[] getResponse(double[] x, double[] neuron) {
 		return getResponse(x, grid.getPositionOf(neuron) );
 	}
+	
+	public mode aMode = mode.fritzke;
 
 	public void train(double t, double[] x, double[] desired) {
 		
 		GridPos bmuPos = bmuGetter.getBmuPos(x, grid);		
-		for (GridPos p : grid.getPositions()) { // training code from SOM-class, train(t, x)
-			double theta = nb.getValue(grid.dist(bmuPos, p), t);
-			double alpha = lr.getValue(t);
-			double adapt = theta * alpha;
+		for (GridPos p : grid.getPositions()) { 
+			double[] w = grid.getPrototypeAt(p);	
+			double[] r = getResponse(x, p); 
+			
+			double adapt = nb.getValue(grid.dist(bmuPos, p), t) * lr.getValue(t);
 
 			double[] v = grid.getPrototypeAt(p);
 			for (int j = 0; j < v.length; j++)
 				v[j] = v[j] + adapt * (x[j] - v[j]);
 			grid.setPrototypeAt(p, v);
-		}
-		
-		for (GridPos p : grid.getPositions()) {		
-			double theta = nb2.getValue(grid.dist(bmuPos, p), t);
-			double alpha = lr2.getValue(t);
-			double adapt = theta * alpha;
 			
-			//double[] r = getResponse(x, p); 
-			
+			// adapt output
+			double adapt2 = nb2.getValue(grid.dist(bmuPos, p), t) * lr2.getValue(t);
 			double[] o = output.get(p); // output Vector
 			for (int i = 0; i < desired.length; i++) {
-				o[i] += adapt * (desired[i] - o[i]);
-				//o[i] += adapt * (desired[i] - r[i]); // fritzke
+				if( aMode == mode.fritzke )
+					o[i] += adapt2 * (desired[i] - o[i]);
+				else if( aMode == mode.martinetz)
+					o[i] += adapt2 * (desired[i] - r[i]);
 			}
-			
-			double[] w = grid.getPrototypeAt(p);
-			
-			/*if( w[0] < 0.5 )
-				output.put(p, new double[]{10*w[0]});
-			else
-				output.put(p, new double[]{0.1*w[0]});*/
-			
-			double[] r = getResponse(x, p); 
-			
+						
 			// adapt matrix
-			
 			double[][] m = matrix.get(p);
-			
 			for (int i = 0; i < m.length; i++) // row
 				for (int j = 0; j < m[i].length; j++) // column
-					m[i][j] += adapt * (desired[i] - r[i]) * (x[fa[j]] - w[fa[j]]); // outer product
+					m[i][j] += adapt2 * (desired[i] - r[i]) * (x[fa[j]] - w[fa[j]]); // outer product
 		}
 	}
 	
