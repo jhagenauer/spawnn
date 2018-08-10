@@ -28,7 +28,7 @@ import spawnn.dist.EuclideanDist;
 import spawnn.som.bmu.BmuGetter;
 import spawnn.som.bmu.KangasBmuGetter;
 import spawnn.som.decay.LinearDecay;
-import spawnn.som.grid.Grid2D_Map;
+import spawnn.som.grid.Grid2D;
 import spawnn.som.grid.Grid2DHex;
 import spawnn.som.grid.GridPos;
 import spawnn.som.kernel.GaussKernel;
@@ -103,7 +103,7 @@ public class GeoSens {
 							@Override
 							public Result call() {
 	
-								Grid2D_Map<double[]> grid = new Grid2DHex<double[]>(dim_x, dim_y); 
+								Grid2D<double[]> grid = new Grid2DHex<double[]>(dim_x, dim_y); 
 								SomUtils.initRandom(grid, samples);
 								
 								BmuGetter<double[]> bmuGetter = new KangasBmuGetter<double[]>(geoDist, fDist, K);

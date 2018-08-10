@@ -1,18 +1,13 @@
 package spawnn.som.grid;
 
 import java.util.Collection;
-import java.util.Map;
 
 public class Grid2DToroid<T> extends Grid2D_Map<T> {
 	
 	public Grid2DToroid( int xSize, int ySize ) {
 		super(xSize, ySize);
 	}
-					
-	public Grid2DToroid(Map<GridPos, T> loadGrid) {
-		super(loadGrid);
-	}
-
+	
 	// in output space
 	public int dist( GridPos aPos, GridPos bPos ) {
 		int x0 = aPos.getPos(0);

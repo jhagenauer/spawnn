@@ -17,7 +17,7 @@ import spawnn.dist.EuclideanDist;
 import spawnn.som.bmu.BmuGetter;
 import spawnn.som.bmu.DefaultBmuGetter;
 import spawnn.som.decay.LinearDecay;
-import spawnn.som.grid.Grid2D_Map;
+import spawnn.som.grid.Grid2D;
 import spawnn.som.grid.Grid2DHex;
 import spawnn.som.grid.GridPos;
 import spawnn.som.kernel.GaussKernel;
@@ -68,7 +68,7 @@ public class SpDepSOM {
 
 		DataUtils.transform(samples, new int[] { 2 }, Transform.zScore);
 
-		Grid2D_Map<double[]> grid = new Grid2DHex<double[]>(X_DIM, Y_DIM);
+		Grid2D<double[]> grid = new Grid2DHex<double[]>(X_DIM, Y_DIM);
 		int maxDist = grid.getMaxDist();
 		SomUtils.initRandom(grid, samples);
 
@@ -81,7 +81,7 @@ public class SpDepSOM {
 			som.train((double)t/T_MAX, x);
 		}
 		
-		Grid2D_Map<double[]> teGrid = new Grid2DHex<double[]>(X_DIM, Y_DIM);
+		Grid2D<double[]> teGrid = new Grid2DHex<double[]>(X_DIM, Y_DIM);
 		for( GridPos p : teGrid.getPositions() )
 			teGrid.setPrototypeAt(p, new double[]{0});
 		

@@ -22,7 +22,7 @@ import spawnn.som.bmu.DefaultBmuGetter;
 import spawnn.som.decay.DecayFunction;
 import spawnn.som.decay.LinearDecay;
 import spawnn.som.grid.Grid;
-import spawnn.som.grid.Grid2D_Map;
+import spawnn.som.grid.Grid2D;
 import spawnn.som.grid.Grid2DHex;
 import spawnn.som.grid.GridPos;
 import spawnn.som.kernel.GaussKernel;
@@ -200,7 +200,7 @@ public class LLMSOM extends SOM implements SupervisedNet {
 		
 		log.debug("----------- LLMSOM: --------------");
 
-		Grid2D_Map<double[]> grid = new Grid2DHex<double[]>(8, 6);
+		Grid2D<double[]> grid = new Grid2DHex<double[]>(8, 6);
 		SomUtils.initRandom(grid, samples);
 		BmuGetter<double[]> bmuGetter = new DefaultBmuGetter<double[]>(dist);
 		

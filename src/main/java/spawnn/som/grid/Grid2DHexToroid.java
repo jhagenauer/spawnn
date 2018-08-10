@@ -2,7 +2,6 @@ package spawnn.som.grid;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Map;
 
 public class Grid2DHexToroid<T> extends Grid2DHex<T> {
 	
@@ -15,13 +14,7 @@ public class Grid2DHexToroid<T> extends Grid2DHex<T> {
 		this.xSize = xSize;
 		this.ySize = ySize;
 	}
-					
-	public Grid2DHexToroid(Map<GridPos, T> loadGrid) {
-		super(loadGrid);
-		this.xSize = getSizeOfDim(0);
-		this.ySize = getSizeOfDim(1);
-	}
-
+	
 	// in output space
 	@Override
 	public int dist( GridPos aPos, GridPos bPos ) {

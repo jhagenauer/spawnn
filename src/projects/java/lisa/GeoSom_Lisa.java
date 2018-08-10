@@ -21,7 +21,7 @@ import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
 import spawnn.som.bmu.KangasBmuGetter;
 import spawnn.som.decay.LinearDecay;
-import spawnn.som.grid.Grid2D_Map;
+import spawnn.som.grid.Grid2D;
 import spawnn.som.grid.Grid2DHex;
 import spawnn.som.grid.GridPos;
 import spawnn.som.kernel.GaussKernel;
@@ -137,7 +137,7 @@ public class GeoSom_Lisa {
 		}
 		// -----------------------------------------------------------------------------------------
 		for( int k = 1; k <= 7; k++ ) {
-			Grid2D_Map<double[]> grid = new Grid2DHex<double[]>(12, 8);
+			Grid2D<double[]> grid = new Grid2DHex<double[]>(12, 8);
 			SomUtils.initRandom(grid, samples);
 			
 			KangasBmuGetter<double[]> bg = new KangasBmuGetter<double[]>(gDist, fDist, k);

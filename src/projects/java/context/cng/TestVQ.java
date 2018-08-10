@@ -19,7 +19,7 @@ import spawnn.ng.NG;
 import spawnn.ng.sorter.KangasSorter;
 import spawnn.ng.sorter.Sorter;
 import spawnn.som.decay.LinearDecay;
-import spawnn.som.grid.Grid2D_Map;
+import spawnn.som.grid.Grid2D;
 import spawnn.som.grid.Grid2DHex;
 import spawnn.som.kernel.GaussKernel;
 import spawnn.som.net.SOM;
@@ -140,7 +140,7 @@ public class TestVQ {
 
 					@Override
 					public double[] call() throws Exception {
-						Grid2D_Map<double[]> grid = new Grid2DHex<double[]>(5, 5);
+						Grid2D<double[]> grid = new Grid2DHex<double[]>(5, 5);
 																		
 						//grid.initLinear(samples, true);
 						spawnn.som.bmu.BmuGetter<double[]> bmuGetter = new spawnn.som.bmu.KangasBmuGetter( geoDist, fDist, K);

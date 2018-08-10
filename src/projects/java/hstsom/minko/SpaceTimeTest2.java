@@ -23,8 +23,9 @@ import spawnn.som.bmu.BmuGetter;
 import spawnn.som.bmu.DefaultBmuGetter;
 import spawnn.som.bmu.KangasBmuGetter;
 import spawnn.som.decay.LinearDecay;
-import spawnn.som.grid.Grid2D_Map;
+import spawnn.som.grid.Grid2D;
 import spawnn.som.grid.Grid2DHex;
+import spawnn.som.grid.Grid2D_Map;
 import spawnn.som.grid.GridPos;
 import spawnn.som.kernel.GaussKernel;
 import spawnn.som.net.SOM;
@@ -92,10 +93,10 @@ public class SpaceTimeTest2 {
 		}
 				
 		// geo som
-		Grid2D_Map<double[]> gGrid;
+		Grid2D<double[]> gGrid;
 		BmuGetter<double[]> gBg;
 		{
-			Grid2D_Map<double[]> grid = new Grid2DHex<double[]>(GEO_DIM_X, GEO_DIM_Y );
+			Grid2D<double[]> grid = new Grid2DHex<double[]>(GEO_DIM_X, GEO_DIM_Y );
 			SomUtils.initRandom(grid, samples);
 									
 			BmuGetter<double[]> bmuGetter = new KangasBmuGetter<double[]>( geoDist, fDist, GEO_RADIUS );
@@ -166,10 +167,10 @@ public class SpaceTimeTest2 {
 		}
 								
 		// temp som
-		Grid2D_Map<double[]> tGrid;
+		Grid2D<double[]> tGrid;
 		BmuGetter<double[]> tBg;
 		{
-			Grid2D_Map<double[]> grid = new Grid2DHex<double[]>(TIME_DIM_X, TIME_DIM_Y );
+			Grid2D<double[]> grid = new Grid2DHex<double[]>(TIME_DIM_X, TIME_DIM_Y );
 			SomUtils.initRandom(grid, samples);
 						
 			// TODO: Wichtig: Zeit ist unidirektional, dass wird hier nicht berücksichtigt
@@ -260,7 +261,7 @@ public class SpaceTimeTest2 {
 		
 		// h som
 		{	
-			Grid2D_Map<double[]> grid = new Grid2DHex<double[]>( 8, 8 );
+			Grid2D<double[]> grid = new Grid2DHex<double[]>( 8, 8 );
 			SomUtils.initRandom(grid, l);
 								
 			//BmuGetter<double[]> bmuGetter = new DefaultBmuGetter<double[]>( new SGridDist<double[]>(gGrid, tGrid) );

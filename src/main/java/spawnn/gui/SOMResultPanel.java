@@ -37,7 +37,7 @@ import spawnn.gui.DistanceDialog.DistMode;
 import spawnn.gui.DistanceDialog.StatMode;
 import spawnn.gui.GraphPanel.Layout;
 import spawnn.gui.NeuronVisPanel.ImageMode;
-import spawnn.som.grid.Grid2D_Map;
+import spawnn.som.grid.Grid2D;
 import spawnn.som.grid.Grid2DHex;
 import spawnn.som.grid.GridPos;
 import spawnn.som.utils.SomToolboxUtils;
@@ -59,7 +59,7 @@ public class SOMResultPanel extends ResultPanel<GridPos> {
 	private GraphPanel graphPanel;
 	private JPanel cards;
 
-	private Grid2D_Map<double[]> grid;
+	private Grid2D<double[]> grid;
 	private Graph<double[], double[]> graph;
 
 	private List<double[]> samples;
@@ -69,7 +69,7 @@ public class SOMResultPanel extends ResultPanel<GridPos> {
 		
 	private Object currentGridComboBoxItem;
 
-	public SOMResultPanel(Frame parent, SpatialDataFrame orig, List<double[]> samples, Map<GridPos, Set<double[]>> bmus, Grid2D_Map<double[]> grid, Dist<double[]> fDist, Dist<double[]> gDist, int[] fa, int[] ga, boolean wmc) {
+	public SOMResultPanel(Frame parent, SpatialDataFrame orig, List<double[]> samples, Map<GridPos, Set<double[]>> bmus, Grid2D<double[]> grid, Dist<double[]> fDist, Dist<double[]> gDist, int[] fa, int[] ga, boolean wmc) {
 		super(parent,orig,samples,bmus,new ArrayList<GridPos>(grid.getPositions()),fDist,gDist);
 		String st = "Quantization error: "+SomUtils.getMeanQuantError(grid, bmus, fDist);
 		if( gDist != null )
@@ -157,9 +157,9 @@ public class SOMResultPanel extends ResultPanel<GridPos> {
 		}
 
 		class NSL implements NeuronSelectedListener<double[]> {
-			Grid2D_Map<double[]> grid;
+			Grid2D<double[]> grid;
 
-			NSL(Grid2D_Map<double[]> grid) {
+			NSL(Grid2D<double[]> grid) {
 				this.grid = grid;
 			}
 

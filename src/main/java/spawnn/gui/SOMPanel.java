@@ -12,6 +12,7 @@ import spawnn.som.decay.DecayFunction;
 import spawnn.som.decay.LinearDecay;
 import spawnn.som.decay.PowerDecay;
 import spawnn.som.grid.Grid2D_Map;
+import spawnn.som.grid.Grid2D;
 import spawnn.som.grid.Grid2DHex;
 import spawnn.som.grid.Grid2DHexToroid;
 import spawnn.som.grid.Grid2DToroid;
@@ -129,7 +130,7 @@ public class SOMPanel extends JPanel {
 			return new GaussKernel( new LinearDecay(init, fin));
 	}
 	
-	public Grid2D_Map<double[]> getGrid() {
+	public Grid2D<double[]> getGrid() {
 		int xDim = Integer.parseInt( textField.getText() );
 		int yDim = Integer.parseInt( textField_1.getText() );
 		if( comboBox_1.getSelectedItem() == type.Regular )

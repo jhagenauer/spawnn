@@ -31,8 +31,9 @@ import spawnn.ng.sorter.KangasSorter;
 import spawnn.ng.sorter.SorterWMC;
 import spawnn.ng.utils.NGUtils;
 import spawnn.som.decay.LinearDecay;
-import spawnn.som.grid.Grid2D_Map;
+import spawnn.som.grid.Grid2D;
 import spawnn.som.grid.Grid2DHex;
+import spawnn.som.grid.Grid2D_Map;
 import spawnn.som.grid.GridPos;
 import spawnn.som.kernel.GaussKernel;
 import spawnn.som.net.SOM;
@@ -182,7 +183,7 @@ public class SpaceTestDiscrete2 {
 					public double[] call() throws Exception {
 
 						spawnn.som.bmu.BmuGetter<double[]> bg = new spawnn.som.bmu.KangasBmuGetter<double[]>(gDist, fDist, radius);
-						Grid2D_Map<double[]> grid = new Grid2DHex<double[]>(10, 10);
+						Grid2D<double[]> grid = new Grid2DHex<double[]>(10, 10);
 						SomUtils.initRandom(grid, samples);
 
 						SOM som = new SOM(new GaussKernel(new LinearDecay(10, 1)), new LinearDecay(1.0, 0.0), grid, bg);

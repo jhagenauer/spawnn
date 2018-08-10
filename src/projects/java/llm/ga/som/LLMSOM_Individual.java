@@ -17,9 +17,8 @@ import spawnn.dist.EuclideanDist;
 import spawnn.som.bmu.BmuGetter;
 import spawnn.som.bmu.KangasBmuGetter;
 import spawnn.som.decay.LinearDecay;
-import spawnn.som.grid.Grid2D_Map;
+import spawnn.som.grid.Grid2D;
 import spawnn.som.grid.Grid2DHex;
-import spawnn.som.grid.Grid2DHexToroid;
 import spawnn.som.grid.GridPos;
 import spawnn.som.kernel.GaussKernel;
 
@@ -40,7 +39,7 @@ public class LLMSOM_Individual implements GAIndividual<LLMSOM_Individual> {
 			list.add( l );
 		params.put("w", list.toArray(new Object[]{}));
 		
-		params.put("type", new String[]{"normal"});
+		params.put("type", new Object[]{"normal"});
 		
 		// som parameters:
 		
@@ -116,7 +115,7 @@ public class LLMSOM_Individual implements GAIndividual<LLMSOM_Individual> {
 		iParam = new TreeMap<>();
 		s = s.replace("{", "");
 		s = s.replaceAll("}",  "");
-		
+				
 		StringTokenizer st = new StringTokenizer(s, ",");
 		while( st.hasMoreTokens() ) {
 			String nt = st.nextToken();
@@ -135,13 +134,13 @@ public class LLMSOM_Individual implements GAIndividual<LLMSOM_Individual> {
 				continue;
 			} catch (IllegalArgumentException e) { }
 			try {
-				iParam.put(sp[0], Boolean.valueOf(sp[1]) );
+				iParam.put(sp[0], Boolean.parseBoolean( sp[1]) );
 				continue;
-			} catch (IllegalArgumentException e) { }
-			try {
+			} catch (IllegalArgumentException e) { }	
+			/*try {
 				iParam.put(sp[0], String.valueOf(sp[1]) );
 				continue;
-			} catch (IllegalArgumentException e) { }
+			} catch (IllegalArgumentException e) { }*/
 		}
 	}
 
@@ -193,13 +192,8 @@ public class LLMSOM_Individual implements GAIndividual<LLMSOM_Individual> {
 		Random r1 = new Random(seed);
 		BmuGetter<double[]> bg = new KangasBmuGetter<>(new EuclideanDist(ga), new EuclideanDist(fa), (int)(double)iParam.get("w") );
 		//BmuGetter<double[]> bg = new DefaultBmuGetter<>(new EuclideanDist(fa));
-		
-		Grid2D_Map<double[]> grid;
-		if( ((String)iParam.get("type")).equals("toroid") )
-			grid = new Grid2DHexToroid<>(18, 12);
-		else
-			grid = new Grid2DHex<>(18, 12);
-				
+
+		Grid2D<double[]> grid = new Grid2DHex<>(18, 12);			
 		for (GridPos p : grid.getPositions()) {
 			double[] d = samples.get(r1.nextInt(samples.size()));
 			grid.setPrototypeAt(p, Arrays.copyOf(d, d.length));

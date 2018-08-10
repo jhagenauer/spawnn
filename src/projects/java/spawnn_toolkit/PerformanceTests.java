@@ -36,7 +36,7 @@ import spawnn.som.bmu.SorterBmuGetter;
 import spawnn.som.bmu.SorterBmuGetterContext;
 import spawnn.som.decay.DecayFunction;
 import spawnn.som.decay.LinearDecay;
-import spawnn.som.grid.Grid2D_Map;
+import spawnn.som.grid.Grid2D;
 import spawnn.som.grid.Grid2DHex;
 import spawnn.som.grid.GridPos;
 import spawnn.som.kernel.GaussKernel;
@@ -239,7 +239,7 @@ public class PerformanceTests {
 		Dist<double[]> fDist = new EuclideanDist(fa);
 
 		int t_max = 100000;
-		Grid2D_Map<double[]> grid = new Grid2DHex<double[]>(xDim, yDim);
+		Grid2D<double[]> grid = new Grid2DHex<double[]>(xDim, yDim);
 		SomUtils.initRandom(grid, samples);
 
 		KernelFunction kf = new GaussKernel(new LinearDecay(10, 1));

@@ -16,7 +16,6 @@ import java.awt.image.ColorConvertOp;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
@@ -47,7 +46,6 @@ import org.geotools.styling.SLD;
 import org.geotools.styling.StyleBuilder;
 import org.jdom.Document;
 import org.jdom.Element;
-import org.jdom.input.SAXBuilder;
 import org.jdom.output.Format;
 import org.jdom.output.XMLOutputter;
 
@@ -66,7 +64,7 @@ import imageware.ImageWare;
 import spawnn.dist.Dist;
 import spawnn.som.bmu.BmuGetter;
 import spawnn.som.grid.Grid;
-import spawnn.som.grid.Grid2D_Map;
+import spawnn.som.grid.Grid2D;
 import spawnn.som.grid.Grid2DHex;
 import spawnn.som.grid.Grid2DHexToroid;
 import spawnn.som.grid.Grid2DToroid;
@@ -133,7 +131,7 @@ public class SomUtils {
 		return entropy;
 	}
 
-	public static Collection<Set<GridPos>> getWatershedHex(int mi, int ma, double smooth, Grid2D_Map<double[]> grid, Dist<double[]> d, boolean debug) {
+	public static Collection<Set<GridPos>> getWatershedHex(int mi, int ma, double smooth, Grid2D<double[]> grid, Dist<double[]> d, boolean debug) {
 		double[][] umatrix = getNormedMatrix(getUMatrix(grid, d));
 
 		int xDiff = 12;
@@ -235,7 +233,7 @@ public class SomUtils {
 	}
 
 	// dist required for u-matrix, TODO: make it useable for any matrix (d or u), Problem: hexmatrix is not adequatly treated by the method
-	public static int[][] getWatershed(int mi, int ma, double smooth, Grid2D_Map<double[]> grid, Dist<double[]> d, boolean debug) {
+	public static int[][] getWatershed(int mi, int ma, double smooth, Grid2D<double[]> grid, Dist<double[]> d, boolean debug) {
 		double[][] umatrix = getUMatrix(grid, d);
 		double max = Double.NEGATIVE_INFINITY;
 		double min = Double.POSITIVE_INFINITY;
@@ -385,7 +383,7 @@ public class SomUtils {
 		return r;
 	}
 
-	public static void printClassDist(Collection<Set<double[]>> cluster, Map<GridPos, Set<double[]>> mapping, Grid2D_Map<double[]> grid, String fn) {
+	public static void printClassDist(Collection<Set<double[]>> cluster, Map<GridPos, Set<double[]>> mapping, Grid2D<double[]> grid, String fn) {
 
 		// assign to each sample a cluster-number
 		Map<double[], Integer> classMap = new HashMap<double[], Integer>();
@@ -402,7 +400,7 @@ public class SomUtils {
 		}
 	}
 	
-	public static void printClassDist(Map<double[], Integer> classes, Map<GridPos, Set<double[]>> mapping, Grid2D_Map<double[]> grid, String fn) {
+	public static void printClassDist(Map<double[], Integer> classes, Map<GridPos, Set<double[]>> mapping, Grid2D<double[]> grid, String fn) {
 		try {
 			printClassDist(classes, mapping, grid, new FileOutputStream(fn));
 		} catch (FileNotFoundException e) {
@@ -411,7 +409,7 @@ public class SomUtils {
 	}
 
 	@Deprecated
-	public static void printClassDist(Map<double[], Integer> classes, Map<GridPos, Set<double[]>> mapping, Grid2D_Map<double[]> grid, OutputStream os) {
+	public static void printClassDist(Map<double[], Integer> classes, Map<GridPos, Set<double[]>> mapping, Grid2D<double[]> grid, OutputStream os) {
 		if (grid instanceof Grid2DHex)
 			printImage(getHexClassDistImage(getClassDist(classes, mapping, grid), (Grid2DHex<double[]>) grid, 5), os);
 		else
@@ -437,7 +435,7 @@ public class SomUtils {
 		return pcc;
 	}
 
-	public static BufferedImage getClassDistImage(Map<GridPos, Map<Integer, Integer>> pcc, Grid2D_Map<double[]> grid, int cellSize) {
+	public static BufferedImage getClassDistImage(Map<GridPos, Map<Integer, Integer>> pcc, Grid2D<double[]> grid, int cellSize) {
 		int xDim = grid.getSizeOfDim(0);
 		int yDim = grid.getSizeOfDim(1);
 
@@ -546,7 +544,7 @@ public class SomUtils {
 		return bufImg;
 	}
 
-	public static void printDMatrix(Grid2D_Map<double[]> grid, Dist<double[]> d, String fn) {
+	public static void printDMatrix(Grid2D<double[]> grid, Dist<double[]> d, String fn) {
 		try {
 			printDMatrix(grid, d, new FileOutputStream(fn));
 		} catch (FileNotFoundException e) {
@@ -554,7 +552,7 @@ public class SomUtils {
 		}
 	}
 
-	public static void printDMatrix(Grid2D_Map<double[]> grid, Dist<double[]> d, ColorBrewer cm, OutputStream os) {
+	public static void printDMatrix(Grid2D<double[]> grid, Dist<double[]> d, ColorBrewer cm, OutputStream os) {
 		double[][] dmatrix = getDMatrix(grid, d);
 		if (grid instanceof Grid2DHex)
 			printImage(getHexMatrixImage(dmatrix, 5, cm, HEX_NORMAL), os);
@@ -562,7 +560,7 @@ public class SomUtils {
 			printImage(getRectMatrixImage(dmatrix, 50, cm), os);
 	}
 
-	public static void printDMatrix(Grid2D_Map<double[]> grid, Dist<double[]> d, OutputStream os) {
+	public static void printDMatrix(Grid2D<double[]> grid, Dist<double[]> d, OutputStream os) {
 		printDMatrix(grid, d, ColorBrewer.Greys, os);
 	}
 
@@ -585,7 +583,7 @@ public class SomUtils {
 		return mNorm;
 	}
 
-	public static void printComponentPlane(Grid2D_Map<double[]> grid, int idx, String fn) {
+	public static void printComponentPlane(Grid2D<double[]> grid, int idx, String fn) {
 		try {
 			printComponentPlane(grid, idx, new FileOutputStream(fn));
 		} catch (FileNotFoundException e) {
@@ -593,7 +591,7 @@ public class SomUtils {
 		}
 	}
 
-	public static void printComponentPlane(Grid2D_Map<double[]> grid, int idx, ColorBrewer colorMode, OutputStream os) {
+	public static void printComponentPlane(Grid2D<double[]> grid, int idx, ColorBrewer colorMode, OutputStream os) {
 		if (grid instanceof Grid2DHex)
 			printImage(getHexMatrixImage((Grid2DHex<double[]>) grid, 5, colorMode, HEX_NORMAL, idx), os);
 		else {
@@ -602,11 +600,11 @@ public class SomUtils {
 		}
 	}
 
-	public static void printComponentPlane(Grid2D_Map<double[]> grid, int idx, OutputStream os) {
+	public static void printComponentPlane(Grid2D<double[]> grid, int idx, OutputStream os) {
 		printComponentPlane(grid, idx, ColorBrewer.Greys, os);
 	}
 
-	public static void printUMatrix(Grid2D_Map<double[]> grid, Dist<double[]> d, String file) {
+	public static void printUMatrix(Grid2D<double[]> grid, Dist<double[]> d, String file) {
 		try {
 			printUMatrix(grid, d, new FileOutputStream(file));
 		} catch (FileNotFoundException e) {
@@ -614,7 +612,7 @@ public class SomUtils {
 		}
 	}
 
-	public static void printUMatrix(Grid2D_Map<double[]> grid, Dist<double[]> d, OutputStream os) {
+	public static void printUMatrix(Grid2D<double[]> grid, Dist<double[]> d, OutputStream os) {
 		double[][] umatrix = getUMatrix(grid, d);
 
 		if (grid instanceof Grid2DHex)
@@ -623,12 +621,12 @@ public class SomUtils {
 			printImage(getRectMatrixImage(umatrix, (int) (100 * grid.size() / (grid.size() * 2)), ColorBrewer.Greys), os);
 	}
 
-	public static void printHexUMat(Grid2D_Map<double[]> grid, Dist<double[]> d, ColorBrewer colorScale, OutputStream os) {
+	public static void printHexUMat(Grid2D<double[]> grid, Dist<double[]> d, ColorBrewer colorScale, OutputStream os) {
 		double[][] umatrix = getUMatrix(grid, d);
 		printImage(getHexMatrixImage(umatrix, 5, colorScale, HEX_UMAT), os);
 	}
 
-	public static void printUMatrix(Grid2D_Map<double[]> grid, Dist<double[]> d, ColorBrewer cm, boolean rectType, String fn) {
+	public static void printUMatrix(Grid2D<double[]> grid, Dist<double[]> d, ColorBrewer cm, boolean rectType, String fn) {
 		double[][] umatrix = getUMatrix(grid, d);
 
 		try {
@@ -831,7 +829,7 @@ public class SomUtils {
 		return bufImg;
 	}
 
-	public static double[][] getUMatrix(Grid2D_Map<double[]> grid, Dist<double[]> d) {
+	public static double[][] getUMatrix(Grid2D<double[]> grid, Dist<double[]> d) {
 		double[][] umatrix = new double[grid.getSizeOfDim(0) * 2 - 1][grid.getSizeOfDim(1) * 2 - 1];
 
 		for (GridPos p : grid.getPositions()) {
@@ -882,7 +880,7 @@ public class SomUtils {
 		return umatrix;
 	}
 
-	public static double[][] getDMatrix(Grid2D_Map<double[]> grid, Dist<double[]> d) {
+	public static double[][] getDMatrix(Grid2D<double[]> grid, Dist<double[]> d) {
 
 		double[][] dmatrix = new double[grid.getSizeOfDim(0)][grid.getSizeOfDim(1)];
 
@@ -899,7 +897,7 @@ public class SomUtils {
 		return dmatrix;
 	}
 
-	public static double[][] getComponentMatrix(Grid2D_Map<double[]> grid, int idx) {
+	public static double[][] getComponentMatrix(Grid2D<double[]> grid, int idx) {
 		double[][] componentMatrix = new double[grid.getSizeOfDim(0)][grid.getSizeOfDim(1)];
 		for (GridPos p : grid.getPositions()) {
 			int i = p.getPos(0);
@@ -910,7 +908,7 @@ public class SomUtils {
 		return componentMatrix;
 	}
 
-	public static void printPositions(Grid2D_Map<double[]> grid, int[] geocoords, String fn, int CELLSIZE) {
+	public static void printPositions(Grid2D<double[]> grid, int[] geocoords, String fn, int CELLSIZE) {
 		try {
 			printPositions(grid, geocoords, new FileOutputStream(fn), CELLSIZE);
 		} catch (FileNotFoundException e) {
@@ -918,7 +916,7 @@ public class SomUtils {
 		}
 	}
 
-	public static void printPositions(Grid2D_Map<double[]> grid, int[] geocoords, OutputStream os, int CELLSIZE) {
+	public static void printPositions(Grid2D<double[]> grid, int[] geocoords, OutputStream os, int CELLSIZE) {
 
 		BufferedImage bufImg = new BufferedImage(grid.getSizeOfDim(0) * CELLSIZE, grid.getSizeOfDim(1) * CELLSIZE, BufferedImage.TYPE_INT_ARGB);
 		Graphics2D g2 = bufImg.createGraphics();
@@ -961,7 +959,7 @@ public class SomUtils {
 		}
 	}
 
-	public static void printBacaoMap(Map<GridPos, Set<double[]>> mapping, Dist<double[]> d, Grid2D_Map<double[]> grid, int[] geocoords, OutputStream os) {
+	public static void printBacaoMap(Map<GridPos, Set<double[]>> mapping, Dist<double[]> d, Grid2D<double[]> grid, int[] geocoords, OutputStream os) {
 		int xScale = 1000;
 		int yScale = 800;
 		GeometryFactory gf = new GeometryFactory();
@@ -1081,7 +1079,7 @@ public class SomUtils {
 	}
 
 	// TODO Rework plz
-	public static void printClusters(Collection<Set<GridPos>> clusters, Grid2D_Map<double[]> grid, OutputStream os) {
+	public static void printClusters(Collection<Set<GridPos>> clusters, Grid2D<double[]> grid, OutputStream os) {
 		int CELL_SIZE = 50;
 		int xDim = grid.getSizeOfDim(0);
 		int yDim = grid.getSizeOfDim(1);
@@ -1280,53 +1278,6 @@ public class SomUtils {
 			serializer.output(doc, os);
 		} catch (IOException e) {
 			System.err.println(e);
-		}
-	}
-
-	public static Grid2D_Map<double[]> loadGrid(InputStream is) {
-		HashMap<GridPos, double[]> map = null;
-		boolean toroid = false, hex = false;
-
-		try {
-			SAXBuilder builder = new SAXBuilder();
-			Document doc = builder.build(is);
-			Element root = doc.getRootElement();
-			map = new HashMap<GridPos, double[]>();
-
-			hex = Boolean.parseBoolean(root.getAttribute("hex").getValue());
-			toroid = Boolean.parseBoolean(root.getAttribute("toroid").getValue());
-
-			for (Object o1 : root.getChild("units").getChildren()) {
-				Element e = (Element) o1;
-
-				GridPos p = new GridPos(new int[] { Integer.parseInt(e.getAttribute("x").getValue()), Integer.parseInt(e.getAttribute("y").getValue()) });
-
-				List<Double> v = new ArrayList<Double>();
-				for (Object o2 : e.getChild("vector").getChildren()) {
-					Element e2 = (Element) o2;
-					v.add(Double.parseDouble(e2.getText()));
-				}
-
-				double[] va = new double[v.size()];
-				for (int i = 0; i < va.length; i++)
-					va[i] = v.get(i);
-
-				map.put(p, va);
-			}
-		} catch (Exception ex) {
-			ex.printStackTrace();
-		}
-
-		if (hex) {
-			if (toroid)
-				return new Grid2DHexToroid<>(map);
-			else
-				return new Grid2DHex<>(map);
-		} else {
-			if (toroid)
-				return new Grid2DToroid<>(map);
-			else
-				return new Grid2D_Map<>(map);
 		}
 	}
 

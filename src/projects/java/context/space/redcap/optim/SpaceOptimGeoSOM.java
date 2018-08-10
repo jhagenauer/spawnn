@@ -20,7 +20,7 @@ import context.space.SpaceTest;
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
 import spawnn.som.decay.LinearDecay;
-import spawnn.som.grid.Grid2D_Map;
+import spawnn.som.grid.Grid2D;
 import spawnn.som.grid.Grid2DHex;
 import spawnn.som.grid.GridPos;
 import spawnn.som.kernel.GaussKernel;
@@ -114,7 +114,7 @@ public class SpaceOptimGeoSOM {
 					for( int run = 0; run < runs; run++ ) {
 											
 						spawnn.som.bmu.BmuGetter<double[]> bg = new spawnn.som.bmu.KangasBmuGetter<double[]>( normedGDist, fDist, K );
-						Grid2D_Map<double[]> grid = new Grid2DHex<double[]>( 3,3 );
+						Grid2D<double[]> grid = new Grid2DHex<double[]>( 3,3 );
 						SomUtils.initRandom(grid, samples);
 								
 						SOM som = new SOM( new GaussKernel( new LinearDecay(grid.getMaxDist(), 1)), new LinearDecay(1.0,0.0), grid, bg );

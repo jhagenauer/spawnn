@@ -1,18 +1,13 @@
 package spawnn.som.grid;
 
 import java.util.Collection;
-import java.util.Map;
 
-public class Grid2DHex<T> extends Grid2D_Map<T> {
+public class Grid2DHex<T> extends Grid2D_Array<T> {
 	
 	public Grid2DHex( int xSize, int ySize ) {
 		super( xSize, ySize );
 	}
-	
-	public Grid2DHex(Map<GridPos,T> loadGrid) {
-		super(loadGrid);
-	}
-	
+		
 	@Override
 	public int dist( GridPos aPos, GridPos bPos ) { 
 		int x0 = aPos.getPos(0);

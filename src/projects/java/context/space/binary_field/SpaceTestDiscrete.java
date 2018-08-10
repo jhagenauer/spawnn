@@ -96,7 +96,7 @@ public class SpaceTestDiscrete {
 			Grid2D_Map<Boolean> intersect = null;
 			for (Grid2D_Map<Boolean> bf : rcp.get(p)) {
 				if (intersect == null)
-					intersect = new Grid2D_Map<Boolean>(bf.getGridMap());
+					;//intersect = new Grid2D_Map<Boolean>(bf.getGridMap());
 				else {
 					/*
 					 * intersect.intersect(bf); public void intersect(BinaryGrid2D sf) { Set<GridPos> rm = new HashSet<GridPos>(); for( GridPos p : getPositions() ) { if( !sf.getPositions().contains(p) || getPrototypeAt(p) != sf.getPrototypeAt(p) ) rm.add(p); } for( GridPos p : rm ) getGridMap().remove(p); }

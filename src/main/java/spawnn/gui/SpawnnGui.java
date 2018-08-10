@@ -1,6 +1,5 @@
 package spawnn.gui;
 
-import java.awt.Dimension;
 import java.awt.Image;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
@@ -23,7 +22,6 @@ import javax.swing.JTabbedPane;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
-import edu.uci.ics.jung.graph.UndirectedSparseGraph;
 import net.miginfocom.swing.MigLayout;
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
