@@ -43,14 +43,6 @@ public abstract class Grid_Map<T> extends Grid<T> {
 		return grid.size();
 	}
 		
-	// slow
-	public GridPos getPositionOf( T x ) {
-		for( GridPos p : grid.keySet() )
-			if( getPrototypeAt(p).equals(x) )
-					return p;
-		return null;
-	}
-	
 	public T getPrototypeAt( GridPos pos ) {
 		return grid.get(pos);
 	}

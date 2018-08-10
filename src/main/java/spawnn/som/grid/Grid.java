@@ -13,13 +13,8 @@ public abstract class Grid<T> {
 	public abstract Collection<GridPos> getNeighbours( GridPos pos );
 	public abstract Set<GridPos> getPositions();
 	public abstract int size();
-	public abstract GridPos getPositionOf( T x );
 	public abstract T getPrototypeAt( GridPos pos );
 	public abstract T setPrototypeAt( GridPos pos, T v );
-	public abstract Collection<T> getPrototypes();
-	
-	@Deprecated
-	public abstract Map<GridPos,T> getGridMap();
 	
 	public int getMaxDist() {
 		int max = 0;
@@ -52,6 +47,29 @@ public abstract class Grid<T> {
 				l.add( getPrototypeAt(nb));
 			m.put( getPrototypeAt(gp), l);
 		}
+		return m;
+	}
+		
+	// slow
+	public GridPos getPositionOf( T x ) {
+		for( GridPos p : getPositions() )
+			if( getPrototypeAt(p).equals(x) )
+					return p;
+		return null;
+	}
+	
+	public Collection<T> getPrototypes() {
+		List<T> l = new ArrayList<>();
+		for( GridPos p : getPositions() )
+			l.add( getPrototypeAt(p) );
+		return l;
+	}
+	
+	@Deprecated
+	public Map<GridPos,T> getGridMap() {
+		Map<GridPos,T> m = new HashMap<>();
+		for( GridPos p : getPositions() )
+			m.put(p, getPrototypeAt(p));
 		return m;
 	}
 }
