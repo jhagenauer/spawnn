@@ -14,7 +14,7 @@ import spawnn.som.bmu.BmuGetter;
 import spawnn.som.bmu.DefaultBmuGetter;
 import spawnn.som.decay.DecayFunction;
 import spawnn.som.decay.LinearDecay;
-import spawnn.som.grid.Grid2D;
+import spawnn.som.grid.Grid2D_Map;
 import spawnn.som.grid.GridPos;
 import spawnn.som.kernel.GaussKernel;
 import spawnn.som.kernel.KernelFunction;
@@ -30,7 +30,7 @@ public class SegregationSom {
 		Random r = new Random(0);
 		
 		int t_max = 100000;
-		Grid2D<double[]> grid = new Grid2D<double[]>(xDim, yDim);
+		Grid2D_Map<double[]> grid = new Grid2D_Map<double[]>(xDim, yDim);
 		for( int x = 0; x < xDim; x++ )
 			for( int y = 0; y < yDim; y++ )
 				grid.setPrototypeAt( new GridPos(x,y), new double[]{ r.nextInt(2) } );

@@ -5,10 +5,12 @@ import java.util.Arrays;
 public class GridPos implements Comparable<GridPos> {
 	
 	private final int[] p;
+	private int hashcode;
 	
 	public GridPos( int ... x ) {
 		//this.p = x;
 		this.p = Arrays.copyOf(x, x.length); // Pos of GridPos should be immutable
+		this.hashcode = Arrays.hashCode(p);
 	}
 	
 	@Deprecated // use getPos()
@@ -26,7 +28,7 @@ public class GridPos implements Comparable<GridPos> {
 	
 	@Override
 	public int hashCode() {
-		return Arrays.hashCode(p);
+		return hashcode;
 	}
 
 	@Override

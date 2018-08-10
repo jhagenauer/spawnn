@@ -16,7 +16,7 @@ import java.util.Map;
 import java.util.Set;
 
 import spawnn.dist.Dist;
-import spawnn.som.grid.Grid2D;
+import spawnn.som.grid.Grid2D_Map;
 import spawnn.som.grid.Grid2DHex;
 import spawnn.som.grid.GridPos;
 import spawnn.utils.DataUtils;
@@ -24,7 +24,7 @@ import spawnn.utils.DataUtils;
 public class SomToolboxUtils {
 	
 	// it seem's that the dist is irrelevant for the resulting map
-	public static void writeUnitDescriptions( Grid2D<double[]> grid, List<double[]> samples, Map<GridPos,Set<double[]>> bmus, Dist<double[]> dist, OutputStream os ) {
+	public static void writeUnitDescriptions( Grid2D_Map<double[]> grid, List<double[]> samples, Map<GridPos,Set<double[]>> bmus, Dist<double[]> dist, OutputStream os ) {
 		OutputStreamWriter fsw = new OutputStreamWriter(os);
 		try {
 			fsw.write("$TYPE som\n");
@@ -64,7 +64,7 @@ public class SomToolboxUtils {
 		}	
 	}
 	
-	public static void writeWeightVectors( Grid2D<double[]> grid, OutputStream os ) {
+	public static void writeWeightVectors( Grid2D_Map<double[]> grid, OutputStream os ) {
 		OutputStreamWriter fsw = new OutputStreamWriter(os);
 		
 		double[] first = grid.getPrototypeAt( grid.getPositions().iterator().next() );

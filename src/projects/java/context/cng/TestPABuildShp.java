@@ -21,7 +21,7 @@ import spawnn.ng.NG;
 import spawnn.ng.sorter.KangasSorter;
 import spawnn.ng.sorter.Sorter;
 import spawnn.som.decay.LinearDecay;
-import spawnn.som.grid.Grid2D;
+import spawnn.som.grid.Grid2D_Map;
 import spawnn.som.grid.Grid2DHex;
 import spawnn.som.kernel.GaussKernel;
 import spawnn.som.net.SOM;
@@ -69,7 +69,7 @@ public class TestPABuildShp {
 		// geo som
 		{
 			int k = 1;
-			Grid2D<double[]> grid = new Grid2DHex<double[]>(5, 1);
+			Grid2D_Map<double[]> grid = new Grid2DHex<double[]>(5, 1);
 			SomUtils.initRandom(grid, samples);
 			
 			spawnn.som.bmu.BmuGetter<double[]> bmuGetter = new spawnn.som.bmu.KangasBmuGetter<double[]>(geoDist, fDist, k);

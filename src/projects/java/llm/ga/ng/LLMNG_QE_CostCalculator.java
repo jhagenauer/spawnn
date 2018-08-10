@@ -1,4 +1,4 @@
-package llm.ga_ng;
+package llm.ga.ng;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -15,20 +15,21 @@ import spawnn.utils.DataUtils;
 public class LLMNG_QE_CostCalculator implements CostCalculator<LLMNG_Individual> {
 	
 	List<double[]> samples;
-	int[] fa;
+	int[] fa, ga;
 	int ta;
 	Dist<double[]> dist;
 	
-	public LLMNG_QE_CostCalculator(List<double[]> samples,int[] fa, int ta) {
+	public LLMNG_QE_CostCalculator(List<double[]> samples,int[] fa, int[] ga, int ta) {
 		this.samples = samples;
 		this.fa = fa;
+		this.ga = ga;
 		this.ta = ta;
 		this.dist = new EuclideanDist(fa);
 	}
 
 	@Override
 	public double getCost(LLMNG_Individual i) {	
-		LLMNG llmng = i.train(samples, fa, ta, 0);
+		LLMNG llmng = i.train(samples, fa, ga, ta, 0);
 		Map<double[],Set<double[]>> mapping = new HashMap<double[],Set<double[]>>();
 		for( double[] n : llmng.getNeurons() )
 			mapping.put(n, new HashSet<>() );

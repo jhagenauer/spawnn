@@ -1,6 +1,13 @@
 package spawnn.som.kernel;
 
-public interface KernelFunction {
+import spawnn.som.decay.DecayFunction;
+
+public abstract class KernelFunction {
+	
+	protected DecayFunction df;	
+	public KernelFunction( DecayFunction df ) {
+		this.df = df;
+	}
 		
-	abstract double getValue( double dist, double x);
+	public abstract double getValue( double dist, double x);
 }

@@ -27,7 +27,7 @@ import spawnn.ng.sorter.KangasSorter;
 import spawnn.ng.sorter.SorterWMC;
 import spawnn.ng.utils.NGUtils;
 import spawnn.som.decay.LinearDecay;
-import spawnn.som.grid.Grid2D;
+import spawnn.som.grid.Grid2D_Map;
 import spawnn.som.grid.Grid2DHex;
 import spawnn.som.grid.GridPos;
 import spawnn.som.kernel.GaussKernel;
@@ -179,7 +179,7 @@ public class SpaceTest9 {
 						log.debug("geosom " + l);
 
 						spawnn.som.bmu.BmuGetter<double[]> bg = new spawnn.som.bmu.KangasBmuGetter<double[]>(normedGDist, fDist, l);
-						Grid2D<double[]> grid = new Grid2DHex<double[]>(3, 3);
+						Grid2D_Map<double[]> grid = new Grid2DHex<double[]>(3, 3);
 						SomUtils.initRandom(grid, samples);
 
 						SOM som = new SOM(new GaussKernel(new LinearDecay(grid.getMaxDist(), 1)), new LinearDecay(1.0, 0.0), grid, bg);

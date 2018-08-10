@@ -43,8 +43,8 @@ import com.vividsolutions.jts.geom.MultiPolygon;
 import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.geom.Polygon;
 
-import chowClustering.LinearModel;
 import nnet.SupervisedUtils;
+import regioClust.LinearModel;
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
 import spawnn.ng.sorter.DefaultSorter;

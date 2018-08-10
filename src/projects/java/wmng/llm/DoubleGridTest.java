@@ -33,7 +33,7 @@ import spawnn.ng.sorter.Sorter;
 import spawnn.ng.sorter.SorterWMC;
 import spawnn.som.decay.DecayFunction;
 import spawnn.som.decay.PowerDecay;
-import spawnn.som.grid.Grid2D;
+import spawnn.som.grid.Grid2D_Map;
 import spawnn.som.grid.GridPos;
 import spawnn.utils.GeoUtils;
 
@@ -362,7 +362,7 @@ public class DoubleGridTest {
 		return nd;
 	}
 	
-	public static Grid2D<double[]> getSurrounding( GridPos c, Grid2D<double[]> grid, int dist, boolean center ) {
+	public static Grid2D_Map<double[]> getSurrounding( GridPos c, Grid2D_Map<double[]> grid, int dist, boolean center ) {
 		Set<GridPos> done = new HashSet<GridPos>();
 		List<GridPos> openList = new ArrayList<GridPos>();
 		openList.add(c);
@@ -378,7 +378,7 @@ public class DoubleGridTest {
 		int xSize = grid.getSizeOfDim(0);
 		int ySize = grid.getSizeOfDim(1);
 		
-		Grid2D<double[]> g = new Grid2D<double[]>(0,0);
+		Grid2D_Map<double[]> g = new Grid2D_Map<double[]>(0,0);
 		for( GridPos p : done ) {
 			if( grid.dist(p, c) != dist )
 				continue;
@@ -403,7 +403,7 @@ public class DoubleGridTest {
 		return g;
 	}
 			
-	public static <T> double getDistError(Map<T, Set<double[]>> bmus, Grid2D<double[]> grid, int dist, int fa ) {
+	public static <T> double getDistError(Map<T, Set<double[]>> bmus, Grid2D_Map<double[]> grid, int dist, int fa ) {
 		DescriptiveStatistics ds = new DescriptiveStatistics();
 		for( Entry<T,Set<double[]>> e : bmus.entrySet() ) {
 			
@@ -411,15 +411,15 @@ public class DoubleGridTest {
 				continue;
 			
 			// get receptive fields
-			Set<Grid2D<double[]>> rfs = new HashSet<Grid2D<double[]>>();
+			Set<Grid2D_Map<double[]>> rfs = new HashSet<Grid2D_Map<double[]>>();
 			for( double[] d : e.getValue() )
 				rfs.add( getSurrounding( grid.getPositionOf(d), grid, dist, true));
 			
 			// mean receptive fields
-			Grid2D<double[]> mrf = new Grid2D<double[]>(0,0);
+			Grid2D_Map<double[]> mrf = new Grid2D_Map<double[]>(0,0);
 			for( GridPos p : rfs.iterator().next().getPositions() ) {
 				double[] m = new double[rfs.iterator().next().getPrototypeAt(p).length];
-				for( Grid2D<double[]> g : rfs ) {
+				for( Grid2D_Map<double[]> g : rfs ) {
 					double[] pt = g.getPrototypeAt(p);
 					for( int i = 0; i < pt.length; i++ )
 						m[i] += pt[i]/rfs.size();
@@ -428,7 +428,7 @@ public class DoubleGridTest {
 			}
 			
 			// get mean diff
-			for( Grid2D<double[]> rf : rfs ) 
+			for( Grid2D_Map<double[]> rf : rfs ) 
 				for( GridPos p : rf.getPositions() )
 					ds.addValue( Math.pow( rf.getPrototypeAt(p)[fa] - mrf.getPrototypeAt(p)[fa],2 ) );			
 		}	

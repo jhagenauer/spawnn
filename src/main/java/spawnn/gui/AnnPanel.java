@@ -42,7 +42,7 @@ import spawnn.som.bmu.DefaultBmuGetter;
 import spawnn.som.bmu.KangasBmuGetter;
 import spawnn.som.bmu.SorterBmuGetter;
 import spawnn.som.bmu.SorterBmuGetterContext;
-import spawnn.som.grid.Grid2D;
+import spawnn.som.grid.Grid2D_Map;
 import spawnn.som.grid.GridPos;
 import spawnn.som.net.ContextSOM;
 import spawnn.som.net.SOM;
@@ -173,7 +173,7 @@ public class AnnPanel extends JPanel implements ChangeListener, ActionListener {
 				if (tpANN.getSelectedComponent() == somPanel) { // som
 					SOMPanel sp = (SOMPanel) somPanel;
 
-					Grid2D<double[]> grid = ((SOMPanel) somPanel).getGrid();
+					Grid2D_Map<double[]> grid = ((SOMPanel) somPanel).getGrid();
 					SomUtils.initRandom(grid, normedSamples);
 					Map<GridPos, Set<double[]>> bmus;
 

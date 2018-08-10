@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public class Manifold extends Grid<double[]> {
+public class Manifold extends Grid_Map<double[]> {
 
 	Map<GridPos, Set<GridPos>> nbs;
 	private List<GridPos> gps;

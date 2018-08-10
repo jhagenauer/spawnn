@@ -1,4 +1,4 @@
-package chowClustering;
+package regioClust;
 
 import java.io.File;
 import java.util.ArrayList;

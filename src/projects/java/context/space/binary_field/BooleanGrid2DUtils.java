@@ -23,7 +23,7 @@ import javax.imageio.ImageIO;
 import org.apache.log4j.Logger;
 import org.apache.xmlgraphics.java2d.ps.EPSDocumentGraphics2D;
 
-import spawnn.som.grid.Grid2D;
+import spawnn.som.grid.Grid2D_Map;
 import spawnn.som.grid.Grid2DToroid;
 import spawnn.som.grid.GridPos;
 
@@ -31,7 +31,7 @@ public class BooleanGrid2DUtils {
 	
 	private static Logger log = Logger.getLogger(BooleanGrid2DUtils.class);
 
-	public static void draw(Grid2D<Boolean> bf, String fn, boolean hiliCenter) {
+	public static void draw(Grid2D_Map<Boolean> bf, String fn, boolean hiliCenter) {
 		int cellSize = 25; //25
 		try {
 			int minX = 0;
@@ -81,7 +81,7 @@ public class BooleanGrid2DUtils {
 		}
 	}
 	
-	public static void drawEPS(Grid2D<Boolean> bf, String fn, boolean hiliCenter) {
+	public static void drawEPS(Grid2D_Map<Boolean> bf, String fn, boolean hiliCenter) {
 		int cellSize = 25; //25
 		try {
 			int minX = 0;
@@ -139,7 +139,7 @@ public class BooleanGrid2DUtils {
 		}
 	}
 
-	public static void saveAsEsriGrid(Grid2D<Boolean> bf, String fn) {
+	public static void saveAsEsriGrid(Grid2D_Map<Boolean> bf, String fn) {
 		int xSize = bf.getSizeOfDim(0);
 		int ySize = bf.getSizeOfDim(1);
 
@@ -190,7 +190,7 @@ public class BooleanGrid2DUtils {
 		}
 	}
 
-	public static void saveAsCSV(Grid2D<Boolean> bf, String fn) {
+	public static void saveAsCSV(Grid2D_Map<Boolean> bf, String fn) {
 		List<GridPos> s = new ArrayList<GridPos>(bf.getPositions());
 		Collections.sort(s);
 
@@ -214,7 +214,7 @@ public class BooleanGrid2DUtils {
 		}
 	}
 
-	public static void saveWeightMatrix(Grid2D<Boolean> bf, String fn) {
+	public static void saveWeightMatrix(Grid2D_Map<Boolean> bf, String fn) {
 		List<GridPos> s = new ArrayList<GridPos>(bf.getPositions());
 		Collections.sort(s);
 
@@ -245,7 +245,7 @@ public class BooleanGrid2DUtils {
 		Random r = new Random();
 
 		int xDim = 100, yDim = 100;
-		Grid2D<Boolean> bf = new Grid2D<Boolean>(xDim, yDim);
+		Grid2D_Map<Boolean> bf = new Grid2D_Map<Boolean>(xDim, yDim);
 
 		for (int i = 0; i < xDim; i++)
 			for (int j = 0; j < yDim; j++)
@@ -280,12 +280,12 @@ public class BooleanGrid2DUtils {
 
 		Random r = new Random();
 		String st;
-		Grid2D<Boolean> bf;
+		Grid2D_Map<Boolean> bf;
 		if( toroid ) {
 			bf = new Grid2DToroid<Boolean>(xDim, yDim);
 			st = "toroid";
 		} else {
-			bf = new Grid2D<Boolean>(xDim, yDim);
+			bf = new Grid2D_Map<Boolean>(xDim, yDim);
 			st = "grid";
 		}
 		List<GridPos> falses = new ArrayList<GridPos>();

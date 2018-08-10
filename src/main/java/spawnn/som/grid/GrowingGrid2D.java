@@ -7,7 +7,7 @@ import java.util.Map;
 
 import spawnn.som.utils.SomUtils;
 
-public class GrowingGrid2D extends Grid2D<double[]> {
+public class GrowingGrid2D extends Grid2D_Map<double[]> {
 	
 	public GrowingGrid2D(int xSize, int ySize) {
 		super(xSize, ySize);

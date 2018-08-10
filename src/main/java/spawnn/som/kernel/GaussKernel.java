@@ -3,17 +3,16 @@ package spawnn.som.kernel;
 import spawnn.som.decay.DecayFunction;
 import spawnn.som.decay.LinearDecay;
 
-public class GaussKernel implements KernelFunction {
+public class GaussKernel extends KernelFunction {
 		
 	private double min = Math.pow(10,-127);
-	private DecayFunction df;
 	
 	public GaussKernel( int max ) {
-		this.df = new LinearDecay(max, 0);
+		super( new LinearDecay(max, 0) );
 	}
 	
 	public GaussKernel( DecayFunction df ) {
-		this.df = df;
+		super(df);
 	}
 		
 	@Override

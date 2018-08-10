@@ -26,7 +26,7 @@ import spawnn.dist.EuclideanDist;
 import spawnn.ng.ContextNG;
 import spawnn.ng.sorter.SorterWMC;
 import spawnn.ng.utils.NGUtils;
-import spawnn.som.grid.Grid2D;
+import spawnn.som.grid.Grid2D_Map;
 import spawnn.utils.DataUtils;
 
 public class WMNGSingleTestBF {
@@ -104,7 +104,7 @@ public class WMNGSingleTestBF {
 							bg.bmuHistMutable = false;
 
 							Map<double[], Set<double[]>> bmus = NGUtils.getBmuMapping(samples, neurons, bg);
-							Map<double[], Set<Grid2D<Boolean>>> rf = SpaceTestDiscrete.getReceptiveFields(samples, dMap, bmus, maxDist, maxRfSize, ga, fa);
+							Map<double[], Set<Grid2D_Map<Boolean>>> rf = SpaceTestDiscrete.getReceptiveFields(samples, dMap, bmus, maxDist, maxRfSize, ga, fa);
 							
 							Result r = new Result();
 							//r.bmus = bmus;

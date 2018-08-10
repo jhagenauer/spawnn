@@ -15,7 +15,7 @@ import java.util.Set;
 
 import org.apache.log4j.Logger;
 
-import spawnn.som.grid.Grid2D;
+import spawnn.som.grid.Grid2D_Map;
 import spawnn.som.grid.GridPos;
 import spawnn.utils.DataUtils;
 
@@ -43,7 +43,7 @@ public class SpaceTestDiscrete {
 		System.exit(1);
 	}
 
-	public static <T> Map<T, Set<Grid2D<Boolean>>> getReceptiveFields(List<double[]> samples, final Map<double[], Map<double[], Double>> dMap, Map<T, Set<double[]>> bmus, int maxDist, int rfMaxSize, int[] ga, int fa) {
+	public static <T> Map<T, Set<Grid2D_Map<Boolean>>> getReceptiveFields(List<double[]> samples, final Map<double[], Map<double[], Double>> dMap, Map<T, Set<double[]>> bmus, int maxDist, int rfMaxSize, int[] ga, int fa) {
 		int xDim = 0, yDim = 0;
 		Map<double[], Set<double[]>> surroundings = new HashMap<double[], Set<double[]>>();
 		for (Set<double[]> s : bmus.values()) {
@@ -57,12 +57,12 @@ public class SpaceTestDiscrete {
 			}
 		}
 
-		Map<T, Set<Grid2D<Boolean>>> rcf = new HashMap<T, Set<Grid2D<Boolean>>>();
+		Map<T, Set<Grid2D_Map<Boolean>>> rcf = new HashMap<T, Set<Grid2D_Map<Boolean>>>();
 		for (T p : bmus.keySet()) {
-			Set<Grid2D<Boolean>> s = new HashSet<Grid2D<Boolean>>();
+			Set<Grid2D_Map<Boolean>> s = new HashSet<Grid2D_Map<Boolean>>();
 
 			for (double[] center : bmus.get(p)) { // for each sample
-				Grid2D<Boolean> bf = new Grid2D<Boolean>(0, 0);
+				Grid2D_Map<Boolean> bf = new Grid2D_Map<Boolean>(0, 0);
 				for (double[] d : surroundings.get(center)) {
 					int x = (int) (d[ga[0]] - center[ga[0]]);
 					int y = (int) (d[ga[1]] - center[ga[1]]);
@@ -88,15 +88,15 @@ public class SpaceTestDiscrete {
 		return rcf;
 	}
 
-	public static <T> Map<T, Grid2D<Boolean>> getIntersectReceptiveFields(Map<T, Set<Grid2D<Boolean>>> rcp, int idx, int[] ga) {
-		Map<T, Grid2D<Boolean>> r = new HashMap<T, Grid2D<Boolean>>();
+	public static <T> Map<T, Grid2D_Map<Boolean>> getIntersectReceptiveFields(Map<T, Set<Grid2D_Map<Boolean>>> rcp, int idx, int[] ga) {
+		Map<T, Grid2D_Map<Boolean>> r = new HashMap<T, Grid2D_Map<Boolean>>();
 
 		for (T p : rcp.keySet()) {
 
-			Grid2D<Boolean> intersect = null;
-			for (Grid2D<Boolean> bf : rcp.get(p)) {
+			Grid2D_Map<Boolean> intersect = null;
+			for (Grid2D_Map<Boolean> bf : rcp.get(p)) {
 				if (intersect == null)
-					intersect = new Grid2D<Boolean>(bf.getGridMap());
+					intersect = new Grid2D_Map<Boolean>(bf.getGridMap());
 				else {
 					/*
 					 * intersect.intersect(bf); public void intersect(BinaryGrid2D sf) { Set<GridPos> rm = new HashSet<GridPos>(); for( GridPos p : getPositions() ) { if( !sf.getPositions().contains(p) || getPrototypeAt(p) != sf.getPrototypeAt(p) ) rm.add(p); } for( GridPos p : rm ) getGridMap().remove(p); }
@@ -115,7 +115,7 @@ public class SpaceTestDiscrete {
 			// reduce to connected component
 			GridPos c = new GridPos(0, 0);
 			if (!intersect.getPositions().contains(c)) // nothing is connected to center
-				intersect = new Grid2D<Boolean>(0, 0);
+				intersect = new Grid2D_Map<Boolean>(0, 0);
 			else {
 				Set<GridPos> toExpand = new HashSet<GridPos>();
 				Set<GridPos> visited = new HashSet<GridPos>();

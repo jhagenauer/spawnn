@@ -25,7 +25,7 @@ import spawnn.ng.utils.NGUtils;
 import spawnn.som.bmu.BmuGetter;
 import spawnn.som.bmu.KangasBmuGetter;
 import spawnn.som.decay.LinearDecay;
-import spawnn.som.grid.Grid2D;
+import spawnn.som.grid.Grid2D_Map;
 import spawnn.som.grid.Grid2DHex;
 import spawnn.som.grid.GridPos;
 import spawnn.som.kernel.GaussKernel;
@@ -79,7 +79,7 @@ public class TestNetworks {
 
 						@Override
 						public Double call() throws Exception {
-							Grid2D<double[]> grid = new Grid2DHex<>(dim[0], dim[1]);
+							Grid2D_Map<double[]> grid = new Grid2DHex<>(dim[0], dim[1]);
 							SomUtils.initRandom(grid, df.samples);
 
 							BmuGetter<double[]> bg = new KangasBmuGetter<double[]>(gDist, fDist, l);

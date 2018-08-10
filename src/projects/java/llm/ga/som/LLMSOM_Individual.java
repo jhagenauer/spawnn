@@ -1,4 +1,4 @@
-package llm.ga_som;
+package llm.ga.som;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -11,14 +11,13 @@ import java.util.StringTokenizer;
 import java.util.TreeMap;
 
 import ga.GAIndividual;
-import llm.LLMNG;
 import llm.LLMSOM;
 import llm.LLM_Lucas_CV.function;
 import spawnn.dist.EuclideanDist;
 import spawnn.som.bmu.BmuGetter;
 import spawnn.som.bmu.KangasBmuGetter;
 import spawnn.som.decay.LinearDecay;
-import spawnn.som.grid.Grid2D;
+import spawnn.som.grid.Grid2D_Map;
 import spawnn.som.grid.Grid2DHex;
 import spawnn.som.grid.Grid2DHexToroid;
 import spawnn.som.grid.GridPos;
@@ -32,7 +31,7 @@ public class LLMSOM_Individual implements GAIndividual<LLMSOM_Individual> {
 		params = new TreeMap<>();
 		
 		List<Object> list = new ArrayList<>();
-		for(int l : new int[]{ 100000 } )
+		for(int l : new int[]{ 10000 } )
 			list.add( l );
 		params.put("t_max", list.toArray(new Object[]{}));
 				
@@ -68,9 +67,14 @@ public class LLMSOM_Individual implements GAIndividual<LLMSOM_Individual> {
 		// llm parameters:
 		
 		list = new ArrayList<>();
-		for( LLMNG.mode mode : new LLMNG.mode[] { /*LLMNG.mode.fritzke,*/ LLMNG.mode.martinetz } )
-			list.add(mode);
-		params.put("mode", list.toArray(new Object[]{}));
+		for( boolean aMode : new boolean[] { true, false } )
+			list.add(aMode);
+		params.put("aMode", list.toArray(new Object[]{}));
+		
+		list = new ArrayList<>();
+		for( boolean uMode : new boolean[] { true, false } )
+			list.add(uMode);
+		params.put("uMode", list.toArray(new Object[]{}));
 		
 		list = new ArrayList<>();
 		for( double nb2Init : new double[] { 1, 2, 3, 4, 5, 6, 7, 8 } )
@@ -83,7 +87,7 @@ public class LLMSOM_Individual implements GAIndividual<LLMSOM_Individual> {
 		params.put("nb2Final", list.toArray(new Object[]{}));
 		
 		list = new ArrayList<>();
-		for( double lr2Init : new double[] { 0.05, 0.1, 0.15, 0.2, 0.25, 0.3 } )
+		for( double lr2Init : new double[] { 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5 } )
 			list.add(lr2Init);
 		params.put("lr2Init", list.toArray(new Object[]{}));
 		
@@ -131,7 +135,7 @@ public class LLMSOM_Individual implements GAIndividual<LLMSOM_Individual> {
 				continue;
 			} catch (IllegalArgumentException e) { }
 			try {
-				iParam.put(sp[0], LLMNG.mode.valueOf(sp[1]) );
+				iParam.put(sp[0], Boolean.valueOf(sp[1]) );
 				continue;
 			} catch (IllegalArgumentException e) { }
 			try {
@@ -190,7 +194,7 @@ public class LLMSOM_Individual implements GAIndividual<LLMSOM_Individual> {
 		BmuGetter<double[]> bg = new KangasBmuGetter<>(new EuclideanDist(ga), new EuclideanDist(fa), (int)(double)iParam.get("w") );
 		//BmuGetter<double[]> bg = new DefaultBmuGetter<>(new EuclideanDist(fa));
 		
-		Grid2D<double[]> grid;
+		Grid2D_Map<double[]> grid;
 		if( ((String)iParam.get("type")).equals("toroid") )
 			grid = new Grid2DHexToroid<>(18, 12);
 		else
@@ -210,6 +214,8 @@ public class LLMSOM_Individual implements GAIndividual<LLMSOM_Individual> {
 				new LinearDecay( (double)iParam.get("lr2Init"), (double)iParam.get("lr2Final")),
 				fa,1
 				);
+		llmsom.aMode = (boolean)iParam.get("aMode");
+		llmsom.uMode = (boolean)iParam.get("uMode");
 		
 		for (int t = 0; t < (int)iParam.get("t_max"); t++) {
 			int j = r1.nextInt( samples.size() );

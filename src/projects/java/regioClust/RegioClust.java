@@ -1,4 +1,4 @@
-package chowClustering;
+package regioClust;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -38,9 +38,9 @@ import spawnn.utils.GeoUtils;
 import spawnn.utils.GraphUtils;
 import spawnn.utils.RegionUtils;
 
-public class ChowClustering {
+public class RegioClust {
 
-	private static Logger log = Logger.getLogger(ChowClustering.class);
+	private static Logger log = Logger.getLogger(RegioClust.class);
 
 	public enum StructChangeTestMode {
 		Chow, AdjustedChow, Wald, ResiChow, LogLikelihood, ResiSimple
@@ -395,7 +395,7 @@ public class ChowClustering {
 			List<TreeNode> curLayer = new ArrayList<>();
 			for (Set<double[]> s : init)
 				curLayer.add(new TreeNode(0, 0, s));
-			Map<TreeNode, Set<TreeNode>> ncm = ChowClustering.getCMforCurLayer(curLayer, cma);
+			Map<TreeNode, Set<TreeNode>> ncm = RegioClust.getCMforCurLayer(curLayer, cma);
 					
 			List<TreeNode> minObsTree = Clustering.getHierarchicalClusterTree(curLayer, ncm, dist, HierarchicalClusteringType.ward, minObs, threads);
 					

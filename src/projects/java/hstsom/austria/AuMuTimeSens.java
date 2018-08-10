@@ -20,7 +20,7 @@ import spawnn.dist.EuclideanDist;
 import spawnn.som.bmu.BmuGetter;
 import spawnn.som.bmu.KangasBmuGetter;
 import spawnn.som.decay.LinearDecay;
-import spawnn.som.grid.Grid2D;
+import spawnn.som.grid.Grid2D_Map;
 import spawnn.som.grid.Grid2DHex;
 import spawnn.som.kernel.GaussKernel;
 import spawnn.som.net.SOM;
@@ -79,7 +79,7 @@ public class AuMuTimeSens {
 							@Override
 							public Result call() {
 	
-								Grid2D<double[]> grid = new Grid2DHex<double[]>(DIM_X, DIM_Y );
+								Grid2D_Map<double[]> grid = new Grid2DHex<double[]>(DIM_X, DIM_Y );
 								SomUtils.initRandom(grid, samples);
 								
 								BmuGetter<double[]> bmuGetter = new KangasBmuGetter<double[]>(tDist, fDist, K);

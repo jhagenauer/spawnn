@@ -1,4 +1,4 @@
-package llm.ga_ng;
+package llm.ga.ng;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -61,6 +61,7 @@ public class LLMNG_GA_Main {
 		}
 		
 		int[] fa = new int[]{1}; // 1 == x2
+		int[] ga = null;
 		int ta = 3;
 		//DataUtils.transform(samples, fa, Transform.zScore);
 		
@@ -78,7 +79,7 @@ public class LLMNG_GA_Main {
 			log.debug(i);
 			log.debug( cc.getCost(i) );
 			
-			LLMNG llmng = i.train(samples, fa, ta);
+			LLMNG llmng = i.train(samples, fa, ga, ta);
 			for( double[] n : llmng.getNeurons() )
 				log.debug("n: "+Arrays.toString(n)+", m: "+Arrays.toString( llmng.matrix.get(n)[0] )+", o: "+llmng.output.get(n)[0] );
 		}

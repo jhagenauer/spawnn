@@ -23,7 +23,7 @@ import org.apache.log4j.Logger;
 import org.apache.xmlgraphics.java2d.ps.EPSDocumentGraphics2D;
 
 import spawnn.dist.Dist;
-import spawnn.som.grid.Grid2D;
+import spawnn.som.grid.Grid2D_Map;
 import spawnn.som.grid.Grid2DHex;
 import spawnn.som.grid.GridPos;
 
@@ -39,7 +39,7 @@ public class GridPanel extends NeuronVisPanel<GridPos> implements MouseListener 
 	Map<GridPos,Color> gridColors = new HashMap<GridPos,Color>();
 	Map<GridPos,Color> selectedColors = new HashMap<GridPos,Color>();
 	
-	public GridPanel(Grid2D<double[]> grid, Dist<double[]> fDist) {		
+	public GridPanel(Grid2D_Map<double[]> grid, Dist<double[]> fDist) {		
 		for( GridPos gp : grid.getPositions() ) {
 			int i = gp.getPos(0);
 			int j = gp.getPos(1);

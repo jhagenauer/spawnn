@@ -14,7 +14,6 @@ import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 import org.apache.log4j.Logger;
 
 import llm.LLMNG;
-import llm.LLMNG.mode;
 import llm.WeightedErrorSorter;
 import nnet.SupervisedUtils;
 import spawnn.dist.Dist;
@@ -112,7 +111,7 @@ public class lucasRBF {
 						neurons.add( Arrays.copyOf(d,d.length) );
 					}					
 					LLMNG llmng = new LLMNG(neurons, nb, lr1, nb, lr2, wes, fa, 1);
-					llmng.aMode = mode.martinetz;
+					llmng.aMode = false;
 					wes.setSupervisedNet(llmng);
 					
 					for (int t = 0; t < t_max; t++) {

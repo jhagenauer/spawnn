@@ -3,7 +3,7 @@ package spawnn.som.grid;
 import java.util.Collection;
 import java.util.Map;
 
-public class Grid2DHex<T> extends Grid2D<T> {
+public class Grid2DHex<T> extends Grid2D_Map<T> {
 	
 	public Grid2DHex( int xSize, int ySize ) {
 		super( xSize, ySize );

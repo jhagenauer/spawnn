@@ -3,17 +3,15 @@ package spawnn.som.kernel;
 import spawnn.som.decay.DecayFunction;
 
 
-public class BubbleKernel implements KernelFunction {
-	
-	private DecayFunction df;
+public class BubbleKernel extends KernelFunction {
 		
 	public BubbleKernel( DecayFunction df ) {
-		this.df = df;
+		super(df);
 	}
 
 	@Override
-	public double getValue(double dist, double time) {
-		if( dist <= df.getValue(time)*dist )
+	public double getValue(double dist, double radius) {
+		if( dist <= df.getValue(radius) ) 
 			return 1;
 		else
 			return 0;

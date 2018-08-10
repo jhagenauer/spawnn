@@ -1,6 +1,6 @@
 package context.space.binary_field;
 
-import spawnn.som.grid.Grid2D;
+import spawnn.som.grid.Grid2D_Map;
 import spawnn.som.grid.GridPos;
 
 public class CreateExampleField {
@@ -8,7 +8,7 @@ public class CreateExampleField {
 	public static void main(String[] args) {
 
 		{
-			Grid2D<Double> df = new Grid2D<Double>(0,0);
+			Grid2D_Map<Double> df = new Grid2D_Map<Double>(0,0);
 			df.setPrototypeAt(new GridPos(0, 0), 1.0);
 			df.setPrototypeAt(new GridPos(1, 0), 0.35);
 			df.setPrototypeAt(new GridPos(0, 1), 0.75);
@@ -22,7 +22,7 @@ public class CreateExampleField {
 		}
 		
 		{ // 1
-			Grid2D<Double> df = new Grid2D<Double>(0,0);
+			Grid2D_Map<Double> df = new Grid2D_Map<Double>(0,0);
 			for( int i = -2; i <= 2; i++)
 				for( int j = -2; j <= 2; j++ )
 					df.setPrototypeAt(new GridPos(i, j), -1.0);
@@ -32,7 +32,7 @@ public class CreateExampleField {
 		}
 		
 		{ // 2
-			Grid2D<Double> df = new Grid2D<Double>(0,0);
+			Grid2D_Map<Double> df = new Grid2D_Map<Double>(0,0);
 			for( int i = -2; i <= 2; i++)
 				for( int j = -2; j <= 2; j++ )
 					df.setPrototypeAt(new GridPos(i, j), -1.0);
@@ -45,7 +45,7 @@ public class CreateExampleField {
 		}
 		
 		{ // 3
-			Grid2D<Double> df = new Grid2D<Double>(0,0);
+			Grid2D_Map<Double> df = new Grid2D_Map<Double>(0,0);
 			for( int i = -2; i <= 2; i++)
 				for( int j = -2; j <= 2; j++ )
 					df.setPrototypeAt(new GridPos(i, j), -1.0);

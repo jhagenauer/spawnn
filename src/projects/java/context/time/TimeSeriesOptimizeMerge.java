@@ -22,7 +22,7 @@ import spawnn.dist.EuclideanDist;
 import spawnn.som.bmu.BmuGetterTimeMSOM;
 import spawnn.som.decay.DecayFunction;
 import spawnn.som.decay.LinearDecay;
-import spawnn.som.grid.Grid2D;
+import spawnn.som.grid.Grid2D_Map;
 import spawnn.som.grid.GridPos;
 import spawnn.som.kernel.GaussKernel;
 import spawnn.som.kernel.KernelFunction;
@@ -78,7 +78,7 @@ public class TimeSeriesOptimizeMerge {
 							/*SorterTimeMNG bg = new SorterTimeMNG(fDist, ALPHA, 0.75);
 							MNG ng = new MNG(100, 50.0, 0.01, 0.5, 0.005, 4, bg );*/
 														
-							Grid2D<double[]> grid = new Grid2D<double[]>(10,10);
+							Grid2D_Map<double[]> grid = new Grid2D_Map<double[]>(10,10);
 							Random r = new Random();
 							for( GridPos gp : grid.getPositions() ) {
 								double[] rs = samples.get( r.nextInt(samples.size() ) );

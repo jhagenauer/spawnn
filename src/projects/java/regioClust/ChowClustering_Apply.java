@@ -1,4 +1,4 @@
-package chowClustering;
+package regioClust;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -19,8 +19,8 @@ import com.vividsolutions.jts.geom.MultiPolygon;
 import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.geom.Polygon;
 
-import chowClustering.ChowClustering.PreCluster;
 import nnet.SupervisedUtils;
+import regioClust.RegioClust.PreCluster;
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
 import spawnn.utils.ClusterValidation;
@@ -81,7 +81,7 @@ public class ChowClustering_Apply {
 		// AIC -66537.81934761541, moran: 0.02782969478626033***, 10.14983044066457***
 		// params.put( new Object[] { ChowClustering.StructChangeTestMode.Wald, 1.0, gDist, 8, PreCluster.kmeans, 1500, 1 }, 274 );
 		
-		params.put( new Object[] { ChowClustering.StructChangeTestMode.ResiSimple, 1.0, gDist, 10, PreCluster.ward, 1, 1 }, 130 );
+		params.put( new Object[] { RegioClust.StructChangeTestMode.ResiSimple, 1.0, gDist, 10, PreCluster.ward, 1, 1 }, 130 );
 		
 		for( Entry<Object[],Integer> e : params.entrySet() ) {
 		long time = System.currentTimeMillis();
@@ -97,7 +97,7 @@ public class ChowClustering_Apply {
 		double bestWss = Double.POSITIVE_INFINITY;
 		for (int i = 0; i < (int) param[ChowClustering_AIC.PRECLUST_OPT2]; i++) {
 
-			List<TreeNode> curLayer = ChowClustering.getInitCluster(sdf.samples, cm, (PreCluster) param[ChowClustering_AIC.PRECLUST], (int) param[ChowClustering_AIC.PRECLUST_OPT], gDist, (int) param[ChowClustering_AIC.MIN_OBS_I], threads);
+			List<TreeNode> curLayer = RegioClust.getInitCluster(sdf.samples, cm, (PreCluster) param[ChowClustering_AIC.PRECLUST], (int) param[ChowClustering_AIC.PRECLUST_OPT], gDist, (int) param[ChowClustering_AIC.MIN_OBS_I], threads);
 			curLayer = Clustering.cutTree(curLayer, 1);
 			List<Set<double[]>> cluster = Clustering.treeToCluster(curLayer);
 			double wss = ClusterValidation.getWithinClusterSumOfSuqares(cluster, gDist);
@@ -108,8 +108,8 @@ public class ChowClustering_Apply {
 			}
 		}
 
-		Map<TreeNode, Set<TreeNode>> ncm = ChowClustering.getCMforCurLayer(bestCurLayer, cm);
-		List<TreeNode> tree = ChowClustering.getFunctionalClusterinTree(bestCurLayer, ncm, fa, ta, (ChowClustering.StructChangeTestMode) param[ChowClustering_AIC.STRUCT_TEST],	pValue, threads);
+		Map<TreeNode, Set<TreeNode>> ncm = RegioClust.getCMforCurLayer(bestCurLayer, cm);
+		List<TreeNode> tree = RegioClust.getFunctionalClusterinTree(bestCurLayer, ncm, fa, ta, (RegioClust.StructChangeTestMode) param[ChowClustering_AIC.STRUCT_TEST],	pValue, threads);
 		List<Set<double[]>> ct = Clustering.treeToCluster(Clustering.cutTree(tree, nrCluster));
 		LinearModel lm = new LinearModel(sdf.samples, ct, fa, ta, false);
 		double mse = SupervisedUtils.getMSE(lm.getPredictions(sdf.samples, fa), sdf.samples, ta);

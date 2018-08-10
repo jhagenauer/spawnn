@@ -22,7 +22,7 @@ import spawnn.som.bmu.BmuGetterTimeSD;
 import spawnn.som.decay.ConstantDecay;
 import spawnn.som.decay.DecayFunction;
 import spawnn.som.decay.LinearDecay;
-import spawnn.som.grid.Grid2D;
+import spawnn.som.grid.Grid2D_Map;
 import spawnn.som.grid.GridPos;
 import spawnn.som.kernel.GaussKernel;
 import spawnn.som.kernel.KernelFunction;
@@ -76,7 +76,7 @@ public class TimeSeriesOptimizeSD {
 
 					@Override
 					public double[] call() throws Exception {
-						Grid2D<double[]> grid = new Grid2D<double[]>(10, 10);
+						Grid2D_Map<double[]> grid = new Grid2D_Map<double[]>(10, 10);
 
 						// init grid
 						Random r = new Random();

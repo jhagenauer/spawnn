@@ -21,7 +21,7 @@ import spawnn.ng.sorter.KangasSorter;
 import spawnn.ng.sorter.Sorter;
 import spawnn.ng.utils.NGUtils;
 import spawnn.som.decay.LinearDecay;
-import spawnn.som.grid.Grid2D;
+import spawnn.som.grid.Grid2D_Map;
 import spawnn.som.grid.Grid2DHex;
 import spawnn.som.kernel.GaussKernel;
 import spawnn.som.net.SOM;
@@ -131,7 +131,7 @@ public class TestPA {
 
 					@Override
 					public double[] call() throws Exception {
-						Grid2D<double[]> grid = new Grid2DHex<double[]>(5, 1 );
+						Grid2D_Map<double[]> grid = new Grid2DHex<double[]>(5, 1 );
 						//grid.initLinear(samples, true);
 						spawnn.som.bmu.BmuGetter<double[]> bmuGetter = new spawnn.som.bmu.KangasBmuGetter( geoDist, fDist, K);
 						SOM som = new SOM( new GaussKernel(grid.getMaxDist()), new LinearDecay(0.5,0.0), grid, bmuGetter );
@@ -154,9 +154,8 @@ public class TestPA {
 																
 						double qe = DataUtils.getMeanQuantizationError( cluster, fDist );
 						double ge = DataUtils.getMeanQuantizationError( cluster, geoDist );
-						double ke = SomUtils.getKangasError(samples, grid, (spawnn.som.bmu.KangasBmuGetter)bmuGetter );
 						
-						return new double[]{ K, I, time, qe, ge, ke };
+						return new double[]{ K, I, time, qe, ge, -1 };
 					}
 				}));
 			}

@@ -1,9 +1,6 @@
 package spawnn.som.bmu;
 
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.Set;
 
 import spawnn.dist.Dist;
@@ -23,8 +20,6 @@ public class DefaultBmuGetter<T> extends BmuGetter<T> {
 		double dist = Double.POSITIVE_INFINITY;
 		
 		GridPos bmu = null; 
-		List<GridPos> gp = new ArrayList<>(grid.getPositions());
-		Collections.shuffle(gp);
 		for( GridPos p : grid.getPositions() ) {
 			
 			if( ign != null && ign.contains(p) )
@@ -39,8 +34,7 @@ public class DefaultBmuGetter<T> extends BmuGetter<T> {
 		}
 		
 		if( bmu == null ) 
-			throw new RuntimeException("No bmu found");
-							
+			throw new RuntimeException("No bmu found");					
 		return bmu;
 	}
 }

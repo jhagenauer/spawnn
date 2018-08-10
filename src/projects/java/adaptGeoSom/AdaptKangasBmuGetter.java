@@ -20,7 +20,7 @@ import spawnn.som.bmu.DefaultBmuGetter;
 import spawnn.som.bmu.KangasBmuGetter;
 import spawnn.som.decay.LinearDecay;
 import spawnn.som.grid.Grid;
-import spawnn.som.grid.Grid2D;
+import spawnn.som.grid.Grid2D_Map;
 import spawnn.som.grid.Grid2DHex;
 import spawnn.som.grid.GridPos;
 import spawnn.som.kernel.GaussKernel;
@@ -108,7 +108,7 @@ public class AdaptKangasBmuGetter<T> extends BmuGetter<T> {
 
 		DataUtils.transform(samples, new int[] { 2 }, Transform.zScore);
 
-		Grid2D<double[]> grid = new Grid2DHex<double[]>(X_DIM, Y_DIM);
+		Grid2D_Map<double[]> grid = new Grid2DHex<double[]>(X_DIM, Y_DIM);
 		int maxDist = grid.getMaxDist();
 		SomUtils.initRandom(grid, samples);
 

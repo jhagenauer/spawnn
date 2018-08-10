@@ -31,7 +31,7 @@ import spawnn.ng.sorter.KangasSorter;
 import spawnn.ng.sorter.SorterWMC;
 import spawnn.ng.utils.NGUtils;
 import spawnn.som.decay.LinearDecay;
-import spawnn.som.grid.Grid2D;
+import spawnn.som.grid.Grid2D_Map;
 import spawnn.som.grid.Grid2DHex;
 import spawnn.som.grid.GridPos;
 import spawnn.som.kernel.GaussKernel;
@@ -114,8 +114,8 @@ public class SpaceTestDiscrete2 {
 						}
 
 						Map<double[], Set<double[]>> bmus = NGUtils.getBmuMapping(samples, ng.getNeurons(), bg);
-						Map<double[], Set<Grid2D<Boolean>>> rf = SpaceTestDiscrete.getReceptiveFields(samples, dMap, bmus, maxDist, maxRfSize, ga, fa);
-						Map<double[], Grid2D<Double>> mrfs = SpaceTestDiscrete2.getProbabilityFields(rf);
+						Map<double[], Set<Grid2D_Map<Boolean>>> rf = SpaceTestDiscrete.getReceptiveFields(samples, dMap, bmus, maxDist, maxRfSize, ga, fa);
+						Map<double[], Grid2D_Map<Double>> mrfs = SpaceTestDiscrete2.getProbabilityFields(rf);
 
 						// save most frequent DoubleFields
 						double[] maxBmu = null;
@@ -129,8 +129,8 @@ public class SpaceTestDiscrete2 {
 												
 						// reduce to 2
 						DecimalFormat fo = new DecimalFormat("0000");
-						Grid2D<Double> df = mrfs.get(maxBmu);
-						Grid2D<Double> subDf = new Grid2D<Double>(0,0);
+						Grid2D_Map<Double> df = mrfs.get(maxBmu);
+						Grid2D_Map<Double> subDf = new Grid2D_Map<Double>(0,0);
 						GridPos center = new GridPos(0,0);
 						for (GridPos gp : df.getPositions()) 
 							if(df.dist(gp, center) <= 2)
@@ -182,7 +182,7 @@ public class SpaceTestDiscrete2 {
 					public double[] call() throws Exception {
 
 						spawnn.som.bmu.BmuGetter<double[]> bg = new spawnn.som.bmu.KangasBmuGetter<double[]>(gDist, fDist, radius);
-						Grid2D<double[]> grid = new Grid2DHex<double[]>(10, 10);
+						Grid2D_Map<double[]> grid = new Grid2DHex<double[]>(10, 10);
 						SomUtils.initRandom(grid, samples);
 
 						SOM som = new SOM(new GaussKernel(new LinearDecay(10, 1)), new LinearDecay(1.0, 0.0), grid, bg);
@@ -192,8 +192,8 @@ public class SpaceTestDiscrete2 {
 						}
 
 						Map<GridPos, Set<double[]>> bmus = SomUtils.getBmuMapping(samples, grid, bg);
-						Map<GridPos, Set<Grid2D<Boolean>>> rf = SpaceTestDiscrete.getReceptiveFields(samples, dMap, bmus, maxDist, maxRfSize, ga, fa);
-						Map<GridPos, Grid2D<Double>> mrfs = SpaceTestDiscrete2.getProbabilityFields(rf);
+						Map<GridPos, Set<Grid2D_Map<Boolean>>> rf = SpaceTestDiscrete.getReceptiveFields(samples, dMap, bmus, maxDist, maxRfSize, ga, fa);
+						Map<GridPos, Grid2D_Map<Double>> mrfs = SpaceTestDiscrete2.getProbabilityFields(rf);
 						
 						// save most frequent DoubleFields
 						GridPos maxBmu = null;
@@ -207,8 +207,8 @@ public class SpaceTestDiscrete2 {
 												
 						// reduce to 2
 						DecimalFormat fo = new DecimalFormat("0000");
-						Grid2D<Double> df = mrfs.get(maxBmu);
-						Grid2D<Double> subDf = new Grid2D<Double>(0,0);
+						Grid2D_Map<Double> df = mrfs.get(maxBmu);
+						Grid2D_Map<Double> subDf = new Grid2D_Map<Double>(0,0);
 						GridPos center = new GridPos(0,0);
 						for (GridPos gp : df.getPositions()) 
 							if(df.dist(gp, center) <= 2)
@@ -268,8 +268,8 @@ public class SpaceTestDiscrete2 {
 						}
 
 						Map<double[], Set<double[]>> bmus = NGUtils.getBmuMapping(samples, ng.getNeurons(), bg);
-						Map<double[], Set<Grid2D<Boolean>>> rf = SpaceTestDiscrete.getReceptiveFields(samples, dMap, bmus, maxDist, maxRfSize, ga, fa);
-						Map<double[], Grid2D<Double>> mrfs = SpaceTestDiscrete2.getProbabilityFields(rf);
+						Map<double[], Set<Grid2D_Map<Boolean>>> rf = SpaceTestDiscrete.getReceptiveFields(samples, dMap, bmus, maxDist, maxRfSize, ga, fa);
+						Map<double[], Grid2D_Map<Double>> mrfs = SpaceTestDiscrete2.getProbabilityFields(rf);
 						
 						// save most frequent DoubleFields
 						double[] maxBmu = null;
@@ -283,8 +283,8 @@ public class SpaceTestDiscrete2 {
 												
 						// reduce to 2
 						DecimalFormat fo = new DecimalFormat("0000");
-						Grid2D<Double> df = mrfs.get(maxBmu);
-						Grid2D<Double> subDf = new Grid2D<Double>(0,0);
+						Grid2D_Map<Double> df = mrfs.get(maxBmu);
+						Grid2D_Map<Double> subDf = new Grid2D_Map<Double>(0,0);
 						GridPos center = new GridPos(0,0);
 						for (GridPos gp : df.getPositions()) 
 							if(df.dist(gp, center) <= 2)
@@ -361,8 +361,8 @@ public class SpaceTestDiscrete2 {
 						bg.bmuHistMutable = false;
 
 						Map<double[], Set<double[]>> bmus = NGUtils.getBmuMapping(samples, neurons, bg);
-						Map<double[], Set<Grid2D<Boolean>>> rf = SpaceTestDiscrete.getReceptiveFields(samples, dMap, bmus, maxDist, maxRfSize, ga, fa);
-						Map<double[], Grid2D<Double>> mrfs = SpaceTestDiscrete2.getProbabilityFields(rf);
+						Map<double[], Set<Grid2D_Map<Boolean>>> rf = SpaceTestDiscrete.getReceptiveFields(samples, dMap, bmus, maxDist, maxRfSize, ga, fa);
+						Map<double[], Grid2D_Map<Double>> mrfs = SpaceTestDiscrete2.getProbabilityFields(rf);
 						
 						// save most frequent DoubleFields
 						double[] maxBmu = null;
@@ -376,8 +376,8 @@ public class SpaceTestDiscrete2 {
 												
 						// reduce to 2
 						DecimalFormat fo = new DecimalFormat("0000");
-						Grid2D<Double> df = mrfs.get(maxBmu);
-						Grid2D<Double> subDf = new Grid2D<Double>(0,0);
+						Grid2D_Map<Double> df = mrfs.get(maxBmu);
+						Grid2D_Map<Double> subDf = new Grid2D_Map<Double>(0,0);
 						GridPos center = new GridPos(0,0);
 						for (GridPos gp : df.getPositions()) 
 							if(df.dist(gp, center) <= 2)
@@ -501,12 +501,12 @@ public class SpaceTestDiscrete2 {
 	}
 
 	// hier gibts wohl ein problem
-	public static <T> Map<T, Grid2D<Double>> getProbabilityFields(Map<T, Set<Grid2D<Boolean>>> rcp) {
-		Map<T, Grid2D<Double>> r = new HashMap<T, Grid2D<Double>>();
-		for (Entry<T,Set<Grid2D<Boolean>>> bmu : rcp.entrySet() ) {
+	public static <T> Map<T, Grid2D_Map<Double>> getProbabilityFields(Map<T, Set<Grid2D_Map<Boolean>>> rcp) {
+		Map<T, Grid2D_Map<Double>> r = new HashMap<T, Grid2D_Map<Double>>();
+		for (Entry<T,Set<Grid2D_Map<Boolean>>> bmu : rcp.entrySet() ) {
 			
-			Grid2D<Double> df = new Grid2D<Double>(0,0);
-			for (Grid2D<Boolean> bf : bmu.getValue() ) {
+			Grid2D_Map<Double> df = new Grid2D_Map<Double>(0,0);
+			for (Grid2D_Map<Boolean> bf : bmu.getValue() ) {
 				for (GridPos gp : bf.getPositions()) {
 
 					if (!df.getPositions().contains(gp))
@@ -525,13 +525,13 @@ public class SpaceTestDiscrete2 {
 		return r;
 	}
 
-	public static <T> double[] getUncertainty(Map<T, Set<Grid2D<Boolean>>> rf, int maxDist, boolean rate) {
+	public static <T> double[] getUncertainty(Map<T, Set<Grid2D_Map<Boolean>>> rf, int maxDist, boolean rate) {
 		double sum = 0;
-		for (Set<Grid2D<Boolean>> s : rf.values())
+		for (Set<Grid2D_Map<Boolean>> s : rf.values())
 			sum += s.size();
 
 		double[] r = new double[maxDist + 1];
-		Map<T, Grid2D<Double>> mrfs = SpaceTestDiscrete2.getProbabilityFields(rf);
+		Map<T, Grid2D_Map<Double>> mrfs = SpaceTestDiscrete2.getProbabilityFields(rf);
 				
 		for (int dist = 0; dist <= maxDist; dist++) {
 
@@ -544,7 +544,7 @@ public class SpaceTestDiscrete2 {
 		return r;
 	}
 	
-	public static double getEntropy(Grid2D<Double> df, double dist, boolean rate) {
+	public static double getEntropy(Grid2D_Map<Double> df, double dist, boolean rate) {
 		GridPos center = new GridPos(0, 0);
 		double q = 0;
 		int num = 0;

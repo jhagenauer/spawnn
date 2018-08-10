@@ -19,7 +19,7 @@ import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
 
-import spawnn.som.grid.Grid2D;
+import spawnn.som.grid.Grid2D_Map;
 import spawnn.som.grid.Grid2DToroid;
 import spawnn.som.grid.GridPos;
 import spawnn.som.utils.SomUtils;
@@ -33,14 +33,14 @@ public class DoubleGrid2DUtils {
 	
 	private static Logger log = Logger.getLogger(DoubleGrid2DUtils.class);
 		
-	public static Grid2D<double[]> createSpDepGrid(int xDim, int yDim, boolean toroid ) {
+	public static Grid2D_Map<double[]> createSpDepGrid(int xDim, int yDim, boolean toroid ) {
 		
 		Random r = new Random();
-		Grid2D<double[]> grid;
+		Grid2D_Map<double[]> grid;
 		if( toroid )
 			grid = new Grid2DToroid<double[]>(xDim, yDim);
 		else
-			grid = new Grid2D<double[]>(xDim, yDim);
+			grid = new Grid2D_Map<double[]>(xDim, yDim);
 		
 			List<GridPos> pos = new ArrayList<GridPos>(grid.getPositions());
 			Collections.shuffle(pos);
@@ -133,7 +133,7 @@ public class DoubleGrid2DUtils {
 		return geoms;
 	}
 	
-	public static SpatialDataFrame gridToSDF(Grid2D<double[]> grid) {
+	public static SpatialDataFrame gridToSDF(Grid2D_Map<double[]> grid) {
 		GeometryFactory gf = new GeometryFactory();
 		List<GridPos> pos = new ArrayList<GridPos>(grid.getPositions());
 		List<double[]> samples = new ArrayList<double[]>();
@@ -168,7 +168,7 @@ public class DoubleGrid2DUtils {
 		
 		for( int i = 0; i < 1; i++ ){
 			log.debug(i);
-			Grid2D<double[]> grid = createSpDepGrid(50,50,true);
+			Grid2D_Map<double[]> grid = createSpDepGrid(50,50,true);
 						
 			try {
 				GZIPOutputStream gzos = new GZIPOutputStream(new FileOutputStream("output/grid_"+df.format(i)+".xml.gz"));

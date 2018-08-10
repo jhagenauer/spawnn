@@ -50,7 +50,7 @@ import spawnn.som.bmu.BmuGetter;
 import spawnn.som.bmu.DefaultBmuGetter;
 import spawnn.som.bmu.KangasBmuGetter;
 import spawnn.som.decay.LinearDecay;
-import spawnn.som.grid.Grid2D;
+import spawnn.som.grid.Grid2D_Map;
 import spawnn.som.grid.Grid2DHex;
 import spawnn.som.grid.GridPos;
 import spawnn.som.kernel.GaussKernel;
@@ -118,7 +118,7 @@ public class AustriaMunicipalities {
 		for( int k = 0; k <= 3; k++ ){
 			log.debug(" --- Kangas Som, radius "+k+"  --- ");
 			
-			Grid2D<double[]> grid = new Grid2DHex<double[]>(X_SOM, Y_SOM );
+			Grid2D_Map<double[]> grid = new Grid2DHex<double[]>(X_SOM, Y_SOM );
 			SomUtils.initRandom(grid, samples );
 						
 			BmuGetter<double[]> bmuGetter = new KangasBmuGetter<double[]>( gDist, fDist, k);
@@ -147,10 +147,10 @@ public class AustriaMunicipalities {
 			
 				
 		// geo som
-		Grid2D<double[]> gGrid, tGrid;
+		Grid2D_Map<double[]> gGrid, tGrid;
 		BmuGetter<double[]> gBg, tBg;
 		{
-			Grid2D<double[]> grid = new Grid2DHex<double[]>(geo_x, geo_y );
+			Grid2D_Map<double[]> grid = new Grid2DHex<double[]>(geo_x, geo_y );
 			//SomUtils.initLinear(grid, samples, true);
 			SomUtils.initRandom(grid, samples);
 						
@@ -181,7 +181,7 @@ public class AustriaMunicipalities {
 				
 		// temp som
 		{
-			Grid2D<double[]> grid = new Grid2DHex<double[]>(time_x, time_y );
+			Grid2D_Map<double[]> grid = new Grid2DHex<double[]>(time_x, time_y );
 			//SomUtils.initLinear(grid, samples, true);
 			SomUtils.initRandom(grid, samples);
 			
@@ -224,7 +224,7 @@ public class AustriaMunicipalities {
 			DataUtils.normalize(l);
 			// DataUtil.zScore(l);
 									
-			Grid2D<double[]> grid = new Grid2DHex<double[]>( X_SOM, Y_SOM );
+			Grid2D_Map<double[]> grid = new Grid2DHex<double[]>( X_SOM, Y_SOM );
 			SomUtils.initRandom(grid, l);
 			//grid.initLinear(l, true);
 						

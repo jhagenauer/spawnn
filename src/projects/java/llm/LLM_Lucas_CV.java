@@ -67,7 +67,7 @@ public class LLM_Lucas_CV {
 		int t_max = 100000;
 		int nrNeurons = 20;
 		for( int l = 1; l <= 20; l++ )
-		for (LLMNG.mode mode : new LLMNG.mode[] { LLMNG.mode.fritzke })
+		for (boolean mode : new boolean[] { true })
 			for (double nb1Init : new double[] { nrNeurons, nrNeurons * 2.0 / 3, nrNeurons * 1.0/3 })
 				for (double nb1Final : new double[] { 0.001, 0.01, 0.1, 1 })
 					for (function nb1Func : new function[] { function.Power, function.Linear })
@@ -103,7 +103,7 @@ public class LLM_Lucas_CV {
 					int t_max = (int) p[0];
 					int nrNeurons = (int) p[1];
 					Sorter<double[]> sorter = new KangasSorter<>(gDist, fDist, (int)p[2]);
-					LLMNG.mode mode = (LLMNG.mode) p[3];
+					boolean mode = (boolean) p[3];
 					double nb1Init = (double) p[4];
 					double nb1Final = (double) p[5];
 					function nb1Func = (function) p[6];

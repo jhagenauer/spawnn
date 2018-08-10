@@ -28,7 +28,7 @@ import spawnn.dist.EuclideanDist;
 import spawnn.som.bmu.BmuGetter;
 import spawnn.som.bmu.KangasBmuGetter;
 import spawnn.som.decay.LinearDecay;
-import spawnn.som.grid.Grid2D;
+import spawnn.som.grid.Grid2D_Map;
 import spawnn.som.grid.Grid2DHex;
 import spawnn.som.grid.GridPos;
 import spawnn.som.kernel.GaussKernel;
@@ -104,7 +104,7 @@ public class MinkoSens {
 						futures.add( es.submit(new Callable<Result>() {
 							@Override
 							public Result call() {
-								Grid2D<double[]> grid = new Grid2DHex<double[]>(dim_x, dim_x);
+								Grid2D_Map<double[]> grid = new Grid2DHex<double[]>(dim_x, dim_x);
 								SomUtils.initRandom(grid, samples);
 								
 								BmuGetter<double[]> bmuGetter = new KangasBmuGetter<double[]>(minkDist,	fDist, K);

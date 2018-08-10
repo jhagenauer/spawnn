@@ -1,4 +1,4 @@
-package llm.ga_ng;
+package llm.ga.ng;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -13,19 +13,17 @@ import java.util.TreeMap;
 import ga.GAIndividual;
 import llm.LLMNG;
 import llm.LLM_Lucas_CV.function;
-import llm.WeightedErrorSorter;
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
-import spawnn.ng.sorter.DefaultSorter;
+import spawnn.ng.sorter.KangasSorter;
 import spawnn.ng.sorter.Sorter;
 import spawnn.som.decay.DecayFunction;
 import spawnn.som.decay.LinearDecay;
 import spawnn.som.decay.PowerDecay;
 
 public class LLMNG_Individual implements GAIndividual<LLMNG_Individual> {
-	
-	
-	public static int nrNeurons = 3;
+		
+	private static int nrNeurons = 12;
 	
 	final static Map<String,Object[]> params;
 		
@@ -40,9 +38,11 @@ public class LLMNG_Individual implements GAIndividual<LLMNG_Individual> {
 		list = new ArrayList<>();
 		/*for(double l = 0; l <= 1.01; l+=0.05 )
 			list.add( l );*/
-		list.add( 1.0 );
+		/*for(int l = 1; l <= nrNeurons; l++ )
+			list.add( l );*/
+		list.add(nrNeurons);
 		params.put("w", list.toArray(new Object[]{}));
-		
+				
 		// quantization parameters:
 		
 		list = new ArrayList<>();
@@ -74,13 +74,18 @@ public class LLMNG_Individual implements GAIndividual<LLMNG_Individual> {
 		for( function lr1Func : new function[] { function.Power, function.Linear } )
 			list.add(lr1Func);
 		params.put("lr1Func", list.toArray(new Object[]{}));
-		
+				
 		// coefficient parameters:
 		
 		list = new ArrayList<>();
-		for( LLMNG.mode mode : new LLMNG.mode[] { LLMNG.mode.fritzke, LLMNG.mode.martinetz } )
-			list.add(mode);
-		params.put("mode", list.toArray(new Object[]{}));
+		for( boolean b : new boolean[] { true, false } )
+			list.add(b);
+		params.put("aMode", list.toArray(new Object[]{}));
+		
+		list = new ArrayList<>();
+		for( boolean b : new boolean[] { true, false } )
+			list.add(b);
+		params.put("uMode", list.toArray(new Object[]{}));
 		
 		list = new ArrayList<>();
 		for( double nb2Init : new double[] { 0.2, 0.4, 0.6, 0.8, 1, 2, 3, 6, 9 } )
@@ -98,7 +103,7 @@ public class LLMNG_Individual implements GAIndividual<LLMNG_Individual> {
 		params.put("nb2Func", list.toArray(new Object[]{}));
 		
 		list = new ArrayList<>();
-		for( double lr2Init : new double[] { 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1 } )
+		for( double lr2Init : new double[] { 0.05, 0.1, 0.2, 0.3, 0.4, 0.5 } )
 			list.add(lr2Init);
 		params.put("lr2Init", list.toArray(new Object[]{}));
 		
@@ -151,7 +156,11 @@ public class LLMNG_Individual implements GAIndividual<LLMNG_Individual> {
 				continue;
 			} catch (IllegalArgumentException e) { }
 			try {
-				iParam.put(sp[0], LLMNG.mode.valueOf(sp[1]) );
+				iParam.put(sp[0], Boolean.valueOf(sp[1]) );
+				continue;
+			} catch (IllegalArgumentException e) { }
+			try {
+				iParam.put(sp[0], String.valueOf(sp[1]) );
 				continue;
 			} catch (IllegalArgumentException e) { }
 		}
@@ -197,16 +206,18 @@ public class LLMNG_Individual implements GAIndividual<LLMNG_Individual> {
 		return iParam.toString();
 	}
 	
-	public LLMNG train(List<double[]> samples, int[] fa, int ta ) {
-		return train(samples,fa,ta,0);
+	public LLMNG train(List<double[]> samples, int[] fa, int[] ga, int ta ) {
+		return train(samples,fa,ga,ta,0);
 	}
 		
-	public LLMNG train(List<double[]> samples, int[] fa, int ta, int seed ) {
+	public LLMNG train(List<double[]> samples, int[] fa, int[] ga, int ta, int seed ) {
 		Random r1 = new Random(0);
 		
-		Dist<double[]> dist = new EuclideanDist(fa);
-		WeightedErrorSorter wes =  new WeightedErrorSorter(null, dist, samples, ta, (double)iParam.get("w"));
-		//Sorter<double[]> wes = new DefaultSorter<>(dist);
+		Dist<double[]> fDist = new EuclideanDist(fa);
+		Dist<double[]> gDist = new EuclideanDist(ga);
+		//WeightedErrorSorter wes =  new WeightedErrorSorter(null, dist, samples, ta, (double)iParam.get("w"));
+		//Sorter<double[]> wes = new DefaultSorter<>(fDist);
+		Sorter<double[]> wes = new KangasSorter<double[]>(gDist, fDist, (int)iParam.get("w"));
 		
 		List<double[]> neurons = new ArrayList<>();
 		while (neurons.size() < LLMNG_Individual.nrNeurons ) {
@@ -221,9 +232,10 @@ public class LLMNG_Individual implements GAIndividual<LLMNG_Individual> {
 				getFunction( (double)iParam.get("nb2Init"), (double)iParam.get("nb2Final"), (function)iParam.get("nb2Func")),
 				getFunction( (double)iParam.get("lr2Init"), (double)iParam.get("lr2Final"), (function)iParam.get("lr2Func")),
 				wes, fa, 1);
-		llmng.aMode = (LLMNG.mode)iParam.get("mode");
+		llmng.aMode = (boolean)iParam.get("aMode");
+		llmng.uMode = (boolean)iParam.get("uMode");
 		llmng.ignSupport = false;
-		wes.setSupervisedNet(llmng);
+		//wes.setSupervisedNet(llmng);
 		
 		int t_max = (int)iParam.get("t_max");
 		for (int t = 0; t < t_max; t++) {

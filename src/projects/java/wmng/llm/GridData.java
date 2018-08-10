@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import spawnn.som.grid.Grid2D;
+import spawnn.som.grid.Grid2D_Map;
 import spawnn.utils.GeoUtils;
 
 
@@ -14,9 +14,9 @@ public class GridData {
 	List<double[]> desiredTrain = new ArrayList<double[]>();
 	List<double[]> samplesVal = new ArrayList<double[]>();
 	List<double[]> desiredVal = new ArrayList<double[]>();
-	Grid2D<double[]> gridTrain,gridVal;
+	Grid2D_Map<double[]> gridTrain,gridVal;
 
-	public GridData(Grid2D<double[]> gridTrain, Grid2D<double[]> gridVal) {
+	public GridData(Grid2D_Map<double[]> gridTrain, Grid2D_Map<double[]> gridVal) {
 		this.gridTrain = gridTrain;
 		dMapTrain = GeoUtils.getRowNormedMatrix(GeoUtils.listsToWeightsOld(GeoUtils.getNeighborsFromGrid(gridTrain)));
 		for (double[] d : gridTrain.getPrototypes()) {

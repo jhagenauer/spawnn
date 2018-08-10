@@ -13,7 +13,6 @@ import org.apache.commons.math3.stat.correlation.SpearmansCorrelation;
 import org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression;
 import org.apache.log4j.Logger;
 
-import llm.LLMNG.mode;
 import rbf.Meuse;
 import spawnn.SupervisedNet;
 import spawnn.dist.Dist;
@@ -23,7 +22,7 @@ import spawnn.som.bmu.DefaultBmuGetter;
 import spawnn.som.decay.DecayFunction;
 import spawnn.som.decay.LinearDecay;
 import spawnn.som.grid.Grid;
-import spawnn.som.grid.Grid2D;
+import spawnn.som.grid.Grid2D_Map;
 import spawnn.som.grid.Grid2DHex;
 import spawnn.som.grid.GridPos;
 import spawnn.som.kernel.GaussKernel;
@@ -100,7 +99,8 @@ public class LLMSOM extends SOM implements SupervisedNet {
 		return getResponse(x, grid.getPositionOf(neuron) );
 	}
 	
-	public mode aMode = mode.fritzke;
+	public boolean aMode = true;
+	public boolean uMode = false;
 
 	public void train(double t, double[] x, double[] desired) {
 		
@@ -116,13 +116,16 @@ public class LLMSOM extends SOM implements SupervisedNet {
 				v[j] = v[j] + adapt * (x[j] - v[j]);
 			grid.setPrototypeAt(p, v);
 			
+			if( uMode )
+				r = getResponse(x, p); 
+			
 			// adapt output
 			double adapt2 = nb2.getValue(grid.dist(bmuPos, p), t) * lr2.getValue(t);
 			double[] o = output.get(p); // output Vector
 			for (int i = 0; i < desired.length; i++) {
-				if( aMode == mode.fritzke )
+				if( aMode ) // Fritzke
 					o[i] += adapt2 * (desired[i] - o[i]);
-				else if( aMode == mode.martinetz)
+				else if( aMode ) // Martinetz
 					o[i] += adapt2 * (desired[i] - r[i]);
 			}
 						
@@ -136,6 +139,10 @@ public class LLMSOM extends SOM implements SupervisedNet {
 	
 	public void setBmuGetter( BmuGetter<double[]> bmuGetter ) {
 		this.bmuGetter = bmuGetter;
+	}
+	
+	public BmuGetter<double[]> getBmuGetter() {
+		return this.bmuGetter;
 	}
 	
 	public static void main(String[] args) {
@@ -193,7 +200,7 @@ public class LLMSOM extends SOM implements SupervisedNet {
 		
 		log.debug("----------- LLMSOM: --------------");
 
-		Grid2D<double[]> grid = new Grid2DHex<double[]>(8, 6);
+		Grid2D_Map<double[]> grid = new Grid2DHex<double[]>(8, 6);
 		SomUtils.initRandom(grid, samples);
 		BmuGetter<double[]> bmuGetter = new DefaultBmuGetter<double[]>(dist);
 		

@@ -18,8 +18,6 @@ public class LLMNG extends NG implements SupervisedNet {
 	private int[] fa;
 	private DecayFunction neighborhoodRange2, adaptationRate2;
 	
-	public enum mode {fritzke, martinetz};
-		
 	public LLMNG( List<double[]> neurons, 
 			DecayFunction neighborhoodRange, DecayFunction adaptationRate,
 			DecayFunction neighborhoodRange2, DecayFunction adaptationRate2, 
@@ -70,7 +68,8 @@ public class LLMNG extends NG implements SupervisedNet {
 		return r;
 	}
 	
-	public mode aMode = mode.martinetz;
+	public boolean aMode = false;
+	public boolean uMode = false;
 	public boolean ignSupport = false; // intercept
 	
 	@Override
@@ -90,14 +89,17 @@ public class LLMNG extends NG implements SupervisedNet {
 			double adapt = e * Math.exp( -(double)k/l );
 			for( int i = 0; i < w.length; i++ ) 
 				w[i] +=  adapt * ( x[i] - w[i] );
-							
+			
+			if( uMode )
+				r = getResponse( x, w );
+										
 			// adapt output
 			double adapt2 = e2 * Math.exp( -(double)k/l2 );
 			double[] o = output.get(w); // output Vector
 			for( int i = 0; i < desired.length; i++ ) {
-				if( aMode == mode.fritzke )
+				if( aMode ) // fritzke
 					o[i] += adapt2 * (desired[i] - o[i]);
-				else if( aMode == mode.martinetz)
+				else if( aMode ) // martinetz
 					o[i] += adapt2 * (desired[i] - r[i]);
 			}
 						

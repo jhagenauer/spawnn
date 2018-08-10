@@ -20,8 +20,8 @@ import org.jblas.Solve;
 
 import com.vividsolutions.jts.geom.Point;
 
-import chowClustering.LinearModel;
 import nnet.SupervisedUtils;
+import regioClust.LinearModel;
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
 import spawnn.ng.sorter.DefaultSorter;

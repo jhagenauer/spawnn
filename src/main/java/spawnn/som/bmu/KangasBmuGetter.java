@@ -28,16 +28,6 @@ public class KangasBmuGetter<T> extends BmuGetter<T> {
 		if( k == 0 ) 
 			return bmuA;
 		
-		Set<GridPos> ignore = new HashSet<GridPos>(ign);
-		for( GridPos p : grid.getPositions() ) 
-			if( grid.dist(bmuA, p) > k )
-				ignore.add(p);
-					
-		return b.getBmuPos(x, grid, ignore);
-	}
-
-	@Deprecated
-	public GridPos getBmuBPos(T x, Grid<T> grid, Set<GridPos> ign, GridPos bmuA ) {
 		Set<GridPos> ignore = new HashSet<GridPos>();
 		if( ign != null )
 			ignore.addAll(ign);
@@ -46,14 +36,5 @@ public class KangasBmuGetter<T> extends BmuGetter<T> {
 				ignore.add(p);
 					
 		return b.getBmuPos(x, grid, ignore);
-	}
-	
-	@Deprecated
-	public GridPos getBmuAPos( T x, Grid<T> grid, Set<GridPos> ign ) {
-		return a.getBmuPos(x, grid, ign);
-	}
-	
-	public int getRadius() {
-		return k;
 	}
 }

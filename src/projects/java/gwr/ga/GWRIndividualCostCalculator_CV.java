@@ -10,8 +10,8 @@ import org.jblas.DoubleMatrix;
 import org.jblas.Solve;
 import org.jblas.exceptions.LapackException;
 
-import chowClustering.LinearModel;
 import nnet.SupervisedUtils;
+import regioClust.LinearModel;
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
 import spawnn.utils.GeoUtils;

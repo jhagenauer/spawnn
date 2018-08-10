@@ -1,4 +1,4 @@
-package llm.ga_ng;
+package llm.ga.ng;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -34,7 +34,7 @@ public class LLMNG_NMI_CostCalculator implements CostCalculator<LLMNG_Individual
 		
 		double sum = 0;
 		for( int j = 0; j < 100; j++ ) {
-			LLMNG llmng = i.train(samples, fa, ta,j);
+			LLMNG llmng = i.train(samples, fa, null, ta,j);
 			
 			Map<double[],Map<double[],Double>> graph = new HashMap<double[],Map<double[],Double>>();
 					
