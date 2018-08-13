@@ -1,6 +1,8 @@
 package llm.ga.som;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -8,13 +10,19 @@ import org.apache.log4j.Logger;
 
 import com.vividsolutions.jts.geom.Coordinate;
 
-import cern.colt.Arrays;
 import ga.CostCalculator;
 import ga.GeneticAlgorithm;
 import llm.LLMNG;
+import llm.LLMSOM;
 import llm.ga.ng.LLMNG_CV_CostCalculator;
 import llm.ga.ng.LLMNG_Individual;
 import llm.ga.ng.LLMNG_QE_CostCalculator;
+import spawnn.dist.EuclideanDist;
+import spawnn.som.grid.Grid2D;
+import spawnn.som.grid.Grid2DHex;
+import spawnn.som.grid.GridPos;
+import spawnn.som.utils.SomUtils;
+import spawnn.utils.ColorBrewer;
 import spawnn.utils.DataUtils;
 import spawnn.utils.DataUtils.Transform;
 import spawnn.utils.SpatialDataFrame;
@@ -110,12 +118,23 @@ public class LLMSOM_GA_Main {
 		CostCalculator<LLMSOM_Individual> cc_qe = new LLMSOM_QE_CostCalculator(samples, fa, ga, ta);
 		
 		for( LLMSOM_Individual i : new LLMSOM_Individual[]{	
-				new LLMSOM_Individual("{aMode=true, lr1Final=0.001, lr1Init=0.8, lr2Final=1.0E-4, lr2Init=0.15, nb1Final=0.1, nb1Init=8.0, nb2Final=0.0, nb2Init=3.0, t_max=100000, uMode=true, w=8.0}")
+				new LLMSOM_Individual("{aMode=true, lr1Final=0.001, lr1Init=0.8, lr2Final=0.01, lr2Init=0.05, nb1Final=0.1, nb1Init=8.0, nb2Final=0.1, nb2Init=8.0, t_max=10000, uMode=false, w=1.0}"),
+				new LLMSOM_Individual("{aMode=true, lr1Final=0.001, lr1Init=0.8, lr2Final=0.01, lr2Init=0.05, nb1Final=0.1, nb1Init=8.0, nb2Final=0.1, nb2Init=8.0, t_max=50000, uMode=false, w=1.0}"),
+				new LLMSOM_Individual("{aMode=true, lr1Final=0.001, lr1Init=0.8, lr2Final=0.01, lr2Init=0.05, nb1Final=0.1, nb1Init=8.0, nb2Final=0.1, nb2Init=8.0, t_max=100000, uMode=false, w=1.0}"),
+				new LLMSOM_Individual("{aMode=true, lr1Final=0.001, lr1Init=0.8, lr2Final=0.01, lr2Init=0.05, nb1Final=0.1, nb1Init=8.0, nb2Final=0.1, nb2Init=8.0, t_max=200000, uMode=false, w=1.0}"),
+				
+				new LLMSOM_Individual("{aMode=true, lr1Final=0.001, lr1Init=0.8, lr2Final=0.001, lr2Init=0.05, nb1Final=0.1, nb1Init=8.0, nb2Final=0.1, nb2Init=8.0, t_max=10000, uMode=false, w=1.0}"),
+				new LLMSOM_Individual("{aMode=true, lr1Final=0.001, lr1Init=0.8, lr2Final=0.001, lr2Init=0.05, nb1Final=0.1, nb1Init=8.0, nb2Final=0.1, nb2Init=8.0, t_max=50000, uMode=false, w=1.0}"),
+				new LLMSOM_Individual("{aMode=true, lr1Final=0.001, lr1Init=0.8, lr2Final=0.001, lr2Init=0.05, nb1Final=0.1, nb1Init=8.0, nb2Final=0.1, nb2Init=8.0, t_max=100000, uMode=false, w=1.0}"),
+				new LLMSOM_Individual("{aMode=true, lr1Final=0.001, lr1Init=0.8, lr2Final=0.001, lr2Init=0.05, nb1Final=0.1, nb1Init=8.0, nb2Final=0.1, nb2Init=8.0, t_max=200000, uMode=false, w=1.0}")
 		} ) {
 			log.debug(i);
 			log.debug( cc.getCost(i)+" "+cc_qe.getCost(i) );
 			
-			/*LLMSOM llmSOM = i.train(samples, fa, ga, ta);
+			if( 1 != 0)
+				continue;
+			
+			LLMSOM llmSOM = i.train(samples, fa, ga, ta);
 			try {
 				Grid2D<double[]> grid = (Grid2D<double[]>)llmSOM.getGrid();
 				SomUtils.printHexUMat(grid, new EuclideanDist(fa), ColorBrewer.YlGnBu, new FileOutputStream("output/"+llmSOM.hashCode()+"_umat_"+i.iParam+".png"));
@@ -124,22 +143,17 @@ public class LLMSOM_GA_Main {
 				for( int j : fa ) 
 					SomUtils.printComponentPlane( grid, j, ColorBrewer.YlGnBu, new FileOutputStream("output/"+llmSOM.hashCode()+"_comp_"+names[j]+"_"+i.iParam+".png"));
 				
-				Grid2D<double[]> coefGrid;
-				if( grid instanceof Grid2DHexToroid )
-					coefGrid = new Grid2DHexToroid<>(grid.getGridMap());
-				else
-					coefGrid = new Grid2DHex<>(grid.getGridMap());
-				for( GridPos p : coefGrid.getPositions() ) 
-					coefGrid.setPrototypeAt( p, llmSOM.matrix.get(p)[0] );
+				Grid2D<double[]> coefGrid = new Grid2DHex<>(grid.getSizeOfDim(0),grid.getSizeOfDim(1));
+				for( GridPos p : coefGrid.getPositions() )
+					coefGrid.setPrototypeAt(p, llmSOM.matrix.get(p)[0] );
 				
 				for( int j = 0; j < fa.length; j++ )
 					SomUtils.printComponentPlane( coefGrid, j, ColorBrewer.YlGnBu, new FileOutputStream("output/"+llmSOM.hashCode()+"_coef_"+names[fa[j]]+"_"+i.iParam+".png"));
 				
 			} catch (FileNotFoundException e) {
 				e.printStackTrace();
-			}*/
+			}
 		}
-		System.exit(1);
 			
 		GeneticAlgorithm.tournamentSize = 3;
 		GeneticAlgorithm.elitist = true;

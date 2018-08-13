@@ -33,8 +33,8 @@ public class LLMSOM_CV_CostCalculator implements CostCalculator<LLMSOM_Individua
 	public double getCost(LLMSOM_Individual i) {
 
 		SummaryStatistics ss = new SummaryStatistics();
-		for (int t_max : new int[] { 10000/*, 50000, 100000*/ }) {
-			i.iParam.put("t_max", t_max);
+		//for (int t_max : new int[] { 10000, 50000, 100000 }) {
+		//	i.iParam.put("t_max", t_max);
 			for (final Entry<List<Integer>, List<Integer>> cvEntry : cvList) {
 				List<double[]> samplesTrain = new ArrayList<double[]>();
 				for (int k : cvEntry.getKey())
@@ -55,7 +55,7 @@ public class LLMSOM_CV_CostCalculator implements CostCalculator<LLMSOM_Individua
 					return Double.POSITIVE_INFINITY;
 				ss.addValue(rmse);
 			}
-		}
+		//}
 		double mean = ss.getMean();
 		if (Double.isNaN(mean))
 			return Double.POSITIVE_INFINITY;

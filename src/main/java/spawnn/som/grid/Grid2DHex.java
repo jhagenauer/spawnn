@@ -21,7 +21,6 @@ public class Grid2DHex<T> extends Grid2D_Array<T> {
 		return getHexDist(xDist, yDist, y1 > y0, x0 % 2 == 0 );
 	}
 	
-
 	protected int getHexDist( int minXDist, int minYDist, boolean up, boolean evenX ) {
 		int dist = minXDist + minYDist;
 		if( up ) { // up

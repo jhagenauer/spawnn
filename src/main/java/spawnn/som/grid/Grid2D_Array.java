@@ -4,6 +4,11 @@ public class Grid2D_Array<T> extends Grid2D<T> {
 	
 	private T[][] grid;
 	
+	public Grid2D_Array( T[][] grid ) {
+		super(grid.length,grid[0].length);
+		this.grid = grid;
+	}
+		
 	@SuppressWarnings("unchecked")
 	public Grid2D_Array( int xSize, int ySize ) { 
 		super(xSize,ySize);

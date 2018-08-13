@@ -30,7 +30,7 @@ public class LLMSOM_Individual implements GAIndividual<LLMSOM_Individual> {
 		params = new TreeMap<>();
 		
 		List<Object> list = new ArrayList<>();
-		for(int l : new int[]{ 10000 } )
+		for(int l : new int[]{ 200000 } )
 			list.add( l );
 		params.put("t_max", list.toArray(new Object[]{}));
 				
@@ -38,8 +38,6 @@ public class LLMSOM_Individual implements GAIndividual<LLMSOM_Individual> {
 		for(double l : new double[]{ 1, 2, 3, 4, 5, 6, 7, 8 } )
 			list.add( l );
 		params.put("w", list.toArray(new Object[]{}));
-		
-		params.put("type", new Object[]{"normal"});
 		
 		// som parameters:
 		

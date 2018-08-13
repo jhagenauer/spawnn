@@ -16,6 +16,8 @@ public abstract class Grid<T> {
 	public abstract T getPrototypeAt( GridPos pos );
 	public abstract T setPrototypeAt( GridPos pos, T v );
 	
+	public Grid() {};
+	
 	public int getMaxDist() {
 		int max = 0;
 		for( GridPos p1 : getPositions() )
