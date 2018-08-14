@@ -112,21 +112,23 @@ public class LLMSOM_GA_Main {
 			log.info(cc2.getCost(result));
 			log.info(result.iParam);
 		}
-		//System.exit(1);
+		System.exit(1);
 		
 		CostCalculator<LLMSOM_Individual> cc = new LLMSOM_CV_CostCalculator(samples, fa, ga, ta);
 		CostCalculator<LLMSOM_Individual> cc_qe = new LLMSOM_QE_CostCalculator(samples, fa, ga, ta);
 		
 		for( LLMSOM_Individual i : new LLMSOM_Individual[]{	
 				new LLMSOM_Individual("{aMode=true, lr1Final=0.001, lr1Init=0.8, lr2Final=0.01, lr2Init=0.05, nb1Final=0.1, nb1Init=8.0, nb2Final=0.1, nb2Init=8.0, t_max=10000, uMode=false, w=1.0}"),
-				new LLMSOM_Individual("{aMode=true, lr1Final=0.001, lr1Init=0.8, lr2Final=0.01, lr2Init=0.05, nb1Final=0.1, nb1Init=8.0, nb2Final=0.1, nb2Init=8.0, t_max=50000, uMode=false, w=1.0}"),
-				new LLMSOM_Individual("{aMode=true, lr1Final=0.001, lr1Init=0.8, lr2Final=0.01, lr2Init=0.05, nb1Final=0.1, nb1Init=8.0, nb2Final=0.1, nb2Init=8.0, t_max=100000, uMode=false, w=1.0}"),
-				new LLMSOM_Individual("{aMode=true, lr1Final=0.001, lr1Init=0.8, lr2Final=0.01, lr2Init=0.05, nb1Final=0.1, nb1Init=8.0, nb2Final=0.1, nb2Init=8.0, t_max=200000, uMode=false, w=1.0}"),
 				
-				new LLMSOM_Individual("{aMode=true, lr1Final=0.001, lr1Init=0.8, lr2Final=0.001, lr2Init=0.05, nb1Final=0.1, nb1Init=8.0, nb2Final=0.1, nb2Init=8.0, t_max=10000, uMode=false, w=1.0}"),
-				new LLMSOM_Individual("{aMode=true, lr1Final=0.001, lr1Init=0.8, lr2Final=0.001, lr2Init=0.05, nb1Final=0.1, nb1Init=8.0, nb2Final=0.1, nb2Init=8.0, t_max=50000, uMode=false, w=1.0}"),
-				new LLMSOM_Individual("{aMode=true, lr1Final=0.001, lr1Init=0.8, lr2Final=0.001, lr2Init=0.05, nb1Final=0.1, nb1Init=8.0, nb2Final=0.1, nb2Init=8.0, t_max=100000, uMode=false, w=1.0}"),
-				new LLMSOM_Individual("{aMode=true, lr1Final=0.001, lr1Init=0.8, lr2Final=0.001, lr2Init=0.05, nb1Final=0.1, nb1Init=8.0, nb2Final=0.1, nb2Init=8.0, t_max=200000, uMode=false, w=1.0}")
+				new LLMSOM_Individual("{aMode=true, lr1Final=0.001, lr1Init=0.8, lr2Final=0.01, lr2Init=0.05, nb1Final=0.1, nb1Init=8.0, nb2Final=0.1, nb2Init=8.0, t_max=10000, uMode=false, w=12.0}"),
+				new LLMSOM_Individual("{aMode=true, lr1Final=0.001, lr1Init=0.8, lr2Final=0.01, lr2Init=0.05, nb1Final=0.1, nb1Init=8.0, nb2Final=0.1, nb2Init=8.0, t_max=50000, uMode=false, w=12.0}"),
+				new LLMSOM_Individual("{aMode=true, lr1Final=0.001, lr1Init=0.8, lr2Final=0.01, lr2Init=0.05, nb1Final=0.1, nb1Init=8.0, nb2Final=0.1, nb2Init=8.0, t_max=100000, uMode=false, w=12.0}"),
+				new LLMSOM_Individual("{aMode=true, lr1Final=0.001, lr1Init=0.8, lr2Final=0.01, lr2Init=0.05, nb1Final=0.1, nb1Init=8.0, nb2Final=0.1, nb2Init=8.0, t_max=200000, uMode=false, w=12.0}"),
+				
+				new LLMSOM_Individual("{aMode=true, lr1Final=0.001, lr1Init=0.8, lr2Final=0.001, lr2Init=0.05, nb1Final=0.1, nb1Init=8.0, nb2Final=0.1, nb2Init=8.0, t_max=10000, uMode=false, w=12.0}"),
+				new LLMSOM_Individual("{aMode=true, lr1Final=0.001, lr1Init=0.8, lr2Final=0.001, lr2Init=0.05, nb1Final=0.1, nb1Init=8.0, nb2Final=0.1, nb2Init=8.0, t_max=50000, uMode=false, w=12.0}"),
+				new LLMSOM_Individual("{aMode=true, lr1Final=0.001, lr1Init=0.8, lr2Final=0.001, lr2Init=0.05, nb1Final=0.1, nb1Init=8.0, nb2Final=0.1, nb2Init=8.0, t_max=100000, uMode=false, w=12.0}"),
+				new LLMSOM_Individual("{aMode=true, lr1Final=0.001, lr1Init=0.8, lr2Final=0.001, lr2Init=0.05, nb1Final=0.1, nb1Init=8.0, nb2Final=0.1, nb2Init=8.0, t_max=200000, uMode=false, w=12.0}")
 		} ) {
 			log.debug(i);
 			log.debug( cc.getCost(i)+" "+cc_qe.getCost(i) );

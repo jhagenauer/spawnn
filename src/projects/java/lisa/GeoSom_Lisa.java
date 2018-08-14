@@ -69,12 +69,11 @@ public class GeoSom_Lisa {
 		final Dist<double[]> gDist = new EuclideanDist(ga);
 		// ------------------------------------------------------------------------
 		{
-			
-			
-		Map<double[], Map<double[], Double>> dMap = GeoUtils.getRowNormedMatrix( GeoUtils.listsToWeightsOld( GeoUtils.getKNNs(samples, gDist, 4, false) ) );
-	
-			
-		//Map<double[], Map<double[], Double>> dMap = GeoUtils.getRowNormedMatrix(GeoUtils.listsToWeights(GeoUtils.getContiguityMap(samples, geoms, false, false)));
+				
+		//Map<double[], Map<double[], Double>> dMap = GeoUtils.getRowNormedMatrix( GeoUtils.listsToWeightsOld( GeoUtils.getKNNs(samples, gDist, 4, false) ) );
+		
+		// shouldn't this be inverse distance map?
+		Map<double[], Map<double[], Double>> dMap = GeoUtils.getRowNormedMatrix(GeoUtils.contiguityMapToDistanceMap(GeoUtils.getContiguityMap(samples, geoms, false, false)));
 
 		Map<double[],Double> v = new HashMap<double[],Double>();
 		for( double[] d : samples )

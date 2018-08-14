@@ -612,7 +612,7 @@ public class GeoUtils {
 		return r;
 	}
 	
-	public static Map<double[], Map<double[], Double>> listsToWeightsOld( Map<double[], List<double[]>> connectMap ) {
+	public static Map<double[], Map<double[], Double>> listsToWeightsOld( Map<double[], Set<double[]>> connectMap ) {
 		Map<double[], Map<double[], Double>> r = new HashMap<>();
 		for( double[] a : connectMap.keySet() ) {
 			r.put(a, new HashMap<double[],Double>() );

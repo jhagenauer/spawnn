@@ -17,7 +17,9 @@ import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
 
 import ga.GeneticAlgorithm;
-import nnet.SupervisedUtils;
+import spawnn.som.grid.Grid;
+import spawnn.som.grid.Grid2D_Array;
+import spawnn.som.grid.GridPos;
 import spawnn.utils.DataUtils;
 import spawnn.utils.GeoUtils;
 import spawnn.utils.GeoUtils.GWKernel;
@@ -28,6 +30,7 @@ public class GA_Main {
 
 	public static void main(String[] args) {
 
+		Random r = new Random();
 		GeometryFactory gf = new GeometryFactory();
 		GWKernel kernel = GWKernel.bisquare;
 		boolean adaptive = true;
@@ -36,9 +39,24 @@ public class GA_Main {
 		int[] ga = new int[] { 0, 1 };
 		int[] fa = new int[] { 3 };
 		int ta = 4;
+		
+		int dim = 50;
+		Grid<double[]> grid = new Grid2D_Array<>(dim,dim);
+		for( GridPos p : grid.getPositions() ) {
+			double lon = p.getPos(0);
+			double lat = p.getPos(1);
+			
+			double beta = 1;
+			if( lon > dim/2 )
+				beta = -1;
+			double x1 = r.nextDouble();
+			double y = x1 + beta;
+						
+			double[] d = new double[]{ lon, lat, beta, x1, y};
+			grid.setPrototypeAt(p, d);
+		}
 
-		int pointsPerRow = (int) Math.pow(2, 4);
-		List<double[]> samples = new ArrayList<double[]>(BuildTestData.createSpDepTestData(pointsPerRow));
+		List<double[]> samples = new ArrayList<double[]>(grid.getPrototypes());
 		List<Geometry> geoms = new ArrayList<Geometry>();
 		for (double[] d : samples)
 			geoms.add(gf.createPoint(new Coordinate(d[ga[0]], d[ga[1]])));
@@ -48,32 +66,17 @@ public class GA_Main {
 		Map<double[], Integer> idxMap = new HashMap<double[], Integer>();
 		for (int i = 0; i < samples.size(); i++)
 			idxMap.put(samples.get(i), i);
-
-		double delta = 0.0000001;
-		Map<Integer, Set<Integer>> cmI = new HashMap<Integer, Set<Integer>>();
-		for (int i = 0; i < samples.size(); i++) {
-			double[] a = samples.get(i);
-			Set<Integer> s = new HashSet<Integer>();
-			for (int j = 0; j < samples.size(); j++) {
-				double[] b = samples.get(j);
-				if (Math.abs(a[ga[0]] - b[ga[0]]) <= delta + 1.0 / pointsPerRow
-						&& Math.abs(a[ga[1]] - b[ga[1]]) <= delta + 1.0 / pointsPerRow) // expects
-																						// 1/pointsPerRow
-																						// spacing
-					s.add(j);
-			}
-			cmI.put(i, s);
+		
+		Map<double[], Set<double[]>> cm = grid.getContiguityMap();
+		Map<Integer, Set<Integer>> cmI = new HashMap<Integer, Set<Integer>>();		
+		for( Entry<double[],Set<double[]>> e : cm.entrySet() ) {
+			Set<Integer> s = new HashSet<>();
+			for( double[] d : e.getValue() ) 
+				s.add( samples.indexOf(d) );
+			cmI.put(samples.indexOf(e.getKey()), s);
 		}
 		GWRIndividual.cmI = cmI;
-
-		Map<double[], Set<double[]>> cm = new HashMap<double[], Set<double[]>>();
-		for (int i : cmI.keySet()) {
-			Set<double[]> s = new HashSet<double[]>();
-			for (int j : cmI.get(i))
-				s.add(samples.get(j));
-			cm.put(samples.get(i), s);
-		}
-
+		
 		Map<double[], Map<double[], Double>> dMap = GeoUtils.getRowNormedMatrix(GeoUtils.contiguityMapToDistanceMap(cm));
 
 		GWRCostCalculator ccAICc = new GWRIndividualCostCalculator_AICc(samples, fa, ga, ta, kernel, adaptive, minBw);
@@ -81,7 +84,7 @@ public class GA_Main {
 		{
 			log.info("Search global bandwidth/j");
 			double bestGlobalACIc = Double.MAX_VALUE;
-			for (int j = 2; j < pointsPerRow; j++) {
+			for (int j = 2; j < dim; j++) {
 				List<Double> bw = new ArrayList<Double>();
 				for (int i = 0; i < samples.size(); i++)
 					bw.add((double) j);
@@ -109,7 +112,6 @@ public class GA_Main {
 		double sd = -1; // only used if mutationMode==true
 		boolean intInd = true;
 
-		Random r = new Random();
 		List<GWRIndividual> init = new ArrayList<GWRIndividual>();
 		while (init.size() < 100) {
 			List<Double> bandwidth = new ArrayList<>();

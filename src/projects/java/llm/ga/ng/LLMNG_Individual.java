@@ -13,10 +13,9 @@ import java.util.TreeMap;
 import ga.GAIndividual;
 import llm.LLMNG;
 import llm.LLM_Lucas_CV.function;
+import llm.WeightedErrorSorter;
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
-import spawnn.ng.sorter.KangasSorter;
-import spawnn.ng.sorter.Sorter;
 import spawnn.som.decay.DecayFunction;
 import spawnn.som.decay.LinearDecay;
 import spawnn.som.decay.PowerDecay;
@@ -40,7 +39,8 @@ public class LLMNG_Individual implements GAIndividual<LLMNG_Individual> {
 			list.add( l );*/
 		/*for(int l = 1; l <= nrNeurons; l++ )
 			list.add( l );*/
-		list.add(nrNeurons);
+		//list.add(nrNeurons);
+		list.add( 0.0 );
 		params.put("w", list.toArray(new Object[]{}));
 				
 		// quantization parameters:
@@ -215,9 +215,9 @@ public class LLMNG_Individual implements GAIndividual<LLMNG_Individual> {
 		
 		Dist<double[]> fDist = new EuclideanDist(fa);
 		Dist<double[]> gDist = new EuclideanDist(ga);
-		//WeightedErrorSorter wes =  new WeightedErrorSorter(null, dist, samples, ta, (double)iParam.get("w"));
+		WeightedErrorSorter wes =  new WeightedErrorSorter(null, fDist, samples, ta, (double)iParam.get("w"));
 		//Sorter<double[]> wes = new DefaultSorter<>(fDist);
-		Sorter<double[]> wes = new KangasSorter<double[]>(gDist, fDist, (int)iParam.get("w"));
+		//Sorter<double[]> wes = new KangasSorter<double[]>(gDist, fDist, (int)iParam.get("w"));
 		
 		List<double[]> neurons = new ArrayList<>();
 		while (neurons.size() < LLMNG_Individual.nrNeurons ) {
@@ -235,7 +235,7 @@ public class LLMNG_Individual implements GAIndividual<LLMNG_Individual> {
 		llmng.aMode = (boolean)iParam.get("aMode");
 		llmng.uMode = (boolean)iParam.get("uMode");
 		llmng.ignSupport = false;
-		//wes.setSupervisedNet(llmng);
+		wes.setSupervisedNet(llmng);
 		
 		int t_max = (int)iParam.get("t_max");
 		for (int t = 0; t < t_max; t++) {

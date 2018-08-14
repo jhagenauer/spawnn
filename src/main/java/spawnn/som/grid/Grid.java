@@ -3,6 +3,7 @@ package spawnn.som.grid;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -41,10 +42,10 @@ public abstract class Grid<T> {
 	}	
 	
 	// contiguity map of prototypes
-	public Map<T,List<T>> getContiguityMap() {
-		Map<T,List<T>> m = new HashMap<T,List<T>>();
+	public Map<T,Set<T>> getContiguityMap() {
+		Map<T,Set<T>> m = new HashMap<T,Set<T>>();
 		for( GridPos gp : getPositions() ) {
-			List<T> l = new ArrayList<T>();
+			Set<T> l = new HashSet<T>();
 			for( GridPos nb : getNeighbours(gp))
 				l.add( getPrototypeAt(nb));
 			m.put( getPrototypeAt(gp), l);
