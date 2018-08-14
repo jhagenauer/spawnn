@@ -612,16 +612,6 @@ public class GeoUtils {
 		return r;
 	}
 	
-	public static Map<double[], Map<double[], Double>> listsToWeightsOld( Map<double[], Set<double[]>> connectMap ) {
-		Map<double[], Map<double[], Double>> r = new HashMap<>();
-		for( double[] a : connectMap.keySet() ) {
-			r.put(a, new HashMap<double[],Double>() );
-			for( double[] nb : connectMap.get(a) )
-				r.get(a).put(nb, 1.0 );
-		}
-		return r;
-	}
-
 	public static Map<double[], Set<double[]>> getContiguityMap(List<double[]> samples, List<Geometry> geoms, boolean rookAdjacency, boolean includeIdentity ) {
 		Map<double[], Set<double[]>> r = new HashMap<>();
 		for( int i = 0; i < samples.size(); i++ ) {

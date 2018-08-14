@@ -8,8 +8,12 @@ import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JButton;
@@ -165,7 +169,11 @@ public class DistMatrixDialog extends JDialog implements ActionListener {
 			} else if( cb.getSelectedItem() == DistMatType.InvDistance ) {
 				dMap = GeoUtils.getInverseDistanceMatrix(samples, dist, Double.parseDouble(power.getText() ) );
 			} else { // knn
-				dMap = GeoUtils.listsToWeightsOld( GeoUtils.getKNNs(samples, dist, Integer.parseInt(knns.getText()), knnIncIdent.isSelected() ));
+				Map<double[],List<double[]>> knn = GeoUtils.getKNNs(samples, dist, Integer.parseInt(knns.getText()), knnIncIdent.isSelected() );
+				Map<double[],Set<double[]>> cm = new HashMap<>();
+				for( Entry<double[], List<double[]>> e1 : knn.entrySet() ) 
+					cm.put( e1.getKey(), new HashSet<>(e1.getValue()));
+				dMap = GeoUtils.contiguityMapToDistanceMap(cm);
 			}
 			
 			if( rowNorm.isSelected() )
