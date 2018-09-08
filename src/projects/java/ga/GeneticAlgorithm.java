@@ -17,6 +17,9 @@ import java.util.concurrent.Future;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.log4j.Logger;
 
+import gwr.ga.GWRIndividual;
+import heuristics.CostCalculator;
+
 public class GeneticAlgorithm<T extends GAIndividual<T>> {
 
 	private static Logger log = Logger.getLogger(GeneticAlgorithm.class);
@@ -27,6 +30,8 @@ public class GeneticAlgorithm<T extends GAIndividual<T>> {
 	public static int tournamentSize = 2;
 	public static double recombProb = 0.7;
 	public static boolean elitist = false;
+	public static int maxK = 20000;
+	public static int maxNoImpro = 100;
 
 	public T search(List<T> init, CostCalculator<T> cc) {
 
@@ -47,9 +52,8 @@ public class GeneticAlgorithm<T extends GAIndividual<T>> {
 		int offspringSize = parentSize * 2;
 
 		log.debug("Evolving...");
-		int maxK = 50000;
 		int k = 0;
-		while (k < maxK && noImpro < 200) {
+		while ( k < maxK && noImpro < maxNoImpro ) {
 			log.debug("k: " + k);
 
 			// check best and increase noImpro
@@ -63,11 +67,19 @@ public class GeneticAlgorithm<T extends GAIndividual<T>> {
 				}
 				ds.addValue(costs.get(cur));
 			}
-
+			
 			if (k % 25 == 0) {
 				log.debug(k + ", min: " + ds.getMin() + ", 2qt: " + ds.getPercentile(25) + ", mean: " + ds.getMean()
 						+ ", med: " + ds.getPercentile(50) + ", 4qt: " + ds.getPercentile(75) + ", max: " + ds.getMax()
 						+ ", sd: " + ds.getStandardDeviation());
+				
+				if( best instanceof GWRIndividual ) {
+					double meanMut = 0;
+					for( T cur : gen )
+						meanMut += ((GWRIndividual)cur).mut;
+					meanMut /= gen.size();
+					log.debug("avg mut : "+meanMut);
+				}
 			}
 			if (noImpro == 0)
 				log.debug(bestCost + ", " + best);
@@ -85,7 +97,7 @@ public class GeneticAlgorithm<T extends GAIndividual<T>> {
 			if (!elitist)
 				elite = new ArrayList<T>();
 			else
-				elite = new ArrayList<>(gen.subList(0, Math.max(1, (int) Math.round(gen.size() * 0.05))));
+				elite = new ArrayList<>(gen.subList(0, Math.max(1, (int) Math.round(gen.size() * 0.01))));
 
 			// SELECT PARENT
 			gen.removeAll(elite); // elite always parent

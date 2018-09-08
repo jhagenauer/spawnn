@@ -32,12 +32,12 @@ public class GWR_Test {
 		log.debug(samples.size());
 		DataUtils.writeCSV("output/spDat.csv", samples, new String[] { "long", "lat", "beta", "x1", "y" });
 
-		List<Double> bw = new ArrayList<Double>();
+		List<Integer> bw = new ArrayList<>();
 		for (int i = 0; i < samples.size(); i++)
-			bw.add(27.0);
-		GWRIndividual ind = new GWRIndividual(bw, 0,Double.MAX_VALUE,0);
+			bw.add(27);
+		GWRIndividual ind = new GWRIndividual(bw, 0, Integer.MAX_VALUE);
 
-		GWRCostCalculator ccAICc = new GWRIndividualCostCalculator_AICc(samples, fa, ga, ta, kernel,true,0);
+		GWRCostCalculator ccAICc = new GWRIndividualCostCalculator_AICc(samples, fa, ga, ta, kernel,true);
 
 		double aicc = ccAICc.getCost(ind);
 		log.debug(aicc);

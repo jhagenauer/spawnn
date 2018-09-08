@@ -10,8 +10,8 @@ import org.apache.log4j.Logger;
 
 import com.vividsolutions.jts.geom.Coordinate;
 
-import ga.CostCalculator;
 import ga.GeneticAlgorithm;
+import heuristics.CostCalculator;
 import llm.LLMNG;
 import llm.LLMSOM;
 import llm.ga.ng.LLMNG_CV_CostCalculator;

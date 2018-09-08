@@ -6,7 +6,7 @@ import java.util.Map.Entry;
 
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 
-import ga.CostCalculator;
+import heuristics.CostCalculator;
 import llm.LLMNG;
 import nnet.SupervisedUtils;
 import spawnn.dist.Dist;

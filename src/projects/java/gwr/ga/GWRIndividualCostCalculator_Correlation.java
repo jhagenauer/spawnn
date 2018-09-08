@@ -1,24 +1,30 @@
 package gwr.ga;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.math3.linear.RealMatrix;
+import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
 import org.jblas.DoubleMatrix;
 import org.jblas.Solve;
 import org.jblas.exceptions.LapackException;
 
-import nnet.SupervisedUtils;
 import regioClust.LinearModel;
 import spawnn.utils.GeoUtils;
 import spawnn.utils.GeoUtils.GWKernel;
 
-public class GWRIndividualCostCalculator_AICc extends GWRCostCalculator {
+public class GWRIndividualCostCalculator_Correlation extends GWRCostCalculator {
 	
-	public static boolean debug = false;
+	public static boolean debug = true;
+	private String[] faNames;
 	
-	GWRIndividualCostCalculator_AICc(List<double[]> samples, int[] fa, int[] ga, int ta, GWKernel kernel, boolean adaptive) {
+	GWRIndividualCostCalculator_Correlation(List<double[]> samples, int[] fa, int[] ga, int ta, GWKernel kernel, boolean adaptive, String[] faNames ) {
 		super(samples, fa, ga, ta, kernel,adaptive);
+		List<String> l =  new ArrayList<>(Arrays.asList(faNames));
+		l.add(0,"Intercept");
+		this.faNames = l.toArray(new String[]{});
 	}
 
 	@Override
@@ -28,7 +34,7 @@ public class GWRIndividualCostCalculator_AICc extends GWRCostCalculator {
 		DoubleMatrix Y = new DoubleMatrix(LinearModel.getY(samples, ta));
 		DoubleMatrix X = new DoubleMatrix(LinearModel.getX(samples, fa, true));
 
-		List<Double> predictions = new ArrayList<>();
+		double[][] betas = new double[samples.size()][];
 		DoubleMatrix S = new DoubleMatrix( X.getRows(), X.getRows() );
 		
 		for (int i = 0; i < samples.size(); i++) {
@@ -47,7 +53,7 @@ public class GWRIndividualCostCalculator_AICc extends GWRCostCalculator {
 			
 			try {
 				DoubleMatrix beta = Solve.solve(XtWX, XtW.mmul(Y));
-				predictions.add(X.getRow(i).mmul(beta).get(0));
+				betas[i] = beta.data;
 			} catch( LapackException e ) {
 				System.err.println("Couldn't solve eqs! Too low bandwidth?! "+bw+", "+adaptive+", "+ind.getChromosome().get(i) );
 				return Double.MAX_VALUE;
@@ -56,29 +62,19 @@ public class GWRIndividualCostCalculator_AICc extends GWRCostCalculator {
 			DoubleMatrix rowI = X.getRow(i);
 			S.putRow( i, rowI.mmul(Solve.pinv(XtWX)).mmul(XtW) );	
 		}
-		double rss = SupervisedUtils.getResidualSumOfSquares(predictions, samples, ta);
-		double mse = rss/samples.size();
-		double traceS = S.diag().sum();	
-
+		
+		PearsonsCorrelation pc = new PearsonsCorrelation(betas);
+		
 		if( debug ) {
-			System.out.println("kernel: "+kernel);
-			System.out.println("Nr params: "+traceS);		
-			System.out.println("Nr. of data points: "+samples.size());
-			double traceStS = S.transpose().mmul(S).diag().sum();
-			System.out.println("Effective nr. Params: "+(2*traceS-traceStS));
-			System.out.println("Effective degrees of freedom: "+(samples.size()-2*traceS+traceStS));
-			System.out.println("AICc: "+SupervisedUtils.getAICc_GWMODEL(mse, traceS, samples.size())); 
-			System.out.println("AIC: "+SupervisedUtils.getAIC_GWMODEL(mse, traceS, samples.size())); 
-			System.out.println("RSS: "+rss); 
-			System.out.println("R2: "+SupervisedUtils.getR2(predictions, samples, ta));
-		}
-		double aic = SupervisedUtils.getAICc_GWMODEL(mse, traceS, samples.size());
-		if( debug )
-			System.out.println("AIC: "+aic);
-		
-		if( Double.isInfinite(mse) || Double.isNaN(mse) )
-			throw new RuntimeException("aic "+aic+" mse "+mse);
-		
-		return aic;
+			RealMatrix cor = pc.getCorrelationMatrix();
+			RealMatrix pValues = pc.getCorrelationPValues();
+			
+			for( int i = 0; i < cor.getColumnDimension()-1; i++ ) {
+				for( int j = i+1; j < cor.getColumnDimension(); j++ ) {
+					System.out.println("cor "+faNames[i]+" "+faNames[j]+" : "+cor.getEntry(i, j)+ ", "+pValues.getEntry(i, j));
+				}
+			}
+		}		
+		return -1.0;
 	}
 }

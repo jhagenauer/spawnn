@@ -163,10 +163,9 @@ public class AAG_Detroit_Clustering {
 				CostCalculator<SAClusterIndividual> cc = new ClusterCostCalculator(prevFinClusters, finClusters, fDist);
 				for( int i = 0; i < 25; i++ ) {
 					System.out.println(i);
-					SimulatedAnnealing<SAClusterIndividual> sa = new SimulatedAnnealing<>(cc);
 					List<Set<double[]>> l = new ArrayList<>(finClusters);
 					Collections.shuffle(l);
-					SAClusterIndividual localBestCI = sa.search( new SAClusterIndividual(l));
+					SAClusterIndividual localBestCI = SimulatedAnnealing.search( new SAClusterIndividual(l),cc);
 					double curCost = cc.getCost(localBestCI);
 					if( globalBest == null || curCost < globalCost ) {
 						globalBest = localBestCI.getList();

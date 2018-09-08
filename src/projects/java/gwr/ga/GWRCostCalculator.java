@@ -6,22 +6,22 @@ import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
 
-import ga.CostCalculator;
+import heuristics.CostCalculator;
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
 import spawnn.utils.GeoUtils.GWKernel;
 
 public abstract class GWRCostCalculator implements CostCalculator<GWRIndividual> {
-	
+
 	protected List<double[]> samples;
 	protected int[] fa, ga;
 	protected int ta;
-	protected  GWKernel kernel;
+	protected GWKernel kernel;
 	protected Dist<double[]> gDist;
 	protected boolean adaptive;
 	protected double minBw;
-	
-	GWRCostCalculator( List<double[]> samples, int[] fa, int[] ga, int ta, GWKernel kernel, boolean adaptive, double minBw ) {
+
+	GWRCostCalculator(List<double[]> samples, int[] fa, int[] ga, int ta, GWKernel kernel, boolean adaptive) {
 		this.samples = samples;
 		this.fa = fa;
 		this.ga = ga;
@@ -29,10 +29,9 @@ public abstract class GWRCostCalculator implements CostCalculator<GWRIndividual>
 		this.ta = ta;
 		this.kernel = kernel;
 		this.adaptive = adaptive;
-		this.minBw = minBw;
 	}
-		
-	private double[] getKthLargest(List<double[]> samples, int k, Comparator<double[]> c) {
+
+	private double[] getKthLargest( int k, Comparator<double[]> c) {
 		PriorityQueue<double[]> q = new PriorityQueue<double[]>(k, c);
 		for (double[] d : samples) {
 			q.offer(d);
@@ -49,13 +48,13 @@ public abstract class GWRCostCalculator implements CostCalculator<GWRIndividual>
 		for (int i = 0; i < samples.size(); i++) {
 			double[] a = samples.get(i);	
 			if( adaptive ) {
-				int k = Math.max( (int)minBw, Math.min( samples.size(), (int)Math.round( ind.getGeneAt(i) ) ) );			
+				int k = Math.min( samples.size(), ind.getGeneAt(i) );			
 				
 				synchronized( adaptiveBwCache ) {
 					if( !adaptiveBwCache.containsKey(a) )
 						adaptiveBwCache.put(a, new HashMap<Integer,Double>() );
 					if( !adaptiveBwCache.get(a).containsKey(k) ) {
-						double[] b = getKthLargest(samples, k, new Comparator<double[]>() {
+						double[] b = getKthLargest( k, new Comparator<double[]>() {
 							@Override
 							public int compare(double[] o1, double[] o2) {
 								return -Double.compare(gDist.dist(o1, a), gDist.dist(o2, a));
@@ -66,7 +65,8 @@ public abstract class GWRCostCalculator implements CostCalculator<GWRIndividual>
 					bandwidth.put( a, adaptiveBwCache.get(a).get(k) );
 				}
 			} else {
-				bandwidth.put( a, Math.max( minBw, ind.getGeneAt(i) ) );
+				//throw new RuntimeException("Only adaptive bandwidth supported!");
+				bandwidth.put( a, (double)ind.getGeneAt(i)/30 );
 			}
 		}		
 		return bandwidth;

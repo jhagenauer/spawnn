@@ -7,8 +7,8 @@ import java.util.Map.Entry;
 
 import org.apache.log4j.Logger;
 
-import ga.CostCalculator;
 import ga.GeneticAlgorithm;
+import heuristics.CostCalculator;
 import llm.LLMNG;
 import nnet.SupervisedUtils;
 import spawnn.utils.DataUtils;

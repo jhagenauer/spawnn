@@ -2,7 +2,7 @@ package llm.ga.som;
 
 import java.util.List;
 
-import ga.CostCalculator;
+import heuristics.CostCalculator;
 import llm.LLMSOM;
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;

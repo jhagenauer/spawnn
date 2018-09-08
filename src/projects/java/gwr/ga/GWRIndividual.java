@@ -1,83 +1,131 @@
 package gwr.ga;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
-import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
-
 import ga.GAIndividual;
+import heuristics.sa.SAIndividual;
 
-public class GWRIndividual implements GAIndividual<GWRIndividual> {
+public class GWRIndividual implements GAIndividual<GWRIndividual>, SAIndividual<GWRIndividual> {
 
 	protected Random r = new Random();
-	
-	protected List<Double> chromosome;
-	protected double sd;
-	protected double minGene, maxGene;
 
-	public GWRIndividual( List<Double> chromosome, double sd, double maxGene, double minGene ) {
+	protected List<Integer> chromosome;
+	protected int minGene, maxGene;
+	public int mut;
+	
+	public static Map<Integer, Set<Integer>> cmI;
+
+	public GWRIndividual(List<Integer> chromosome, int minGene, int maxGene) {
 		this.chromosome = chromosome;
-		for( int i = 0; i < this.chromosome.size(); i++ ) {
-			double h = this.chromosome.get(i);
-			h = Math.max( minGene, Math.min( maxGene, h) );
+		for (int i = 0; i < this.chromosome.size(); i++) {
+			int h = this.chromosome.get(i);
+			h = Math.max(minGene, Math.min(maxGene, h));
 			this.chromosome.set(i, h);
 		}
-		this.sd = sd;
 		this.minGene = minGene;
 		this.maxGene = maxGene;
-	}
-	
-	public static boolean mutationMode = false;
-	public static Map<Integer, Set<Integer>> cmI;
 		
-	@Override
-	public GWRIndividual mutate() {
-		List<Double> nBw = new ArrayList<>();
-		for( int j = 0; j < chromosome.size(); j++ ) {
-			double h = chromosome.get(j);
-			if( r.nextDouble() < 1.0/chromosome.size() ) {	
-				if( !mutationMode ) {
-					h += r.nextGaussian()*sd;
-				} else {
-					SummaryStatistics ds = new SummaryStatistics();
-					for( int i : cmI.get(j) )
-						ds.addValue( chromosome.get(i) );
-					h += r.nextGaussian()*ds.getStandardDeviation()*sd;
-				}
-				h = Math.max( minGene, Math.min( maxGene, h) );
-			}
-			nBw.add(h );
-		}
-		return new GWRIndividual( nBw, sd, maxGene, minGene );
+		this.mut = r.nextInt(25)+1;
 	}
-	
-	public static boolean meanRecomb = false;
 			
 	@Override
-	public GWRIndividual recombine(GWRIndividual mother) {
-		List<Double> mChromosome = ((GWRIndividual)mother).getChromosome();
-		List<Double> nChromosome = new ArrayList<>();
+	public GWRIndividual mutate() {
+		List<Integer> nChromosome = new ArrayList<>();
+		for (int j = 0; j < chromosome.size(); j++) {
+			int h = chromosome.get(j);
+
+			if (r.nextDouble() < 1.0 / chromosome.size()) {
+				
+				/*int min = Integer.MAX_VALUE;
+				int max = Integer.MIN_VALUE;
+				for( int i : cmI.get(j) ) {
+					min = Math.min(min, chromosome.get(i) );
+					max = Math.max(max, chromosome.get(i) );
+				}
+				
+				h = min - 1 + r.nextInt( (max+3)-min );*/
 		
-		for( int i = 0; i < chromosome.size(); i++)
-			if( !meanRecomb ) {
-				if( r.nextBoolean() ) 
-					nChromosome.add( mChromosome.get(i) );
+				//mut = 1;
+				double d = r.nextGaussian()*mut;
+				if( d < 0 )
+					h += (int)Math.floor(d);
 				else
-					nChromosome.add(chromosome.get(i));
-			} else {
-				nChromosome.add( (chromosome.get(i)+mChromosome.get(i))/2 );
+					h += (int)Math.ceil(d);
+
+				h = Math.max(minGene, Math.min(maxGene, h));
 			}
-		return new GWRIndividual( nChromosome, sd, maxGene, minGene );
+			nChromosome.add(h);
+		}
+		
+		GWRIndividual i = new GWRIndividual(nChromosome, minGene, maxGene);
+		
+		if( r.nextDouble() < 0.05 ) {
+			if( r.nextBoolean() )
+				i.mut = Math.max(1, i.mut-1);
+			else
+				i.mut++;
+		}		
+		return i;
 	}
-	
-	public List<Double> getChromosome() {
+
+	@Override
+	public GWRIndividual recombine(GWRIndividual mother) {
+		List<Integer> mChromosome = ((GWRIndividual) mother).getChromosome();
+		List<Integer> nChromosome = new ArrayList<>();
+
+		for (int i = 0; i < chromosome.size(); i++)
+			if (r.nextBoolean())
+				nChromosome.add(mChromosome.get(i));
+			else
+				nChromosome.add(chromosome.get(i));
+		
+		GWRIndividual i = new GWRIndividual(nChromosome, minGene, maxGene);
+		if( r.nextBoolean() )
+			i.mut = this.mut;
+		else
+			i.mut = mother.mut;
+		
+		return i;
+	}
+
+	@Override
+	public GWRIndividual getCopy() {
+		return new GWRIndividual(chromosome, minGene, maxGene);
+	}
+
+	public List<Integer> getChromosome() {
 		return this.chromosome;
 	}
-	
-	public double getGeneAt(int i) {
+
+	public int getGeneAt(int i) {
 		return chromosome.get(i);
+	}
+
+	@Override
+	public void step() {
+		for (int j = 0; j < chromosome.size(); j++) {
+			int h = chromosome.get(j);
+
+			if (r.nextDouble() < 1.0 / chromosome.size()) {
+								
+				if (r.nextBoolean())
+					h = (int) (h + 1);
+				else
+					h = (int) (h - 1);
+
+				h = Math.max(minGene, Math.min(maxGene, h));
+			}
+			chromosome.add(h);
+		}
+	}
+	
+	@Override
+	public String toString() {
+		return "mut: "+ mut + " min: " + Collections.min(chromosome) + " " +chromosome.subList(0,Math.min(chromosome.size(),30));
 	}
 }

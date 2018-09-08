@@ -12,27 +12,27 @@ import org.jblas.exceptions.LapackException;
 
 import nnet.SupervisedUtils;
 import regioClust.LinearModel;
-import spawnn.dist.Dist;
-import spawnn.dist.EuclideanDist;
 import spawnn.utils.GeoUtils;
 import spawnn.utils.GeoUtils.GWKernel;
 
 public class GWRIndividualCostCalculator_CV extends GWRCostCalculator {
 	
+	public static boolean debug = false;
+		
 	List<Entry<List<Integer>, List<Integer>>> cvList;
-	
-	public GWRIndividualCostCalculator_CV( List<double[]> samples, List<Entry<List<Integer>, List<Integer>>> cvList, int[] fa, int[] ga, int ta, GWKernel kernel, boolean adaptive, double minBw ) {
-		super(samples,fa,ga,ta,kernel,adaptive, minBw );
-		this.cvList = cvList;
+		
+	public GWRIndividualCostCalculator_CV( List<double[]> samples, int[] fa, int[] ga, int ta, GWKernel kernel, boolean adaptive, int folds ) {
+		super(samples,fa,ga,ta,kernel,adaptive );
+		this.cvList = SupervisedUtils.getCVList(folds, 1, samples.size() );
 	}
 
 	@Override
-	public double getCost(GWRIndividual ind) {		
-		Dist<double[]> gDist = new EuclideanDist(ga);
+	public double getCost(GWRIndividual ind) {	
 		Map<double[],Double> bandwidth = getSpatialBandwidth(ind);
 		
 		SummaryStatistics ss = new SummaryStatistics();
 		for (final Entry<List<Integer>, List<Integer>> cvEntry : cvList) {
+			
 			List<double[]> samplesTrain = new ArrayList<double[]>();
 			for (int k : cvEntry.getKey())
 				samplesTrain.add(samples.get(k));
@@ -41,35 +41,43 @@ public class GWRIndividualCostCalculator_CV extends GWRCostCalculator {
 			for (int k : cvEntry.getValue())
 				samplesVal.add(samples.get(k));
 
-			DoubleMatrix Y = new DoubleMatrix(LinearModel.getY(samplesTrain, ta));
-			DoubleMatrix X = new DoubleMatrix(LinearModel.getX(samplesTrain, fa, true));
+			DoubleMatrix YTrain = new DoubleMatrix(LinearModel.getY(samplesTrain, ta));
+			DoubleMatrix XTrain = new DoubleMatrix(LinearModel.getX(samplesTrain, fa, true));
 
 			DoubleMatrix XVal = new DoubleMatrix(LinearModel.getX(samplesVal, fa, true));
-			List<Double> predictions = new ArrayList<>();
+			
+			List<Double> predVal = new ArrayList<>();
 			for (int i = 0; i < samplesVal.size(); i++) {
 				double[] a = samplesVal.get(i);
 				double bw = bandwidth.get(a);
 
-				DoubleMatrix XtW = new DoubleMatrix(X.getColumns(), X.getRows());
-				for (int j = 0; j < X.getRows(); j++) {
+				DoubleMatrix XtW = new DoubleMatrix(XTrain.getColumns(), XTrain.getRows());
+				for (int j = 0; j < XTrain.getRows(); j++) {
 					double[] b = samplesTrain.get(j);
-					double d = gDist.dist(a, b);
-					double w = GeoUtils.getKernelValue( kernel, d, bw );
+					double w = GeoUtils.getKernelValue( kernel, gDist.dist(a, b), bw );
 
-					XtW.putColumn(j, X.getRow(j).mul(w));
+					XtW.putColumn(j, XTrain.getRow(j).mul(w));
 				}
-				DoubleMatrix XtWX = XtW.mmul(X);
+				DoubleMatrix XtWX = XtW.mmul(XTrain);
 								
 				try {
-					DoubleMatrix beta = Solve.solve(XtWX, XtW.mmul(Y));
-					predictions.add(XVal.getRow(i).mmul(beta).get(0));
+					DoubleMatrix beta = Solve.solve(XtWX, XtW.mmul(YTrain));
+					predVal.add(XVal.getRow(i).mmul(beta).get(0));
 				} catch( LapackException e ) {
-					System.err.println("Couldn't solve eqs! Too low bandwidth?! "+bw+", "+adaptive);
-					return Double.MAX_VALUE;
+					int idx = samples.indexOf(a);
+					System.err.println("Couldn't solve eqs! Too low bandwidth?! "+bw+" ("+ind.getChromosome().get(idx)+") , "+adaptive);
+					return Double.POSITIVE_INFINITY;
 				}				
 			}
-			ss.addValue( SupervisedUtils.getRMSE(predictions, samplesVal, ta) );
-		}	
+			double rmse = SupervisedUtils.getRMSE(predVal, samplesVal, ta);
+			
+			if( debug )
+				System.out.println("RMSE fold "+cvList.indexOf(cvEntry)+ ": "+rmse);
+			
+			ss.addValue( rmse );
+		}
+		if( debug )
+			System.out.println( "Mean RMSE: "+ss.getMean() );
 		return ss.getMean();
 	}
 }

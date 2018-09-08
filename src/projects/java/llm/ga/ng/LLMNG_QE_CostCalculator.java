@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import ga.CostCalculator;
+import heuristics.CostCalculator;
 import llm.LLMNG;
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
