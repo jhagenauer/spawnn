@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
+import org.apache.log4j.Logger;
 import org.jblas.DoubleMatrix;
 import org.jblas.Solve;
 import org.jblas.exceptions.LapackException;
@@ -18,6 +19,7 @@ import spawnn.utils.GeoUtils.GWKernel;
 public class GWRIndividualCostCalculator_CV extends GWRCostCalculator {
 	
 	public static boolean debug = false;
+	private static Logger log = Logger.getLogger(GWRIndividualCostCalculator_CV.class);
 		
 	List<Entry<List<Integer>, List<Integer>>> cvList;
 		
@@ -65,19 +67,19 @@ public class GWRIndividualCostCalculator_CV extends GWRCostCalculator {
 					predVal.add(XVal.getRow(i).mmul(beta).get(0));
 				} catch( LapackException e ) {
 					int idx = samples.indexOf(a);
-					System.err.println("Couldn't solve eqs! Too low bandwidth?! "+bw+" ("+ind.getChromosome().get(idx)+") , "+adaptive);
+					log.warn("Couldn't solve eqs! Too low bandwidth?! real bw: "+bw+", adapt: "+adaptive+", gene: "+ind.getChromosome().get(i) );
 					return Double.POSITIVE_INFINITY;
 				}				
 			}
 			double rmse = SupervisedUtils.getRMSE(predVal, samplesVal, ta);
 			
 			if( debug )
-				System.out.println("RMSE fold "+cvList.indexOf(cvEntry)+ ": "+rmse);
+				log.debug("RMSE fold "+cvList.indexOf(cvEntry)+ ": "+rmse);
 			
 			ss.addValue( rmse );
 		}
 		if( debug )
-			System.out.println( "Mean RMSE: "+ss.getMean() );
+			log.debug( "Mean RMSE: "+ss.getMean() );
 		return ss.getMean();
 	}
 }

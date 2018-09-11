@@ -17,7 +17,6 @@ import java.util.concurrent.Future;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.log4j.Logger;
 
-import gwr.ga.GWRIndividual;
 import heuristics.CostCalculator;
 
 public class GeneticAlgorithm<T extends GAIndividual<T>> {
@@ -40,7 +39,7 @@ public class GeneticAlgorithm<T extends GAIndividual<T>> {
 		Map<T, Double> costs = new HashMap<T, Double>(); // cost cache
 		for (T i : init) {
 			double cost = cc.getCost(i);
-			log.debug(cost + " " + i);
+			//log.debug(cost + " " + i);
 			costs.put(i, cost);
 		}
 
@@ -54,7 +53,7 @@ public class GeneticAlgorithm<T extends GAIndividual<T>> {
 		log.debug("Evolving...");
 		int k = 0;
 		while ( k < maxK && noImpro < maxNoImpro ) {
-			log.debug("k: " + k);
+			//log.debug("k: " + k);
 
 			// check best and increase noImpro
 			noImpro++;
@@ -68,21 +67,13 @@ public class GeneticAlgorithm<T extends GAIndividual<T>> {
 				ds.addValue(costs.get(cur));
 			}
 			
-			if (k % 25 == 0) {
+			if (k % 100 == 0) {
 				log.debug(k + ", min: " + ds.getMin() + ", 2qt: " + ds.getPercentile(25) + ", mean: " + ds.getMean()
 						+ ", med: " + ds.getPercentile(50) + ", 4qt: " + ds.getPercentile(75) + ", max: " + ds.getMax()
 						+ ", sd: " + ds.getStandardDeviation());
-				
-				if( best instanceof GWRIndividual ) {
-					double meanMut = 0;
-					for( T cur : gen )
-						meanMut += ((GWRIndividual)cur).mut;
-					meanMut /= gen.size();
-					log.debug("avg mut : "+meanMut);
-				}
 			}
-			if (noImpro == 0)
-				log.debug(bestCost + ", " + best);
+			/*if (noImpro == 0)
+				log.debug(bestCost + ", " + best);*/
 
 			// SELECT NEW GEN/POTENTIAL PARENTS
 			// elite
@@ -149,7 +140,7 @@ public class GeneticAlgorithm<T extends GAIndividual<T>> {
 
 			k++;
 		}
-		log.info("no impro " + k + ", cost " + bestCost + ", rate " + bestCost / (k - noImpro));
+		log.info("final " + k + ", cost " + bestCost + ", rate " + bestCost / (k - noImpro));
 		return best;
 	}
 

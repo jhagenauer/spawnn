@@ -12,11 +12,10 @@ import heuristics.sa.SAIndividual;
 
 public class GWRIndividual implements GAIndividual<GWRIndividual>, SAIndividual<GWRIndividual> {
 
-	protected Random r = new Random();
+	protected Random r;
 
 	protected List<Integer> chromosome;
 	protected int minGene, maxGene;
-	public int mut;
 	
 	public static Map<Integer, Set<Integer>> cmI;
 
@@ -29,8 +28,7 @@ public class GWRIndividual implements GAIndividual<GWRIndividual>, SAIndividual<
 		}
 		this.minGene = minGene;
 		this.maxGene = maxGene;
-		
-		this.mut = r.nextInt(25)+1;
+		this.r = new Random(chromosome.hashCode());
 	}
 			
 	@Override
@@ -49,13 +47,16 @@ public class GWRIndividual implements GAIndividual<GWRIndividual>, SAIndividual<
 				}
 				
 				h = min - 1 + r.nextInt( (max+3)-min );*/
-		
+						
 				//mut = 1;
-				double d = r.nextGaussian()*mut;
+								
+				double d = r.nextGaussian()*8.0;
 				if( d < 0 )
 					h += (int)Math.floor(d);
 				else
 					h += (int)Math.ceil(d);
+								
+				// h += r.nextInt(25)-12;			
 
 				h = Math.max(minGene, Math.min(maxGene, h));
 			}
@@ -63,13 +64,6 @@ public class GWRIndividual implements GAIndividual<GWRIndividual>, SAIndividual<
 		}
 		
 		GWRIndividual i = new GWRIndividual(nChromosome, minGene, maxGene);
-		
-		if( r.nextDouble() < 0.05 ) {
-			if( r.nextBoolean() )
-				i.mut = Math.max(1, i.mut-1);
-			else
-				i.mut++;
-		}		
 		return i;
 	}
 
@@ -84,12 +78,7 @@ public class GWRIndividual implements GAIndividual<GWRIndividual>, SAIndividual<
 			else
 				nChromosome.add(chromosome.get(i));
 		
-		GWRIndividual i = new GWRIndividual(nChromosome, minGene, maxGene);
-		if( r.nextBoolean() )
-			i.mut = this.mut;
-		else
-			i.mut = mother.mut;
-		
+		GWRIndividual i = new GWRIndividual(nChromosome, minGene, maxGene);		
 		return i;
 	}
 
@@ -126,6 +115,6 @@ public class GWRIndividual implements GAIndividual<GWRIndividual>, SAIndividual<
 	
 	@Override
 	public String toString() {
-		return "mut: "+ mut + " min: " + Collections.min(chromosome) + " " +chromosome.subList(0,Math.min(chromosome.size(),30));
+		return "min: " + Collections.min(chromosome) + " " +chromosome.subList(0,Math.min(chromosome.size(),30));
 	}
 }

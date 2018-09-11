@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.log4j.Logger;
 import org.jblas.DoubleMatrix;
 import org.jblas.Solve;
 import org.jblas.exceptions.LapackException;
@@ -16,6 +17,7 @@ import spawnn.utils.GeoUtils.GWKernel;
 public class GWRIndividualCostCalculator_AICc extends GWRCostCalculator {
 	
 	public static boolean debug = false;
+	private static Logger log = Logger.getLogger(GWRIndividualCostCalculator_AICc.class);
 	
 	GWRIndividualCostCalculator_AICc(List<double[]> samples, int[] fa, int[] ga, int ta, GWKernel kernel, boolean adaptive) {
 		super(samples, fa, ga, ta, kernel,adaptive);
@@ -49,7 +51,7 @@ public class GWRIndividualCostCalculator_AICc extends GWRCostCalculator {
 				DoubleMatrix beta = Solve.solve(XtWX, XtW.mmul(Y));
 				predictions.add(X.getRow(i).mmul(beta).get(0));
 			} catch( LapackException e ) {
-				System.err.println("Couldn't solve eqs! Too low bandwidth?! "+bw+", "+adaptive+", "+ind.getChromosome().get(i) );
+				log.warn("Couldn't solve eqs! Too low bandwidth?! real bw: "+bw+", adapt: "+adaptive+", gene: "+ind.getChromosome().get(i) );
 				return Double.MAX_VALUE;
 			}
 			
@@ -61,20 +63,20 @@ public class GWRIndividualCostCalculator_AICc extends GWRCostCalculator {
 		double traceS = S.diag().sum();	
 
 		if( debug ) {
-			System.out.println("kernel: "+kernel);
-			System.out.println("Nr params: "+traceS);		
-			System.out.println("Nr. of data points: "+samples.size());
+			log.debug("kernel: "+kernel);
+			log.debug("Nr params: "+traceS);		
+			log.debug("Nr. of data points: "+samples.size());
 			double traceStS = S.transpose().mmul(S).diag().sum();
-			System.out.println("Effective nr. Params: "+(2*traceS-traceStS));
-			System.out.println("Effective degrees of freedom: "+(samples.size()-2*traceS+traceStS));
-			System.out.println("AICc: "+SupervisedUtils.getAICc_GWMODEL(mse, traceS, samples.size())); 
-			System.out.println("AIC: "+SupervisedUtils.getAIC_GWMODEL(mse, traceS, samples.size())); 
-			System.out.println("RSS: "+rss); 
-			System.out.println("R2: "+SupervisedUtils.getR2(predictions, samples, ta));
+			log.debug("Effective nr. Params: "+(2*traceS-traceStS));
+			log.debug("Effective degrees of freedom: "+(samples.size()-2*traceS+traceStS));
+			log.debug("AICc: "+SupervisedUtils.getAICc_GWMODEL(mse, traceS, samples.size())); 
+			log.debug("AIC: "+SupervisedUtils.getAIC_GWMODEL(mse, traceS, samples.size())); 
+			log.debug("RSS: "+rss); 
+			log.debug("R2: "+SupervisedUtils.getR2(predictions, samples, ta));
 		}
 		double aic = SupervisedUtils.getAICc_GWMODEL(mse, traceS, samples.size());
 		if( debug )
-			System.out.println("AIC: "+aic);
+			log.debug("AIC: "+aic);
 		
 		if( Double.isInfinite(mse) || Double.isNaN(mse) )
 			throw new RuntimeException("aic "+aic+" mse "+mse);
