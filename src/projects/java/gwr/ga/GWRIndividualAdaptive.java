@@ -8,9 +8,8 @@ import java.util.Random;
 import java.util.Set;
 
 import ga.GAIndividual;
-import heuristics.sa.SAIndividual;
 
-public class GWRIndividual_fixed implements GAIndividual<GWRIndividual_fixed>, SAIndividual<GWRIndividual_fixed> {
+public class GWRIndividualAdaptive implements GAIndividual<GWRIndividualAdaptive> {
 
 	protected Random r;
 
@@ -21,7 +20,7 @@ public class GWRIndividual_fixed implements GAIndividual<GWRIndividual_fixed>, S
 
 	public static double sd;
 
-	public GWRIndividual_fixed(List<Integer> chromosome, int minGene, int maxGene) {
+	public GWRIndividualAdaptive(List<Integer> chromosome, int minGene, int maxGene) {
 		this.chromosome = chromosome;
 		for (int i = 0; i < this.chromosome.size(); i++) {
 			int h = this.chromosome.get(i);
@@ -34,33 +33,28 @@ public class GWRIndividual_fixed implements GAIndividual<GWRIndividual_fixed>, S
 	}
 			
 	@Override
-	public GWRIndividual_fixed mutate() {
+	public GWRIndividualAdaptive mutate() {
 		List<Integer> nChromosome = new ArrayList<>();
 		for (int j = 0; j < chromosome.size(); j++) {
 			int h = chromosome.get(j);
-
 			if (r.nextDouble() < 1.0 / chromosome.size()) {
-											
 				double d = r.nextGaussian()*sd;
 				if( d < 0 )
 					h += (int)Math.floor(d);
 				else
 					h += (int)Math.ceil(d);
-								
-				// h += r.nextInt(25)-12;			
-
 				h = Math.max(minGene, Math.min(maxGene, h));
 			}
 			nChromosome.add(h);
 		}
 		
-		GWRIndividual_fixed i = new GWRIndividual_fixed(nChromosome, minGene, maxGene);
+		GWRIndividualAdaptive i = new GWRIndividualAdaptive(nChromosome, minGene, maxGene);
 		return i;
 	}
 
 	@Override
-	public GWRIndividual_fixed recombine(GWRIndividual_fixed mother) {
-		List<Integer> mChromosome = ((GWRIndividual_fixed) mother).getChromosome();
+	public GWRIndividualAdaptive recombine(GWRIndividualAdaptive mother) {
+		List<Integer> mChromosome = ((GWRIndividualAdaptive) mother).getChromosome();
 		List<Integer> nChromosome = new ArrayList<>();
 
 		for (int i = 0; i < chromosome.size(); i++) {
@@ -70,13 +64,8 @@ public class GWRIndividual_fixed implements GAIndividual<GWRIndividual_fixed>, S
 				nChromosome.add(chromosome.get(i));
 		}
 		
-		GWRIndividual_fixed i = new GWRIndividual_fixed(nChromosome, minGene, maxGene);		
+		GWRIndividualAdaptive i = new GWRIndividualAdaptive(nChromosome, minGene, maxGene);		
 		return i;
-	}
-
-	@Override
-	public GWRIndividual_fixed getCopy() {
-		return new GWRIndividual_fixed(chromosome, minGene, maxGene);
 	}
 
 	public List<Integer> getChromosome() {
@@ -85,24 +74,6 @@ public class GWRIndividual_fixed implements GAIndividual<GWRIndividual_fixed>, S
 
 	public int getGeneAt(int i) {
 		return chromosome.get(i);
-	}
-
-	@Override
-	public void step() {
-		for (int j = 0; j < chromosome.size(); j++) {
-			int h = chromosome.get(j);
-
-			if (r.nextDouble() < 1.0 / chromosome.size()) {
-								
-				if (r.nextBoolean())
-					h = (int) (h + 1);
-				else
-					h = (int) (h - 1);
-
-				h = Math.max(minGene, Math.min(maxGene, h));
-			}
-			chromosome.add(h);
-		}
 	}
 	
 	@Override

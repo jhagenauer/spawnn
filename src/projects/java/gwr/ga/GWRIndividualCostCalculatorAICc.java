@@ -14,17 +14,17 @@ import regioClust.LinearModel;
 import spawnn.utils.GeoUtils;
 import spawnn.utils.GeoUtils.GWKernel;
 
-public class GWRIndividualCostCalculator_AICc extends GWRCostCalculator {
+public class GWRIndividualCostCalculatorAICc extends GWRCostCalculator {
 	
 	public static boolean debug = false;
-	private static Logger log = Logger.getLogger(GWRIndividualCostCalculator_AICc.class);
+	private static Logger log = Logger.getLogger(GWRIndividualCostCalculatorAICc.class);
 	
-	GWRIndividualCostCalculator_AICc(List<double[]> samples, int[] fa, int[] ga, int ta, GWKernel kernel, boolean adaptive) {
+	GWRIndividualCostCalculatorAICc(List<double[]> samples, int[] fa, int[] ga, int ta, GWKernel kernel, boolean adaptive) {
 		super(samples, fa, ga, ta, kernel,adaptive);
 	}
 
 	@Override
-	public double getCost(GWRIndividual_fixed ind) {
+	public double getCost(GWRIndividualAdaptive ind) {
 		Map<double[], Double> bandwidth = getSpatialBandwidth(ind);
 
 		DoubleMatrix Y = new DoubleMatrix(LinearModel.getY(samples, ta));

@@ -11,7 +11,7 @@ import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
 import spawnn.utils.GeoUtils.GWKernel;
 
-public abstract class GWRCostCalculator implements CostCalculator<GWRIndividual_fixed> {
+public abstract class GWRCostCalculator implements CostCalculator<GWRIndividualAdaptive> {
 
 	protected List<double[]> samples;
 	protected int[] fa, ga;
@@ -27,7 +27,6 @@ public abstract class GWRCostCalculator implements CostCalculator<GWRIndividual_
 		this.ga = ga;
 		this.gDist = new EuclideanDist(ga);
 		this.ta = ta;
-		this.kernel = kernel;
 		this.adaptive = adaptive;
 	}
 
@@ -43,7 +42,7 @@ public abstract class GWRCostCalculator implements CostCalculator<GWRIndividual_
 
 	Map<double[],Map<Integer,Double>> adaptiveBwCache = new HashMap<double[],Map<Integer,Double>>();
  	
-	public Map<double[],Double> getSpatialBandwidth(GWRIndividual_fixed ind) {
+	public Map<double[],Double> getSpatialBandwidth(GWRIndividualAdaptive ind) {
 		Map<double[],Double> bandwidth = new HashMap<>();
 		for (int i = 0; i < samples.size(); i++) {
 			double[] a = samples.get(i);	
@@ -65,8 +64,7 @@ public abstract class GWRCostCalculator implements CostCalculator<GWRIndividual_
 					bandwidth.put( a, adaptiveBwCache.get(a).get(k) );
 				}
 			} else {
-				//throw new RuntimeException("Only adaptive bandwidth supported!");
-				bandwidth.put( a, (double)ind.getGeneAt(i)/30 );
+				bandwidth.put( a, (double)ind.getGeneAt(i) );
 			}
 		}		
 		return bandwidth;

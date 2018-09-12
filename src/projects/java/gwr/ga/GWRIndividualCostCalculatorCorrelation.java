@@ -17,14 +17,13 @@ import regioClust.LinearModel;
 import spawnn.utils.GeoUtils;
 import spawnn.utils.GeoUtils.GWKernel;
 
-public class GWRIndividualCostCalculator_Correlation extends GWRCostCalculator {
+public class GWRIndividualCostCalculatorCorrelation extends GWRCostCalculator {
 
 	public static boolean debug = false;
 	private String[] faNames;
-	private static Logger log = Logger.getLogger(GWRIndividualCostCalculator_Correlation.class);
+	private static Logger log = Logger.getLogger(GWRIndividualCostCalculatorCorrelation.class);
 
-	GWRIndividualCostCalculator_Correlation(List<double[]> samples, int[] fa, int[] ga, int ta, GWKernel kernel,
-			boolean adaptive, String[] faNames) {
+	GWRIndividualCostCalculatorCorrelation(List<double[]> samples, int[] fa, int[] ga, int ta, GWKernel kernel,	boolean adaptive, String[] faNames) {
 		super(samples, fa, ga, ta, kernel, adaptive);
 		List<String> l = new ArrayList<>(Arrays.asList(faNames));
 		l.add(0, "Intercept");
@@ -32,7 +31,7 @@ public class GWRIndividualCostCalculator_Correlation extends GWRCostCalculator {
 	}
 
 	@Override
-	public double getCost(GWRIndividual_fixed ind) {
+	public double getCost(GWRIndividualAdaptive ind) {
 		Map<double[], Double> bandwidth = getSpatialBandwidth(ind);
 
 		DoubleMatrix Y = new DoubleMatrix(LinearModel.getY(samples, ta));
