@@ -27,51 +27,41 @@ public class GWR_GA_Toy {
 		GWKernel kernel = GWKernel.boxcar;
 		boolean adaptive = true;
 		
-		int bwInit = -1;
-		int[] ga = new int[] { 0, 1 };
-		int[] fa = new int[] { 3 };
-		int ta = 4;
-		
 		List<double[]> samples = new ArrayList<double[]>();
 		while( samples.size() < 1000 ) {
 			double lon = r.nextDouble();
 			double lat = r.nextDouble();
 			
-			double beta = 1;
-			if( lon > 0.4 && lon < 0.8 && lat > 0.4 && lat < 0.8 )
-			//if( lon > 0.5 )
-				beta = -1;
+			double beta1 = 1, beta2 = 1;;
+			if( lon > 0.5 )
+				beta1 = -1;
+			if( lat > 0.5 )
+				beta2 = -1;
 			double x1 = r.nextDouble();
-			double y = x1 + beta;
+			double x2 = r.nextDouble();
+			double y = x1 * beta1 + x2 * beta2;
 						
-			double[] d = new double[]{ lon, lat, beta, x1, y};
+			double[] d = new double[]{ lon, lat, x1, x2, y, beta1, beta2 };
 			samples.add(d);
 		}
 		log.debug(samples.size());
-		DataUtils.writeCSV("output/spDat.csv", samples, new String[] { "long", "lat", "beta", "x1", "y" });
+		DataUtils.writeCSV("output/spDat.csv", samples, new String[] { "long", "lat", "x1", "x2", "y", "beta1", "beta2" });
 		
-		GWRIndividualCostCalculator_Correlation cc_cor = new GWRIndividualCostCalculator_Correlation(samples, fa, ga, ta, kernel, adaptive, new String[]{"x1"} );
+		int[] ga = new int[] { 0, 1 };
+		int[] fa = new int[] { 2, 3 };
+		int ta = 4;
+		String[] faNames = new String[]{"x1", "x2"};
+		
+		GWRIndividualCostCalculator_Correlation cc_cor = new GWRIndividualCostCalculator_Correlation(samples, fa, ga, ta, kernel, adaptive, faNames );
 		GWRCostCalculator cc_aic = new GWRIndividualCostCalculator_AICc(samples, fa, ga, ta, kernel, adaptive );
 		GWRCostCalculator cc_cv = new GWRIndividualCostCalculator_CV(samples, fa, ga, ta, kernel, adaptive, 10 );
 		GWRCostCalculator cc = cc_cv;
-		
-		/*{ // test
-			List<Integer> bw = new ArrayList<>();
-			while( bw.size() < samples.size() )
-				bw.add( 19 );
-			GWRIndividual ind = new GWRIndividual(bw, 1, Integer.MAX_VALUE);
-			
-			cc_aic = new GWRIndividualCostCalculator_AICc(samples, fa, ga, ta, GWKernel.boxcar, true );
-			GWRIndividualCostCalculator_AICc.debug = true;
-			
-			cc_aic.getCost(ind);
-			System.exit(1);
-		}*/
-				
+
+		int bwInit = -1;
 		int minGene = 2; 
 		int maxGene = samples.size();
 		{
-			GWRIndividual i = null;
+			GWRIndividual_fixed i = null;
 			log.info("Search global bandwidth/j");
 			double bestCost = Double.MAX_VALUE;
 			for (int j = 3; j < 50; j++) {
@@ -79,7 +69,7 @@ public class GWR_GA_Toy {
 				List<Integer> bw = new ArrayList<>();
 				while( bw.size() < samples.size() )
 					bw.add( j );
-				GWRIndividual ind = new GWRIndividual(bw, j, Integer.MAX_VALUE);
+				GWRIndividual_fixed ind = new GWRIndividual_fixed(bw, j, Integer.MAX_VALUE);
 
 				double cost = cc.getCost(ind);
 				if (cost < bestCost) {
@@ -89,11 +79,11 @@ public class GWR_GA_Toy {
 					log.debug(j+", "+cost);
 				}
 			}
-			GWRIndividualCostCalculator_CV.debug = true;
-			log.info("best bw "+bwInit+", " + cc.getCost(i) );
-			cc_cor.getCost(i);
-			GWRIndividualCostCalculator_CV.debug = false;
+			log.info("best bw "+bwInit+", score: " + cc.getCost(i) );
+			log.info("cor: "+cc_cor.getCost(i) );
 		}
+		
+		GWRIndividual_fixed.sd = 8;
 				
 		GeneticAlgorithm.tournamentSize = 2;
 		GeneticAlgorithm.elitist = true;
@@ -103,22 +93,20 @@ public class GWR_GA_Toy {
 		GeneticAlgorithm.maxNoImpro = 100;
 
 		log.debug("init...");
-		List<GWRIndividual> init = new ArrayList<GWRIndividual>();
+		List<GWRIndividual_fixed> init = new ArrayList<GWRIndividual_fixed>();
 	
-		// sd8: -3953.319587120198
-		
 		while (init.size() < 50 ) {
 			List<Integer> bandwidth = new ArrayList<>();
 			while (bandwidth.size() < samples.size())
 				bandwidth.add( bwInit + r.nextInt(17)-8 );
-			GWRIndividual i = new GWRIndividual(bandwidth, minGene, maxGene );
+			GWRIndividual_fixed i = new GWRIndividual_fixed(bandwidth, minGene, maxGene );
 			init.add( i );
 		}
 										
 		log.debug("search (GA)...");
 		
-		GeneticAlgorithm<GWRIndividual> gen = new GeneticAlgorithm<GWRIndividual>();
-		GWRIndividual result = (GWRIndividual) gen.search(init, cc);
+		GeneticAlgorithm<GWRIndividual_fixed> gen = new GeneticAlgorithm<GWRIndividual_fixed>();
+		GWRIndividual_fixed result = (GWRIndividual_fixed) gen.search(init, cc);
 		Map<double[], Double> resultBw = cc.getSpatialBandwidth(result);
 		
 		log.info("cv: " + cc_cv.getCost(result) + ", aic: "+cc_aic.getCost(result));
@@ -146,8 +134,9 @@ public class GWR_GA_Toy {
 				
 				try {
 					DoubleMatrix beta = Solve.solve(XtWX, XtW.mmul(Y));
-					double pred = X.getRow(i).mmul(beta).get(0);
-					rr.add(new double[] { a[ga[0]], a[ga[1]], beta.data[0], beta.data[1], bw, result.getChromosome().get(i), pred, a[ta], pred-a[ta] });
+					double pred = X.getRow(i).mmul(beta).get(0);					
+					double[] c = GWR_GA_Expdat.concatenate( new double[]{ a[ga[0]], a[ga[1]], bw, result.getChromosome().get(i), pred, a[ta], pred-a[ta] }, beta.data );
+					rr.add( c );
 				} catch( LapackException e ) {
 					//System.err.println("Couldn't solve eqs! Too low bandwidth?! "+bw+", "+adaptive+", "+resultBw.get(i) );
 				}
@@ -158,7 +147,8 @@ public class GWR_GA_Toy {
 			GWRIndividualCostCalculator_AICc.debug = debug;
 			
 			String s = "output/result_" + cc_cv.getCost(result)+"_"+cc_aic.getCost(result);
-			DataUtils.writeCSV(s + ".csv", rr, new String[] { "long", "lat", "intercept", "b1","radius_dist","chromosome_i", "prediction", "actual", "residual" });
+			String[] h = GWR_GA_Expdat.concatenate( new String[]{ "long", "lat", "radius_dist","chromosome_i", "prediction", "actual", "residual", "intercept" } , faNames );
+			DataUtils.writeCSV(s + ".csv", rr, h );
 		}	
 	}
 }

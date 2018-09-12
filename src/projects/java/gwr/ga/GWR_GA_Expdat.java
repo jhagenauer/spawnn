@@ -49,7 +49,7 @@ public class GWR_GA_Expdat {
 		int minGene = 2; 
 		int maxGene = samples.size();
 		{
-			GWRIndividual i = null;
+			GWRIndividual_fixed i = null;
 			log.info("Search global bandwidth/j");
 			double bestCost = Double.MAX_VALUE;
 			for (int j = 2; j < 100; j++) {
@@ -57,7 +57,7 @@ public class GWR_GA_Expdat {
 				List<Integer> bw = new ArrayList<>();
 				while( bw.size() < samples.size() )
 					bw.add( j );
-				GWRIndividual ind = new GWRIndividual(bw, j, Integer.MAX_VALUE);
+				GWRIndividual_fixed ind = new GWRIndividual_fixed(bw, j, Integer.MAX_VALUE);
 
 				double cost = cc.getCost(ind);
 				if (cost < bestCost) {
@@ -68,10 +68,12 @@ public class GWR_GA_Expdat {
 				}
 			}
 			GWRIndividualCostCalculator_AICc.debug = true;
-			log.info("best bw "+bwInit+", " + cc.getCost(i) );
+			log.info("best bw "+bwInit+", score: " + cc.getCost(i) );
 			log.info("mean sign cor: "+cc_cor.getCost(i) );
 			GWRIndividualCostCalculator_AICc.debug  = false;
 		}
+		
+		GWRIndividual_fixed.sd = 8.0;
 				
 		GeneticAlgorithm.tournamentSize = 2;
 		GeneticAlgorithm.elitist = true;
@@ -81,20 +83,20 @@ public class GWR_GA_Expdat {
 		GeneticAlgorithm.maxNoImpro = 100;
 
 		log.debug("init...");
-		List<GWRIndividual> init = new ArrayList<GWRIndividual>();
+		List<GWRIndividual_fixed> init = new ArrayList<GWRIndividual_fixed>();
 		
 		while (init.size() < 50) {
 			List<Integer> bandwidth = new ArrayList<>();
 			while (bandwidth.size() < samples.size())
 				bandwidth.add( bwInit + r.nextInt(17)-8 );
-			GWRIndividual i = new GWRIndividual(bandwidth, minGene, maxGene );
+			GWRIndividual_fixed i = new GWRIndividual_fixed(bandwidth, minGene, maxGene );
 			init.add( i );
 		}
 										
 		log.debug("search (GA)...");
 		
-		GeneticAlgorithm<GWRIndividual> gen = new GeneticAlgorithm<GWRIndividual>();
-		GWRIndividual result = (GWRIndividual) gen.search(init, cc);
+		GeneticAlgorithm<GWRIndividual_fixed> gen = new GeneticAlgorithm<GWRIndividual_fixed>();
+		GWRIndividual_fixed result = (GWRIndividual_fixed) gen.search(init, cc);
 		Map<double[], Double> resultBw = cc.getSpatialBandwidth(result);
 		
 		log.debug( "mean sign cor: "+cc_cor.getCost(result) );

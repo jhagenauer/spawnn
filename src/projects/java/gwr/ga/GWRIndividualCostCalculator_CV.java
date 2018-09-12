@@ -29,7 +29,7 @@ public class GWRIndividualCostCalculator_CV extends GWRCostCalculator {
 	}
 
 	@Override
-	public double getCost(GWRIndividual ind) {	
+	public double getCost(GWRIndividual_fixed ind) {	
 		Map<double[],Double> bandwidth = getSpatialBandwidth(ind);
 		
 		SummaryStatistics ss = new SummaryStatistics();

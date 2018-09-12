@@ -11,7 +11,7 @@ import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
 import spawnn.utils.GeoUtils.GWKernel;
 
-public abstract class GWRCostCalculator implements CostCalculator<GWRIndividual> {
+public abstract class GWRCostCalculator implements CostCalculator<GWRIndividual_fixed> {
 
 	protected List<double[]> samples;
 	protected int[] fa, ga;
@@ -43,7 +43,7 @@ public abstract class GWRCostCalculator implements CostCalculator<GWRIndividual>
 
 	Map<double[],Map<Integer,Double>> adaptiveBwCache = new HashMap<double[],Map<Integer,Double>>();
  	
-	public Map<double[],Double> getSpatialBandwidth(GWRIndividual ind) {
+	public Map<double[],Double> getSpatialBandwidth(GWRIndividual_fixed ind) {
 		Map<double[],Double> bandwidth = new HashMap<>();
 		for (int i = 0; i < samples.size(); i++) {
 			double[] a = samples.get(i);	

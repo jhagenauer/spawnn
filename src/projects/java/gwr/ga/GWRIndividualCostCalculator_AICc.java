@@ -24,7 +24,7 @@ public class GWRIndividualCostCalculator_AICc extends GWRCostCalculator {
 	}
 
 	@Override
-	public double getCost(GWRIndividual ind) {
+	public double getCost(GWRIndividual_fixed ind) {
 		Map<double[], Double> bandwidth = getSpatialBandwidth(ind);
 
 		DoubleMatrix Y = new DoubleMatrix(LinearModel.getY(samples, ta));

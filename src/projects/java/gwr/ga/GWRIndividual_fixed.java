@@ -10,7 +10,7 @@ import java.util.Set;
 import ga.GAIndividual;
 import heuristics.sa.SAIndividual;
 
-public class GWRIndividual implements GAIndividual<GWRIndividual>, SAIndividual<GWRIndividual> {
+public class GWRIndividual_fixed implements GAIndividual<GWRIndividual_fixed>, SAIndividual<GWRIndividual_fixed> {
 
 	protected Random r;
 
@@ -19,7 +19,9 @@ public class GWRIndividual implements GAIndividual<GWRIndividual>, SAIndividual<
 	
 	public static Map<Integer, Set<Integer>> cmI;
 
-	public GWRIndividual(List<Integer> chromosome, int minGene, int maxGene) {
+	public static double sd;
+
+	public GWRIndividual_fixed(List<Integer> chromosome, int minGene, int maxGene) {
 		this.chromosome = chromosome;
 		for (int i = 0; i < this.chromosome.size(); i++) {
 			int h = this.chromosome.get(i);
@@ -32,25 +34,14 @@ public class GWRIndividual implements GAIndividual<GWRIndividual>, SAIndividual<
 	}
 			
 	@Override
-	public GWRIndividual mutate() {
+	public GWRIndividual_fixed mutate() {
 		List<Integer> nChromosome = new ArrayList<>();
 		for (int j = 0; j < chromosome.size(); j++) {
 			int h = chromosome.get(j);
 
 			if (r.nextDouble() < 1.0 / chromosome.size()) {
-				
-				/*int min = Integer.MAX_VALUE;
-				int max = Integer.MIN_VALUE;
-				for( int i : cmI.get(j) ) {
-					min = Math.min(min, chromosome.get(i) );
-					max = Math.max(max, chromosome.get(i) );
-				}
-				
-				h = min - 1 + r.nextInt( (max+3)-min );*/
-						
-				//mut = 1;
-								
-				double d = r.nextGaussian()*8.0;
+											
+				double d = r.nextGaussian()*sd;
 				if( d < 0 )
 					h += (int)Math.floor(d);
 				else
@@ -63,28 +54,29 @@ public class GWRIndividual implements GAIndividual<GWRIndividual>, SAIndividual<
 			nChromosome.add(h);
 		}
 		
-		GWRIndividual i = new GWRIndividual(nChromosome, minGene, maxGene);
+		GWRIndividual_fixed i = new GWRIndividual_fixed(nChromosome, minGene, maxGene);
 		return i;
 	}
 
 	@Override
-	public GWRIndividual recombine(GWRIndividual mother) {
-		List<Integer> mChromosome = ((GWRIndividual) mother).getChromosome();
+	public GWRIndividual_fixed recombine(GWRIndividual_fixed mother) {
+		List<Integer> mChromosome = ((GWRIndividual_fixed) mother).getChromosome();
 		List<Integer> nChromosome = new ArrayList<>();
 
-		for (int i = 0; i < chromosome.size(); i++)
+		for (int i = 0; i < chromosome.size(); i++) {
 			if (r.nextBoolean())
 				nChromosome.add(mChromosome.get(i));
 			else
 				nChromosome.add(chromosome.get(i));
+		}
 		
-		GWRIndividual i = new GWRIndividual(nChromosome, minGene, maxGene);		
+		GWRIndividual_fixed i = new GWRIndividual_fixed(nChromosome, minGene, maxGene);		
 		return i;
 	}
 
 	@Override
-	public GWRIndividual getCopy() {
-		return new GWRIndividual(chromosome, minGene, maxGene);
+	public GWRIndividual_fixed getCopy() {
+		return new GWRIndividual_fixed(chromosome, minGene, maxGene);
 	}
 
 	public List<Integer> getChromosome() {
