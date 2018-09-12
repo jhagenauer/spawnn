@@ -1,6 +1,5 @@
 package gwr.ga;
 
-import java.io.File;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.List;
@@ -20,11 +19,10 @@ import spawnn.dist.EuclideanDist;
 import spawnn.utils.DataUtils;
 import spawnn.utils.GeoUtils;
 import spawnn.utils.GeoUtils.GWKernel;
-import spawnn.utils.SpatialDataFrame;
 
-public class GWR_GA_Expdat {
+public class GWR_GA_Toy_New {
 
-	private static Logger log = Logger.getLogger(GWR_GA_Expdat.class);
+	private static Logger log = Logger.getLogger(GWR_GA_Toy_New.class);
 
 	public static enum mode {
 		adaptive, fixed
@@ -34,16 +32,30 @@ public class GWR_GA_Expdat {
 
 		Random r = new Random(0);
 		
-		SpatialDataFrame sdf = DataUtils.readSpatialDataFrameFromShapefile(new File("data/expdat/expdat.shp"),new int[] { 5, 6, 7, 9, 10 }, true);
-
-		List<double[]> samples = sdf.samples;
+		List<double[]> samples = new ArrayList<double[]>();
+		while( samples.size() < 1000 ) {
+			double lon = r.nextDouble();
+			double lat = r.nextDouble();
+			
+			double beta1 = 1, beta2 = 1;;
+			if( lon > 0.5 )
+				beta1 = -1;
+			if( lat > 0.5 )
+				beta2 = -1;
+			double x1 = r.nextDouble();
+			double x2 = r.nextDouble();
+			double y = x1 * beta1 + x2 * beta2;
+						
+			double[] d = new double[]{ lon, lat, x1, x2, y, beta1, beta2 };
+			samples.add(d);
+		}
 		log.debug(samples.size());
-
-		int[] fa = new int[] { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-		String[] faNames = new String[] { "lnareatot", "lnareapl", "age", "condh1", "heat1", "cellar1", "acad",
-				"garage1", "terr1" };
-		int[] ga = new int[] { 10, 11 };
-		int ta = 0;
+		DataUtils.writeCSV("output/spDat.csv", samples, new String[] { "long", "lat", "x1", "x2", "y", "beta1", "beta2" });
+		
+		int[] ga = new int[] { 0, 1 };
+		int[] fa = new int[] { 2, 3 };
+		int ta = 4;
+		String[] faNames = new String[]{"x1", "x2"};
 		Dist<double[]> gDist = new EuclideanDist(ga);
 		
 		GeneticAlgorithm.tournamentSize = 2;
@@ -52,9 +64,9 @@ public class GWR_GA_Expdat {
 		GeneticAlgorithm.threads = 7;
 		GeneticAlgorithm.maxK = 40000;
 		GeneticAlgorithm.maxNoImpro = 100;
-		
-		GWKernel kernel = GWKernel.gaussian;
+
 		int initSize = 50;
+		GWKernel kernel = GWKernel.gaussian;
 
 		mode m = mode.adaptive;
 

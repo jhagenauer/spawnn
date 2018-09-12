@@ -11,8 +11,8 @@ import java.util.Set;
 import org.apache.log4j.Logger;
 
 import cern.colt.Arrays;
-import ga.GeneticAlgorithm;
 import heuristics.CostCalculator;
+import heuristics.ga.GeneticAlgorithm;
 import llm.LLMNG;
 
 public class LLMNG_GA_Main {

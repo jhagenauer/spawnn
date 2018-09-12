@@ -11,21 +11,22 @@ import org.jblas.exceptions.LapackException;
 
 import nnet.SupervisedUtils;
 import regioClust.LinearModel;
+import spawnn.dist.EuclideanDist;
 import spawnn.utils.GeoUtils;
 import spawnn.utils.GeoUtils.GWKernel;
 
-public class GWRIndividualCostCalculatorAICc extends GWRCostCalculator {
+public class GWRIndividualCostCalculatorAICc<T extends GWRIndividual<T>> extends GWRCostCalculator<T> {
 	
 	public static boolean debug = false;
 	private static Logger log = Logger.getLogger(GWRIndividualCostCalculatorAICc.class);
 	
-	GWRIndividualCostCalculatorAICc(List<double[]> samples, int[] fa, int[] ga, int ta, GWKernel kernel, boolean adaptive) {
-		super(samples, fa, ga, ta, kernel,adaptive);
+	public GWRIndividualCostCalculatorAICc(List<double[]> samples, int[] fa, int[] ga, int ta, GWKernel kernel) {
+		super(samples, fa, ga, ta, kernel);
 	}
 
 	@Override
-	public double getCost(GWRIndividualAdaptive ind) {
-		Map<double[], Double> bandwidth = getSpatialBandwidth(ind);
+	public double getCost(T ind) {
+		Map<double[], Double> bandwidth = ind.getSpatialBandwidth(samples, new EuclideanDist(ga) );
 
 		DoubleMatrix Y = new DoubleMatrix(LinearModel.getY(samples, ta));
 		DoubleMatrix X = new DoubleMatrix(LinearModel.getX(samples, fa, true));
@@ -51,7 +52,7 @@ public class GWRIndividualCostCalculatorAICc extends GWRCostCalculator {
 				DoubleMatrix beta = Solve.solve(XtWX, XtW.mmul(Y));
 				predictions.add(X.getRow(i).mmul(beta).get(0));
 			} catch( LapackException e ) {
-				log.warn("Couldn't solve eqs! Too low bandwidth?! real bw: "+bw+", adapt: "+adaptive+", gene: "+ind.getChromosome().get(i) );
+				log.warn("Couldn't solve eqs! Too low bandwidth?! real bw: "+bw+" , gene: "+ind.geneToString(i));
 				return Double.MAX_VALUE;
 			}
 			

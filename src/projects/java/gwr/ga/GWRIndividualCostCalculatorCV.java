@@ -13,24 +13,25 @@ import org.jblas.exceptions.LapackException;
 
 import nnet.SupervisedUtils;
 import regioClust.LinearModel;
+import spawnn.dist.EuclideanDist;
 import spawnn.utils.GeoUtils;
 import spawnn.utils.GeoUtils.GWKernel;
 
-public class GWRIndividualCostCalculatorCV extends GWRCostCalculator {
+public class GWRIndividualCostCalculatorCV<T extends GWRIndividual<T>> extends GWRCostCalculator<T> {
 	
 	public static boolean debug = false;
 	private static Logger log = Logger.getLogger(GWRIndividualCostCalculatorCV.class);
 		
 	List<Entry<List<Integer>, List<Integer>>> cvList;
 		
-	public GWRIndividualCostCalculatorCV( List<double[]> samples, int[] fa, int[] ga, int ta, GWKernel kernel, boolean adaptive, int folds ) {
-		super(samples,fa,ga,ta,kernel,adaptive );
+	public GWRIndividualCostCalculatorCV( List<double[]> samples, int[] fa, int[] ga, int ta, GWKernel kernel, int folds ) {
+		super(samples,fa,ga,ta,kernel);
 		this.cvList = SupervisedUtils.getCVList(folds, 1, samples.size() );
 	}
 
 	@Override
-	public double getCost(GWRIndividualAdaptive ind) {	
-		Map<double[],Double> bandwidth = getSpatialBandwidth(ind);
+	public double getCost(T ind) {	
+		Map<double[], Double> bandwidth = ind.getSpatialBandwidth(samples, new EuclideanDist(ga) );
 		
 		SummaryStatistics ss = new SummaryStatistics();
 		for (final Entry<List<Integer>, List<Integer>> cvEntry : cvList) {
@@ -67,7 +68,7 @@ public class GWRIndividualCostCalculatorCV extends GWRCostCalculator {
 					predVal.add(XVal.getRow(i).mmul(beta).get(0));
 				} catch( LapackException e ) {
 					int idx = samples.indexOf(a);
-					log.warn("Couldn't solve eqs! Too low bandwidth?! real bw: "+bw+", adapt: "+adaptive+", gene: "+ind.getChromosome().get(i) );
+					log.warn("Couldn't solve eqs! Too low bandwidth?! real bw: "+bw+" , gene: "+ind.geneToString(i) );
 					return Double.POSITIVE_INFINITY;
 				}				
 			}

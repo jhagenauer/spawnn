@@ -22,19 +22,26 @@ import heuristics.CostCalculator;
 public class GeneticAlgorithm<T extends GAIndividual<T>> {
 
 	private static Logger log = Logger.getLogger(GeneticAlgorithm.class);
+
 	private final static Random r = new Random(0);
-	int threads = Math.max(1, Runtime.getRuntime().availableProcessors() - 1);;
+	public static int threads = Math.max(1, Runtime.getRuntime().availableProcessors() - 1);
 
 	public static int tournamentSize = 2;
 	public static double recombProb = 0.7;
 	public static boolean elitist = false;
+	public static int maxK = 20000;
+	public static int maxNoImpro = 100;
 
 	public T search(List<T> init, CostCalculator<T> cc) {
 
+		log.debug("Getting init costs...");
 		List<T> gen = new ArrayList<T>(init);
 		Map<T, Double> costs = new HashMap<T, Double>(); // cost cache
-		for (T i : init)
-			costs.put(i, cc.getCost(i));
+		for (T i : init) {
+			double cost = cc.getCost(i);
+			//log.debug(cost + " " + i);
+			costs.put(i, cost);
+		}
 
 		T best = null;
 		double bestCost = Double.MAX_VALUE;
@@ -43,9 +50,10 @@ public class GeneticAlgorithm<T extends GAIndividual<T>> {
 		int parentSize = init.size();
 		int offspringSize = parentSize * 2;
 
-		int maxK = 50000;
+		log.debug("Evolving...");
 		int k = 0;
-		while (k < maxK && noImpro < 200) {
+		while ( k < maxK && noImpro < maxNoImpro ) {
+			//log.debug("k: " + k);
 
 			// check best and increase noImpro
 			noImpro++;
@@ -58,11 +66,14 @@ public class GeneticAlgorithm<T extends GAIndividual<T>> {
 				}
 				ds.addValue(costs.get(cur));
 			}
-			if (noImpro == 0 || k % 100 == 0) {
-				log.debug(k + "," + ds.getMin() + "," + ds.getMean() + "," + ds.getMax() + ","
-						+ ds.getStandardDeviation());
-				
+			
+			if (k % 100 == 0) {
+				log.debug(k + ", min: " + ds.getMin() + ", 2qt: " + ds.getPercentile(25) + ", mean: " + ds.getMean()
+						+ ", med: " + ds.getPercentile(50) + ", 4qt: " + ds.getPercentile(75) + ", max: " + ds.getMax()
+						+ ", sd: " + ds.getStandardDeviation());
 			}
+			/*if (noImpro == 0)
+				log.debug(bestCost + ", " + best);*/
 
 			// SELECT NEW GEN/POTENTIAL PARENTS
 			// elite
@@ -74,14 +85,14 @@ public class GeneticAlgorithm<T extends GAIndividual<T>> {
 			});
 
 			List<T> elite;
-			if( !elitist )
+			if (!elitist)
 				elite = new ArrayList<T>();
 			else
-				elite = new ArrayList<>(gen.subList(0, Math.max(1, (int) Math.round( gen.size()*0.05 ) ) ) );
+				elite = new ArrayList<>(gen.subList(0, Math.max(1, (int) Math.round(gen.size() * 0.01))));
 
 			// SELECT PARENT
 			gen.removeAll(elite); // elite always parent
-			List<T> selected = new ArrayList<T>(elite); 
+			List<T> selected = new ArrayList<T>(elite);
 			while (selected.size() < parentSize) {
 				T i = tournament(gen, tournamentSize, costs);
 				selected.add(i);
@@ -129,7 +140,7 @@ public class GeneticAlgorithm<T extends GAIndividual<T>> {
 
 			k++;
 		}
-		log.info("no impro " + k + ", cost " + bestCost + ", rate " + bestCost / (k - noImpro));
+		log.info("final " + k + ", cost " + bestCost + ", rate " + bestCost / (k - noImpro));
 		return best;
 	}
 

@@ -10,7 +10,7 @@ import java.util.Random;
 import java.util.StringTokenizer;
 import java.util.TreeMap;
 
-import ga.GAIndividual;
+import heuristics.ga.GAIndividual;
 import llm.LLMSOM;
 import llm.LLM_Lucas_CV.function;
 import spawnn.dist.EuclideanDist;
