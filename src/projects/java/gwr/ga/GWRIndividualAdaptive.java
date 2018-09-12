@@ -10,6 +10,8 @@ import java.util.PriorityQueue;
 import java.util.Random;
 import java.util.Set;
 
+import org.apache.log4j.Logger;
+
 import gwr.ga.GWRIndividual;
 import spawnn.dist.Dist;
 
@@ -21,6 +23,7 @@ public class GWRIndividualAdaptive implements GWRIndividual<GWRIndividualAdaptiv
 	protected int minGene, maxGene;
 	
 	public static Map<Integer, Set<Integer>> cmI;
+	private static Logger log = Logger.getLogger(GWRIndividualAdaptive.class);
 
 	public static double sd;
 
@@ -82,22 +85,40 @@ public class GWRIndividualAdaptive implements GWRIndividual<GWRIndividualAdaptiv
 	public String toString() {
 		return "min: " + Collections.min(chromosome) + " " +chromosome.subList(0,Math.min(chromosome.size(),30));
 	}
+	
+	public static int cacheHs = -1;
+	public static Map<double[],Map<Integer,Double>> adaptiveBwCache = new HashMap<double[],Map<Integer,Double>>();
 
 	@Override
 	public Map<double[], Double> getSpatialBandwidth(List<double[]> samples, Dist<double[]> gDist ) {
+		int hs = samples.hashCode()+gDist.hashCode();
+						
 		Map<double[],Double> bandwidth = new HashMap<>();
 		for (int i = 0; i < samples.size(); i++) {
 			double[] a = samples.get(i);	
 			int k = Math.min( samples.size(), chromosome.get(i) );			
-				
-			double[] b = getKthLargest( k, samples, new Comparator<double[]>() {
-				@Override
-				public int compare(double[] o1, double[] o2) {
-					return -Double.compare(gDist.dist(o1, a), gDist.dist(o2, a));
+					
+			synchronized( adaptiveBwCache ) {
+				if( hs != cacheHs ) {
+					log.debug("Building new cache. "+hs+" "+cacheHs+" "+samples.hashCode()+" "+gDist.hashCode());
+					adaptiveBwCache.clear();
+					cacheHs = hs;
 				}
-			});	
-			bandwidth.put( a, gDist.dist(a, b) );			
-		}	
+				
+				if( !adaptiveBwCache.containsKey(a) )
+					adaptiveBwCache.put(a, new HashMap<Integer,Double>() );
+				if( !adaptiveBwCache.get(a).containsKey(k) ) {
+					double[] b = getKthLargest( k, samples, new Comparator<double[]>() {
+						@Override
+						public int compare(double[] o1, double[] o2) {
+							return -Double.compare(gDist.dist(o1, a), gDist.dist(o2, a));
+						}
+					});
+					adaptiveBwCache.get(a).put(k,gDist.dist(a, b));
+				}	
+				bandwidth.put( a, adaptiveBwCache.get(a).get(k) );
+			}
+		}
 		return bandwidth;
 	}
 	

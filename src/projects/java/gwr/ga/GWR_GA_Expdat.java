@@ -183,7 +183,7 @@ public class GWR_GA_Expdat {
 		}
 
 		{
-			Map<double[], Double> resultBw = result2.getSpatialBandwidth(samples, new EuclideanDist(ga));
+			Map<double[], Double> resultBw = result2.getSpatialBandwidth(samples, gDist );
 			DoubleMatrix Y = new DoubleMatrix(LinearModel.getY(samples, ta));
 			DoubleMatrix X = new DoubleMatrix(LinearModel.getX(samples, fa, true));
 

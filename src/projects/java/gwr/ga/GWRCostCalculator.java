@@ -10,7 +10,7 @@ import spawnn.utils.GeoUtils.GWKernel;
 public abstract class GWRCostCalculator<T extends GWRIndividual<T>> implements CostCalculator<T> {
 
 	protected List<double[]> samples;
-	protected int[] fa, ga;
+	protected int[] fa;
 	protected int ta;
 	protected GWKernel kernel;
 	protected Dist<double[]> gDist;
@@ -19,7 +19,6 @@ public abstract class GWRCostCalculator<T extends GWRIndividual<T>> implements C
 	GWRCostCalculator(List<double[]> samples, int[] fa, int[] ga, int ta, GWKernel kernel) {
 		this.samples = samples;
 		this.fa = fa;
-		this.ga = ga;
 		this.gDist = new EuclideanDist(ga);
 		this.kernel = kernel;
 		this.ta = ta;

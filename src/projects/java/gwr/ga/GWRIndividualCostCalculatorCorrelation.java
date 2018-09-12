@@ -33,7 +33,7 @@ public class GWRIndividualCostCalculatorCorrelation<T extends GWRIndividual<T>> 
 
 	@Override
 	public double getCost(T ind) {
-		Map<double[], Double> bandwidth = ind.getSpatialBandwidth(samples, new EuclideanDist(ga) );
+		Map<double[], Double> bandwidth = ind.getSpatialBandwidth(samples, gDist );
 
 		DoubleMatrix Y = new DoubleMatrix(LinearModel.getY(samples, ta));
 		DoubleMatrix X = new DoubleMatrix(LinearModel.getX(samples, fa, true));

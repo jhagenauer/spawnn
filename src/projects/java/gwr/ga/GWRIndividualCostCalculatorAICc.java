@@ -11,7 +11,7 @@ import org.jblas.exceptions.LapackException;
 
 import nnet.SupervisedUtils;
 import regioClust.LinearModel;
-import spawnn.dist.EuclideanDist;
+import spawnn.dist.Dist;
 import spawnn.utils.GeoUtils;
 import spawnn.utils.GeoUtils.GWKernel;
 
@@ -26,7 +26,7 @@ public class GWRIndividualCostCalculatorAICc<T extends GWRIndividual<T>> extends
 
 	@Override
 	public double getCost(T ind) {
-		Map<double[], Double> bandwidth = ind.getSpatialBandwidth(samples, new EuclideanDist(ga) );
+		Map<double[], Double> bandwidth = ind.getSpatialBandwidth(samples, gDist );
 
 		DoubleMatrix Y = new DoubleMatrix(LinearModel.getY(samples, ta));
 		DoubleMatrix X = new DoubleMatrix(LinearModel.getX(samples, fa, true));

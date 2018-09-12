@@ -67,7 +67,6 @@ public class GWR_GA_Toy_New {
 
 		int initSize = 50;
 		GWKernel kernel = GWKernel.gaussian;
-
 		mode m = mode.adaptive;
 
 		GWRIndividual<?> result2 = null;
@@ -78,7 +77,7 @@ public class GWR_GA_Toy_New {
 			GWRCostCalculator<GWRIndividualAdaptive> cc_aic = new GWRIndividualCostCalculatorAICc<GWRIndividualAdaptive>(samples, fa, ga, ta, kernel);
 			GWRCostCalculator<GWRIndividualAdaptive> cc_cv = new GWRIndividualCostCalculatorCV<GWRIndividualAdaptive>(samples, fa, ga, ta, kernel, 10);
 			GWRCostCalculator<GWRIndividualAdaptive> cc = cc_aic;
-
+						
 			int bwInit = -1;
 			int minGene = 2;
 			int maxGene = samples.size();
@@ -101,10 +100,8 @@ public class GWR_GA_Toy_New {
 						log.debug(j + ", " + cost);
 					}
 				}
-				GWRIndividualCostCalculatorAICc.debug = true;
 				log.info("best bw " + bwInit + ", score: " + cc.getCost(i));
 				log.info("mean sign cor: " + cc_cor.getCost(i));
-				GWRIndividualCostCalculatorAICc.debug = false;
 			}
 
 			GWRIndividualAdaptive.sd = 8.0;
@@ -195,7 +192,7 @@ public class GWR_GA_Toy_New {
 		}
 
 		{
-			Map<double[], Double> resultBw = result2.getSpatialBandwidth(samples, new EuclideanDist(ga));
+			Map<double[], Double> resultBw = result2.getSpatialBandwidth(samples, gDist );
 			DoubleMatrix Y = new DoubleMatrix(LinearModel.getY(samples, ta));
 			DoubleMatrix X = new DoubleMatrix(LinearModel.getX(samples, fa, true));
 
@@ -218,8 +215,7 @@ public class GWR_GA_Toy_New {
 				try {
 					DoubleMatrix beta = Solve.solve(XtWX, XtW.mmul(Y));
 					double pred = X.getRow(i).mmul(beta).get(0);
-					double[] c = concatenate(new double[] { a[ga[0]], a[ga[1]], bw, Double.parseDouble(result2.geneToString(i)), pred,
-							a[ta], pred - a[ta] }, beta.data);
+					double[] c = concatenate(new double[] { a[ga[0]], a[ga[1]], bw, Double.parseDouble(result2.geneToString(i)), pred, a[ta], pred - a[ta] }, beta.data);
 					rr.add(c);
 				} catch (LapackException e) {
 				}
