@@ -2,6 +2,7 @@
 /target/
 /misc/
 /output/
-#/src/test/
 #/src/projects/
 /spawnn.log
+/.settings/
+/.project
