@@ -8,6 +8,7 @@ The SPAWNN toolkit is an innovative toolkit for spatial analysis with self-organ
 * Supports different approaches for considering spatial dependence
 * Provides linkage between networks and geographical data
 * Implements powerful clustering algorithms for structuring the networks
+* Provides powerful visualizations of networks and data
 
 #### Running
     
