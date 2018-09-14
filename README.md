@@ -21,4 +21,4 @@ To run the toolkit, simply download the pre-build jar-file [here](https://github
 * Hagenauer, J., & Helbich, M. (2013). Contextual neural gas for spatial clustering and analysis. International Journal of Geographical Information Science, 27(2), 251-266.
 
 #### License
-This project is licensed under the GNU GPL v3.0 License.
+This project is licensed under the GNU GPL v3.0 license.
