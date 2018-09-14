@@ -73,8 +73,8 @@ public class GWRIndividualCostCalculatorCorrelation<T extends GWRIndividual<T>> 
 		RealMatrix pValues = pc.getCorrelationPValues();
 
 		SummaryStatistics ss = new SummaryStatistics();
-		for (int i = 1; i < cor.getColumnDimension() - 1; i++) { // no intercept
-			for (int j = i + 1; j < cor.getColumnDimension(); j++) {
+		for (int i = 0; i < cor.getColumnDimension() - 2; i++) { // no intercept, which has last index
+			for (int j = i + 1; j < cor.getColumnDimension() - 1; j++) {
 				if (debug) {
 					log.debug("cor " + faNames[i] + " " + faNames[j] + " : " + cor.getEntry(i, j) + ", " + pValues.getEntry(i, j));
 				}

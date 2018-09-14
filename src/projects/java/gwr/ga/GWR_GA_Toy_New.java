@@ -37,7 +37,7 @@ public class GWR_GA_Toy_New {
 			double lon = r.nextDouble();
 			double lat = r.nextDouble();
 			
-			double beta1 = 1, beta2 = 1;;
+			double beta1 = 1, beta2 = 1;
 			if( lon > 0.5 )
 				beta1 = -1;
 			if( lat > 0.5 )
@@ -64,11 +64,12 @@ public class GWR_GA_Toy_New {
 		GeneticAlgorithm.threads = 7;
 		GeneticAlgorithm.maxK = 40000;
 		GeneticAlgorithm.maxNoImpro = 100;
-
-		int initSize = 50;
-		GWKernel kernel = GWKernel.gaussian;
+		
 		mode m = mode.adaptive;
 
+		int initSize = 50;
+		GWKernel kernel = GWKernel.boxcar;
+	
 		GWRIndividual<?> result2 = null;
 		String fn = null;
 		if (m == mode.adaptive) {
@@ -85,7 +86,7 @@ public class GWR_GA_Toy_New {
 				GWRIndividualAdaptive i = null;
 				log.info("Search global bandwidth/j");
 				double bestCost = Double.MAX_VALUE;
-				for (int j = 2; j < 100; j++) {
+				for (int j = 4; j < 100; j++) {
 
 					List<Integer> bw = new ArrayList<>();
 					while (bw.size() < samples.size())
@@ -131,7 +132,7 @@ public class GWR_GA_Toy_New {
 			GWRIndividualCostCalculatorCorrelation<GWRIndividualFixed> cc_cor = new GWRIndividualCostCalculatorCorrelation<GWRIndividualFixed>(samples, fa, ga, ta, kernel, faNames);
 			GWRCostCalculator<GWRIndividualFixed> cc_aic = new GWRIndividualCostCalculatorAICc<GWRIndividualFixed>(samples, fa, ga, ta, kernel);
 			GWRCostCalculator<GWRIndividualFixed> cc_cv = new GWRIndividualCostCalculatorCV<GWRIndividualFixed>(samples, fa, ga, ta, kernel, 10);
-			GWRCostCalculator<GWRIndividualFixed> cc = cc_aic;
+			GWRCostCalculator<GWRIndividualFixed> cc = cc_cv;
 			
 			SummaryStatistics ss = new SummaryStatistics();
 			for( int i = 0; i < samples.size()-1; i++ )
@@ -217,10 +218,9 @@ public class GWR_GA_Toy_New {
 					double pred = X.getRow(i).mmul(beta).get(0);
 					double[] c = concatenate(new double[] { a[ga[0]], a[ga[1]], bw, Double.parseDouble(result2.geneToString(i)), pred, a[ta], pred - a[ta] }, beta.data);
 					rr.add(c);
-				} catch (LapackException e) {
-				}
+				} catch (LapackException e) {}
 			}
-			String[] h = concatenate(new String[] { "long", "lat", "radius_dist", "chromosome_i", "prediction", "actual", "residual", "intercept" }, faNames);
+			String[] h = concatenate(new String[] { "long", "lat", "radius_dist", "chromosome_i", "prediction", "actual", "residual"}, concatenate( faNames, new String[]{"intercept"} ) );
 			DataUtils.writeCSV(fn, rr, h);
 		}
 	}

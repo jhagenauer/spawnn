@@ -212,7 +212,7 @@ public class GWR_GA_Expdat {
 				} catch (LapackException e) {
 				}
 			}
-			String[] h = concatenate(new String[] { "long", "lat", "radius_dist", "chromosome_i", "prediction", "actual", "residual", "intercept" }, faNames);
+			String[] h = concatenate(new String[] { "long", "lat", "radius_dist", "chromosome_i", "prediction", "actual", "residual" }, concatenate(faNames, new String[]{"intercept"} ) );
 			DataUtils.writeCSV(fn, rr, h);
 		}
 	}
