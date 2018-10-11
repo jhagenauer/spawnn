@@ -61,13 +61,13 @@ public class GeoUtils {
 	public enum GWKernel {
 		gaussian, bisquare, boxcar
 	};
-
+	
 	public static double getKernelValue(GWKernel k, double dist, double bw) {
 		double w;
 		if (k == GWKernel.gaussian)
-			w = Math.exp(-0.5 * Math.pow(dist / bw, 2));
+			w = Math.exp(-0.5 * Math.pow( dist/bw, 2));
 		else if (k == GWKernel.bisquare)
-			w = dist < bw ? Math.pow(1.0 - Math.pow(dist / bw, 2), 2) : 0;
+			w = dist <= bw ? Math.pow( 1.0 - Math.pow(dist / bw, 2), 2 ) : 0;
 		else if (k == GWKernel.boxcar)
 			w = dist <= bw ? 1 : 0;
 		else
