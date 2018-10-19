@@ -18,8 +18,7 @@ Click on 'Load data' and select the shapefile.
 
 #### 5. Prepare spatial coordinates
 
-The shapefile consists only of area features. 
-Most spatial models of SPAWNN require features with coordinates.
+The shapefile consists only of areal objects/counties with socioeconomic data but spatial models of SPAWNN require also coordinate features.
 To automatically generate these features, click on 'Add centroid coordinates'.
 
 #### 6. Select additional features.
