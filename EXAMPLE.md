@@ -1,8 +1,8 @@
 # Example usage of SPAWNN toolkit
 
-#### 1. Download a Shapefile with example data
+#### 1. Download shapefile with example data
 
-Download [this](https://drive.google.com/open?id=1iTi1yzpm9yIOMDhm6gPUVeDGSp1lLaNL) Shapefile and extract the contents.
+Download [this](https://drive.google.com/open?id=1iTi1yzpm9yIOMDhm6gPUVeDGSp1lLaNL) shapefile and extract the contents.
 
 #### 2. Download the toolkit
 
@@ -31,7 +31,7 @@ Open the 'ANN' tab. Here you can chose the type of self-organizing network (SOM 
 
 #### 8. Train the artifical neural network.
 
-To finally build the network, click on 'train'. A result tab shows up which gives you a representation of the network and a map. You can visually analyze the network and data as well as export them in different formats.
+To finally build the network, click on 'train'. A result tab shows up which gives you a representation of the network and a map. You can interactively analyze the network, inspect selected neurons/regions, visualize the relationships between features/neurons as well as export the network and data in different formats.
 
 
       
