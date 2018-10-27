@@ -10,9 +10,13 @@ The SPAWNN toolkit is an innovative toolkit for spatial analysis with self-organ
 * Implements powerful clustering algorithms for structuring the networks
 * Provides powerful visualizations of networks and data
 
-#### Running
+#### Download
     
-To run the toolkit, simply download the pre-build jar-file [here](https://github.com/jhagenauer/spawnn/releases/download/0.1.9/spawnn-0.1.9.jar) and execute it by double-clicking.
+A pre-build jar-file of the toolkit can be found [here](https://github.com/jhagenauer/spawnn/releases/download/0.1.9/spawnn-0.1.9.jar)
+
+#### Example usage
+
+An exemplary description of the usage of the toolkit can be found [here](https://github.com/jhagenauer/spawnn/blob/master/EXAMPLE.md).
 
 #### Please cite:
 * Hagenauer, J., & Helbich, M. (2016). SPAWNN: A Toolkit for SPatial Analysis With Self-Organizing Neural Networks. Transactions in GIS, 20(5), 755-775.
