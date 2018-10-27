@@ -35,66 +35,6 @@ public class GeoUtils {
 
 	private static Logger log = Logger.getLogger(GeoUtils.class);
 
-	// GW(R) ------------------------------------
-
-	public static Map<double[], Double> getBandwidth(List<double[]> samples, Dist<double[]> dist, double bw,
-			boolean adaptive) {
-		Map<double[], Double> bandwidth = new HashMap<>();
-		for (double[] a : samples) {
-			if (!adaptive)
-				bandwidth.put(a, bw);
-			else {
-				int k = (int) bw;
-				List<double[]> s = new ArrayList<>(samples);
-				Collections.sort(s, new Comparator<double[]>() {
-					@Override
-					public int compare(double[] o1, double[] o2) {
-						return Double.compare(dist.dist(o1, a), dist.dist(o2, a));
-					}
-				});
-				bandwidth.put(a, dist.dist(s.get(k - 1), a));
-			}
-		}
-		return bandwidth;
-	}
-
-	public enum GWKernel {
-		gaussian, bisquare, boxcar
-	};
-	
-	public static double getKernelValue(GWKernel k, double dist, double bw) {
-		double w;
-		if (k == GWKernel.gaussian)
-			w = Math.exp(-0.5 * Math.pow( dist/bw, 2));
-		else if (k == GWKernel.bisquare)
-			w = dist <= bw ? Math.pow( 1.0 - Math.pow(dist / bw, 2), 2 ) : 0;
-		else if (k == GWKernel.boxcar)
-			w = dist <= bw ? 1 : 0;
-		else
-			throw new RuntimeException("No valid kernel given");
-		if (Double.isNaN(w))
-			log.warn("NaN kernel value ");
-		return w;
-	}
-
-	public static double[] getGWMean(Collection<double[]> samples, double[] uv, Dist<double[]> dist, GWKernel k,
-			double bw) {
-		int vLength = samples.iterator().next().length;
-		double[] a = new double[vLength];
-		double b = 0;
-		for (double[] x_i : samples) {
-			double w_i = getKernelValue(k, dist.dist(uv, x_i), bw);
-			for (int j = 0; j < vLength; j++)
-				a[j] += (x_i[j] * w_i);
-			b += w_i;
-		}
-		for (int i = 0; i < vLength; i++)
-			a[i] /= b;
-		return a;
-	}
-
-	// ----------------------------------------------
-
 	public static List<double[]> getLagedSamples(List<double[]> samples, Map<double[], Map<double[], Double>> dMap) {
 		List<double[]> ns = new ArrayList<double[]>();
 		for (double[] d : samples) {
