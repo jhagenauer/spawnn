@@ -6,7 +6,7 @@ Download [this](https://drive.google.com/open?id=1iTi1yzpm9yIOMDhm6gPUVeDGSp1lLa
 
 #### 2. Download the toolkit
 
-Download a pre-build jar-file of the toolkit [here](https://github.com/jhagenauer/spawnn/releases/download/0.1.9/spawnn-0.1.9.jar).            
+Download a pre-build jar-file of the toolkit [here](https://github.com/jhagenauer/spawnn/releases/download/0.1.10/spawnn-0.1.10.jar).            
 
 #### 3. Start the toolkit
 
