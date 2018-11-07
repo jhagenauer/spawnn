@@ -487,7 +487,10 @@ public abstract class ResultPanel<T> extends JPanel implements ActionListener, N
 
 			int state = fChoser.showSaveDialog(this);
 			if (state == JFileChooser.APPROVE_OPTION) {
+				MyFileFilter filter = (MyFileFilter)fChoser.getFileFilter();
 				File fn = fChoser.getSelectedFile();
+				fn = filter.addExtension(fn);				
+				
 				if (fChoser.getFileFilter() == FFilter.pngFilter) {
 					mapPanel.saveImage(fn, ImageMode.PNG );
 				} else if(fChoser.getFileFilter() == FFilter.epsFilter) {
@@ -525,7 +528,10 @@ public abstract class ResultPanel<T> extends JPanel implements ActionListener, N
 
 			int state = fc.showSaveDialog(this);
 			if (state == JFileChooser.APPROVE_OPTION) {
+				MyFileFilter filter = (MyFileFilter)fc.getFileFilter();
 				File fn = fc.getSelectedFile();
+				fn = filter.addExtension(fn);
+				
 				if (fc.getFileFilter() == FFilter.pngFilter)
 					legendPanel.saveImage(fn, ImageMode.PNG );
 				else if (fc.getFileFilter() == FFilter.epsFilter)

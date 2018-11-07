@@ -190,7 +190,10 @@ public class NGResultPanel extends ResultPanel<double[]> {
 
 			int state = fc.showSaveDialog(this);
 			if (state == JFileChooser.APPROVE_OPTION) {
+				MyFileFilter filter = (MyFileFilter)fc.getFileFilter();
 				File fn = fc.getSelectedFile();
+				fn = filter.addExtension(fn);
+				
 				if (fc.getFileFilter() == FFilter.graphMLFilter) {
 					writeGraphToGraphML(names, g, neuronValues, selectedColors, fn);
 				} else if (fc.getFileFilter() == FFilter.pngFilter) {

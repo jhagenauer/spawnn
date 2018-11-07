@@ -356,7 +356,7 @@ public class SOMResultPanel extends ResultPanel<GridPos> {
 			cl.show(cards, (String) gridModeComboBox.getSelectedItem());
 		} else if (e.getSource() == btnExpGrid) {
 			JFileChooser fc = new JFileChooser("output");
-
+			
 			fc.setFileFilter(FFilter.unitFilter);
 			fc.setFileFilter(FFilter.weightFilter);
 			fc.setFileFilter(FFilter.pngFilter);
@@ -366,9 +366,13 @@ public class SOMResultPanel extends ResultPanel<GridPos> {
 
 			int state = fc.showSaveDialog(this);
 			if (state == JFileChooser.APPROVE_OPTION) {
+				MyFileFilter filter = (MyFileFilter)fc.getFileFilter();
 				File fn = fc.getSelectedFile();
+				fn = filter.addExtension(fn);
+				
 				try {
 					if (fc.getFileFilter() == FFilter.pngFilter) {
+						
 						if (gridModeComboBox.getSelectedItem() == GRID)
 							gridPanel.saveImage(fn, ImageMode.PNG );
 						else
