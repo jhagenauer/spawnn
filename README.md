@@ -12,7 +12,7 @@ The SPAWNN toolkit is an innovative toolkit for spatial analysis with self-organ
 
 #### Download
     
-A pre-build jar-file of the toolkit can be found [here](https://github.com/jhagenauer/spawnn/releases/download/0.1.9/spawnn-0.1.9.jar)
+A pre-build jar-file of the toolkit can be found [here](https://github.com/jhagenauer/spawnn/releases/download/0.1.10/spawnn-0.1.10.jar)
 
 #### Example usage
 
