@@ -150,8 +150,7 @@ public class GeoUtils {
 		return knnM;
 	}
 
-	public static Map<double[], Map<double[], Double>> getInverseDistanceMatrix(Map<double[], Map<double[], Double>> m,
-			double pow) {
+	public static Map<double[], Map<double[], Double>> getInverseDistanceMatrix(Map<double[], Map<double[], Double>> m,	double pow) {
 		Map<double[], Map<double[], Double>> nm = new HashMap<double[], Map<double[], Double>>();
 		for (Entry<double[], Map<double[], Double>> e1 : m.entrySet()) {
 			Map<double[], Double> na = new HashMap<>();
@@ -247,8 +246,7 @@ public class GeoUtils {
 	}
 
 	// morans ------------------------------>>>
-	public static double[] getMoransIStatistics(Map<double[], Map<double[], Double>> dMap, List<double[]> samples,
-			List<Double> values) {
+	public static double[] getMoransIStatistics(Map<double[], Map<double[], Double>> dMap, List<double[]> samples, List<Double> values) {
 		Map<double[], Double> m = new HashMap<double[], Double>();
 		for (int i = 0; i < samples.size(); i++)
 			m.put(samples.get(i), values.get(i));
@@ -281,8 +279,7 @@ public class GeoUtils {
 		return (n / ftd) * (stn / std);
 	}
 
-	public static double[] getMoransIStatistics(Map<double[], Map<double[], Double>> dMap,
-			Map<double[], Double> values) {
+	public static double[] getMoransIStatistics(Map<double[], Map<double[], Double>> dMap, Map<double[], Double> values) {
 		double n = values.size();
 		double moran = getMoransI(dMap, values);
 
