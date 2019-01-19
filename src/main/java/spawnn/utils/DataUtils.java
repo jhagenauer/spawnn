@@ -1302,4 +1302,26 @@ public class DataUtils {
 	
 		return result;
 	}
+	
+	public static double[] concatenate( double[][] d ) {
+		List<Double> l = new ArrayList<>();
+		for( double[] a : d )
+			for( double b : a )
+				l.add(b);
+		double[] r = new double[l.size()];
+		for( int i = 0; i < l.size(); i++ )
+			r[i] = l.get(i);			
+		return r;
+	}
+	
+	public static String[] concatenate( String[][] d ) {
+		List<String> l = new ArrayList<>();
+		for( String[] a : d )
+			for( String b : a )
+				l.add(b);
+		String[] r = new String[l.size()];
+		for( int i = 0; i < l.size(); i++ )
+			r[i] = l.get(i);			
+		return r;
+	}
 }
