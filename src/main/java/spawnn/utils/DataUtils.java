@@ -1324,4 +1324,13 @@ public class DataUtils {
 			r[i] = l.get(i);			
 		return r;
 	}
+
+	public static void addConstant(List<double[]> samples, double c) {
+		for( int i = 0; i < samples.size(); i++ ) {
+			double[] d = samples.get(i);
+			double[] nd = Arrays.copyOf(d, d.length+1);
+			nd[nd.length-1] = c;
+			samples.set(i, nd);
+		}	
+	}
 }

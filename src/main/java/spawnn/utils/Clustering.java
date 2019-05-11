@@ -22,6 +22,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import org.apache.log4j.Logger;
+import org.jblas.ranges.IndicesRange;
 
 import com.vividsolutions.jts.geom.Geometry;
 
@@ -118,6 +119,9 @@ public class Clustering {
 		Set<double[]> centroids = new HashSet<double[]>();
 
 		// get num unique(!) indices for centroids
+		if( samples.size() < num )
+			throw new RuntimeException("Less samples than clusters!");
+		
 		Set<Integer> indices = new HashSet<Integer>();
 		while (indices.size() < num)
 			indices.add(r.nextInt(samples.size()));
@@ -166,7 +170,7 @@ public class Clustering {
 				centroids.add(centroid);
 				
 				if( !changed && dist.dist(c, centroid) > delta )
-					changed = true;				
+					changed = true;
 			}			
 			if( !changed )
 				break;
