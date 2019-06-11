@@ -786,11 +786,13 @@ public class DataUtils {
 			if (!retry)
 				break;
 		}
-
+		
 		// TODO for now its all double
 		sd.bindings = new ArrayList<binding>();
-		for (int i = 0; i < sd.names.size(); i++)
+		for (int i = 0; i < sd.names.size(); i++) {
+			if( verbose ) log.debug(i+","+sd.names.get(i) );
 			sd.bindings.add(binding.Double);
+		}
 
 		return sd;
 	}
@@ -1314,6 +1316,17 @@ public class DataUtils {
 		return r;
 	}
 	
+	public static int[] concatenate( int[][] d ) {
+		List<Integer> l = new ArrayList<>();
+		for( int[] a : d )
+			for( int b : a )
+				l.add(b);
+		int[] r = new int[l.size()];
+		for( int i = 0; i < l.size(); i++ )
+			r[i] = l.get(i);			
+		return r;
+	}
+	
 	public static String[] concatenate( String[][] d ) {
 		List<String> l = new ArrayList<>();
 		for( String[] a : d )
@@ -1332,5 +1345,15 @@ public class DataUtils {
 			nd[nd.length-1] = c;
 			samples.set(i, nd);
 		}	
+	}
+		
+	public static void printSummary(List<double[]> samples, int[] fa  ) {
+		for( int i : fa ) {
+			DescriptiveStatistics ds = new DescriptiveStatistics();
+			for( double[] d : samples )
+				ds.addValue(d[i]);
+			System.out.println(i+" --> min: "+ds.getMin()+", mean: "+ds.getMean()+", max: "+ds.getMax()+", sd: "+ds.getStandardDeviation());
+		}
+		
 	}
 }
