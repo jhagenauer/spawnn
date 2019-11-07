@@ -174,7 +174,7 @@
 			<artifactId>ij</artifactId>
 			<version>1.48a</version>
 		</dependency>
-		<dependency>
+		<!-- <dependency>
 			<groupId>watershed_plugin</groupId>
 			<artifactId>watershed_plugin</artifactId>
 			<version>0.0</version>
@@ -183,7 +183,7 @@
 			<groupId>surface_plot</groupId>
 			<artifactId>surface_plot</artifactId>
 			<version>0.0</version>
-		</dependency>
+		</dependency>-->
 		<dependency>
 			<groupId>org.apache.xmlgraphics</groupId>
 			<artifactId>xmlgraphics-commons</artifactId>

@@ -27,5 +27,7 @@
 			<attribute name="maven.pomderived" value="true"/>
 		</attributes>
 	</classpathentry>
+	<classpathentry kind="lib" path="lib/Interactive_3D_Surface_Plot.jar"/>
+	<classpathentry kind="lib" path="lib/Watershed_.jar"/>
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>

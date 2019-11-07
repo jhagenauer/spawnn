@@ -575,8 +575,7 @@ public class DataUtils {
 
 	@Deprecated
 	public static List<double[]> readCSV(InputStream is, int[] ign) {
-		SpatialDataFrame sd = new SpatialDataFrame(); // actually, its not
-														// spatial data
+		SpatialDataFrame sd = new SpatialDataFrame(); // actually, its not spatial data
 		List<double[]> r = new ArrayList<double[]>();
 
 		Set<Integer> ignore = new HashSet<Integer>();
