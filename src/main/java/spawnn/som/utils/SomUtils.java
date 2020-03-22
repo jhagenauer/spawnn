@@ -12,7 +12,6 @@ import java.awt.geom.AffineTransform;
 import java.awt.geom.Arc2D;
 import java.awt.geom.Line2D;
 import java.awt.image.BufferedImage;
-import java.awt.image.ColorConvertOp;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -56,11 +55,6 @@ import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.triangulate.VoronoiDiagramBuilder;
 
-import ij.ImagePlus;
-import ij.process.ByteProcessor;
-import ij.process.ImageProcessor;
-import imageware.Builder;
-import imageware.ImageWare;
 import spawnn.dist.Dist;
 import spawnn.som.bmu.BmuGetter;
 import spawnn.som.grid.Grid;
@@ -73,8 +67,6 @@ import spawnn.utils.ColorBrewer;
 import spawnn.utils.ColorUtils;
 import spawnn.utils.DataUtils;
 import spawnn.utils.Drawer;
-import watershedflooding.Watershed;
-import watershedflooding.WatershedMeasurements;
 
 // TODO: lot/some of methods here can be maded generic (e.g. for use with SOM and NG), especially bmu-related stuff
 // TODO replace all this double[][]-stuff by grid<>
@@ -129,211 +121,6 @@ public class SomUtils {
 			}
 		}
 		return entropy;
-	}
-
-	public static Collection<Set<GridPos>> getWatershedHex(int mi, int ma, double smooth, Grid2D<double[]> grid, Dist<double[]> d, boolean debug) {
-		double[][] umatrix = getNormedMatrix(getUMatrix(grid, d));
-
-		int xDiff = 12;
-		int yDiff = 14;
-
-		int xSize = (8 * umatrix.length + 4 * (umatrix.length + 1));
-		int ySize = 14 * umatrix[0].length + 14 + 1;
-
-		BufferedImage bi = new BufferedImage(xSize, ySize, BufferedImage.TYPE_INT_ARGB);
-		Graphics2D g2 = bi.createGraphics();
-		g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
-		for (int i = 0; i < umatrix.length; i++) {
-			for (int j = 0; j < umatrix[i].length; j++) {
-
-				float v = (float) umatrix[i][j];
-
-				int xc = i * xDiff + (int) (2 * xDiff * 1.0 / 3);
-				int yc = j * yDiff + (int) (yDiff * 1.0 / 2);
-
-				if (i % 2 == 1)
-					yc += yDiff * 1.0 / 2;
-
-				if ((i + 2) % 4 == 0)
-					yc += yDiff;
-
-				int[] x = { xc + 4, xc + 8, xc + 4, xc - 4, xc - 8, xc - 4, xc + 4 };
-				int[] y = { yc + 7, yc + 0, yc - 7, yc - 7, yc + 0, yc + 7, yc + 7 };
-
-				g2.setColor(new Color(1 - v, 1 - v, 1 - v));
-				g2.fill(new Polygon(x, y, x.length));
-			}
-		}
-		g2.dispose();
-
-		// create a grayscale image the same size
-		BufferedImage gray = new BufferedImage(bi.getWidth(), bi.getHeight(), BufferedImage.TYPE_BYTE_GRAY);
-
-		// convert the original colored image to grayscale
-		ColorConvertOp op = new ColorConvertOp(bi.getColorModel().getColorSpace(), gray.getColorModel().getColorSpace(), null);
-		op.filter(bi, gray);
-
-		ImageProcessor ip = new ByteProcessor(gray);
-
-		String title = "umatrix";
-		ImagePlus imp = new ImagePlus(title, ip);
-
-		// IJ.save(imp, "output/umatrix.bmp");
-		// IJ.runPlugIn(imp, "Watershed ", "");
-
-		// imp.show("umatrix");
-
-		ImageWare image = Builder.wrap(imp);
-		image.invert();
-		image.smoothGaussian(smooth);
-
-		Watershed watershed = new Watershed(false); // show progressen status in console?
-		watershed.doWatershed(image, true, mi, ma); // false a neighborhood of 4 pixels, true a neighborhood of 8 pixels
-		// floods from mi to ma?
-
-		if (debug) {
-			ImagePlus dams = watershed.getDams();
-			dams.show("dams");
-			ImagePlus reddams = watershed.getRedDams(imp);
-			reddams.show("redams");
-			ImagePlus composite = watershed.getComposite(imp);
-			composite.show("composite");
-			WatershedMeasurements.measure(composite);
-		}
-
-		ImagePlus basins = watershed.getBasins();
-		int[][] img = basins.getProcessor().getIntArray();
-
-		Map<Integer, Set<GridPos>> cluster = new HashMap<Integer, Set<GridPos>>();
-		for (int i = 0; i < umatrix.length; i++) {
-			for (int j = 0; j < umatrix[i].length; j++) {
-
-				// continue if intermediate cell
-				if (i % 2 != 0 || j % 2 != 0)
-					continue;
-
-				int xc = i * xDiff + (int) (2 * xDiff * 1.0 / 3);
-				int yc = j * yDiff + (int) (yDiff * 1.0 / 2);
-
-				if (i % 2 == 1)
-					yc += yDiff * 1.0 / 2;
-
-				if ((i + 2) % 4 == 0)
-					yc += yDiff;
-
-				int col = img[xc][yc]; // color in image
-
-				if (!cluster.containsKey(col))
-					cluster.put(col, new HashSet<GridPos>());
-				cluster.get(col).add(new GridPos(i / 2, j / 2));
-			}
-		}
-		return cluster.values();
-	}
-
-	// dist required for u-matrix, TODO: make it useable for any matrix (d or u), Problem: hexmatrix is not adequatly treated by the method
-	public static int[][] getWatershed(int mi, int ma, double smooth, Grid2D<double[]> grid, Dist<double[]> d, boolean debug) {
-		double[][] umatrix = getUMatrix(grid, d);
-		double max = Double.NEGATIVE_INFINITY;
-		double min = Double.POSITIVE_INFINITY;
-		for (int i = 0; i < umatrix.length; i++)
-			for (int j = 0; j < umatrix[0].length; j++) {
-				if (umatrix[i][j] > max)
-					max = umatrix[i][j];
-				if (umatrix[i][j] < min)
-					min = umatrix[i][j];
-			}
-
-		// TODO: min verwenden?
-		// min = 0;
-
-		byte[] pixels = new byte[(umatrix.length + 2) * (umatrix[0].length + 2)];
-		for (int i = 1; i < umatrix.length + 1; i++)
-			for (int j = 1; j < umatrix[0].length + 1; j++)
-				pixels[i + j * (umatrix.length + 2)] = (byte) (255 * (umatrix[i - 1][j - 1] - min) / (max - min));
-
-		ImageProcessor ip = new ByteProcessor(umatrix.length + 2, umatrix[0].length + 2);
-		ip.setPixels(pixels);
-
-		String title = "umatrix";
-		ImagePlus imp = new ImagePlus(title, ip);
-
-		// IJ.save(imp, "output/umatrix.bmp");
-		// IJ.runPlugIn(imp, "Watershed ", "");
-
-		// imp.show("umatrix");
-
-		ImageWare image = Builder.wrap(imp);
-		image.smoothGaussian(smooth);
-
-		Watershed watershed = new Watershed(false); // show progressen status in console?
-		watershed.doWatershed(image, true, mi, ma); // false a neighborhood of 4 pixels, true a neighborhood of 8 pixels
-
-		if (debug) {
-			ImagePlus dams = watershed.getDams();
-			dams.show("dams");
-			ImagePlus reddams = watershed.getRedDams(imp);
-			reddams.show("redams");
-			ImagePlus composite = watershed.getComposite(imp);
-			composite.show("composite");
-			WatershedMeasurements.measure(composite);
-		}
-
-		ImagePlus basins = watershed.getBasins();
-		int[][] img = basins.getProcessor().getIntArray();
-
-		// restore orig size
-		int border = img[0][0]; // border color
-		int[][] nImg = new int[img.length - 2][img[0].length - 2];
-		for (int i = 1; i < img.length - 1; i++)
-			for (int j = 1; j < img[0].length - 1; j++)
-				nImg[i - 1][j - 1] = img[i][j];
-		img = nImg;
-
-		// replace "border" by nearest color
-		nImg = new int[img.length][img[0].length];
-		for (int i = 0; i < img.length; i++) {
-			for (int j = 0; j < img[0].length; j++) {
-
-				if (img[i][j] != border) {
-					nImg[i][j] = img[i][j];
-					continue;
-				}
-
-				// search in umatrix for nearest
-				double minDist = Double.MAX_VALUE;
-				int cl = border;
-
-				List<int[]> unbs = new ArrayList<int[]>();
-				if (i > 0 && j > 0)
-					unbs.add(new int[] { i - 1, j - 1 });
-				if (i > 0)
-					unbs.add(new int[] { i - 1, j });
-				if (i > 0 && j < img[0].length - 1)
-					unbs.add(new int[] { i - 1, j + 1 });
-				if (j > 0)
-					unbs.add(new int[] { i, j - 1 });
-				if (i < img.length - 1 && j < img[0].length - 1)
-					unbs.add(new int[] { i + 1, j + 1 });
-				if (i < img.length - 1)
-					unbs.add(new int[] { i + 1, j });
-				if (i < img.length - 1 && j > 0)
-					unbs.add(new int[] { i + 1, j - 1 });
-				if (j < img[0].length - 1)
-					unbs.add(new int[] { i, j + 1 - 1 });
-
-				for (int[] p : unbs) {
-					if (cl == border || (img[p[0]][p[1]] != border && umatrix[p[0]][p[1]] < umatrix[i][j] && Math.abs(umatrix[i][j] - umatrix[p[0]][p[1]]) < minDist)) {
-						minDist = Math.abs(umatrix[i][j] - umatrix[p[0]][p[1]]);
-						cl = img[p[0]][p[1]];
-					}
-				}
-				nImg[i][j] = cl;
-			}
-		}
-
-		return img;
 	}
 
 	public static Collection<Set<GridPos>> getClusterFromWatershed(int[][] nImg, Grid<double[]> grid) {

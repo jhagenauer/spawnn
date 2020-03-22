@@ -29,7 +29,7 @@ public class ClusterDialogGrid extends JDialog implements ActionListener {
 	boolean okPressed = false;
 
 	public enum ClusterAlgorithm {
-		kMeans, Ward, SLK, ALK, CLK, SKATER, Watershed
+		kMeans, Ward, SLK, ALK, CLK, SKATER
 	};
 
 	private enum Card {
@@ -47,8 +47,6 @@ public class ClusterDialogGrid extends JDialog implements ActionListener {
 		cb = new JComboBox();
 		cb.setModel(new DefaultComboBoxModel(ClusterAlgorithm.values()));
 		cb.addActionListener(this);
-		if( !enableWatershed )
-			cb.removeItem(ClusterAlgorithm.Watershed);
 		add(cb, "wrap");
 
 		// no contiguity option
@@ -104,9 +102,7 @@ public class ClusterDialogGrid extends JDialog implements ActionListener {
 	public void actionPerformed(ActionEvent e) {
 		if (e.getSource() == cb) {
 			CardLayout cl = (CardLayout) (cards.getLayout());
-			if (cb.getSelectedItem() == ClusterAlgorithm.Watershed)
-				cl.show(cards, Card.three.toString());
-			else if (cb.getSelectedItem() == ClusterAlgorithm.SKATER || cb.getSelectedItem() == ClusterAlgorithm.kMeans)
+			if (cb.getSelectedItem() == ClusterAlgorithm.SKATER || cb.getSelectedItem() == ClusterAlgorithm.kMeans)
 				cl.show(cards, Card.one.toString());
 			else
 				cl.show(cards, Card.two.toString());

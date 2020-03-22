@@ -288,22 +288,6 @@ public class SOMResultPanel extends ResultPanel<GridPos> {
 					else if (cd.getAlgorithm() == ClusterDialogGrid.ClusterAlgorithm.SKATER) {
 						Map<double[], Set<double[]>> mst = GraphUtils.getMinimumSpanningTree(cm, fDist);
 						clusters = Clustering.skater(mst, cd.getNumCluster() - 1, fDist, 1);
-					} else if (cd.getAlgorithm() == ClusterAlgorithm.Watershed) {
-						Collection<Set<GridPos>> wsc;
-						if (grid instanceof Grid2DHex) {
-							wsc = SomUtils.getWatershedHex(cd.getMinimum(), cd.getMaximum(), cd.getBlur(), grid, fDist, false);
-						} else { // TODO not sure if the implementation for non-hex-maps is correct
-							int[][] ws = SomUtils.getWatershed(cd.getMinimum(), cd.getMaximum(), cd.getBlur(), grid, fDist, false);
-							wsc = SomUtils.getClusterFromWatershed(ws, grid);
-						}
-						clusters = new ArrayList<Set<double[]>>();
-
-						for (Set<GridPos> c : wsc) {
-							Set<double[]> l = new HashSet<double[]>();
-							for (GridPos p : c)
-								l.add(grid.getPrototypeAt(p));
-							clusters.add(l);
-						}
 					} else { // hierarchical
 						Clustering.HierarchicalClusteringType type = null;
 						if (cd.getAlgorithm() == ClusterDialogGrid.ClusterAlgorithm.ALK)
