@@ -22,13 +22,11 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import org.apache.log4j.Logger;
-import org.jblas.ranges.IndicesRange;
 
 import com.vividsolutions.jts.geom.Geometry;
 
 import spawnn.dist.Dist;
 import spawnn.dist.EuclideanDist;
-import spawnn.utils.DataUtils.Transform;
 
 public class Clustering {
 
@@ -793,7 +791,7 @@ public class Clustering {
 		List<Geometry> geoms = DataUtils.readGeometriesFromShapeFile(new File("data/redcap/Election/election2004.shp"));
 		List<double[]> samples = DataUtils.readSamplesFromShapeFile(new File("data/redcap/Election/election2004.shp"), new int[] {}, true);
 		int[] fa = new int[] { 7 };
-		DataUtils.transform(samples, fa, Transform.zScore);
+		Normalizer.transform(samples, fa, Normalizer.Transform.zScore);
 		final Map<double[], Set<double[]>> cm = GeoUtils.getContiguityMap(samples, geoms, false, false);
 		final Dist<double[]> dist = new EuclideanDist(fa);
 		int nrCluster = 100;
