@@ -18,7 +18,6 @@ import java.util.Set;
 import spawnn.dist.Dist;
 import spawnn.som.grid.Grid2D;
 import spawnn.som.grid.Grid2DHex;
-import spawnn.som.grid.Grid2D_Map;
 import spawnn.som.grid.GridPos;
 import spawnn.utils.DataUtils;
 

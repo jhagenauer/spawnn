@@ -7,8 +7,6 @@ import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.SingularValueDecomposition;
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 
-import spawnn.utils.Normalizer.Transform;
-
 public class Normalizer {
 	
 	public enum Transform {
