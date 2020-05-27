@@ -44,6 +44,7 @@ import org.geotools.data.simple.SimpleFeatureStore;
 import org.geotools.feature.FeatureIterator;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
+import org.jblas.DoubleMatrix;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.feature.type.AttributeDescriptor;
@@ -691,10 +692,18 @@ public class DataUtils {
 	}
 
 	public static DataFrame readDataFrameFromCSV(File file, int[] ign, boolean verbose) {
-		return readDataFrameFromCSV(file, ign, verbose, ',');
+		try {
+			InputStream is = new FileInputStream(file);
+			DataFrame ds = readDataFrameFromInputStream(is, ign, verbose, ',');
+			is.close();
+			return ds;
+		} catch ( IOException e) {
+			e.printStackTrace();
+		}
+		return null;
 	}
-
-	public static DataFrame readDataFrameFromCSV(File file, int[] ign, boolean verbose, char sep) {
+	
+	public static DataFrame readDataFrameFromInputStream(InputStream is, int[] ign, boolean verbose, char sep) {
 		char quote = '"';
 
 		Set<Integer> ignore = new HashSet<Integer>();
@@ -702,98 +711,143 @@ public class DataUtils {
 			ignore.add(i);
 
 		DataFrame sd = new DataFrame();
-		while (true) {
-			boolean retry = false;
-			List<double[]> r = new ArrayList<double[]>();
-			BufferedReader reader = null;
-			try {
-				reader = new BufferedReader(new FileReader(file));
-				// header handling
-				String header = null;
-				while ((header = reader.readLine()) != null)
-					// skip comments
-					if (!header.startsWith("#"))
-						break;
+		
+		List<double[]> r = new ArrayList<double[]>();
+			
+		BufferedReader reader = null;
+		try {
+			reader = new BufferedReader(new InputStreamReader(is));
+				
+			// header handling
+			String header = null;
+			while ((header = reader.readLine()) != null)
+				// skip comments
+				if (!header.startsWith("#"))
+					break;
+
+			// clear line from commas within strings
+			{
+				boolean start = false;
+				char[] charStr = header.toCharArray();
+				for (int i = 0; i < charStr.length; i++) {
+					if (charStr[i] == quote)
+						start = !start;
+					if (start == true && charStr[i] == sep)
+						charStr[i] = ';'; // replace
+				}
+				header = String.valueOf(charStr);
+			}
+			String[] h = header.split(sep + "");
+			
+			String line = null;
+			while ((line = reader.readLine()) != null) {
+
+				if (line.startsWith("#"))
+					continue;
 
 				// clear line from commas within strings
-				{
-					boolean start = false;
-					char[] charStr = header.toCharArray();
-					for (int i = 0; i < charStr.length; i++) {
-						if (charStr[i] == quote)
-							start = !start;
-						if (start == true && charStr[i] == sep)
-							charStr[i] = ';'; // replace
-					}
-					header = String.valueOf(charStr);
+				boolean start = false;
+				char[] charStr = line.toCharArray();
+				for (int i = 0; i < charStr.length; i++) {
+					if (charStr[i] == quote)
+						start = !start;
+					if (start == true && charStr[i] == sep)
+						charStr[i] = ';'; // replace
 				}
-				String[] h = header.split(sep + "");
 
-				List<String> names = new ArrayList<String>();
-				for (int i = 0; i < h.length; i++)
-					if (!ignore.contains(i))
-						names.add(h[i]);
-				sd.names = names;
-
-				String line = null;
-				while ((line = reader.readLine()) != null) {
-
-					if (line.startsWith("#"))
+				line = String.valueOf(charStr);
+				
+				String[] data = line.split(sep + "");
+				double[] d = new double[data.length];
+				for (int i = 0; i < data.length; i++) {
+					if (ignore.contains(i))
 						continue;
-
-					// clear line from commas within strings
-					boolean start = false;
-					char[] charStr = line.toCharArray();
-					for (int i = 0; i < charStr.length; i++) {
-						if (charStr[i] == quote)
-							start = !start;
-						if (start == true && charStr[i] == sep)
-							charStr[i] = ';'; // replace
-					}
-					line = String.valueOf(charStr);
-
-					String[] data = line.split(sep + "");
-					double[] d = new double[data.length - ignore.size()];
-					int modIdx = 0;
-					for (int i = 0; i < data.length; i++)
-						if (ignore.contains(i))
-							modIdx++;
-						else {
-							try {
-								d[i - modIdx] = Double.parseDouble(data[i]);
-							} catch (NumberFormatException e) {
-								log.warn("Cannot parse value " + data[i] + " in column " + i + ", ignoring column...");
-								ignore.add(i);
-								retry = true;
-								break;
-							}
-						}
-					r.add(d);
-				}
-			} catch (IOException e) {
-				e.printStackTrace();
-			} finally {
-				if (reader != null)
 					try {
-						reader.close();
-					} catch (IOException e) {
-						e.printStackTrace();
+						d[i] = Double.parseDouble(data[i]);
+					} catch (NumberFormatException e) {
+						log.warn("Cannot parse value " + data[i] + " in column " + i + ", ignoring column "+h[i]+"...");
+						ignore.add(i);
 					}
+				}			
+				r.add(d);
 			}
-
-			sd.samples = r;
-			if (!retry)
-				break;
+			
+			// build final samples
+			List<String> names = new ArrayList<>();
+			List<Integer> idx = new ArrayList<>();
+			for( int i = 0; i < h.length; i++ )
+				if( !ignore.contains(i) ) { 
+					idx.add(i);
+					names.add(h[i]);
+				}
+			int[] ia = new int[idx.size()];
+			for( int i = 0; i < idx.size(); i++ )
+				ia[i] = idx.get(i);
+			
+			List<double[]> nr = new ArrayList<>();
+			while( !r.isEmpty() ) {
+				double[] d = r.remove(0);
+				nr.add( DataUtils.strip(d, ia ));
+			}			
+			
+			sd.samples = nr;
+			sd.names  = names;
+				
+			// TODO for now its all double
+			sd.bindings = new ArrayList<binding>();
+			for (int i = 0; i < sd.names.size(); i++) {
+				if( verbose ) log.debug(i+","+sd.names.get(i) );
+				sd.bindings.add(binding.Double);
+			}			
+		} catch (IOException e) {
+			e.printStackTrace();
+		} finally {
+			if (reader != null)
+				try {
+					reader.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
 		}
 		
-		// TODO for now its all double
-		sd.bindings = new ArrayList<binding>();
-		for (int i = 0; i < sd.names.size(); i++) {
-			if( verbose ) log.debug(i+","+sd.names.get(i) );
-			sd.bindings.add(binding.Double);
-		}
-
 		return sd;
+	}
+	
+	public static DoubleMatrix readDoubleMatrixFromInputStream(InputStream is,char sep) {		
+		List<double[]> r = new ArrayList<double[]>();			
+		BufferedReader reader = null;
+		try {
+			reader = new BufferedReader(new InputStreamReader(is));			
+			String line = null;
+			while ((line = reader.readLine()) != null) {
+				
+				String[] data = line.split(sep + "");
+				double[] d = new double[data.length];
+				for (int i = 0; i < data.length; i++) {
+					try {
+						d[i] = Double.parseDouble(data[i]);
+					} catch (NumberFormatException e) {
+						e.printStackTrace();
+						System.exit(1);
+					}
+				}			
+				r.add(d);
+			}		
+		} catch (IOException e) {
+			e.printStackTrace();
+		} finally {
+			if (reader != null)
+				try {
+					reader.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+		}
+		
+		DoubleMatrix d = new DoubleMatrix(r.size(),r.get(0).length);
+		for( int i = 0; i < r.size(); i++ )
+			d.putRow(i, new DoubleMatrix(r.get(i)));
+		return d;
 	}
 
 	// FIXME verbose has no effect
@@ -1187,16 +1241,6 @@ public class DataUtils {
 			ns.add(d);
 		}
 		return ns;
-	}
-
-	public static void main(String[] args) {
-		DataFrame df = DataUtils.readDataFrameFromCSV("data/iris.csv", new int[] {}, true);
-
-		Normalizer.transform(df.samples, Normalizer.Transform.zScore);
-		Normalizer.transform(df.samples, Normalizer.Transform.pca);
-
-		for (double[] d : df.samples)
-			log.debug(Arrays.toString(d));
 	}
 
 	public static double[] strip(double[] d, int[] fa) {
