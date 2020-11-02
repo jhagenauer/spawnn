@@ -739,6 +739,7 @@ public class DataUtils {
 			}
 			String[] h = header.split(sep + "");
 			
+			int j = 0;
 			String line = null;
 			while ((line = reader.readLine()) != null) {
 
@@ -762,14 +763,19 @@ public class DataUtils {
 				for (int i = 0; i < data.length; i++) {
 					if (ignore.contains(i))
 						continue;
-					try {
-						d[i] = Double.parseDouble(data[i]);
-					} catch (NumberFormatException e) {
-						log.warn("Cannot parse value " + data[i] + " in column " + i + ", ignoring column "+h[i]+"...");
-						ignore.add(i);
+					else if( data[i].isEmpty() )
+						d[i] = Double.NaN;
+					else {
+						try {
+							d[i] = Double.parseDouble(data[i]);
+						} catch (NumberFormatException e) {
+							log.warn("Cannot parse value " + data[i] + " in column " + i + ", row "+j+", ignoring column "+h[i]+"..."+e.getMessage());
+							ignore.add(i);
+						}
 					}
 				}			
 				r.add(d);
+				j++;
 			}
 			
 			// build final samples

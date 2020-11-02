@@ -14,11 +14,20 @@ public class Normalizer {
 	}
 
 	int[] fa;
-	Normalizer.Transform t;
+	Transform t;
 	SummaryStatistics[] ds;
 	
-	public Normalizer( Normalizer.Transform t, List<double[]> samples, int[] fa ) {
-		this.fa = fa;
+	public Normalizer( Transform t, List<double[]> samples ) {
+		this(t,samples,null);
+	}
+	
+	public Normalizer( Transform t, List<double[]> samples, int[] faa ) {
+		if( faa == null ) {
+			this.fa = new int[samples.get(0).length];
+			for( int i = 0; i < this.fa.length; i++ )
+				this.fa[i] = i;
+		} else
+			this.fa = faa;
 		this.t = t;
 		
 		ds = new SummaryStatistics[fa.length];
@@ -35,9 +44,9 @@ public class Normalizer {
 		for (int i = 0; i < samples.size(); i++) {
 			double[] d = samples.get(i);
 			for (int j = 0; j < fa.length; j++) {
-				if (t == Normalizer.Transform.zScore)
+				if (t == Transform.zScore)
 					d[fa[j]] = (d[fa[j]] - ds[j].getMean()) / ds[j].getStandardDeviation();
-				else if (t == Normalizer.Transform.scale01)
+				else if (t == Transform.scale01)
 					d[fa[j]] = (d[fa[j]] - ds[j].getMin()) / (ds[j].getMax() - ds[j].getMin());
 				else
 					throw new RuntimeException(t+" not supported!");
