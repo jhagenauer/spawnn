@@ -706,15 +706,16 @@ public class DataUtils {
 	public static DataFrame readDataFrameFromInputStream(InputStream is, int[] ign, boolean verbose, char sep) {
 		char quote = '"';
 
-		Set<Integer> ignore = new HashSet<Integer>();
+		Set<Integer> ignored = new HashSet<Integer>();
 		for (int i : ign)
-			ignore.add(i);
+			ignored.add(i);
 
 		DataFrame sd = new DataFrame();
 		
 		List<double[]> r = new ArrayList<double[]>();
 			
 		BufferedReader reader = null;
+		String ssep = sep + "";
 		try {
 			reader = new BufferedReader(new InputStreamReader(is));
 				
@@ -737,8 +738,8 @@ public class DataUtils {
 				}
 				header = String.valueOf(charStr);
 			}
-			String[] h = header.split(sep + "");
-			
+			String[] h = header.split(ssep);
+						
 			int j = 0;
 			String line = null;
 			while ((line = reader.readLine()) != null) {
@@ -757,11 +758,11 @@ public class DataUtils {
 				}
 
 				line = String.valueOf(charStr);
-				
 				String[] data = line.split(sep + "");
+																				
 				double[] d = new double[data.length];
 				for (int i = 0; i < data.length; i++) {
-					if (ignore.contains(i))
+					if (ignored.contains(i))
 						continue;
 					else if( data[i].isEmpty() )
 						d[i] = Double.NaN;
@@ -770,7 +771,7 @@ public class DataUtils {
 							d[i] = Double.parseDouble(data[i]);
 						} catch (NumberFormatException e) {
 							log.warn("Cannot parse value " + data[i] + " in column " + i + ", row "+j+", ignoring column "+h[i]+"..."+e.getMessage());
-							ignore.add(i);
+							ignored.add(i);
 						}
 					}
 				}			
@@ -780,23 +781,26 @@ public class DataUtils {
 			
 			// build final samples
 			List<String> names = new ArrayList<>();
-			List<Integer> idx = new ArrayList<>();
+			List<Integer> notIgnored = new ArrayList<>();
 			for( int i = 0; i < h.length; i++ )
-				if( !ignore.contains(i) ) { 
-					idx.add(i);
+				if( !ignored.contains(i) ) { 
+					notIgnored.add(i);
 					names.add(h[i]);
 				}
-			int[] ia = new int[idx.size()];
-			for( int i = 0; i < idx.size(); i++ )
-				ia[i] = idx.get(i);
+			int[] notIgnoredArray = new int[notIgnored.size()];
+			for( int i = 0; i < notIgnored.size(); i++ )
+				notIgnoredArray[i] = notIgnored.get(i);
 			
-			List<double[]> nr = new ArrayList<>();
-			while( !r.isEmpty() ) {
-				double[] d = r.remove(0);
-				nr.add( DataUtils.strip(d, ia ));
-			}			
-			
-			sd.samples = nr;
+			// do we need to strip
+			if( !ignored.isEmpty() ) {
+				List<double[]> nr = new ArrayList<>();
+				while( !r.isEmpty() ) {
+					double[] d = r.remove(0);
+					nr.add( DataUtils.strip(d, notIgnoredArray ));
+				}			
+				sd.samples = nr;
+			} else 
+				sd.samples = r;
 			sd.names  = names;
 				
 			// TODO for now its all double

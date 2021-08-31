@@ -1,6 +1,5 @@
 package spawnn.utils;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -23,10 +22,7 @@ import java.util.concurrent.Future;
 
 import org.apache.log4j.Logger;
 
-import com.vividsolutions.jts.geom.Geometry;
-
 import spawnn.dist.Dist;
-import spawnn.dist.EuclideanDist;
 
 public class Clustering {
 
@@ -785,62 +781,5 @@ public class Clustering {
 			clusters.add(GraphUtils.getNodes(sg));
 
 		return clusters;
-	}
-	
-	public static void main(String[] args) {
-		List<Geometry> geoms = DataUtils.readGeometriesFromShapeFile(new File("data/redcap/Election/election2004.shp"));
-		List<double[]> samples = DataUtils.readSamplesFromShapeFile(new File("data/redcap/Election/election2004.shp"), new int[] {}, true);
-		int[] fa = new int[] { 7 };
-		Normalizer.transform(samples, fa, Normalizer.Transform.zScore);
-		final Map<double[], Set<double[]>> cm = GeoUtils.getContiguityMap(samples, geoms, false, false);
-		final Dist<double[]> dist = new EuclideanDist(fa);
-		int nrCluster = 100;
-		
-		{
-			long time = System.currentTimeMillis();
-			List<Set<double[]>> ct = new ArrayList<>( Clustering.kMeans(samples, nrCluster, dist, 0.0000001 ).values() );
-			log.debug("Within sum of squares: " + DataUtils.getWithinSumOfSquares(ct, dist)+", took: "+(System.currentTimeMillis()-time)/1000.0);		
-			Drawer.geoDrawCluster(ct, samples, geoms, "output/kmeans_clustering.png", true);
-		}
-		
-		{
-			long time = System.currentTimeMillis();
-			List<TreeNode> tree = Clustering.getHierarchicalClusterTree(samples, dist, HierarchicalClusteringType.ward);
-			List<Set<double[]>> ct = Clustering.treeToCluster( Clustering.cutTree( tree, nrCluster) );
-			log.debug("Within sum of squares: " + DataUtils.getWithinSumOfSquares(ct, dist)+", took: "+(System.currentTimeMillis()-time)/1000.0);		
-			Drawer.geoDrawCluster(ct, samples, geoms, "output/ward_clustering.png", true);
-		}
-		
-		{
-			long time = System.currentTimeMillis();
-			List<TreeNode> tree = Clustering.getHierarchicalClusterTree(cm, dist, HierarchicalClusteringType.ward);
-			List<Set<double[]>> ct = Clustering.treeToCluster( Clustering.cutTree( tree, nrCluster) );
-			log.debug("Within sum of squares: " + DataUtils.getWithinSumOfSquares(ct, dist)+", took: "+(System.currentTimeMillis()-time)/1000.0);		
-			Drawer.geoDrawCluster(ct, samples, geoms, "output/ward_clustering_cm.png", true);
-		}
-		
-		{
-			long time = System.currentTimeMillis();
-			List<TreeNode> tree = Clustering.getHierarchicalClusterTree(cm, dist, HierarchicalClusteringType.single_linkage);
-			List<Set<double[]>> ct = Clustering.treeToCluster( Clustering.cutTree( tree, nrCluster) );
-			log.debug("Within sum of squares: " + DataUtils.getWithinSumOfSquares(ct, dist)+", took: "+(System.currentTimeMillis()-time)/1000.0);		
-			Drawer.geoDrawCluster(ct, samples, geoms, "output/ward_clustering_cm.png", true);
-		}
-		
-		{
-			long time = System.currentTimeMillis();
-			List<TreeNode> tree = Clustering.getHierarchicalClusterTree(cm, dist, HierarchicalClusteringType.average_linkage);
-			List<Set<double[]>> ct = Clustering.treeToCluster( Clustering.cutTree( tree, nrCluster) );
-			log.debug("Within sum of squares: " + DataUtils.getWithinSumOfSquares(ct, dist)+", took: "+(System.currentTimeMillis()-time)/1000.0);		
-			Drawer.geoDrawCluster(ct, samples, geoms, "output/ward_clustering_cm.png", true);
-		}
-		
-		{
-			long time = System.currentTimeMillis();
-			List<TreeNode> tree = Clustering.getHierarchicalClusterTree(cm, dist, HierarchicalClusteringType.complete_linkage);
-			List<Set<double[]>> ct = Clustering.treeToCluster( Clustering.cutTree( tree, nrCluster) );
-			log.debug("Within sum of squares: " + DataUtils.getWithinSumOfSquares(ct, dist)+", took: "+(System.currentTimeMillis()-time)/1000.0);		
-			Drawer.geoDrawCluster(ct, samples, geoms, "output/ward_clustering_cm.png", true);
-		}
 	}
 }
