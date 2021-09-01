@@ -6,35 +6,39 @@ import org.jblas.DoubleMatrix;
 public class MatrixNormalizer extends Normalizer {
 	
 	Transform[] tt;
-	SummaryStatistics[] ds;
+	SummaryStatistics[][] ds;
 	
-	public MatrixNormalizer( Transform[] t, DoubleMatrix X ) {
+	public MatrixNormalizer( Transform[] tt, DoubleMatrix X, boolean lastIc ) {
+		this.tt = tt;
 		
-		ds = new SummaryStatistics[X.columns];
-		for (int i = 0; i < ds.length; i++)
-			ds[i] = new SummaryStatistics();
-		
-		for( int i = 0; i < X.rows; i++ )
-			for( int j = 0; j < X.columns; j++ ) {
-				double v = X.get(i, j);
-				if( !Double.isNaN(v) )
-					ds[j].addValue(v);
+		this.ds = new SummaryStatistics[tt.length][X.columns - (lastIc ? 1 : 0)];
+		for( int i = 0; i < tt.length; i++ ) {
+			// calculate summary statistics before applying t
+			for( int j = 0; j < ds[i].length; j++ ) {
+				ds[i][j] = new SummaryStatistics();
+				for( int k = 0; k < X.rows; k++  )
+					ds[i][j].addValue(X.get(k,j));			
 			}
-		
-		this.tt = t;
-		normalize(X);
+			
+			// normalize
+			normalize(X, i);			
+		}
 	}
 	
-	public void normalize(DoubleMatrix X) {
-		for (int i = 0; i < X.rows; i++) 
-			for( int j = 0; j < X.columns; j++ ) {
-			double d = X.get(i,j);
-			for( Transform t : tt  ) {
-				if (t == Transform.zScore) {
-					if( ds[j].getStandardDeviation() != 0 )
-						d = (d - ds[j].getMean()) / ds[j].getStandardDeviation();
-				} else if (t == Transform.scale01)
-					d = (d - ds[j].getMin()) / (ds[j].getMax() - ds[j].getMin());
+	public void normalize(DoubleMatrix X) {	
+		for( int i = 0; i < tt.length; i++ ) 
+			normalize(X, i );								
+	}
+	
+	private void normalize(DoubleMatrix X, int i ) {
+		Transform t = tt[i];
+		for( int j = 0; j < ds[i].length; j++ )
+			for (int k = 0; k < X.rows; k++ ) {
+				double d = X.get(k,j);
+				if (t == Transform.zScore) 
+					d = (d - ds[i][j].getMean()) / ds[i][j].getStandardDeviation();
+				else if (t == Transform.scale01)
+					d = (d - ds[i][j].getMin()) / (ds[i][j].getMax() - ds[i][j].getMin());
 				else if( t == Transform.sqrt )
 					d = Math.sqrt(d);
 				else if( t == Transform.log )
@@ -42,11 +46,10 @@ public class MatrixNormalizer extends Normalizer {
 				else if( t == Transform.log1 )
 					d = Math.log( d+1.0 );
 				else if( t == Transform.none )
-					;
+					;					
 				else
 					throw new RuntimeException(t+" not supported!");
-			}
-			X.put(i, j, d);
-		}
+				X.put(k,j,d);
+			}		
 	}
 }

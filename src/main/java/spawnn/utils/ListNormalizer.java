@@ -8,32 +8,37 @@ public class ListNormalizer extends Normalizer {
 	
 	int[] fa;
 	Transform[] tt;
-	SummaryStatistics[] ds;
+	SummaryStatistics[][] ds;
 	
 	public ListNormalizer( Transform t, List<double[]> samples ) {
-		this( new Transform[] {t},samples,null);
+		this( new Transform[] {t}, samples, null);
 	}
 	
-	public ListNormalizer( Transform[] t, List<double[]> samples, int[] faa ) {
+	public ListNormalizer( Transform[] t, List<double[]> samples ) {
+		this( t, samples, null );
+	}
+	
+	public ListNormalizer( Transform[] ttt, List<double[]> samples, int[] faa ) {
 		if( faa == null ) {
 			this.fa = new int[samples.get(0).length];
 			for( int i = 0; i < this.fa.length; i++ )
 				this.fa[i] = i;
 		} else
 			this.fa = faa;
-				
-		ds = new SummaryStatistics[fa.length];
-		for (int i = 0; i < fa.length; i++)
-			ds[i] = new SummaryStatistics();
-		for (double[] d : samples)
-			for (int i = 0; i < fa.length; i++) {
-				double v = d[fa[i]];
-				if( !Double.isNaN(v) )
-					ds[i].addValue(v);
-			}
-		normalize(samples);
+		this.tt = ttt;
 		
-		this.tt = t;
+		this.ds = new SummaryStatistics[tt.length][fa.length];
+		for( int i = 0; i < tt.length; i++ ) {
+			// calculate summary statistics before applying t
+			for( int j = 0; j < fa.length; j++ ) {
+				ds[i][j] = new SummaryStatistics();
+				for( double[] d : samples )
+					ds[i][j].addValue(d[j]);			
+			}
+			
+			// normalize
+			normalize(samples, i);			
+		}
 	}
 	
 	@Deprecated
@@ -41,46 +46,29 @@ public class ListNormalizer extends Normalizer {
 		this( new Transform[] {t},samples,faa);
 	}
 	
-	public void normalize(List<double[]> samples) {
-		for (int i = 0; i < samples.size(); i++) {
-			double[] d = samples.get(i);
-			for (int j = 0; j < fa.length; j++) 
-				for( Transform t : tt ){
-					if (t == Transform.zScore) 
-						d[fa[j]] = (d[fa[j]] - ds[j].getMean()) / ds[j].getStandardDeviation();
-					else if (t == Transform.scale01)
-						d[fa[j]] = (d[fa[j]] - ds[j].getMin()) / (ds[j].getMax() - ds[j].getMin());
-					else if( t == Transform.sqrt )
-						d[fa[j]] = Math.sqrt(d[fa[j]]);
-					else if( t == Transform.log )
-						d[fa[j]] = Math.log(d[fa[j]]);
-					else if( t == Transform.log1 )
-						d[fa[j]] = Math.log( d[fa[j]]+1.0 );
-					else if( t == Transform.none )
-						d[fa[j]] = d[fa[j]];
-					
-					else
-						throw new RuntimeException(t+" not supported!");
-				}
-		}
+	public void normalize(List<double[]> samples) {	
+		for( int i = 0; i < tt.length; i++ ) 
+			normalize(samples, i );								
 	}
-		
-	public void denormalize(double[] d, int j ) {
-		for (int i = 0; i < d.length; i++) 
-			for( Transform t : tt ){
+	
+	private void normalize(List<double[]> samples, int i ) {
+		Transform t = tt[i];
+		for( int j = 0; j < fa.length; j++ )
+			for (double[] d : samples ) { 
 				if (t == Transform.zScore) 
-					d[i] = ds[j].getStandardDeviation() * d[i] + ds[j].getMean();
-				else if (t == Transform.scale01) 
-					d[i] = (ds[j].getMax() - ds[j].getMin()) * d[i] + ds[j].getMin();
+					d[fa[j]] = (d[fa[j]] - ds[i][j].getMean()) / ds[i][j].getStandardDeviation();
+				else if (t == Transform.scale01)
+					d[fa[j]] = (d[fa[j]] - ds[i][j].getMin()) / (ds[i][j].getMax() - ds[i][j].getMin());
 				else if( t == Transform.sqrt )
-					if( d[i] < 0 )
-						d[i] = Double.NaN;
-					else
-						d[i] = Math.pow(d[i],2);
+					d[fa[j]] = Math.sqrt(d[fa[j]]);
 				else if( t == Transform.log )
-					d[i] = Math.exp(d[i]); // correct?
+					d[fa[j]] = Math.log(d[fa[j]]);
+				else if( t == Transform.log1 )
+					d[fa[j]] = Math.log( d[fa[j]]+1.0 );
+				else if( t == Transform.none )
+					d[fa[j]] = d[fa[j]];					
 				else
-					throw new RuntimeException(t+" not supported!");
+					throw new RuntimeException(t+" not supported!");							
 			}		
 	}
 }
