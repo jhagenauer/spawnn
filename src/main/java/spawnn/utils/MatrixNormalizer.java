@@ -5,9 +5,6 @@ import org.jblas.DoubleMatrix;
 
 public class MatrixNormalizer extends Normalizer {
 	
-	Transform[] tt;
-	SummaryStatistics[][] ds;
-	
 	public MatrixNormalizer( Transform[] tt, DoubleMatrix X, boolean lastIc ) {
 		this.tt = tt;
 		
@@ -20,36 +17,24 @@ public class MatrixNormalizer extends Normalizer {
 					ds[i][j].addValue(X.get(k,j));			
 			}
 			
-			// normalize
-			normalize(X, i);			
+			// normalize, affects subsequent summary statistics
+			for( int j = 0; j < ds[i].length; j++ )
+				for (int k = 0; k < X.rows; k++ ) 
+					X.put(k,j,normalize(X.get(k,j), i, j, false));				
 		}
 	}
 	
 	public void normalize(DoubleMatrix X) {	
 		for( int i = 0; i < tt.length; i++ ) 
-			normalize(X, i );								
+			for( int j = 0; j < ds[i].length; j++ )
+				for (int k = 0; k < X.rows; k++ ) 
+					X.put(k,j,normalize(X.get(k,j), i, j, false));								
 	}
 	
-	private void normalize(DoubleMatrix X, int i ) {
-		Transform t = tt[i];
-		for( int j = 0; j < ds[i].length; j++ )
-			for (int k = 0; k < X.rows; k++ ) {
-				double d = X.get(k,j);
-				if (t == Transform.zScore) 
-					d = (d - ds[i][j].getMean()) / ds[i][j].getStandardDeviation();
-				else if (t == Transform.scale01)
-					d = (d - ds[i][j].getMin()) / (ds[i][j].getMax() - ds[i][j].getMin());
-				else if( t == Transform.sqrt )
-					d = Math.sqrt(d);
-				else if( t == Transform.log )
-					d = Math.log(d);
-				else if( t == Transform.log1 )
-					d = Math.log( d+1.0 );
-				else if( t == Transform.none )
-					;					
-				else
-					throw new RuntimeException(t+" not supported!");
-				X.put(k,j,d);
-			}		
+	public void denormalize(DoubleMatrix X) {
+		for( int i = tt.length-1; i >= 0 ; i-- ) 
+			for( int j = 0; j < ds[i].length; j++ )
+				for (int k = 0; k < X.rows; k++ ) 
+					X.put(k,j,normalize(X.get(k,j), i, j, true));			
 	}
 }

@@ -7,7 +7,6 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -68,13 +67,6 @@ public class DataUtils {
 
 	private static Logger log = Logger.getLogger(DataUtils.class);
 
-	public static double[] truncate(double[] d, int[] fa) {
-		double[] nd = new double[fa.length];
-		for (int i = 0; i < fa.length; i++)
-			nd[i] = d[fa[i]];
-		return nd;
-	}
-
 	public static List<double[]> mappingToCluster(Map<double[], Set<double[]>> m) {
 		List<double[]> r = new ArrayList<double[]>();
 
@@ -87,23 +79,6 @@ public class DataUtils {
 			}
 		}
 		return r;
-	}
-
-	// pretty sucks
-	private static double sammonsStress(List<double[]> l1, Dist<double[]> a, List<double[]> l2, Dist<double[]> b) {
-		double sum = 0;
-		for (int i = 0; i < l1.size(); i++)
-			for (int j = 0; j < i; j++)
-				sum = a.dist(l1.get(i), l1.get(j));
-
-		double left = 0;
-		for (int i = 0; i < l1.size(); i++) {
-			for (int j = 0; j < i; j++) {
-				left += Math.pow(a.dist(l1.get(i), l1.get(j)) - b.dist(l2.get(i), l2.get(j)), 2)
-						/ a.dist(l1.get(i), l1.get(j));
-			}
-		}
-		return (1.0 / sum) * left;
 	}
 
 	public static List<double[]> getSammonsProjection(List<double[]> samples, Dist<double[]> a, Dist<double[]> b,
@@ -141,66 +116,6 @@ public class DataUtils {
 		return projected;
 	}
 
-	public static double[][] transpose(double[][] tab) {
-		double[][] r = new double[tab[0].length][tab.length];
-		for (int i = 0; i < tab[0].length; i++)
-			for (int j = 0; j < tab.length; j++)
-				r[i][j] = tab[j][i];
-		return r;
-	}
-
-	public static void writeTab(String fn, double[][] tab) {
-		FileWriter fw = null;
-		try {
-			fw = new FileWriter(fn);
-			for (int i = 0; i < tab.length; i++) {
-				String s = "";
-				for (int j = 0; j < tab[i].length; j++) {
-					s += tab[i][j] + ",";
-				}
-				s = s.substring(0, s.length() - 1) + "\n";
-				fw.write(s);
-			}
-		} catch (IOException e) {
-			e.printStackTrace();
-		} finally {
-			try {
-				fw.close();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		}
-	}
-
-	public static double[][] readTab(String fn) {
-		double[][] tab = null;
-		int i = 0;
-		BufferedReader br = null;
-		try {
-			br = new BufferedReader(new FileReader(fn));
-			String line = null;
-			while ((line = br.readLine()) != null) {
-				String[] s = line.split(",");
-
-				if (tab == null)
-					tab = new double[s.length][s.length]; // quadratic
-
-				for (int j = 0; j < s.length; j++)
-					tab[j][i] = Double.parseDouble(s[j]);
-				i++;
-			}
-		} catch (IOException e) {
-			e.printStackTrace();
-		} finally {
-			try {
-				br.close();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		}
-		return tab;
-	}
-
 	public static int countCompactClusters(Collection<List<double[]>> cluster, List<Geometry> geoms,
 			List<double[]> samples) {
 		int sum = 0;
@@ -217,41 +132,6 @@ public class DataUtils {
 				sum++;
 		}
 		return sum;
-	}
-
-	public static int countNonEmptyCluster(Collection<List<double[]>> cluster) {
-		int sum = 0;
-		for (List<double[]> l : cluster)
-			if (l.size() > 0)
-				sum++;
-		return sum;
-	}
-
-	public static double getPurity(Map<double[], Set<double[]>> cluster, Map<Integer, Set<double[]>> classes) {
-		int sum = 0;
-		int numSamples = 0;
-
-		for (double[] w : cluster.keySet()) {
-			numSamples += cluster.get(w).size();
-			Map<Integer, Integer> classCount = new HashMap<Integer, Integer>();
-			for (int i : classes.keySet())
-				classCount.put(i, 0);
-
-			for (double[] d : cluster.get(w)) {
-				// get class
-				for (int i : classes.keySet())
-					if (classes.get(i).contains(d))
-						classCount.put(i, classCount.get(i) + 1);
-			}
-
-			int max = 0;
-			for (int cls : classCount.keySet()) {
-				if (classCount.get(cls) > max)
-					max = classCount.get(cls);
-			}
-			sum += max;
-		}
-		return (double) sum / numSamples;
 	}
 
 	public static long binCoeff(int n, int k) {
@@ -370,21 +250,6 @@ public class DataUtils {
 		for (int i = 0; i < l; i++)
 			r[i] /= c.size();
 		return r;
-	}
-
-	public static RealMatrix toRealMatrix(List<double[]> samples) {
-		double[][] m = new double[samples.size()][];
-		for (int i = 0; i < samples.size(); i++)
-			m[i] = samples.get(i);
-
-		return new Array2DRowRealMatrix(m);
-	}
-
-	public static List<double[]> toSamples(RealMatrix rm) {
-		List<double[]> l = new ArrayList<>();
-		for (int i = 0; i < rm.getRowDimension(); i++)
-			l.add(rm.getRow(i));
-		return l;
 	}
 
 	public static double getSumOfSquares(Map<double[], Set<double[]>> clusters, Dist<double[]> dist) {
@@ -687,10 +552,6 @@ public class DataUtils {
 		}
 	}
 
-	public static DataFrame readDataFrameFromCSV(String file, int[] ign, boolean verbose) {
-		return readDataFrameFromCSV(new File(file), ign, verbose);
-	}
-
 	public static DataFrame readDataFrameFromCSV(File file, int[] ign, boolean verbose) {
 		try {
 			InputStream is = new FileInputStream(file);
@@ -818,8 +679,129 @@ public class DataUtils {
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
-		}
-		
+		}		
+		return sd;
+	}
+	
+	public static DataFrame2 readDataFrame2FromInputStream(InputStream is, char sep ) {
+		char quote = '"';
+		DataFrame2 sd = new DataFrame2();
+					
+		BufferedReader reader = null;
+		String ssep = sep + "";
+		try {
+			reader = new BufferedReader(new InputStreamReader(is));
+				
+			// header handling
+			String header = null;
+			while ((header = reader.readLine()) != null)
+				// skip comments
+				if (!header.startsWith("#"))
+					break;
+
+			// clear line from commas within strings
+			{
+				boolean start = false;
+				char[] charStr = header.toCharArray();
+				for (int i = 0; i < charStr.length; i++) {
+					if (charStr[i] == quote)
+						start = !start;
+					if (start == true && charStr[i] == sep)
+						charStr[i] = ';'; // replace
+				}
+				header = String.valueOf(charStr);
+			}
+			String[] h = header.split(ssep);
+						
+			String line = null;
+			List<String[]> data = new ArrayList<>();
+			while ((line = reader.readLine()) != null) {
+
+				if (line.startsWith("#"))
+					continue;
+
+				// clear line from commas within strings
+				boolean start = false;
+				char[] charStr = line.toCharArray();
+				for (int i = 0; i < charStr.length; i++) {
+					if (charStr[i] == quote)
+						start = !start;
+					if (start == true && charStr[i] == sep)
+						charStr[i] = ';'; // replace
+				}
+				line = String.valueOf(charStr);
+				String[] d = line.split(sep + "");
+				if( d.length != h.length )
+					throw new RuntimeException("Columns header "+h.length+" != columns data "+d.length);
+				data.add( d );					
+			}
+						
+			List<double[]> cols_num = new ArrayList<>();
+			List<String[]> cols_str = new ArrayList<>();
+			List<String> names_num = new ArrayList<>();
+			List<String> names_str = new ArrayList<>();		
+			
+			for( int i = 0; i < h.length; i++ ) { // each col
+				String[] cs = new String[data.size()];
+				double[] cd = new double[data.size()];
+				
+				boolean use_str = false;
+				for( int j = 0; j < data.size(); j++ ) {
+					String d = data.get(j)[i];
+					if( d.isEmpty() )
+						cd[j] = Double.NaN;
+					else {
+						try {
+							cd[j] = Double.parseDouble(d);
+						} catch (NumberFormatException e) {
+							cs[j] = d;
+							use_str = true;							
+						}
+					}
+				}
+				
+				if( use_str ) {
+					cols_str.add(cs);
+					names_str.add(h[i]);
+				} else {
+					cols_num.add(cd);
+					names_num.add(h[i]);
+				}
+			}
+			
+			// names
+			sd.names_num = new String[names_num.size()];
+			for( int i = 0; i < sd.names_num.length; i++ )
+				sd.names_num[i] = names_num.get(i);
+			
+			sd.names_str = new String[names_str.size()];
+			for( int i = 0; i < sd.names_str.length; i++ )
+				sd.names_str[i] = names_str.get(i);
+
+			// columns to rows
+			sd.samples_num = new double[cols_num.get(0).length][cols_num.size()];
+			sd.samples_str = new String[cols_num.get(0).length][cols_str.size()];
+			for( int j = 0; j < cols_num.get(0).length; j++ ) { // for each sample
+				
+				double[] d = new double[cols_num.size()];
+				for( int i = 0; i < d.length; i++ )
+					sd.samples_num[j][i] = cols_num.get(i)[j];
+				
+				String[] s = new String[cols_str.size()];
+				for( int i = 0; i < s.length; i++ )
+					sd.samples_str[j][i] = cols_str.get(i)[j];
+			}			
+				
+		} catch (IOException e) {
+			e.printStackTrace();
+		} finally {
+			if (reader != null)
+				try {
+					reader.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+		}		
 		return sd;
 	}
 	
@@ -1336,7 +1318,6 @@ public class DataUtils {
 			for( double[] d : samples )
 				ds.addValue(d[i]);
 			System.out.println(i+" --> min: "+ds.getMin()+", mean: "+ds.getMean()+", max: "+ds.getMax()+", sd: "+ds.getStandardDeviation());
-		}
-		
+		}		
 	}
 }
