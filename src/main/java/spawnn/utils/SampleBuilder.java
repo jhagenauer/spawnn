@@ -19,7 +19,8 @@ import java.util.Set;
 import org.apache.commons.math3.distribution.MultivariateNormalDistribution;
 import org.apache.commons.math3.random.GaussianRandomGenerator;
 import org.apache.commons.math3.random.JDKRandomGenerator;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Envelope;
@@ -34,7 +35,7 @@ import spawnn.dist.EuclideanDist;
 
 public class SampleBuilder {
 
-	private static Logger log = Logger.getLogger(SampleBuilder.class);
+	private static Logger log = LogManager.getLogger(SampleBuilder.class);
 
 	public static void buildRandomSamples(int numSamples, int numAttrs, String fn) {
 		Random r = new Random();

@@ -24,7 +24,8 @@ import java.util.Map;
 import javax.imageio.ImageIO;
 
 import org.apache.commons.collections15.Transformer;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.xmlgraphics.java2d.ps.EPSDocumentGraphics2D;
 
 import edu.uci.ics.jung.algorithms.layout.AbstractLayout;
@@ -44,7 +45,7 @@ import edu.uci.ics.jung.visualization.util.Caching;
 
 public class GraphPanel extends NeuronVisPanel<double[]> implements ItemListener, ComponentListener {
 
-	private static Logger log = Logger.getLogger(GraphPanel.class);
+	private static Logger log = LogManager.getLogger(GraphPanel.class);
 	private static final long serialVersionUID = -7684883263291420601L;
 
 	private Graph<double[], double[]> graph;

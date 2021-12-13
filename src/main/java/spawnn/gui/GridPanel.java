@@ -19,18 +19,18 @@ import java.util.Map;
 
 import javax.imageio.ImageIO;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.xmlgraphics.java2d.ps.EPSDocumentGraphics2D;
 
 import spawnn.dist.Dist;
-import spawnn.som.grid.Grid2D_Map;
 import spawnn.som.grid.Grid2D;
 import spawnn.som.grid.Grid2DHex;
 import spawnn.som.grid.GridPos;
 
 public class GridPanel extends NeuronVisPanel<GridPos> implements MouseListener {
 	
-	private static Logger log = Logger.getLogger(GridPanel.class);
+	private static Logger log = LogManager.getLogger(GridPanel.class);
 	private static final long serialVersionUID = 5760512747937681233L;
 					
 	int maxX = Integer.MIN_VALUE, minX = Integer.MAX_VALUE, maxY = Integer.MIN_VALUE, minY = Integer.MAX_VALUE;

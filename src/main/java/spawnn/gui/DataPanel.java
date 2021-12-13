@@ -25,7 +25,8 @@ import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.DefaultTableModel;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
@@ -39,7 +40,7 @@ import spawnn.utils.SpatialDataFrame;
 
 public class DataPanel extends JPanel implements ActionListener, TableModelListener {
 	
-	private static Logger log = Logger.getLogger(DataPanel.class);
+	private static Logger log = LogManager.getLogger(DataPanel.class);
 	private static final long serialVersionUID = 1736311423918203189L;
 	public static final String TRAIN_ALLOWED_PROP ="TRAIN_ALLOWED"; //TODO maybe better use training-events instead of property changes
 	static Set<String> coordNames;

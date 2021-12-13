@@ -20,13 +20,14 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import spawnn.dist.Dist;
 
 public class Clustering {
 
-	private static Logger log = Logger.getLogger(Clustering.class);
+	private static Logger log = LogManager.getLogger(Clustering.class);
 
 	// Actually, this is NOT PAM, but works nevertheless, needs some rework/cleanup
 	public static Map<double[], Set<double[]>> kMedoidsPAM(Collection<double[]> samples, int num, Dist<double[]> dist) {

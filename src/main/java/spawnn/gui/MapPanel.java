@@ -22,7 +22,8 @@ import java.util.Map;
 
 import javax.imageio.ImageIO;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.xmlgraphics.java2d.ps.EPSDocumentGraphics2D;
 import org.geotools.factory.CommonFactoryFinder;
 import org.geotools.feature.DefaultFeatureCollection;
@@ -65,7 +66,7 @@ import net.miginfocom.swing.MigLayout;
 public class MapPanel<T> extends NeuronVisPanel<T> implements MapPaneListener, MouseListener, ComponentListener {
 
 	private static final long serialVersionUID = -8904376009449729813L;
-	private static Logger log = Logger.getLogger(MapPanel.class);
+	private static Logger log = LogManager.getLogger(MapPanel.class);
 
 	private FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
 	private StyleBuilder sb = new StyleBuilder();

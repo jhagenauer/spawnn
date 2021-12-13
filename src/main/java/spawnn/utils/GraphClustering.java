@@ -13,7 +13,8 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.collections15.Transformer;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import edu.uci.ics.jung.graph.UndirectedSparseGraph;
 import edu.uci.ics.jung.io.GraphIOException;
@@ -25,7 +26,7 @@ import edu.uci.ics.jung.io.graphml.NodeMetadata;
 
 public class GraphClustering {
 
-	private static Logger log = Logger.getLogger(GraphClustering.class);
+	private static Logger log = LogManager.getLogger(GraphClustering.class);
 	
 	public static <V,E> double modularity ( Map<double[],Map<double[],Double>> graph, Map<double[],Integer> membership ) {
         double sum = 0;

@@ -16,7 +16,8 @@ import javax.xml.stream.XMLOutputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamWriter;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import com.vividsolutions.jts.geom.Geometry;
 
@@ -24,7 +25,7 @@ import spawnn.dist.Dist;
 
 public class RegionUtils {
 	
-	private static Logger log = Logger.getLogger(RegionUtils.class);
+	private static Logger log = LogManager.getLogger(RegionUtils.class);
 		
 	// cm = contiguitiy map, nodes = list of nodes to build distance matrix... order matters!!!
 	public static int[][] getDistMatrix( Map<double[],Set<double[]>> cm, List<double[]> nodes ) {

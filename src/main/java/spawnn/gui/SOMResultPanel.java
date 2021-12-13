@@ -9,7 +9,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -26,19 +25,18 @@ import javax.swing.JPanel;
 import javax.swing.ListCellRenderer;
 
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import edu.uci.ics.jung.graph.Graph;
 import edu.uci.ics.jung.graph.UndirectedSparseGraph;
 import net.miginfocom.swing.MigLayout;
 import spawnn.dist.Dist;
-import spawnn.gui.ClusterDialogGrid.ClusterAlgorithm;
 import spawnn.gui.DistanceDialog.DistMode;
 import spawnn.gui.DistanceDialog.StatMode;
 import spawnn.gui.GraphPanel.Layout;
 import spawnn.gui.NeuronVisPanel.ImageMode;
 import spawnn.som.grid.Grid2D;
-import spawnn.som.grid.Grid2DHex;
 import spawnn.som.grid.GridPos;
 import spawnn.som.utils.SomToolboxUtils;
 import spawnn.som.utils.SomUtils;
@@ -49,7 +47,7 @@ import spawnn.utils.SpatialDataFrame;
 
 public class SOMResultPanel extends ResultPanel<GridPos> {
 
-	private static Logger log = Logger.getLogger(SOMResultPanel.class);
+	private static Logger log = LogManager.getLogger(SOMResultPanel.class);
 	private static final long serialVersionUID = -4518072006960672609L;
 
 	private JComboBox<String> gridComboBox;

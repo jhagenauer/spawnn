@@ -30,7 +30,8 @@ import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.SingularValueDecomposition;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.geotools.data.DataStore;
 import org.geotools.data.DefaultTransaction;
 import org.geotools.data.FeatureSource;
@@ -65,7 +66,7 @@ import spawnn.utils.DataFrame.binding;
 
 public class DataUtils {
 
-	private static Logger log = Logger.getLogger(DataUtils.class);
+	private static Logger log = LogManager.getLogger(DataUtils.class);
 
 	public static List<double[]> mappingToCluster(Map<double[], Set<double[]>> m) {
 		List<double[]> r = new ArrayList<double[]>();

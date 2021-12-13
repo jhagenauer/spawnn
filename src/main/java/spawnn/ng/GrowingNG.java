@@ -13,7 +13,8 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import spawnn.UnsupervisedNet;
 import spawnn.dist.Dist;
@@ -24,7 +25,7 @@ import spawnn.utils.DataUtils;
 
 public class GrowingNG implements UnsupervisedNet {
 	
-	private static Logger log = Logger.getLogger(GrowingNG.class);
+	private static Logger log = LogManager.getLogger(GrowingNG.class);
 	
 	protected List<double[]> neurons = null;
 	protected double lrB, lrN, alpha, beta;

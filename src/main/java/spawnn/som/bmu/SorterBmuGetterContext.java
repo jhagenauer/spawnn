@@ -5,7 +5,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import spawnn.ng.sorter.SorterContext;
 import spawnn.som.grid.Grid;
@@ -13,7 +14,7 @@ import spawnn.som.grid.GridPos;
 
 public class SorterBmuGetterContext extends BmuGetterContext {
 	
-	private static Logger log = Logger.getLogger(SorterBmuGetterContext.class);
+	private static Logger log = LogManager.getLogger(SorterBmuGetterContext.class);
 	
 	private SorterContext s;
 	

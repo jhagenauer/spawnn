@@ -17,13 +17,14 @@ import java.util.Map;
 
 import javax.imageio.ImageIO;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.xmlgraphics.java2d.ps.EPSDocumentGraphics2D;
 
 public class LegendPanel<T> extends NeuronVisPanel<T> {
 
 	private static final long serialVersionUID = -3421819319861456797L;
-	private static Logger log = Logger.getLogger(LegendPanel.class);
+	private static Logger log = LogManager.getLogger(LegendPanel.class);
 	private Map<T, Color> colorMap;
 	private Map<T, Double> neuronValues;
 	private Map<T, Color> selectedMap;
