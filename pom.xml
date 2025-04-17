@@ -82,7 +82,7 @@
 						<descriptors>
 							<descriptor>src/main/assembly/jar-dep.xml</descriptor>
 							<descriptor>src/main/assembly/src-zip.xml</descriptor>
-							<!-- <descriptor>src/main/assembly/bin-zip.xml</descriptor> -->
+							<descriptor>src/main/assembly/bin-zip.xml</descriptor>
 						</descriptors>
 						<archive>
 							<manifest>
@@ -150,10 +150,10 @@
 			<version>3.2</version>
 		</dependency>
 		<dependency>
-			<groupId>colt</groupId>
-			<artifactId>colt</artifactId>
-			<version>1.2.0</version>
-		</dependency>
+    <groupId>colt</groupId>
+    <artifactId>colt</artifactId>
+    <version>1.2.0</version>
+</dependency>
 		<dependency>
 			<groupId>org.geotools</groupId>
 			<artifactId>gt-shapefile</artifactId>
@@ -178,10 +178,10 @@
 			<version>1.0.19</version>
 		</dependency>
 		<dependency>
-			<groupId>net.imagej</groupId>
-			<artifactId>ij</artifactId>
-			<version>1.48a</version>
-		</dependency>
+    <groupId>net.imagej</groupId>
+    <artifactId>ij</artifactId>
+    <version>1.53s</version>
+</dependency>
 		<!-- <dependency>
 			<groupId>watershed_plugin</groupId>
 			<artifactId>watershed_plugin</artifactId>
@@ -192,11 +192,11 @@
 			<artifactId>surface_plot</artifactId>
 			<version>0.0</version>
 		</dependency>-->
-		<dependency>
-			<groupId>org.apache.xmlgraphics</groupId>
-			<artifactId>xmlgraphics-commons</artifactId>
-			<version>2.6</version>
-		</dependency>
+<dependency>
+    <groupId>org.apache.xmlgraphics</groupId>
+    <artifactId>xmlgraphics-commons</artifactId>
+    <version>2.7</version>
+</dependency>
 		<dependency>
 			<groupId>org.jblas</groupId>
 			<artifactId>jblas</artifactId>
@@ -219,11 +219,12 @@
 		</repository>
 		<repository>
 			<id>opengeo</id>
-			<url>http://repo.boundlessgeo.com/main/</url>
+			<url>https://repo.osgeo.org/repository/release/</url>
 		</repository>
 		<repository>
+		
 			<id>central</id>
-			<url>http://central.maven.org/maven2/</url>
+			<url>https://repo1.maven.org/maven2/</url>
 			<snapshots>
 				<enabled>false</enabled>
 			</snapshots>

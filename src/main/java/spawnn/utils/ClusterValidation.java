@@ -82,20 +82,14 @@ public class ClusterValidation {
 
 	// separation
 	public static double getBetweenClusterSumOfSuqares(Collection<Set<double[]>> c, Dist<double[]> dist) {
-		int length = c.iterator().next().iterator().next().length;
-		double[] meanOfMeans = new double[length];
-		
-		int numSamples = 0;
-		for( Set<double[]> s : c ) {
-			double[] m = DataUtils.getMean(s);
-			for( int i = 0; i < m.length; i++ )
-				meanOfMeans[i] += m[i]/c.size();
-			numSamples += s.size();
-		}
-		
+		List<double[]> samples = new ArrayList<>();
+		for( Set<double[]> s : c )
+			samples.addAll(s);
+		double[] mean = DataUtils.getMean(samples);
+				
 		double v = 0;
 		for( Set<double[]> s : c ) 
-			v += ((double)s.size()/numSamples) * Math.pow( dist.dist( DataUtils.getMean(s), meanOfMeans), 2);
+			v += ((double)s.size()/samples.size()) * Math.pow( dist.dist( DataUtils.getMean(s), mean), 2);
 		return v;
 	}
 

@@ -15,6 +15,9 @@ import java.io.OutputStreamWriter;
 import java.io.Serializable;
 import java.lang.reflect.Array;
 import java.net.MalformedURLException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -62,6 +65,7 @@ import com.vividsolutions.jts.io.ParseException;
 import com.vividsolutions.jts.io.WKTReader;
 
 import spawnn.dist.Dist;
+import spawnn.dist.EuclideanDist;
 import spawnn.utils.DataFrame.binding;
 
 public class DataUtils {
@@ -82,8 +86,7 @@ public class DataUtils {
 		return r;
 	}
 
-	public static List<double[]> getSammonsProjection(List<double[]> samples, Dist<double[]> a, Dist<double[]> b,
-			int dim) {
+	public static List<double[]> getSammonsProjection(List<double[]> samples, Dist<double[]> a, Dist<double[]> b, int dim) {
 		List<double[]> projected = new ArrayList<double[]>();
 
 		// init
@@ -492,6 +495,13 @@ public class DataUtils {
 
 		return sd.samples;
 	}
+	
+	public static void writeCSV_Double(OutputStream os, List<Double> samples) {
+		List<double[]> l = new ArrayList<>();
+		for( Double d : samples )
+			l.add( new double[] {d});
+		writeCSV(os, l, null, ',');
+	}
 
 	public static void writeCSV(OutputStream os, List<double[]> samples) {
 		writeCSV(os, samples, null, ',');
@@ -505,6 +515,23 @@ public class DataUtils {
 		try {
 			writeCSV(new FileOutputStream(fn), samples, names, sep);
 		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public static void writeMatrix(String fn, DoubleMatrix m ) {
+		try {
+			String h = "X1";
+			for( int i = 1; i < m.columns; i++ )
+				h+=",X"+i;
+			h+="\n";
+			
+			Files.write(Paths.get(fn), h.getBytes(), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+			for( int i = 0; i < m.rows; i++ ) {
+				String s = Arrays.toString(m.getRow(i).data).replaceAll("\\[", "").replaceAll("\\]", "")+"\n";
+				Files.write(Paths.get(fn), s.getBytes(), StandardOpenOption.APPEND);								
+			}
+		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}
@@ -1320,5 +1347,92 @@ public class DataUtils {
 				ds.addValue(d[i]);
 			System.out.println(i+" --> min: "+ds.getMin()+", mean: "+ds.getMean()+", max: "+ds.getMax()+", sd: "+ds.getStandardDeviation());
 		}		
+	}
+	
+	public static DoubleMatrix getY(List<double[]> samples, int ta) {
+		double[] y = new double[samples.size()];
+		for (int i = 0; i < samples.size(); i++)
+			y[i] = samples.get(i)[ta];
+		return new DoubleMatrix(y);
+	}	
+	
+	public static DoubleMatrix getX(List<double[]> samples, int[] fa, boolean addIntercept) {		
+		double[][] x = new double[samples.size()][];
+		for (int i = 0; i < samples.size(); i++) {
+			double[] d = samples.get(i);
+			
+			x[i] = new double[fa.length + (addIntercept ? 1 : 0) ];
+			x[i][x[i].length - 1] = 1.0; // gets overwritten if !addIntercept
+			for (int j = 0; j < fa.length; j++) {
+				x[i][j] = d[fa[j]];
+			}
+		}
+		return new DoubleMatrix(x);
+	}
+	
+	public static List<double[]> getStripped(List<double[]> a, int[] fa) {
+		List<double[]> l = new ArrayList<>();
+		for( double[] d : a )
+			l.add( DataUtils.strip(d, fa) );
+		return l;
+	}
+	
+	public static DoubleMatrix getW(List<double[]> a, List<double[]> b, int[] ga ) {
+		Dist<double[]> eDist = new EuclideanDist();
+		DoubleMatrix W = new DoubleMatrix(a.size(), b.size());
+		for (int i = 0; i < a.size(); i++)
+			for (int j = 0; j < b.size(); j++)
+				W.put(i, j, eDist.dist(
+						new double[] { a.get(i)[ga[0]], a.get(i)[ga[1]] }, 
+						new double[] { b.get(j)[ga[0]], b.get(j)[ga[1]] }
+					));		
+		return W;
+	}
+		
+	public static <T> List<T> subset_row( List<T> l, int[] idx ) {
+		List<T> r = new ArrayList<>();
+		for( int i : idx )
+			r.add(l.get(i));
+		return r;
+	}
+	
+	public static List<double[]> subset_row( List<double[]> l, List<Integer> li ) {
+		return subset_row(l, toIntArray(li) );
+	}
+	
+	public static List<double[]> subset_columns( List<double[]> x, int[] fa ) {
+		List<double[]> r = new ArrayList<>();
+		for( double[] d : x )
+			r.add( DataUtils.strip(d, fa) );
+		return r;
+	}
+	
+	public static int[] toIntArray(Collection<Integer> c) {
+		int[] j = new int[c.size()];
+		int i = 0;
+		for (int l : c)
+			j[i++] = l;
+		return j;
+	}
+	
+	public static double[] toDoubleArray(Collection<Double> c) {
+		double[] j = new double[c.size()];
+		int i = 0;
+		for (double l : c)
+			j[i++] = l;
+		return j;
+	}
+		
+	public static double[][] transpose(double[][] matrix) {
+	    int rows = matrix.length;
+	    int cols = matrix[0].length;
+	    double[][] transposed = new double[cols][rows];
+
+	    for (int i = 0; i < rows; i++) {
+	        for (int j = 0; j < cols; j++) {
+	            transposed[j][i] = matrix[i][j];
+	        }
+	    }
+	    return transposed;
 	}
 }

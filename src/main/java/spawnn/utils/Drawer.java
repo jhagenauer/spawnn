@@ -202,6 +202,101 @@ public class Drawer {
 			e.printStackTrace();
 		}
 	}
+	
+	public static void geoDrawCluster(Collection<List<Geometry>> geoms, OutputStream os, boolean label) {
+
+		Geometry g1 = geoms.iterator().next().get(0);
+		Color[] colors = new Color[] {Color.BLUE,Color.RED,Color.GREEN,Color.ORANGE,Color.YELLOW,Color.CYAN,Color.DARK_GRAY};
+		
+		// draw
+		try {
+			SimpleFeatureTypeBuilder typeBuilder = new SimpleFeatureTypeBuilder();
+			typeBuilder.setName("cluster");
+			typeBuilder.add("cluster", Integer.class);
+			typeBuilder.setCRS(null);
+
+			if (g1 instanceof Polygon)
+				typeBuilder.add("the_geom", Polygon.class);
+			else if (g1 instanceof Point)
+				typeBuilder.add("the_geom", Point.class);
+			else if (g1 instanceof MultiPolygon)
+				typeBuilder.add("the_geom", MultiPolygon.class);
+			else
+				throw new RuntimeException("Unknown Geometry type: " + g1);
+
+			SimpleFeatureBuilder featureBuilder = new SimpleFeatureBuilder(typeBuilder.buildFeatureType());
+
+			StyleBuilder sb = new StyleBuilder();
+			MapContent map = new MapContent();
+			ReferencedEnvelope maxBounds = null;
+
+			int clusterIndex = 0;
+			for (List<Geometry> l : geoms ) {
+				if (l.isEmpty())
+					continue;
+
+				DefaultFeatureCollection fc = new DefaultFeatureCollection();
+				for (Geometry d : l) {
+					featureBuilder.add(clusterIndex);
+					featureBuilder.add(d);
+					fc.add(featureBuilder.buildFeature("" + fc.size()));
+				}
+
+				if (maxBounds == null)
+					maxBounds = fc.getBounds();
+				else
+					maxBounds.expandToInclude(fc.getBounds());
+
+				
+				Color color = colors[clusterIndex];
+
+				if (g1 instanceof Polygon || g1 instanceof MultiPolygon)
+					map.addLayer(new FeatureLayer(fc, SLD.wrapSymbolizers(sb.createPolygonSymbolizer(color, Color.BLACK, 1.0))));
+				else if (g1 instanceof Point) {
+					Mark mark = sb.createMark(StyleBuilder.MARK_CIRCLE, color);
+					map.addLayer(new FeatureLayer(fc, SLD.wrapSymbolizers(sb.createPointSymbolizer(sb.createGraphic(null, mark, null)))));
+				} else
+					throw new RuntimeException("No layer for geometry type added");
+
+				if (label)
+					map.addLayer(new FeatureLayer(fc, SLD.wrapSymbolizers(sb.createTextSymbolizer(Color.BLACK, sb.createFont("Arial", 10), "cluster"))));
+				clusterIndex++;
+			}
+
+			GTRenderer renderer = new StreamingRenderer();
+			RenderingHints hints = new RenderingHints(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+			hints.put(RenderingHints.KEY_ALPHA_INTERPOLATION, RenderingHints.VALUE_ALPHA_INTERPOLATION_QUALITY);
+			hints.put(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_SPEED);
+			// renderer.setRendererHints(hints);
+			renderer.setMapContent(map);
+
+			Rectangle imageBounds = null;
+			try {
+				double heightToWidth = maxBounds.getSpan(1) / maxBounds.getSpan(0);
+				int imageWidth = 2000;
+
+				imageBounds = new Rectangle(0, 0, imageWidth, (int) Math.round(imageWidth * heightToWidth));
+				// imageBounds = new Rectangle( 0, 0, mp.getWidth(), (int) Math.round(mp.getWidth() * heightToWidth));
+
+				BufferedImage image = new BufferedImage(imageBounds.width, imageBounds.height, BufferedImage.TYPE_INT_RGB);
+
+				// png
+				Graphics2D gr = image.createGraphics();
+				gr.setPaint(Color.WHITE);
+				gr.fill(imageBounds);
+
+				renderer.paint(gr, imageBounds, maxBounds);
+
+				ImageIO.write(image, "png", os);
+				image.flush();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			map.dispose();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
 
 	public static void geoDrawClusterEPS(Collection<Set<double[]>> cluster, List<double[]> samples, List<Geometry> geoms, String fn, boolean border) {
 
